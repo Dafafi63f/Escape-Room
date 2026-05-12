@@ -299,7 +299,105 @@ Desde la perspectiva del TFG, este script actua como banco de pruebas funcional 
 - comprobar la utilidad de los metadatos academicos en escenarios reales de uso,
 - y medir el impacto de las decisiones de diseño (filtros, progresion de dificultad y scoring) sobre la experiencia de autoevaluacion.
 
-## 12. Repositorio en GitHub
+## 12. Documento de proyecto (Projecte.docx)
+
+Contenido extraido del documento Word entregado como descripcion formal del proyecto.
+
+Alumno: Daniel Fageda Figueredo
+
+NIU: 1601846
+
+Tutor: Víctor Navas Portella
+
+0. Título provisional
+
+Diseño y desarrollo de un videojuego educativo tipo escape room basado en contenidos del grado en Matemática Computacional y Análisis de Datos
+
+1. Introducción y motivación
+
+Los videojuegos educativos han demostrado ser una herramienta eficaz para reforzar el aprendizaje mediante la interacción y la resolución activa de problemas. En particular, los juegos basados en puzles permiten aplicar conocimientos teóricos en contextos prácticos, fomentando el razonamiento lógico y el pensamiento computacional.
+
+En el ámbito de la Matemática Computacional y el Análisis de Datos, muchos conceptos presentan una elevada carga abstracta, lo que puede dificultar su asimilación. Este Trabajo de Fin de Grado propone el desarrollo de un videojuego educativo que utilice mecánicas propias de un escape room y una novela gráfica para presentar retos basados en contenidos reales del grado, transformando el proceso de resolución matemática en una experiencia interactiva.
+
+La motivación principal del proyecto es combinar programación, matemáticas y diseño interactivo en una aplicación práctica que consolide los conocimientos adquiridos durante el grado.
+
+2. Objetivos del proyecto
+
+Objetivo general
+
+Diseñar e implementar un videojuego educativo interactivo en el que la progresión del jugador depende de la resolución de puzles basados en contenidos del grado en Matemática Computacional y Análisis de Datos.
+
+Objetivos específicos
+
+Diseñar una narrativa interactiva que sirva de marco para la resolución de problemas.
+
+Crear distintos tipos de puzles relacionados con materias del grado (álgebra, cálculo, estadística, optimización, análisis de datos, etc.).
+
+Implementar algoritmos que validen las soluciones introducidas por el jugador.
+
+Desarrollar una interfaz gráfica sencilla e intuitiva.
+
+Evaluar el correcto funcionamiento del videojuego y su valor como herramienta de aprendizaje
+
+3. Descripción del videojuego y alcance
+
+El proyecto consistirá en el desarrollo de un videojuego tipo escape room con elementos de novela gráfica. El jugador avanzará a través de diferentes escenas o “salas”, cada una asociada a una temática concreta del grado.
+
+Para avanzar en la historia, el jugador deberá resolver puzles matemáticos y computacionales, tales como:
+
+Resolución de sistemas de ecuaciones.
+
+Problemas de optimización.
+
+Análisis de datos y toma de decisiones basada en resultados.
+
+Interpretación de gráficos y modelos matemáticos.
+
+El videojuego estará orientado a estudiantes con conocimientos básicos de matemáticas universitarias y se ejecutará en un entorno de escritorio.
+
+4. Tecnologías y herramientas
+
+Para el desarrollo del proyecto se utilizarán las siguientes tecnologías:
+
+Lenguaje de programación: Python.
+
+Entorno de desarrollo de videojuegos: librerías como Pygame o motores sencillos compatibles con Python, o alternativamente herramientas de creación visual de novelas gráficas.
+
+Herramientas de desarrollo: editor de código, control de versiones con Git.
+
+Recursos gráficos y narrativos: diseño propio o recursos libres adaptados al proyecto.
+
+Python se ha elegido por su facilidad de uso, su potencia para el cálculo matemático y su amplia utilización en el análisis de datos.
+
+5. Metodología y desarrollo
+
+El desarrollo del proyecto se realizará de forma incremental, dividiéndose en las siguientes fases:
+
+Análisis y diseño: definición de la narrativa, tipos de puzles y estructura del videojuego.
+
+Implementación: desarrollo de la lógica del juego, resolución y validación de puzles y gestión de la interacción con el usuario.
+
+Pruebas: comprobación del correcto funcionamiento del sistema y corrección de errores.
+
+Evaluación final: análisis del resultado obtenido y posibles mejoras futuras.
+
+6. Resultados esperados
+
+Como resultado del proyecto se espera obtener:
+
+Un videojuego educativo completamente funcional.
+
+Un sistema de puzles matemáticos integrados en una narrativa interactiva.
+
+Código fuente documentado y estructurado.
+
+Una reflexión final sobre el potencial del videojuego como herramienta de apoyo al aprendizaje.
+
+7. Conclusión
+
+Este Trabajo de Fin de Grado combina matemáticas, programación y diseño interactivo para crear una aplicación práctica basada en los contenidos del grado. El proyecto pretende demostrar cómo los conceptos de Matemática Computacional y Análisis de Datos pueden aplicarse de forma creativa en entornos interactivos, reforzando el aprendizaje mediante la resolución activa de problemas.
+
+## 13. Repositorio en GitHub
 
 El codigo y la documentacion del proyecto se publican en el siguiente repositorio remoto:
 
