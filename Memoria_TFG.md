@@ -9,7 +9,7 @@ Este Trabajo de Fin de Grado plantea el diseño e implementacion de un sistema d
 - analisis de calidad del dataset,
 - y evolucion hacia modelos pedagogicos mas realistas (multiasignatura y prerequisitos).
 
-El punto de partida actual es un banco de 400 preguntas en formato CSV y un juego en Python que selecciona preguntas por `Materia` y `Dificultad`.
+El punto de partida actual es un banco de 400 preguntas en formato CSV y un juego en Python que selecciona preguntas por `Materia` y `Dificultad`. El inventario de ficheros de datos y scripts queda descrito en la **seccion 14**.
 
 ## 2. Estado actual del sistema
 
@@ -56,7 +56,7 @@ Este enfoque reduce carga, mejora calidad experta y acorta tiempos de iteracion.
 
 1. Definir criterios de etiquetado para `Materias_relacionadas` y `Prerequisitos`.
 2. Adaptar scripts de validacion y estadisticas para soportar etiquetas multiples.
-3. Mantener compatibilidad temporal para leer datasets legacy con columna `Tema`.
+3. Mantener compatibilidad temporal para leer datasets antiguos con columna `Tema` (los scripts en `Files/` la normalizan a `Materia` al cargar o guardar; ver `utils_dataset_csv.py`).
 4. Actualizar el juego para incorporar modos de seleccion por relacion entre materias.
 5. Ejecutar una primera ronda de revision docente por bloques.
 
@@ -72,13 +72,14 @@ Este enfoque incrementa la validez academica del sistema y mejora su utilidad pa
 
 ## 8. Cambios implementados en esta iteracion
 
-En esta iteracion se han aplicado cambios concretos sobre el modelo de materias y sobre la logica del juego:
+En esta iteracion se han aplicado cambios concretos sobre el modelo de materias y sobre la logica del juego (se detallan ademas el repositorio y los scripts en la **seccion 14**):
 
 - El archivo `Data/listado_materias.csv` incorpora las columnas `Curso`, `Semestre` y `Tematica`.
 - Se ha trabajado con una estructura de 40 materias distribuida en 4 cursos, 2 semestres por curso y 5 materias por semestre.
 - Se ha reforzado la unicidad de combinaciones `(Grupo, Nivel, Curso, Semestre)` para evitar secuencias repetidas.
 - Se han consolidado 10 grupos tematicos globales, asignando cada materia a una sola tematica.
 - Se han realizado ajustes de coherencia en grupos y niveles para reflejar simultaneidad o progresion cuando correspondia.
+- El banco `Data/Preguntas.csv` queda definido con **400** preguntas, columna **`Materia`** (no `Tema`) y cabecera estable; los scripts en `Files/` comparten objetivos de balanceo (`objetivos_balanceo.py`) y escritura canonica del CSV (`utils_dataset_csv.py`).
 
 En la aplicacion del quiz (`Juego/juego_cuestionario.py`):
 
@@ -236,7 +237,7 @@ El script detecta automaticamente la ruta base del proyecto para funcionar tanto
 
 - `Data/Preguntas.csv` como dataset principal.
 - `Data/listado_materias.csv` para enriquecer cada pregunta con metadatos academicos.
-- `Data/ranking_quiz.csv` para guardar puntuaciones entre partidas.
+- `Juego/ranking_quiz.csv` para guardar puntuaciones entre partidas (se crea junto al script o al ejecutable; no forma parte de `Data/` versionada).
 
 La funcion de carga valida que cada pregunta tenga enunciado, cuatro opciones completas y respuesta correcta en el conjunto `{A, B, C, D}`.
 
@@ -282,7 +283,7 @@ La partida termina al agotar vidas o al completar el numero objetivo de pregunta
 
 ### 11.6 Persistencia y ranking
 
-Al finalizar, el script registra en `ranking_quiz.csv`:
+Al finalizar, el script registra en `Juego/ranking_quiz.csv` (o junto al `.exe` si se empaqueta):
 
 - nombre del jugador,
 - puntos totales,
@@ -410,3 +411,73 @@ git clone https://github.com/Dafafi63f/Escape-Room.git
 ```
 
 Para subir cambios, GitHub requiere autenticacion mediante **Personal Access Token** (HTTPS) o una clave **SSH**. No incluyas nunca tokens, contrasenas ni claves privadas dentro de archivos versionados; usalas solo en el gestor de credenciales del sistema o en configuracion local no versionada.
+
+## 14. Estructura del repositorio, `Data/` y scripts (`Files/`)
+
+Esta seccion resume los ficheros relevantes del codigo y de los datos para que la memoria coincida con el estado actual del proyecto (400 preguntas, columna `Materia`, pipeline de balanceo en Python).
+
+### 14.1 Carpeta `Data/`
+
+| Fichero | Rol |
+|---------|-----|
+| `Preguntas.csv` | Banco principal del cuestionario: **400** preguntas, separador `;`, codificacion UTF-8. Cabecera canonica: `Id`;`Pregunta`;`Materia`;`Dificultad`;`Tipo`;`A`;`B`;`C`;`D`;`Correcta`. |
+| `listado_materias.csv` | **40** materias del grado con columnas `Id`, `Materia`, `Grupo`, `Nivel`, `Curso`, `Semestre`, `Tematica` (y metadatos usados por el juego). |
+| `plantillas.json` | Plantillas por materia para generar o sustituir preguntas en los scripts de mantenimiento y balanceo. |
+| `Historic_qualificacions_MatCAD_completo.csv` | Tabla historica de qualificacions (CSV) para analisis estadistico auxiliar. |
+
+Los scripts de balanceo o deduplicacion pueden crear copias de seguridad bajo `Backups/` cuando se invocan con opciones que lo indican; esa carpeta no es parte fija del repositorio si esta vacia o ignorada.
+
+### 14.2 Objetivos de balanceo (`Files/objetivos_balanceo.py`)
+
+El tamano objetivo del banco tras el pipeline completo es **`TARGET_TOTAL_PREGUNTAS = 400`**. A partir de ahi se derivan, con las 40 materias del listado:
+
+- **Por materia:** 10 preguntas por materia (400 / 40).
+- **Por tipo global:** 200 `Teoria` y 200 `Calculo`.
+- **Por dificultad global:** reparto lo mas equilibrado en tres niveles (p. ej. 134 / 133 / 133 para 400 filas).
+- **Por respuesta correcta:** A, B, C y D lo mas equilibradas posible (100 cada una con 400 filas).
+
+`Files/balanceo_completo.py` ejecuta primero `eliminar_duplicados.py` una sola vez. Despues, en bucle (hasta un maximo de iteraciones), lanza en orden: `balancear_dataset.py`, `balancear_tipo_y_dificultad.py`, `balancear_tipos.py`, `balancear_dificultad_global.py` y `balancear_correctas.py`; comprueba los criterios y, si todo coincide, ejecuta `ordenar_dataset.py` una vez al final.
+
+### 14.3 Catalogo de scripts en `Files/`
+
+| Script | Funcion resumida |
+|--------|------------------|
+| `utils_dataset_csv.py` | Lectura/escritura del CSV con orden de columnas fijo, `materia_de_fila` (compatibilidad `Tema`), ordenacion por listado. |
+| `utils_orden_temas.py` | Carga el orden de materias desde `listado_materias.csv`. |
+| `utils_texto.py` | Normalizacion de texto (p. ej. deduplicacion por enunciado). |
+| `objetivos_balanceo.py` | Constantes y funciones de objetivos numericos del pipeline (400 preguntas). |
+| `ordenar_dataset.py` | Ordena el CSV por `Materia`, `Tipo` y `Dificultad`; renumeracion de `Id`. |
+| `validar_csv.py` | Validacion de integridad del CSV de preguntas. |
+| `revision_final.py` | Revision amplia: nulos, duplicados, distribuciones. |
+| `estadisticas_dataset.py` | Estadisticas del banco de preguntas. |
+| `estadisticas_historic_qualificacions.py` | Estadisticas sobre el CSV historico de qualificacions. |
+| `balanceo_completo.py` | Orquestacion del balanceo completo hasta criterios o tope de iteraciones. |
+| `balancear_dataset.py` | Equilibra el numero de preguntas por materia hacia el objetivo. |
+| `balancear_tipo_y_dificultad.py` | Ajusta tipo y dificultad dentro de cada materia. |
+| `balancear_tipos.py` | Equilibra `Teoria` / `Calculo` a nivel global. |
+| `balancear_dificultad_global.py` | Equilibra `Facil` / `Media` / `Dificil` segun el total de filas. |
+| `balancear_correctas.py` | Permuta opciones para equilibrar la columna `Correcta`. |
+| `eliminar_duplicados.py` | Elimina o sustituye duplicados exactos (mismo enunciado y opciones). |
+| `eliminar_duplicados_enunciado.py` | Duplicados por texto de pregunta; opcion `--inplace` y respaldo en `Backups/`. |
+| `reducir_dataset_objetivo.py` | Reduce el dataset a un total objetivo con criterios de diversidad. |
+| `crear_borrar_preguntas.py` | Anade o elimina preguntas desde plantillas (CLI). |
+| `corregir_temas_semantica.py` | Sugiere y aplica cambios de `Materia` por heuristica de palabras clave. |
+| `contextualizar_preguntas.py` | Ajustes contextuales del texto de preguntas. |
+| `inyectar_dataset_en_plantillas.py` | Vuelca preguntas del CSV en `plantillas.json` sin duplicar entradas. |
+| `revisar_plantillas.py` | Comprueba cobertura entre plantillas y listado de materias. |
+| `deduplicar_plantillas.py` | Deduplicacion dentro de `plantillas.json`. |
+| `arreglar_preguntas_dirigidas.py` | Correcciones puntuales sobre el CSV (ruta configurable en el propio script). |
+| `listado_materias.py` | Utilidad para generar o revisar el CSV de materias. |
+| `borrar_pycache.py` | Limpieza de carpetas `__pycache__` tras ejecuciones. |
+
+### 14.4 Juego y empaquetado (`Juego/`)
+
+| Elemento | Descripcion |
+|----------|-------------|
+| `juego_cuestionario.py` | Motor del cuestionario en consola: resolucion de rutas a `Data/`, filtros, dificultad progresiva, puntuacion, ranking. |
+| `ranking_quiz.csv` | Fichero **generado al jugar** (persistencia de partidas); ruta por defecto en la carpeta `Juego/` al ejecutar el `.py`. |
+| `juego_cuestionario.spec`, `build_exe_onefile.ps1`, carpeta `build/` | Artefactos PyInstaller / script de construccion del ejecutable. |
+
+### 14.5 Coherencia con el modelo de datos del TFG
+
+Las secciones 4 y 6 proponen columnas futuras (`Materias_relacionadas`, `Prerequisitos`). El CSV actual **no** las incluye aun; el juego y los scripts trabajan con el esquema de la tabla de la seccion 14.1. La columna unica de disciplina es **`Materia`**, alineada con `listado_materias.csv`.

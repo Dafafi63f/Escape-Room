@@ -37,7 +37,7 @@ def key_from_template(tema: str, t: dict) -> tuple:
 
 def key_from_row(r: dict) -> tuple:
     return (
-        norm(r.get("Tema", "")),
+        norm(r.get("Materia") or r.get("Tema", "")),
         norm(r.get("Pregunta", "")),
         norm(r.get("A", "")),
         norm(r.get("B", "")),
@@ -65,7 +65,9 @@ def main() -> None:
     missing_topic = 0
 
     for r in rows:
-        tema = r["Tema"]
+        tema = (r.get("Materia") or r.get("Tema") or "").strip()
+        if not tema:
+            continue
         if tema not in plantillas:
             plantillas[tema] = []
             missing_topic += 1

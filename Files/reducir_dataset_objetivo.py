@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from difflib import SequenceMatcher
 from utils_orden_temas import cargar_orden_temas
+from utils_dataset_csv import guardar_filas_csv, materia_de_fila
 from borrar_pycache import borrar_pycache_en_proyecto
 
 
@@ -93,7 +94,7 @@ def dedup_exact(rows: list[dict]) -> list[dict]:
     out = []
     for r in rows:
         key = (
-            r["Tema"].strip(),
+            materia_de_fila(r),
             normalize_text(r["Pregunta"]),
             normalize_text(r.get("A", "")),
             normalize_text(r.get("B", "")),
@@ -155,7 +156,7 @@ def pick_diverse_rows(rows: list[dict], k: int) -> list[dict]:
 def reduce_dataset(rows: list[dict], target_total: int) -> list[dict]:
     by_topic = defaultdict(list)
     for r in rows:
-        by_topic[r["Tema"]].append(r)
+        by_topic[materia_de_fila(r)].append(r)
 
     ordered_topics, _ = cargar_orden_temas()
     topics = [t for t in ordered_topics if t in by_topic] + [
@@ -182,7 +183,7 @@ def reduce_dataset(rows: list[dict], target_total: int) -> list[dict]:
     if len(reduced) < target_total:
         current_by_topic = defaultdict(int)
         for r in reduced:
-            current_by_topic[r["Tema"]] += 1
+            current_by_topic[materia_de_fila(r)] += 1
 
         deficit = target_total - len(reduced)
         extras = []
@@ -211,7 +212,7 @@ def reduce_dataset(rows: list[dict], target_total: int) -> list[dict]:
     reduced = reduced[:target_total]
     topic_rank = {t: i for i, t in enumerate(ordered_topics)}
     fallback = len(topic_rank)
-    reduced = sorted(reduced, key=lambda r: (topic_rank.get(r["Tema"], fallback), int(r["Id"])))
+    reduced = sorted(reduced, key=lambda r: (topic_rank.get(materia_de_fila(r), fallback), int(r["Id"])))
     for i, r in enumerate(reduced, start=1):
         r["Id"] = str(i)
     return reduced
@@ -245,14 +246,11 @@ def main() -> None:
         safe_backup_path = str(backup_path).encode("ascii", "replace").decode("ascii")
         print(f"Backup creado: {safe_backup_path}")
 
-    with output_path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=";")
-        writer.writeheader()
-        writer.writerows(reduced)
+    guardar_filas_csv(fieldnames, reduced, output_path)
 
     by_topic = defaultdict(int)
     for r in reduced:
-        by_topic[r["Tema"]] += 1
+        by_topic[materia_de_fila(r)] += 1
 
     print(f"Entrada: {len(rows)} | Salida: {len(reduced)}")
     print(f"Temas: {len(by_topic)} | min={min(by_topic.values())} | max={max(by_topic.values())}")

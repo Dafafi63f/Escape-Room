@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 """Revision final del CSV de preguntas."""
 
+from pathlib import Path
+
 import pandas as pd
+
 from utils_orden_temas import cargar_orden_temas
 
-df = pd.read_csv("Data/Preguntas.csv", sep=";", encoding="utf-8")
+BASE = Path(__file__).resolve().parent.parent
+
+df = pd.read_csv(BASE / "Data" / "Preguntas.csv", sep=";", encoding="utf-8")
 orden_materias, _ = cargar_orden_temas()
 
 print("=" * 60)
@@ -67,9 +72,9 @@ print(f"   Rango: {df['Id'].min()} - {df['Id'].max()}")
 
 # 8. Distribuciones (balance esperado: 40 temas con ~75 c/u)
 print("\n8. DISTRIBUCIONES (balance esperado: 40 temas, ~75 c/u)")
-n_temas = df["Tema"].nunique()
+n_temas = df["Materia"].nunique()
 target_por_tema = len(df) // n_temas if n_temas > 0 else 0
-conteo_temas = df["Tema"].value_counts()
+conteo_temas = df["Materia"].value_counts()
 for t in orden_materias:
     if t not in conteo_temas:
         continue

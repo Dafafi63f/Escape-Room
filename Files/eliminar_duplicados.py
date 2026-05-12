@@ -8,7 +8,7 @@ son idénticos.
 import csv
 import json
 import random
-from utils_dataset_csv import ordenar_filas_por_tema_y_id, renumerar_ids
+from utils_dataset_csv import guardar_filas_csv, ordenar_filas_por_tema_y_id, renumerar_ids
 from borrar_pycache import borrar_pycache_en_proyecto
 
 PATH_PREGUNTAS = "Data/Preguntas.csv"
@@ -74,7 +74,7 @@ def generar_reemplazo(tema, plantillas, claves_existentes):
         for n in expandir_plantilla(t):
             clave = (n["Pregunta"], n["A"], n["B"], n["C"], n["D"])
             if clave not in claves_existentes:
-                return {**n, "Tema": tema}
+                return {**n, "Materia": tema}
     return None
 
 
@@ -117,13 +117,13 @@ def main():
 
     for idx in sorted(indices_a_reemplazar):
         fila = filas[idx]
-        tema = fila["Tema"]
-        reemplazo = generar_reemplazo(tema, plantillas, claves_existentes)
+        materia = (fila.get("Materia") or fila.get("Tema") or "").strip()
+        reemplazo = generar_reemplazo(materia, plantillas, claves_existentes)
         if reemplazo:
             filas[idx] = {
                 "Id": fila["Id"],
                 "Pregunta": reemplazo["Pregunta"],
-                "Tema": tema,
+                "Materia": materia,
                 "Dificultad": reemplazo["Dificultad"],
                 "Tipo": reemplazo["Tipo"],
                 "A": reemplazo["A"], "B": reemplazo["B"], "C": reemplazo["C"], "D": reemplazo["D"],
@@ -143,10 +143,7 @@ def main():
     filas = ordenar_filas_por_tema_y_id(filas)
     renumerar_ids(filas)
 
-    with open(PATH_PREGUNTAS, "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=";")
-        writer.writeheader()
-        writer.writerows(filas)
+    guardar_filas_csv(list(fieldnames or []), filas)
 
     print(f"Duplicados procesados: {len(indices_a_reemplazar)}")
     print(f"  Reemplazados por preguntas nuevas: {reemplazadas}")

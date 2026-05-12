@@ -1,25 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-Balancea el dataset para tener ~12 preguntas por cada combinación (Tema, Tipo, Dificultad).
-75/6 ≈ 12.5, así que objetivo: 12 por cada una de las 6 combinaciones por tema.
-
-Estrategia:
-1. Balancear Tipo por tema: ~36 Teoria, ~36 Calculo (eliminar exceso, añadir desde plantillas)
-2. Balancear Dificultad dentro de cada (Tema, Tipo): 12 Facil, 12 Media, 12 Dificil
+Balancea el dataset para repartir tipo y dificultad dentro de cada materia.
+Objetivos derivados de `objetivos_balanceo` (10 preguntas/materia → 5 Teoria y 5 Calculo).
 """
 
 import csv
 import json
 import re
 from collections import defaultdict
+from objetivos_balanceo import preguntas_por_materia
 from utils_orden_temas import cargar_orden_temas
+from utils_dataset_csv import guardar_filas_csv
 from borrar_pycache import borrar_pycache_en_proyecto
 
 PATH_PREGUNTAS = "Data/Preguntas.csv"
 PATH_PLANTILLAS = "Data/plantillas.json"
-TARGET_POR_COMB = 12  # 12 por (Tema, Tipo, Dificultad)
-TARGET_POR_TIPO = 36   # 36 Teoria, 36 Calculo por tema (12*3)
-TARGET_POR_TEMA = 75   # 75 por tema
+TARGET_POR_TEMA = preguntas_por_materia()
+TARGET_POR_TIPO = TARGET_POR_TEMA // 2  # mitad Teoria, mitad Calculo por materia
 
 
 def puntuar_como_calculo(pregunta, a, b, c, d):
@@ -75,7 +72,7 @@ def generar_preguntas(tema, tipo, cantidad, plantillas, claves_existentes):
             if clave in vistos:
                 continue
             vistos.add(clave)
-            resultado.append({**n, "Tema": tema})
+            resultado.append({**n, "Materia": tema})
         idx += 1
     return resultado
 
@@ -113,7 +110,7 @@ def main():
     # Paso 1: Balancear Tipo por tema (36 Teoria, 36 Calculo)
     por_tema_tipo = defaultdict(lambda: defaultdict(list))
     for i, r in enumerate(rows):
-        por_tema_tipo[r["Tema"]][r["Tipo"]].append(i)
+        por_tema_tipo[r["Materia"]][r["Tipo"]].append(i)
 
     indices_eliminar = set()
     nuevas_filas = []
@@ -137,7 +134,7 @@ def main():
             for g in generadas:
                 max_id += 1
                 claves_existentes.add((g["Pregunta"], g["A"], g["B"], g["C"], g["D"]))
-                nuevas_filas.append({"Id": str(max_id), "Pregunta": g["Pregunta"], "Tema": tema, "Dificultad": g["Dificultad"],
+                nuevas_filas.append({"Id": str(max_id), "Pregunta": g["Pregunta"], "Materia": tema, "Dificultad": g["Dificultad"],
                                     "Tipo": "Teoria", "A": g["A"], "B": g["B"], "C": g["C"], "D": g["D"], "Correcta": g["Correcta"]})
 
         # ¿Necesitamos más Calculo? Eliminar Teoria, añadir Calculo
@@ -152,7 +149,7 @@ def main():
             for g in generadas:
                 max_id += 1
                 claves_existentes.add((g["Pregunta"], g["A"], g["B"], g["C"], g["D"]))
-                nuevas_filas.append({"Id": str(max_id), "Pregunta": g["Pregunta"], "Tema": tema, "Dificultad": g["Dificultad"],
+                nuevas_filas.append({"Id": str(max_id), "Pregunta": g["Pregunta"], "Materia": tema, "Dificultad": g["Dificultad"],
                                     "Tipo": "Calculo", "A": g["A"], "B": g["B"], "C": g["C"], "D": g["D"], "Correcta": g["Correcta"]})
 
     filas = [r for i, r in enumerate(rows) if i not in indices_eliminar] + nuevas_filas
@@ -160,7 +157,7 @@ def main():
     # Recalcular índices por (Tema, Tipo, Dificultad)
     por_tema_tipo_diff = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     for i, r in enumerate(filas):
-        por_tema_tipo_diff[r["Tema"]][r["Tipo"]][r["Dificultad"]].append(i)
+        por_tema_tipo_diff[r["Materia"]][r["Tipo"]][r["Dificultad"]].append(i)
 
     # Paso 2: Balancear Dificultad dentro de cada (Tema, Tipo) a 12 cada una
     for tema in list(por_tema_tipo_diff.keys()):
@@ -203,9 +200,9 @@ def main():
                         break
 
             # Recalcular
-            idx_f = [i for i, r in enumerate(filas) if r["Tema"] == tema and r["Tipo"] == tipo and r["Dificultad"] == "Facil"]
-            idx_m = [i for i, r in enumerate(filas) if r["Tema"] == tema and r["Tipo"] == tipo and r["Dificultad"] == "Media"]
-            idx_d = [i for i, r in enumerate(filas) if r["Tema"] == tema and r["Tipo"] == tipo and r["Dificultad"] == "Dificil"]
+            idx_f = [i for i, r in enumerate(filas) if r["Materia"] == tema and r["Tipo"] == tipo and r["Dificultad"] == "Facil"]
+            idx_m = [i for i, r in enumerate(filas) if r["Materia"] == tema and r["Tipo"] == tipo and r["Dificultad"] == "Media"]
+            idx_d = [i for i, r in enumerate(filas) if r["Materia"] == tema and r["Tipo"] == tipo and r["Dificultad"] == "Dificil"]
             n_m, n_d = len(idx_m), len(idx_d)
             need_m = t_m - n_m
 
@@ -217,7 +214,7 @@ def main():
                     if need_m == 0:
                         break
                 if need_m > 0:
-                    idx_f = [i for i, r in enumerate(filas) if r["Tema"] == tema and r["Tipo"] == tipo and r["Dificultad"] == "Facil"]
+                    idx_f = [i for i, r in enumerate(filas) if r["Materia"] == tema and r["Tipo"] == tipo and r["Dificultad"] == "Facil"]
                     for i in ordenar_para_upgrade(filas, idx_f)[:need_m]:
                         filas[i]["Dificultad"] = "Media"
                         need_m -= 1
@@ -235,7 +232,7 @@ def main():
     orden_diff = {"Facil": 0, "Media": 1, "Dificil": 2}
     filas.sort(
         key=lambda r: (
-            tema_rank.get(r["Tema"], fallback_rank),
+            tema_rank.get(r["Materia"], fallback_rank),
             orden_tipo[r["Tipo"]],
             orden_diff[r["Dificultad"]],
         )
@@ -244,19 +241,16 @@ def main():
     for i, r in enumerate(filas, start=1):
         r["Id"] = str(i)
 
-    with open(PATH_PREGUNTAS, "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=";")
-        writer.writeheader()
-        writer.writerows(filas)
+    guardar_filas_csv(list(fieldnames or []), filas)
 
-    print("Balanceo completado. Objetivo: ~12 por (Tema, Tipo, Dificultad)")
+    print("Balanceo completado. Objetivo: reparto de tipo y dificultad por materia.")
     print(f"  Eliminadas: {len(indices_eliminar)}, Añadidas: {len(nuevas_filas)}")
     print("\nVerificación - primeras 3 materias:")
     from collections import Counter
-    temas_presentes = [t for t in temas_ordenados if any(r["Tema"] == t for r in filas)]
+    temas_presentes = [t for t in temas_ordenados if any(r["Materia"] == t for r in filas)]
     for tema in temas_presentes[:3]:
         print(f"\n  {tema}:")
-        for (tipo, diff), count in sorted(Counter((r["Tipo"], r["Dificultad"]) for r in filas if r["Tema"] == tema).items()):
+        for (tipo, diff), count in sorted(Counter((r["Tipo"], r["Dificultad"]) for r in filas if r["Materia"] == tema).items()):
             print(f"    {tipo} {diff}: {count}")
 
 

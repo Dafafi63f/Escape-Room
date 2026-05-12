@@ -1,9 +1,12 @@
 import pandas as pd
+from pathlib import Path
 from utils_orden_temas import cargar_orden_temas
 
-df = pd.read_csv("Data/Preguntas.csv", sep=";")
+BASE = Path(__file__).resolve().parent.parent
+
+df = pd.read_csv(BASE / "Data" / "Preguntas.csv", sep=";", encoding="utf-8")
 orden_materias, _ = cargar_orden_temas()
-conteo_tema = df["Tema"].value_counts()
+conteo_tema = df["Materia"].value_counts()
 
 print("=" * 60)
 print("INFORMACIÓN DEL DATASET DE PREGUNTAS")
@@ -33,7 +36,7 @@ print(df["Correcta"].value_counts().to_string())
 
 # Resumen combinado (Tema + Dificultad)
 print("\nPreguntas por TEMA y DIFICULTAD:")
-tabla = df.groupby(["Tema", "Dificultad"]).size().unstack(fill_value=0)
+tabla = df.groupby(["Materia", "Dificultad"]).size().unstack(fill_value=0)
 tabla = tabla.reindex([t for t in orden_materias if t in tabla.index])
 print(tabla.to_string())
 

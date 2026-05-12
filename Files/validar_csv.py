@@ -2,13 +2,17 @@
 Script para validar la integridad del CSV de preguntas.
 """
 import sys
+from pathlib import Path
+
 import pandas as pd
+
+BASE = Path(__file__).resolve().parent.parent
 
 # Evitar UnicodeEncodeError en Windows al imprimir caracteres especiales
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-df = pd.read_csv("Data/Preguntas.csv", sep=";")
+df = pd.read_csv(BASE / "Data" / "Preguntas.csv", sep=";", encoding="utf-8")
 
 print("=" * 60)
 print("VALIDACIÓN DEL CSV DE PREGUNTAS")
@@ -58,7 +62,7 @@ else:
     print(f"\n4. Coherencia Correcta <-> opciones: OK")
 
 # 5. Campos obligatorios no vacíos
-campos_obligatorios = ["Pregunta", "Tema", "Dificultad", "Tipo", "A", "B", "C", "D"]
+campos_obligatorios = ["Pregunta", "Materia", "Dificultad", "Tipo", "A", "B", "C", "D"]
 vacios = {}
 for col in campos_obligatorios:
     if col in df.columns:

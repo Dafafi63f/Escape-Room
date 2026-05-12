@@ -1,23 +1,20 @@
 # -*- coding: utf-8 -*-
 """
-Balancea las dificultades a nivel global: 1000 preguntas por nivel (Facil, Media, Dificil).
-Maneja todos los excesos posibles:
-- Exceso Facil/Media: eliminar, añadir Dificil
-- Exceso Dificil: eliminar, añadir Facil y/o Media
-Mantiene 3000 preguntas totales y 75 por tema.
+Balancea las dificultades a nivel global (reparto ~1/3 Facil, Media, Dificil del total actual).
+Elimina excesos y genera desde plantillas para acercarse a los objetivos.
+El total de filas no cambia (pensado para dataset de 400 preguntas).
 """
 
 import csv
 import json
 from collections import defaultdict
+from objetivos_balanceo import objetivos_dificultad_por_totales
 from utils_orden_temas import cargar_orden_temas
+from utils_dataset_csv import guardar_filas_csv
 from borrar_pycache import borrar_pycache_en_proyecto
 
 PATH_PREGUNTAS = "Data/Preguntas.csv"
 PATH_PLANTILLAS = "Data/plantillas.json"
-TARGET = 1000
-
-
 def puntuar_facilidad(pregunta, a, b, c, d, tipo):
     """Menor score = más fácil (candidata a eliminar)."""
     texto = f"{pregunta} {a} {b} {c} {d}".lower()
@@ -59,6 +56,8 @@ def main():
         fieldnames = reader.fieldnames
         rows = list(reader)
 
+    targets = objetivos_dificultad_por_totales(len(rows))
+
     conteos = defaultdict(int)
     for r in rows:
         conteos[r["Dificultad"]] += 1
@@ -67,12 +66,12 @@ def main():
     for d in ["Facil", "Media", "Dificil"]:
         print(f"  {d}: {conteos[d]}")
 
-    exceso_facil = max(0, conteos["Facil"] - TARGET)
-    exceso_media = max(0, conteos["Media"] - TARGET)
-    exceso_dificil = max(0, conteos["Dificil"] - TARGET)
-    deficit_facil = max(0, TARGET - conteos["Facil"])
-    deficit_media = max(0, TARGET - conteos["Media"])
-    deficit_dificil = max(0, TARGET - conteos["Dificil"])
+    exceso_facil = max(0, conteos["Facil"] - targets["Facil"])
+    exceso_media = max(0, conteos["Media"] - targets["Media"])
+    exceso_dificil = max(0, conteos["Dificil"] - targets["Dificil"])
+    deficit_facil = max(0, targets["Facil"] - conteos["Facil"])
+    deficit_media = max(0, targets["Media"] - conteos["Media"])
+    deficit_dificil = max(0, targets["Dificil"] - conteos["Dificil"])
 
     # Candidatos a eliminar por dificultad
     candidatos_facil = [
@@ -101,7 +100,7 @@ def main():
 
     eliminadas_por_tema = defaultdict(int)
     for i in indices_eliminar:
-        eliminadas_por_tema[rows[i]["Tema"]] += 1
+        eliminadas_por_tema[rows[i]["Materia"]] += 1
 
     filas_filtradas = [r for i, r in enumerate(rows) if i not in indices_eliminar]
     eliminadas = len(rows) - len(filas_filtradas)
@@ -137,7 +136,7 @@ def main():
             nuevas_filas.append({
                 "Id": str(max_id),
                 "Pregunta": pregunta,
-                "Tema": tema,
+                "Materia": tema,
                 "Dificultad": dificultad,
                 "Tipo": t.get("tipo", "Teoria"),
                 "A": a, "B": b, "C": c, "D": d,
@@ -149,7 +148,7 @@ def main():
                 break
         return añadidas
 
-    # Añadir según déficit, priorizando temas que perdieron preguntas (mantener 75/tema)
+    # Añadir según déficit, priorizando temas que perdieron preguntas
     def añadir_priorizando_temas(dificultad, cantidad, plantillas_por_tema):
         nonlocal max_id, nuevas_filas, claves_existentes
         temas_que_perdieron = list(eliminadas_por_tema.keys())
@@ -178,7 +177,7 @@ def main():
                 nuevas_filas.append({
                     "Id": str(max_id),
                     "Pregunta": pregunta,
-                    "Tema": tema,
+                    "Materia": tema,
                     "Dificultad": dificultad,
                     "Tipo": t.get("tipo", "Teoria"),
                     "A": a, "B": b, "C": c, "D": d,
@@ -197,15 +196,12 @@ def main():
         añadir_priorizando_temas("Dificil", deficit_dificil, plantillas_dificil)
 
     todas = filas_filtradas + nuevas_filas
-    todas.sort(key=lambda r: (tema_rank.get(r["Tema"], fallback_rank), int(r["Id"])))
+    todas.sort(key=lambda r: (tema_rank.get(r["Materia"], fallback_rank), int(r["Id"])))
 
     for i, r in enumerate(todas, start=1):
         r["Id"] = str(i)
 
-    with open(PATH_PREGUNTAS, "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=";")
-        writer.writeheader()
-        writer.writerows(todas)
+    guardar_filas_csv(list(fieldnames or []), todas)
 
     conteos_final = defaultdict(int)
     for r in todas:
@@ -220,13 +216,14 @@ def main():
     print("\nResultado final:")
     for d in ["Facil", "Media", "Dificil"]:
         n = conteos_final[d]
-        ok = "[OK]" if n == TARGET else f"(obj:{TARGET})"
+        t = targets[d]
+        ok = "[OK]" if n == t else f"(obj:{t})"
         print(f"  {d}: {n} {ok}")
     print(f"\nTotal: {len(todas)} preguntas")
 
     por_tema = defaultdict(int)
     for r in todas:
-        por_tema[r["Tema"]] += 1
+        por_tema[r["Materia"]] += 1
     min_t, max_t = min(por_tema.values()), max(por_tema.values())
     print(f"Por tema: min={min_t}, max={max_t}")
 

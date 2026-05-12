@@ -1,22 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-Balancea los tipos a 1500 Teoria y 1500 Calculo.
+Balancea los tipos: mitad Teoria y mitad Calculo del total del dataset (400 → 200 y 200).
 Estrategia: eliminar exceso y crear preguntas nuevas del tipo deficitario.
-- Si Teoria > Calculo: eliminar Teoria (las más tipo cálculo), añadir Calculo
-- Si Calculo > Teoria: eliminar Calculo (las más tipo teoría), añadir Teoria
-Mantiene 3000 preguntas totales y 75 por tema.
 """
 
 import csv
 import json
 import re
 from collections import defaultdict
+from objetivos_balanceo import preguntas_por_tipo_global
 from utils_orden_temas import cargar_orden_temas
+from utils_dataset_csv import guardar_filas_csv
 from borrar_pycache import borrar_pycache_en_proyecto
 
 PATH_PREGUNTAS = "Data/Preguntas.csv"
 PATH_PLANTILLAS = "Data/plantillas.json"
-TARGET = 1500
+TARGET = preguntas_por_tipo_global()
 
 
 def puntuar_como_calculo(pregunta, a, b, c, d):
@@ -81,13 +80,13 @@ def main():
         candidatos = [
             (i, puntuar_como_calculo(r["Pregunta"], r["A"], r["B"], r["C"], r["D"]))
             for i, r in enumerate(rows)
-            if r["Tipo"] == "Teoria" and r["Tema"] in temas_con_plantillas
+            if r["Tipo"] == "Teoria" and r["Materia"] in temas_con_plantillas
         ]
         candidatos.sort(key=lambda x: -x[1])
         for i in range(exceso_teoria):
             indices_eliminar.add(candidatos[i][0])
         for i in indices_eliminar:
-            eliminadas_por_tema[rows[i]["Tema"]] += 1
+            eliminadas_por_tema[rows[i]["Materia"]] += 1
         tipo_a_añadir = "Calculo"
         plantillas_a_usar = plantillas_calculo
         n_a_eliminar, n_a_añadir = exceso_teoria, exceso_teoria
@@ -98,13 +97,13 @@ def main():
         candidatos = [
             (i, puntuar_como_calculo(r["Pregunta"], r["A"], r["B"], r["C"], r["D"]))
             for i, r in enumerate(rows)
-            if r["Tipo"] == "Calculo" and r["Tema"] in temas_con_plantillas
+            if r["Tipo"] == "Calculo" and r["Materia"] in temas_con_plantillas
         ]
         candidatos.sort(key=lambda x: x[1])  # Menor score primero (más tipo teoría)
         for i in range(exceso_calculo):
             indices_eliminar.add(candidatos[i][0])
         for i in indices_eliminar:
-            eliminadas_por_tema[rows[i]["Tema"]] += 1
+            eliminadas_por_tema[rows[i]["Materia"]] += 1
         tipo_a_añadir = "Teoria"
         plantillas_a_usar = plantillas_teoria
         n_a_eliminar, n_a_añadir = exceso_calculo, exceso_calculo
@@ -136,7 +135,7 @@ def main():
                 nuevas_filas.append({
                     "Id": str(max_id),
                     "Pregunta": pregunta,
-                    "Tema": tema,
+                    "Materia": tema,
                     "Dificultad": t.get("dificultad", "Media"),
                     "Tipo": tipo_a_añadir,
                     "A": a, "B": b, "C": c, "D": d,
@@ -162,7 +161,7 @@ def main():
                         nuevas_filas.append({
                             "Id": str(max_id),
                             "Pregunta": pregunta,
-                            "Tema": tema,
+                            "Materia": tema,
                             "Dificultad": t.get("dificultad", "Media"),
                             "Tipo": tipo_a_añadir,
                             "A": a, "B": b, "C": c, "D": d,
@@ -174,15 +173,12 @@ def main():
                     break
 
     todas = filas_filtradas + nuevas_filas
-    todas.sort(key=lambda r: (tema_rank.get(r["Tema"], fallback_rank), int(r["Id"])))
+    todas.sort(key=lambda r: (tema_rank.get(r["Materia"], fallback_rank), int(r["Id"])))
 
     for i, r in enumerate(todas, start=1):
         r["Id"] = str(i)
 
-    with open(PATH_PREGUNTAS, "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=";")
-        writer.writeheader()
-        writer.writerows(todas)
+    guardar_filas_csv(list(fieldnames or []), todas)
 
     conteos_final = defaultdict(int)
     for r in todas:
@@ -199,7 +195,7 @@ def main():
 
     por_tema = defaultdict(int)
     for r in todas:
-        por_tema[r["Tema"]] += 1
+        por_tema[r["Materia"]] += 1
     min_t, max_t = min(por_tema.values()), max(por_tema.values())
     print(f"Por tema: min={min_t}, max={max_t}")
 

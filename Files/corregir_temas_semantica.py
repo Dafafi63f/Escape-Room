@@ -7,16 +7,21 @@ tenga el tema más coherente según su contenido (análisis semántico por keywo
 import csv
 import re
 from collections import defaultdict
+from pathlib import Path
 
-MATERIAS = {}
-with open("Temp Data/listado_materias.csv", "r", encoding="utf-8") as f:
+from utils_dataset_csv import guardar_filas_csv
+
+BASE = Path(__file__).resolve().parent.parent
+
+MATERIAS: dict[int, str] = {}
+with (BASE / "Data" / "listado_materias.csv").open("r", encoding="utf-8", newline="") as f:
     reader = csv.DictReader(f, delimiter=";")
     for row in reader:
         MATERIAS[int(row["Id"])] = row["Materia"]
 
 MATERIA_TO_ID = {m: i for i, m in MATERIAS.items()}
 
-# Keywords expandidos y más específicos. Prioridad: términos más específicos primero.
+# Keywords expandidos
 # Incluimos términos que identifican claramente cada materia.
 KEYWORDS = {
     1: ["grassmann", "dim(ker)", "producto escalar", "subespacio", "subespacio propio", "subespacio trivial",
@@ -195,16 +200,17 @@ def puntuar_texto_completo(pregunta, a, b, c, d):
     return scores
 
 def main():
-    with open("Preguntas.csv", "r", encoding="utf-8") as f:
+    path_csv = BASE / "Data" / "Preguntas.csv"
+    with path_csv.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f, delimiter=";")
-        fieldnames = reader.fieldnames
+        fieldnames = list(reader.fieldnames or [])
         filas = list(reader)
-    
+
     cambios = 0
     reporte = []
-    
+
     for idx, fila in enumerate(filas):
-        tema_actual = fila["Tema"]
+        tema_actual = (fila.get("Materia") or fila.get("Tema") or "").strip()
         mat_actual = MATERIA_TO_ID.get(tema_actual, 1)
         
         scores = puntuar_texto_completo(
@@ -226,15 +232,14 @@ def main():
         # Cambiar si: el mejor tiene score mayor, o el actual tiene 0
         if mejor_mat != mat_actual and (mejor_score > score_actual or score_actual == 0):
             nuevo_tema = MATERIAS[mejor_mat]
-            fila["Tema"] = nuevo_tema
+            fila["Materia"] = nuevo_tema
+            if "Tema" in fila:
+                del fila["Tema"]
             cambios += 1
             if cambios <= 50:  # Mostrar primeros 50
                 reporte.append((fila["Id"], tema_actual[:40], nuevo_tema[:40], mejor_score, score_actual))
     
-    with open("Preguntas.csv", "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=";")
-        writer.writeheader()
-        writer.writerows(filas)
+    guardar_filas_csv(fieldnames, filas, path_csv)
     
     print(f"Correcciones realizadas: {cambios}")
     if reporte:

@@ -25,7 +25,7 @@ import shutil
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from utils_dataset_csv import ordenar_filas_por_tema_y_id, renumerar_ids
+from utils_dataset_csv import guardar_filas_csv, ordenar_filas_por_tema_y_id, renumerar_ids
 from utils_texto import normalizar_basico
 from borrar_pycache import borrar_pycache_en_proyecto
 
@@ -185,15 +185,15 @@ def main() -> None:
 
     for idx in sorted(indices_a_reemplazar):
         fila = filas[idx]
-        tema = fila.get("Tema", "")
+        materia = (fila.get("Materia") or fila.get("Tema") or "").strip()
         reemplazo = generar_reemplazo(
-            tema, plantillas, enunciados_existentes, bloques_existentes
+            materia, plantillas, enunciados_existentes, bloques_existentes
         )
         if reemplazo:
             filas[idx] = {
                 "Id": fila.get("Id", ""),
                 "Pregunta": reemplazo["Pregunta"],
-                "Tema": tema,
+                "Materia": materia,
                 "Dificultad": reemplazo["Dificultad"],
                 "Tipo": reemplazo["Tipo"],
                 "A": reemplazo["A"],
@@ -231,10 +231,7 @@ def main() -> None:
         shutil.copy2(PATH_PREGUNTAS, backup_path)
         print(f"Backup creado: {backup_path}")
 
-    with output_path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=";")
-        writer.writeheader()
-        writer.writerows(filas)
+    guardar_filas_csv(fieldnames, filas, output_path)
 
     print(f"Duplicados por enunciado detectados: {len(indices_a_reemplazar)}")
     print(f"  Reemplazados: {reemplazadas}")

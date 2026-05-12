@@ -2,7 +2,7 @@
 """
 Balancea el dataset: elimina preguntas de temas con exceso (priorizando las de menor
 encaje semántico) y genera preguntas nuevas desde plantillas para temas con déficit.
-Objetivo: ~75 preguntas por tema.
+Objetivo: mismo número de preguntas por cada materia del listado (400 en total; ver `objetivos_balanceo.py`).
 """
 
 import csv
@@ -10,7 +10,9 @@ import json
 import re
 import sys
 from collections import defaultdict
+from objetivos_balanceo import TARGET_TOTAL_PREGUNTAS, preguntas_por_materia
 from utils_orden_temas import cargar_orden_temas
+from utils_dataset_csv import guardar_filas_csv
 from borrar_pycache import borrar_pycache_en_proyecto
 
 # Añadir ruta para importar corregir_temas_semantica
@@ -24,8 +26,8 @@ MATERIAS = _corr.MATERIAS
 MATERIA_TO_ID = _corr.MATERIA_TO_ID
 puntuar_texto_completo = _corr.puntuar_texto_completo
 
-TARGET = 75
-TARGET_TOTAL = 3000
+TARGET = preguntas_por_materia()
+TARGET_TOTAL = TARGET_TOTAL_PREGUNTAS
 PATH_PREGUNTAS = "Data/Preguntas.csv"
 PATH_PLANTILLAS = "Data/plantillas.json"
 
@@ -98,7 +100,7 @@ def generar_preguntas_desde_plantillas(tema, cantidad, plantillas, claves_existe
             if clave in vistos:
                 continue
             vistos.add(clave)
-            resultado.append({**n, "Tema": tema})
+            resultado.append({**n, "Materia": tema})
             añadidas += 1
         if añadidas == 0:
             intentos_sin_nuevas += 1
@@ -123,7 +125,7 @@ def main():
     # Índice: tema -> lista de (idx_fila, score para ese tema)
     por_tema = defaultdict(list)
     for idx, fila in enumerate(filas):
-        tema = fila["Tema"]
+        tema = fila["Materia"]
         mat_id = MATERIA_TO_ID.get(tema, 1)
         scores = puntuar_texto_completo(
             fila["Pregunta"],
@@ -156,7 +158,7 @@ def main():
         generables = len(generar_preguntas_desde_plantillas(tema, deficit, plantillas))
         total_generable += generables
 
-    # Eliminar todo el exceso (también cuando no hay déficit y total > 3000)
+    # Eliminar todo el exceso (también cuando no hay déficit y total > TARGET_TOTAL)
     total_a_eliminar = total_exceso
 
     # 1) ELIMINAR exceso: marcar índices a eliminar (priorizar peor encaje semántico)
@@ -205,7 +207,7 @@ def main():
     max_id = max(int(f.get("Id", 0)) for f in filas_filtradas) if filas_filtradas else 0
     nuevas_filas = []
     for tema in temas_a_procesar:
-        n_actual = sum(1 for f in filas_filtradas if f["Tema"] == tema)
+        n_actual = sum(1 for f in filas_filtradas if f["Materia"] == tema)
         deficit = max(0, TARGET - n_actual)
         if deficit == 0:
             continue
@@ -215,7 +217,7 @@ def main():
             nuevas_filas.append({
                 "Id": str(max_id),
                 "Pregunta": g["Pregunta"],
-                "Tema": g["Tema"],
+                "Materia": g["Materia"],
                 "Dificultad": g["Dificultad"],
                 "Tipo": g["Tipo"],
                 "A": g["A"], "B": g["B"], "C": g["C"], "D": g["D"],
@@ -230,14 +232,14 @@ def main():
     if faltan_total > 0:
         max_id = max(int(f.get("Id", 0)) for f in todas)
         claves_existentes = {(f["Pregunta"], f["A"], f["B"], f["C"], f["D"]) for f in todas}
-        temas_con_deficit = [(t, TARGET - sum(1 for f in todas if f["Tema"] == t))
+        temas_con_deficit = [(t, TARGET - sum(1 for f in todas if f["Materia"] == t))
                              for t in temas_a_procesar
-                             if sum(1 for f in todas if f["Tema"] == t) < TARGET]
+                             if sum(1 for f in todas if f["Materia"] == t) < TARGET]
         temas_con_deficit.sort(key=lambda x: -x[1])  # Mayor déficit primero
         idx_tema = 0
         while extra_añadidas < faltan_total and temas_con_deficit:
             tema = temas_con_deficit[idx_tema % len(temas_con_deficit)][0]
-            n_actual = sum(1 for f in todas if f["Tema"] == tema)
+            n_actual = sum(1 for f in todas if f["Materia"] == tema)
             deficit_restante = TARGET - n_actual
             a_generar = min(faltan_total - extra_añadidas, deficit_restante, 100)
             if a_generar > 0:
@@ -249,7 +251,7 @@ def main():
                     todas.append({
                         "Id": str(max_id),
                         "Pregunta": g["Pregunta"],
-                        "Tema": g["Tema"],
+                        "Materia": g["Materia"],
                         "Dificultad": g["Dificultad"],
                         "Tipo": g["Tipo"],
                         "A": g["A"], "B": g["B"], "C": g["C"], "D": g["D"],
@@ -265,21 +267,18 @@ def main():
     temas_orden, _ = cargar_orden_temas()
     tema_rank = {t: i for i, t in enumerate(temas_orden)}
     fallback_rank = len(tema_rank)
-    todas.sort(key=lambda r: (tema_rank.get(r["Tema"], fallback_rank), int(r["Id"])))
+    todas.sort(key=lambda r: (tema_rank.get(r["Materia"], fallback_rank), int(r["Id"])))
 
     # Reasignar IDs a todas las filas para mantener orden
     for i, f in enumerate(todas, start=1):
         f["Id"] = str(i)
 
     # Escribir
-    with open(PATH_PREGUNTAS, "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=";")
-        writer.writeheader()
-        writer.writerows(todas)
+    guardar_filas_csv([], todas)
 
     # Estadísticas
     from collections import Counter
-    conteo_final = Counter(f["Tema"] for f in todas)
+    conteo_final = Counter(f["Materia"] for f in todas)
     min_c = min(conteo_final.values())
     max_c = max(conteo_final.values())
 

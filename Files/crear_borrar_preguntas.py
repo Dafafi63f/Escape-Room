@@ -13,7 +13,7 @@ import random
 import sys
 from pathlib import Path
 from utils_orden_temas import cargar_orden_temas
-from utils_dataset_csv import ordenar_filas_por_tema_y_id, renumerar_ids
+from utils_dataset_csv import guardar_filas_csv, ordenar_filas_por_tema_y_id, renumerar_ids
 from borrar_pycache import borrar_pycache_en_proyecto
 
 # Rutas relativas al directorio del proyecto
@@ -104,7 +104,7 @@ def generar_preguntas_aleatorias(cantidad, plantillas, temas, claves_existentes)
             if clave in vistos:
                 continue
             vistos.add(clave)
-            resultado.append({**n, "Tema": tema})
+            resultado.append({**n, "Materia": tema})
         intentos += 1
 
     return resultado[:cantidad]
@@ -125,8 +125,7 @@ def crear_preguntas(cantidad):
     if not temas:
         temas = list(plantillas.keys())
     if not temas:
-        temas = [f["Tema"] for f in filas]
-        temas = list(dict.fromkeys(temas))
+        temas = list(dict.fromkeys((f.get("Materia") or f.get("Tema") or "").strip() for f in filas if (f.get("Materia") or f.get("Tema"))))
 
     claves = obtener_claves_existentes(filas)
     nuevas = generar_preguntas_aleatorias(cantidad, plantillas, temas, claves)
@@ -143,7 +142,7 @@ def crear_preguntas(cantidad):
         filas.append({
             "Id": str(max_id + 1 + i),
             "Pregunta": p["Pregunta"],
-            "Tema": p["Tema"],
+            "Materia": p["Materia"],
             "Dificultad": p["Dificultad"],
             "Tipo": p["Tipo"],
             "A": p["A"], "B": p["B"], "C": p["C"], "D": p["D"],
@@ -153,10 +152,7 @@ def crear_preguntas(cantidad):
     filas = ordenar_filas_por_tema_y_id(filas)
     renumerar_ids(filas)
 
-    with open(PATH_PREGUNTAS, "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=";")
-        writer.writeheader()
-        writer.writerows(filas)
+    guardar_filas_csv(fieldnames, filas)
 
     print(f"  Creadas {len(nuevas)} preguntas nuevas. Total: {len(filas)}")
 
@@ -178,10 +174,7 @@ def borrar_preguntas(cantidad):
     filas_nuevas = ordenar_filas_por_tema_y_id(filas_nuevas)
     renumerar_ids(filas_nuevas)
 
-    with open(PATH_PREGUNTAS, "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=";")
-        writer.writeheader()
-        writer.writerows(filas_nuevas)
+    guardar_filas_csv(fieldnames, filas_nuevas)
 
     print(f"  Borradas {cantidad} preguntas. Total: {len(filas_nuevas)}")
 
