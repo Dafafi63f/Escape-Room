@@ -9,7 +9,7 @@ Este Trabajo de Fin de Grado plantea el diseño e implementacion de un sistema d
 - analisis de calidad del dataset,
 - y evolucion hacia modelos pedagogicos mas realistas (multiasignatura y prerequisitos).
 
-El punto de partida actual es un banco de 400 preguntas en formato CSV y un juego en Python que selecciona preguntas por `Materia` y `Dificultad`. El inventario de ficheros de datos y scripts queda descrito en la **seccion 14**.
+El punto de partida actual es un banco de 400 preguntas en formato CSV y un juego en Python que selecciona preguntas por `Materia` y `Dificultad`. Las filas del CSV siguen un **orden canónico** (listado de materias, bloques 5+5 Teoría/Cálculo, escalón de dificultad y ciclo de respuestas correctas; ver sección **14**). El inventario de ficheros de datos y scripts queda descrito en la **seccion 14**.
 
 ## 2. Estado actual del sistema
 
@@ -420,7 +420,7 @@ Esta seccion resume los ficheros relevantes del codigo y de los datos para que l
 
 | Fichero | Rol |
 |---------|-----|
-| `Preguntas.csv` | Banco principal: **400** preguntas, separador `;`, UTF-8. **10 columnas** en orden: `Id`;`Materia`;`Dificultad`;`Tipo`;`Pregunta`;`A`;`B`;`C`;`D`;`Correcta`. Grupo, nivel, curso, semestre, tematica del grado e identificador de catalogo **no** se duplican aqui: vienen de `listado_materias.csv` unido por `Materia`. La complejidad intrinseca de partida (`Nivel` del listado + `Dificultad` de la pregunta) se calcula en el juego y en `utils_dataset_csv.complejidad_global_valor` sin columna propia en el CSV. |
+| `Preguntas.csv` | Banco principal: **400** preguntas, separador `;`, UTF-8. **10 columnas** en orden: `Id`;`Materia`;`Dificultad`;`Tipo`;`Pregunta`;`A`;`B`;`C`;`D`;`Correcta`. Grupo, nivel, curso, semestre, tematica del grado e identificador de catalogo **no** se duplican aqui: vienen de `listado_materias.csv` unido por `Materia`. La complejidad intrinseca de partida (`Nivel` del listado + `Dificultad` de la pregunta) se calcula en el juego y en `utils_dataset_csv.complejidad_global_valor` sin columna propia en el CSV. **Orden de filas canónico:** materias en el orden del listado; por cada materia, **5 Teoría** seguidas de **5 Cálculo**; dentro de cada mitad, dificultad no decreciente (**Facil → Media → Dificil**, escalón TF…TM…TD y CF…CM…CD, con empate por `Id`); reparto global de dificultad **134 / 133 / 133**; `Correcta` en ciclo **A,B,C,D,…** según `(Id−1) mod 4`. Lo aplica `Files/reordenar_balance_por_materia.py` (invocado al final de `balanceo_completo.py` o vía `ordenar_dataset.py`). |
 | `listado_materias.csv` | **40** materias del grado con columnas `Id`, `Materia`, `Grupo`, `Nivel`, `Curso`, `Semestre`, `Tematica` (y metadatos usados por el juego). |
 | `plantillas.json` | Plantillas por materia para generar o sustituir preguntas en los scripts de mantenimiento y balanceo. |
 | `Historic_qualificacions_MatCAD_completo.csv` | Tabla historica de qualificacions (CSV) para analisis estadistico auxiliar. |
@@ -436,19 +436,20 @@ El tamano objetivo del banco tras el pipeline completo es **`TARGET_TOTAL_PREGUN
 - **Por dificultad global:** reparto lo mas equilibrado en tres niveles (p. ej. 134 / 133 / 133 para 400 filas).
 - **Por respuesta correcta:** A, B, C y D lo mas equilibradas posible (100 cada una con 400 filas).
 
-`Files/balanceo_completo.py` ejecuta primero `eliminar_duplicados.py` una sola vez. Despues, en bucle (hasta un maximo de iteraciones), lanza en orden: `balancear_dataset.py`, `balancear_tipo_y_dificultad.py`, `balancear_tipos.py`, `balancear_dificultad_global.py` y `balancear_correctas.py`; comprueba los criterios y, si todo coincide, ejecuta `ordenar_dataset.py` una vez al final.
+`Files/balanceo_completo.py` ejecuta primero `eliminar_duplicados.py` una sola vez. Despues, en bucle (hasta un maximo de iteraciones), lanza en orden: `balancear_dataset.py`, `balancear_tipo_y_dificultad.py`, `balancear_tipos.py`, `balancear_dificultad_global.py` y `balancear_correctas.py`; comprueba los criterios y, si todo coincide, ejecuta **`reordenar_balance_por_materia.py`** una vez al final (orden canónico: listado de materias, bloques 5+5 Teoría/Cálculo, escalón TF…TM…TD / CF…CM…CD, triple F/M/D por bloque de 10 compatible con 134/133/133 global, `Id` 1…400 y permutación de opciones para el ciclo de `Correcta`). El script `ordenar_dataset.py` **delega** en `reordenar_balance_por_materia.py` para no duplicar lógica.
 
 ### 14.3 Catalogo de scripts en `Files/`
 
 | Script | Funcion resumida |
 |--------|------------------|
-| `utils_dataset_csv.py` | Lectura/escritura CSV, `COLUMNAS_PREGUNTAS`, `fila_pregunta`, `materia_de_fila`, comprobacion interna con metadatos del listado al guardar, ordenacion por listado. |
+| `utils_dataset_csv.py` | Lectura/escritura CSV, `COLUMNAS_PREGUNTAS`, `fila_pregunta`, `materia_de_fila`, comprobacion interna con metadatos del listado al guardar, `ordenar_filas_por_tema_y_id` (orden ligero por listado + Id; no sustituye al orden canónico completo). |
 | `utils_orden_temas.py` | Carga el orden de materias desde `listado_materias.csv`. |
 | `utils_texto.py` | Normalizacion de texto (p. ej. deduplicacion por enunciado). |
 | `objetivos_balanceo.py` | Constantes y funciones de objetivos numericos del pipeline (400 preguntas). |
-| `ordenar_dataset.py` | Ordena el CSV por `Materia`, `Tipo` y `Dificultad`; renumeracion de `Id`. |
-| `validar_csv.py` | Validacion de integridad del CSV de preguntas. |
-| `revision_final.py` | Revision amplia: nulos, duplicados, distribuciones. |
+| `reordenar_balance_por_materia.py` | **Orden canónico** del CSV: listado de materias, 5+5 Teoría/Cálculo, escalón TF…TM…TD / CF…CM…CD, reparto F/M/D por bloque de 10 (14+13+13 triples), `Id` 1…400, ciclo `Correcta` = (Id−1) mod 4. Opción `--explicar` imprime la lógica sin modificar el archivo. Expone `comprobar_orden_canonico_df` para validación. |
+| `ordenar_dataset.py` | Entrada de mantenimiento: delega en `reordenar_balance_por_materia.py` (mismo resultado que ejecutar ese script). |
+| `validar_csv.py` | Validacion de integridad del CSV de preguntas y del orden canónico. |
+| `revision_final.py` | Revision amplia: nulos, duplicados, distribuciones, orden canónico (`comprobar_orden_canonico_df`). |
 | `estadisticas_dataset.py` | Estadisticas del banco de preguntas. |
 | `estadisticas_historic_qualificacions.py` | Estadisticas sobre el CSV historico de qualificacions. |
 | `balanceo_completo.py` | Orquestacion del balanceo completo hasta criterios o tope de iteraciones. |

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Revision final del CSV de preguntas."""
 
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -8,6 +9,8 @@ import pandas as pd
 from utils_orden_temas import cargar_orden_temas
 
 BASE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE / "Files"))
+from reordenar_balance_por_materia import comprobar_orden_canonico_df  # noqa: E402
 
 df = pd.read_csv(BASE / "Data" / "Preguntas.csv", sep=";", encoding="utf-8")
 orden_materias, _ = cargar_orden_temas()
@@ -70,8 +73,8 @@ print("\n7. IDs")
 print(f"   Unicos: {df['Id'].nunique()}, Total filas: {len(df)}")
 print(f"   Rango: {df['Id'].min()} - {df['Id'].max()}")
 
-# 8. Distribuciones (balance esperado: 40 temas con ~75 c/u)
-print("\n8. DISTRIBUCIONES (balance esperado: 40 temas, ~75 c/u)")
+# 8. Distribuciones (balance esperado: 40 materias × 10 preguntas = 400)
+print("\n8. DISTRIBUCIONES (balance esperado: 40 materias, 10 preguntas c/u)")
 n_temas = df["Materia"].nunique()
 target_por_tema = len(df) // n_temas if n_temas > 0 else 0
 conteo_temas = df["Materia"].value_counts()
@@ -94,16 +97,26 @@ print("   Por Correcta:")
 for c, n in df["Correcta"].value_counts().items():
     print(f"      {c}: {n}")
 
-# 9. Longitudes / caracteres raros
-print("\n9. CALIDAD DE TEXTO")
+# 9. Orden canónico (mismo criterio que `reordenar_balance_por_materia.py`)
+print("\n9. ORDEN CANONICO (listado + ladder TF..TD / CF..CD + ciclo ABCD)")
+errores_orden = comprobar_orden_canonico_df(df)
+if errores_orden:
+    print(f"   Incidencias: {len(errores_orden)}")
+    for msg in errores_orden[:15]:
+        print(f"   - {msg}")
+else:
+    print("   OK")
+
+# 10. Longitudes / caracteres raros
+print("\n10. CALIDAD DE TEXTO")
 preg_vacias = df[df["Pregunta"].str.strip() == ""]
 print(f"   Preguntas vacias: {len(preg_vacias)}")
 # Caracteres de reemplazo tipicos de encoding malo
 raros = df[df["Pregunta"].str.contains("\ufffd", na=False, regex=False)]
 print("   Preguntas con caracteres de encoding raro:", len(raros))
 
-# 10. Opciones identicas (A=B=C=D seria sospechoso)
-print("\n10. OPCIONES IDENTICAS EN UNA PREGUNTA")
+# 11. Opciones identicas (A=B=C=D seria sospechoso)
+print("\n11. OPCIONES IDENTICAS EN UNA PREGUNTA")
 def opciones_identicas(row):
     vals = [str(row["A"]).strip(), str(row["B"]).strip(), str(row["C"]).strip(), str(row["D"]).strip()]
     return len(set(vals)) < 4
@@ -115,11 +128,12 @@ if len(identicas) > 0 and len(identicas) <= 5:
     for _, r in identicas.head(5).iterrows():
         print(f"      Id {r['Id']}: A={r['A'][:30]}... B={r['B'][:30]}...")
 
-# 11. Resumen
+# 12. Resumen
 print("\n" + "=" * 60)
 problemas_totales = (
     len(invalidas) + len(problemas) + nulos.sum() + len(dup_ids) +
-    sum(1 for col in ["A","B","C","D"] if len(df[df[col].isna() | (df[col].astype(str).str.strip() == "")]) > 0)
+    sum(1 for col in ["A","B","C","D"] if len(df[df[col].isna() | (df[col].astype(str).str.strip() == "")]) > 0) +
+    len(errores_orden)
 )
 if problemas_totales == 0 and len(raros) == 0:
     print("RESUMEN: Dataset OK, sin inconsistencias criticas.")

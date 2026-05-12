@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Objetivos compartidos del pipeline de balanceo de `Data/Preguntas.csv`.
+
+El orden de filas canónico del CSV (materias según listado, ladder TF…TM…TD y
+CF…CM…CD, reparto global de dificultad y ciclo de `Correcta`) lo aplica
+`reordenar_balance_por_materia.py`, invocado al cerrar `balanceo_completo.py` o vía `ordenar_dataset.py`.
 """
 from __future__ import annotations
 

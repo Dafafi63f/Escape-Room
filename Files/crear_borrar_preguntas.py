@@ -4,6 +4,9 @@ Script para crear o borrar x preguntas del dataset de forma aleatoria.
 Uso:
   python crear_borrar_preguntas.py crear 50   -> crea 50 preguntas nuevas
   python crear_borrar_preguntas.py borrar 30   -> borra 30 preguntas aleatorias
+
+Al terminar, el script ordena por listado+Id ligero; para el orden canónico completo
+del TFG ejecutar `reordenar_balance_por_materia.py` o `ordenar_dataset.py`.
 """
 
 import argparse

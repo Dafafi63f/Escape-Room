@@ -1,58 +1,30 @@
+# -*- coding: utf-8 -*-
 """
-Script para ordenar el dataset de preguntas:
-1. Por materia (columna Materia, orden según Data/listado_materias.csv)
-2. Dentro de cada materia: primero Teoría ordenada por dificultad
-3. Luego Cálculo ordenada por dificultad
-Orden de dificultad: Fácil -> Media -> Difícil
+Orden canónico del banco `Data/Preguntas.csv`.
+
+Este script delega en `reordenar_balance_por_materia.py`, que aplica:
+- materias en el orden de `Data/listado_materias.csv`;
+- por cada materia: 5 Teoría + 5 Cálculo, con escalón TF…TM…TD y CF…CM…CD (Facil→Media→Difícil; empate por Id);
+- reparto de dificultad por bloque de 10 compatible con el global 134/133/133;
+- Id 1…400 y permutación de opciones para `Correcta` = ciclo (Id−1) mod 4.
+
+Para ver la lógica sin modificar el CSV: `python reordenar_balance_por_materia.py --explicar`
 """
 
+from __future__ import annotations
+
+import subprocess
+import sys
 from pathlib import Path
 
-import pandas as pd
-
-from utils_dataset_csv import COLUMNAS_PREGUNTAS
-from utils_orden_temas import cargar_orden_temas
-
 BASE = Path(__file__).resolve().parent.parent
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
+SCRIPT = Path(__file__).resolve().parent / "reordenar_balance_por_materia.py"
 
-df = pd.read_csv(PATH_CSV, sep=";", encoding="utf-8")
 
-orden_dificultad = {"Facil": 0, "Media": 1, "Dificil": 2}
-orden_tipo = {"Teoria": 0, "Calculo": 1}
+def main() -> None:
+    r = subprocess.run([sys.executable, str(SCRIPT)], cwd=BASE)
+    raise SystemExit(r.returncode)
 
-_, orden_materia = cargar_orden_temas()
-fallback_materia = len(orden_materia)
 
-col_materia = "Materia" if "Materia" in df.columns else "Tema"
-if col_materia == "Tema" and "Materia" not in df.columns:
-    df = df.rename(columns={"Tema": "Materia"})
-
-df["_orden_dificultad"] = df["Dificultad"].map(orden_dificultad)
-df["_orden_tipo"] = df["Tipo"].map(orden_tipo)
-df["_orden_materia"] = df["Materia"].map(orden_materia).fillna(fallback_materia)
-
-df_ordenado = df.sort_values(
-    by=["_orden_materia", "_orden_tipo", "_orden_dificultad"],
-    ignore_index=True,
-)
-
-df_ordenado = df_ordenado.drop(
-    columns=["_orden_materia", "_orden_dificultad", "_orden_tipo"]
-)
-
-df_ordenado["Id"] = range(1, len(df_ordenado) + 1)
-
-df_out = df_ordenado[[c for c in COLUMNAS_PREGUNTAS if c in df_ordenado.columns]]
-df_out.to_csv(PATH_CSV, sep=";", index=False, encoding="utf-8")
-
-print("Dataset ordenado correctamente.")
-print(f"\nResumen del orden:")
-print(f"- Total de preguntas: {len(df_out)}")
-print(f"- Materias distintas: {df_out['Materia'].nunique()}")
-print(f"\nEjemplo de las primeras filas por materia:")
-for materia in df_out["Materia"].unique()[:3]:
-    subset = df_out[df_out["Materia"] == materia]
-    print(f"\n  {materia}:")
-    print(f"    Teoría: {subset[subset['Tipo']=='Teoria']['Dificultad'].tolist()}")
-    print(f"    Cálculo: {subset[subset['Tipo']=='Calculo']['Dificultad'].tolist()}")
+if __name__ == "__main__":
+    main()

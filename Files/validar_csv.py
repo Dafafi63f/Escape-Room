@@ -9,6 +9,7 @@ import pandas as pd
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE / "Files"))
 from utils_dataset_csv import complejidad_global_valor, mapa_metadatos_por_materia  # noqa: E402
+from reordenar_balance_por_materia import comprobar_orden_canonico_df  # noqa: E402
 
 # Evitar UnicodeEncodeError en Windows al imprimir caracteres especiales
 if sys.platform == "win32":
@@ -138,10 +139,19 @@ if len(tipo_inv) > 0:
 if len(diff_inv) == 0 and len(tipo_inv) == 0:
     print(f"\n6. Dificultad y Tipo: OK")
 
-# 7. Filas que antes eran problemáticas (spot-check)
+# 7. Orden canónico del banco (listado, ladder TF..TD / CF..CD, bloques F/M/D, ciclo ABCD)
+errores_orden = comprobar_orden_canonico_df(df)
+if errores_orden:
+    print(f"\n7. Orden canónico: {len(errores_orden)} incidencias")
+    for msg in errores_orden[:25]:
+        print(f"   - {msg}")
+else:
+    print("\n7. Orden canónico (reordenar_balance_por_materia): OK")
+
+# 8. Filas que antes eran problemáticas (spot-check)
 ids_problematicos = [38, 41, 44, 265, 326, 336, 347, 575, 576, 577, 622, 628, 651, 670, 1032]
 filas_check = df[df["Id"].isin(ids_problematicos)]
-print(f"\n7. Revisión de filas antes problemáticas (muestra):")
+print(f"\n8. Revisión de filas antes problemáticas (muestra):")
 for _, row in filas_check.head(5).iterrows():
     preg = str(row["Pregunta"])[:60] + "..." if len(str(row["Pregunta"])) > 60 else row["Pregunta"]
     print(f"   Id {row['Id']}: {preg} | Correcta={row['Correcta']}")

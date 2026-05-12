@@ -10,6 +10,9 @@ Comportamiento:
 - Si no encuentra reemplazo válido, elimina la fila duplicada.
 - Renumera Id al final.
 
+Tras `--inplace`, ejecutar `reordenar_balance_por_materia.py` o `ordenar_dataset.py`
+para el orden canónico del banco.
+
 Uso:
   python Files/eliminar_duplicados_enunciado.py
   python Files/eliminar_duplicados_enunciado.py --inplace

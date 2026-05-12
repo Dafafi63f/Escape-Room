@@ -3,6 +3,9 @@
 Elimina preguntas duplicadas del dataset, reemplazándolas por preguntas nuevas
 desde plantillas cuando es posible. Se considera duplicado cuando pregunta, A, B, C y D
 son idénticos.
+
+Tras modificar el CSV, conviene ejecutar `reordenar_balance_por_materia.py` o
+`ordenar_dataset.py` para restaurar el orden canónico (listado, ladder TF..TD/CF..CD, ciclo ABCD).
 """
 
 import csv

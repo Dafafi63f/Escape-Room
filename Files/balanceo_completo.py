@@ -9,7 +9,7 @@ Objetivo final: 400 preguntas (TARGET_TOTAL_PREGUNTAS en objetivos_balanceo.py).
 3. Tipos: mitad Teoría, mitad Cálculo
 4. Dificultad global: ~1/3 por nivel
 5. Correctas: A/B/C/D lo más equilibrado posible
-"""
+6. Tras converger: `reordenar_balance_por_materia.py` fija el orden canónico del CSV (listado, ladder TF..TD/CF..CD, Id, ciclo ABCD).
 
 import csv
 import os
@@ -127,7 +127,10 @@ def main():
 
             ok, msg = esta_balanceado()
             if ok:
-                ejecutar_script("Files/ordenar_dataset.py", "ORDENAR (Materia, Tipo, Dificultad)")
+                ejecutar_script(
+                    "Files/reordenar_balance_por_materia.py",
+                    "ORDEN CANONICO (listado, ladder TF..TD/CF..CD, F/M/D bloque, Id, ABCD)",
+                )
                 print("\n" + "=" * 60, flush=True)
                 print(f"BALANCEO COMPLETO FINALIZADO (iteración {iteracion})", flush=True)
                 print("=" * 60, flush=True)

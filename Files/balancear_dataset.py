@@ -263,7 +263,9 @@ def main():
             if idx_tema > len(temas_con_deficit) * 10:
                 break
 
-    # Ordenar por tema siguiendo listado_materias, luego por Id original.
+    # Ordenar por tema siguiendo listado_materias, luego por Id (orden ligero).
+    # Para el orden canónico del TFG (ladder TF..TD/CF..CD, bloques F/M/D, ciclo ABCD), ejecutar
+    # `reordenar_balance_por_materia.py` o `ordenar_dataset.py` al final del pipeline.
     temas_orden, _ = cargar_orden_temas()
     tema_rank = {t: i for i, t in enumerate(temas_orden)}
     fallback_rank = len(tema_rank)
