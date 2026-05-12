@@ -298,3 +298,17 @@ Desde la perspectiva del TFG, este script actua como banco de pruebas funcional 
 - validar la calidad y coherencia del dataset de preguntas,
 - comprobar la utilidad de los metadatos academicos en escenarios reales de uso,
 - y medir el impacto de las decisiones de diseño (filtros, progresion de dificultad y scoring) sobre la experiencia de autoevaluacion.
+
+## 12. Repositorio en GitHub
+
+El codigo y la documentacion del proyecto se publican en el siguiente repositorio remoto:
+
+- **URL:** https://github.com/Dafafi63f/Escape-Room.git
+
+Para obtener una copia local:
+
+```text
+git clone https://github.com/Dafafi63f/Escape-Room.git
+```
+
+Para subir cambios, GitHub requiere autenticacion mediante **Personal Access Token** (HTTPS) o una clave **SSH**. No incluyas nunca tokens, contrasenas ni claves privadas dentro de archivos versionados; usalas solo en el gestor de credenciales del sistema o en configuracion local no versionada.
