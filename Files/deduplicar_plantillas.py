@@ -10,8 +10,6 @@ Criterios:
 
 import json
 import re
-import shutil
-from datetime import datetime
 from difflib import SequenceMatcher
 from pathlib import Path
 from borrar_pycache import borrar_pycache_en_proyecto
@@ -19,7 +17,6 @@ from borrar_pycache import borrar_pycache_en_proyecto
 
 BASE = Path(__file__).resolve().parent.parent
 PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
-BACKUPS_DIR = BASE / "Backups"
 
 
 def norm(text: str) -> str:
@@ -88,11 +85,6 @@ def main() -> None:
     with PATH_PLANTILLAS.open("r", encoding="utf-8") as f:
         plantillas = json.load(f)
 
-    BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_path = BACKUPS_DIR / f"plantillas_pre_dedup_{ts}.json"
-    shutil.copy2(PATH_PLANTILLAS, backup_path)
-
     total_before = sum(len(v) for v in plantillas.values())
     exact_removed = 0
     similar_removed = 0
@@ -132,13 +124,11 @@ def main() -> None:
         f.write("\n")
 
     total_after = sum(len(v) for v in cleaned.values())
-    safe_backup_path = str(backup_path).encode("ascii", "replace").decode("ascii")
 
     print(f"Total antes: {total_before}")
     print(f"Total despues: {total_after}")
     print(f"Eliminadas exactas: {exact_removed}")
     print(f"Eliminadas muy similares: {similar_removed}")
-    print(f"Backup: {safe_backup_path}")
 
 
 if __name__ == "__main__":

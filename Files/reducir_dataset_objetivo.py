@@ -12,9 +12,7 @@ Uso:
 import argparse
 import csv
 import re
-import shutil
 from collections import defaultdict
-from datetime import datetime
 from pathlib import Path
 from difflib import SequenceMatcher
 from utils_orden_temas import cargar_orden_temas
@@ -24,7 +22,6 @@ from borrar_pycache import borrar_pycache_en_proyecto
 
 BASE = Path(__file__).resolve().parent.parent
 PATH_PREGUNTAS = BASE / "Data" / "Preguntas.csv"
-BACKUP_DIR = BASE / "Data" / "backups"
 
 
 def normalize_text(text: str) -> str:
@@ -237,14 +234,6 @@ def main() -> None:
 
     output_path = PATH_PREGUNTAS if args.inplace else (BASE / args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    if args.inplace:
-        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_path = BACKUP_DIR / f"Preguntas_backup_{stamp}.csv"
-        shutil.copy2(PATH_PREGUNTAS, backup_path)
-        safe_backup_path = str(backup_path).encode("ascii", "replace").decode("ascii")
-        print(f"Backup creado: {safe_backup_path}")
 
     guardar_filas_csv(fieldnames, reduced, output_path)
 

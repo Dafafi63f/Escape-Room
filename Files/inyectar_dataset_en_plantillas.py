@@ -7,8 +7,6 @@ las plantillas existentes y evitando duplicados exactos.
 
 import csv
 import json
-import shutil
-from datetime import datetime
 from pathlib import Path
 from borrar_pycache import borrar_pycache_en_proyecto
 
@@ -16,7 +14,6 @@ from borrar_pycache import borrar_pycache_en_proyecto
 BASE = Path(__file__).resolve().parent.parent
 PATH_PREGUNTAS = BASE / "Data" / "Preguntas.csv"
 PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
-BACKUPS_DIR = BASE / "Backups"
 
 
 def norm(text: str) -> str:
@@ -103,11 +100,6 @@ def main() -> None:
         if key_from_row(r) not in final_keys:
             missing_from_dataset += 1
 
-    BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_path = BACKUPS_DIR / f"plantillas_backup_{ts}.json"
-    shutil.copy2(PATH_PLANTILLAS, backup_path)
-
     with PATH_PLANTILLAS.open("w", encoding="utf-8") as f:
         json.dump(plantillas, f, ensure_ascii=False, indent=2)
         f.write("\n")
@@ -117,8 +109,6 @@ def main() -> None:
     print(f"Ya presentes: {already_present}")
     print(f"Temas creados en plantillas: {missing_topic}")
     print(f"Faltantes tras inyección: {missing_from_dataset}")
-    safe_backup_path = str(backup_path).encode("ascii", "replace").decode("ascii")
-    print(f"Backup plantillas: {safe_backup_path}")
 
 
 if __name__ == "__main__":

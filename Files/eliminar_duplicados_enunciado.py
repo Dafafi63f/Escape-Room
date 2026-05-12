@@ -24,9 +24,7 @@ import argparse
 import csv
 import json
 import random
-import shutil
 from collections import defaultdict
-from datetime import datetime
 from pathlib import Path
 from utils_dataset_csv import fila_pregunta, guardar_filas_csv, ordenar_filas_por_tema_y_id, renumerar_ids
 from utils_texto import normalizar_basico
@@ -36,7 +34,6 @@ from borrar_pycache import borrar_pycache_en_proyecto
 BASE = Path(__file__).resolve().parent.parent
 PATH_PREGUNTAS = BASE / "Data" / "Preguntas.csv"
 PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
-BACKUP_DIR = BASE / "Backups"
 
 
 def normalizar_enunciado(texto: str) -> str:
@@ -131,7 +128,7 @@ def main() -> None:
     parser.add_argument(
         "--inplace",
         action="store_true",
-        help="Sobrescribe Data/Preguntas.csv (creando backup en Backups/).",
+        help="Sobrescribe Data/Preguntas.csv.",
     )
     parser.add_argument(
         "--output",
@@ -226,13 +223,6 @@ def main() -> None:
 
     output_path = PATH_PREGUNTAS if args.inplace else (BASE / args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    if args.inplace:
-        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_path = BACKUP_DIR / f"Preguntas_backup_dedup_enunciado_{stamp}.csv"
-        shutil.copy2(PATH_PREGUNTAS, backup_path)
-        print(f"Backup creado: {backup_path}")
 
     guardar_filas_csv(fieldnames, filas, output_path)
 

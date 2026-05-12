@@ -425,8 +425,6 @@ Esta seccion resume los ficheros relevantes del codigo y de los datos para que l
 | `plantillas.json` | Plantillas por materia para generar o sustituir preguntas en los scripts de mantenimiento y balanceo. |
 | `Historic_qualificacions_MatCAD_completo.csv` | Tabla historica de qualificacions (CSV) para analisis estadistico auxiliar. |
 
-Los scripts de balanceo o deduplicacion pueden crear copias de seguridad bajo `Backups/` cuando se invocan con opciones que lo indican; esa carpeta no es parte fija del repositorio si esta vacia o ignorada.
-
 ### 14.2 Objetivos de balanceo (`Files/objetivos_balanceo.py`)
 
 El tamano objetivo del banco tras el pipeline completo es **`TARGET_TOTAL_PREGUNTAS = 400`**. A partir de ahi se derivan, con las 40 materias del listado:
@@ -459,7 +457,7 @@ El tamano objetivo del banco tras el pipeline completo es **`TARGET_TOTAL_PREGUN
 | `balancear_dificultad_global.py` | Equilibra `Facil` / `Media` / `Dificil` segun el total de filas. |
 | `balancear_correctas.py` | Permuta opciones para equilibrar la columna `Correcta`. |
 | `eliminar_duplicados.py` | Elimina o sustituye duplicados exactos (mismo enunciado y opciones). |
-| `eliminar_duplicados_enunciado.py` | Duplicados por texto de pregunta; opcion `--inplace` y respaldo en `Backups/`. |
+| `eliminar_duplicados_enunciado.py` | Duplicados por texto de pregunta; opcion `--inplace` para sobrescribir el CSV. |
 | `reducir_dataset_objetivo.py` | Reduce el dataset a un total objetivo con criterios de diversidad. |
 | `crear_borrar_preguntas.py` | Anade o elimina preguntas desde plantillas (CLI). |
 | `utils_puntuacion_materia.py` | Keywords por Id de materia y `puntuar_texto_completo` usados por `balancear_dataset.py` para priorizar eliminaciones. |
