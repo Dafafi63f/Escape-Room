@@ -10,7 +10,7 @@ import re
 from collections import defaultdict
 from objetivos_balanceo import preguntas_por_materia
 from utils_orden_temas import cargar_orden_temas
-from utils_dataset_csv import guardar_filas_csv
+from utils_dataset_csv import fila_pregunta, guardar_filas_csv
 from borrar_pycache import borrar_pycache_en_proyecto
 
 PATH_PREGUNTAS = "Data/Preguntas.csv"
@@ -134,8 +134,20 @@ def main():
             for g in generadas:
                 max_id += 1
                 claves_existentes.add((g["Pregunta"], g["A"], g["B"], g["C"], g["D"]))
-                nuevas_filas.append({"Id": str(max_id), "Pregunta": g["Pregunta"], "Materia": tema, "Dificultad": g["Dificultad"],
-                                    "Tipo": "Teoria", "A": g["A"], "B": g["B"], "C": g["C"], "D": g["D"], "Correcta": g["Correcta"]})
+                nuevas_filas.append(
+                    fila_pregunta(
+                        id_=max_id,
+                        materia=tema,
+                        dificultad=g["Dificultad"],
+                        tipo="Teoria",
+                        pregunta=g["Pregunta"],
+                        a=g["A"],
+                        b=g["B"],
+                        c=g["C"],
+                        d=g["D"],
+                        correcta=g["Correcta"],
+                    )
+                )
 
         # ¿Necesitamos más Calculo? Eliminar Teoria, añadir Calculo
         elif n_c < TARGET_POR_TIPO and n_t > TARGET_POR_TIPO:
@@ -149,8 +161,20 @@ def main():
             for g in generadas:
                 max_id += 1
                 claves_existentes.add((g["Pregunta"], g["A"], g["B"], g["C"], g["D"]))
-                nuevas_filas.append({"Id": str(max_id), "Pregunta": g["Pregunta"], "Materia": tema, "Dificultad": g["Dificultad"],
-                                    "Tipo": "Calculo", "A": g["A"], "B": g["B"], "C": g["C"], "D": g["D"], "Correcta": g["Correcta"]})
+                nuevas_filas.append(
+                    fila_pregunta(
+                        id_=max_id,
+                        materia=tema,
+                        dificultad=g["Dificultad"],
+                        tipo="Calculo",
+                        pregunta=g["Pregunta"],
+                        a=g["A"],
+                        b=g["B"],
+                        c=g["C"],
+                        d=g["D"],
+                        correcta=g["Correcta"],
+                    )
+                )
 
     filas = [r for i, r in enumerate(rows) if i not in indices_eliminar] + nuevas_filas
 

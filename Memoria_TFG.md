@@ -79,7 +79,7 @@ En esta iteracion se han aplicado cambios concretos sobre el modelo de materias 
 - Se ha reforzado la unicidad de combinaciones `(Grupo, Nivel, Curso, Semestre)` para evitar secuencias repetidas.
 - Se han consolidado 10 grupos tematicos globales, asignando cada materia a una sola tematica.
 - Se han realizado ajustes de coherencia en grupos y niveles para reflejar simultaneidad o progresion cuando correspondia.
-- El banco `Data/Preguntas.csv` queda definido con **400** preguntas, columna **`Materia`** (no `Tema`) y cabecera estable; los scripts en `Files/` comparten objetivos de balanceo (`objetivos_balanceo.py`) y escritura canonica del CSV (`utils_dataset_csv.py`).
+- El banco `Data/Preguntas.csv` queda definido con **400** preguntas, columna **`Materia`** (no `Tema`) y **10 columnas** (`Id`, `Materia`, `Dificultad`, `Tipo`, `Pregunta`, `A`…`D`, `Correcta`); el resto de metadatos academicos sale de `listado_materias.csv` al cargar o al guardar con `utils_dataset_csv.guardar_filas_csv`.
 
 En la aplicacion del quiz (`Juego/juego_cuestionario.py`):
 
@@ -414,13 +414,13 @@ Para subir cambios, GitHub requiere autenticacion mediante **Personal Access Tok
 
 ## 14. Estructura del repositorio, `Data/` y scripts (`Files/`)
 
-Esta seccion resume los ficheros relevantes del codigo y de los datos para que la memoria coincida con el estado actual del proyecto (400 preguntas, columna `Materia`, pipeline de balanceo en Python).
+Esta seccion resume los ficheros relevantes del codigo y de los datos para que la memoria coincida con el estado actual del proyecto (400 preguntas, CSV minimo de **10 columnas** mas `listado_materias.csv`, pipeline de balanceo en Python).
 
 ### 14.1 Carpeta `Data/`
 
 | Fichero | Rol |
 |---------|-----|
-| `Preguntas.csv` | Banco principal del cuestionario: **400** preguntas, separador `;`, codificacion UTF-8. Cabecera canonica: `Id`;`Pregunta`;`Materia`;`Dificultad`;`Tipo`;`A`;`B`;`C`;`D`;`Correcta`. |
+| `Preguntas.csv` | Banco principal: **400** preguntas, separador `;`, UTF-8. **10 columnas** en orden: `Id`;`Materia`;`Dificultad`;`Tipo`;`Pregunta`;`A`;`B`;`C`;`D`;`Correcta`. Grupo, nivel, curso, semestre, tematica del grado e identificador de catalogo **no** se duplican aqui: vienen de `listado_materias.csv` unido por `Materia`. La complejidad intrinseca de partida (`Nivel` del listado + `Dificultad` de la pregunta) se calcula en el juego y en `utils_dataset_csv.complejidad_global_valor` sin columna propia en el CSV. |
 | `listado_materias.csv` | **40** materias del grado con columnas `Id`, `Materia`, `Grupo`, `Nivel`, `Curso`, `Semestre`, `Tematica` (y metadatos usados por el juego). |
 | `plantillas.json` | Plantillas por materia para generar o sustituir preguntas en los scripts de mantenimiento y balanceo. |
 | `Historic_qualificacions_MatCAD_completo.csv` | Tabla historica de qualificacions (CSV) para analisis estadistico auxiliar. |
@@ -442,7 +442,7 @@ El tamano objetivo del banco tras el pipeline completo es **`TARGET_TOTAL_PREGUN
 
 | Script | Funcion resumida |
 |--------|------------------|
-| `utils_dataset_csv.py` | Lectura/escritura del CSV con orden de columnas fijo, `materia_de_fila` (compatibilidad `Tema`), ordenacion por listado. |
+| `utils_dataset_csv.py` | Lectura/escritura CSV, `COLUMNAS_PREGUNTAS`, `fila_pregunta`, `materia_de_fila`, comprobacion interna con metadatos del listado al guardar, ordenacion por listado. |
 | `utils_orden_temas.py` | Carga el orden de materias desde `listado_materias.csv`. |
 | `utils_texto.py` | Normalizacion de texto (p. ej. deduplicacion por enunciado). |
 | `objetivos_balanceo.py` | Constantes y funciones de objetivos numericos del pipeline (400 preguntas). |
@@ -461,13 +461,10 @@ El tamano objetivo del banco tras el pipeline completo es **`TARGET_TOTAL_PREGUN
 | `eliminar_duplicados_enunciado.py` | Duplicados por texto de pregunta; opcion `--inplace` y respaldo en `Backups/`. |
 | `reducir_dataset_objetivo.py` | Reduce el dataset a un total objetivo con criterios de diversidad. |
 | `crear_borrar_preguntas.py` | Anade o elimina preguntas desde plantillas (CLI). |
-| `corregir_temas_semantica.py` | Sugiere y aplica cambios de `Materia` por heuristica de palabras clave. |
-| `contextualizar_preguntas.py` | Ajustes contextuales del texto de preguntas. |
+| `utils_puntuacion_materia.py` | Keywords por Id de materia y `puntuar_texto_completo` usados por `balancear_dataset.py` para priorizar eliminaciones. |
 | `inyectar_dataset_en_plantillas.py` | Vuelca preguntas del CSV en `plantillas.json` sin duplicar entradas. |
 | `revisar_plantillas.py` | Comprueba cobertura entre plantillas y listado de materias. |
 | `deduplicar_plantillas.py` | Deduplicacion dentro de `plantillas.json`. |
-| `arreglar_preguntas_dirigidas.py` | Correcciones puntuales sobre el CSV (ruta configurable en el propio script). |
-| `listado_materias.py` | Utilidad para generar o revisar el CSV de materias. |
 | `borrar_pycache.py` | Limpieza de carpetas `__pycache__` tras ejecuciones. |
 
 ### 14.4 Juego y empaquetado (`Juego/`)
@@ -480,4 +477,4 @@ El tamano objetivo del banco tras el pipeline completo es **`TARGET_TOTAL_PREGUN
 
 ### 14.5 Coherencia con el modelo de datos del TFG
 
-Las secciones 4 y 6 proponen columnas futuras (`Materias_relacionadas`, `Prerequisitos`). El CSV actual **no** las incluye aun; el juego y los scripts trabajan con el esquema de la tabla de la seccion 14.1. La columna unica de disciplina es **`Materia`**, alineada con `listado_materias.csv`.
+Las secciones 4 y 6 proponen columnas futuras (`Materias_relacionadas`, `Prerequisitos`). El CSV actual **no** las incluye aun; el esquema vigente es el de la tabla 14.1 (**10 columnas** en `Preguntas.csv`, metadatos curriculares solo en `listado_materias.csv`). La columna unica de disciplina en el banco de preguntas es **`Materia`**, alineada con `listado_materias.csv`.

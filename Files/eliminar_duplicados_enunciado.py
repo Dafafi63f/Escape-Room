@@ -25,7 +25,7 @@ import shutil
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from utils_dataset_csv import guardar_filas_csv, ordenar_filas_por_tema_y_id, renumerar_ids
+from utils_dataset_csv import fila_pregunta, guardar_filas_csv, ordenar_filas_por_tema_y_id, renumerar_ids
 from utils_texto import normalizar_basico
 from borrar_pycache import borrar_pycache_en_proyecto
 
@@ -190,18 +190,18 @@ def main() -> None:
             materia, plantillas, enunciados_existentes, bloques_existentes
         )
         if reemplazo:
-            filas[idx] = {
-                "Id": fila.get("Id", ""),
-                "Pregunta": reemplazo["Pregunta"],
-                "Materia": materia,
-                "Dificultad": reemplazo["Dificultad"],
-                "Tipo": reemplazo["Tipo"],
-                "A": reemplazo["A"],
-                "B": reemplazo["B"],
-                "C": reemplazo["C"],
-                "D": reemplazo["D"],
-                "Correcta": reemplazo["Correcta"],
-            }
+            filas[idx] = fila_pregunta(
+                id_=fila.get("Id", ""),
+                materia=materia,
+                dificultad=reemplazo["Dificultad"],
+                tipo=reemplazo["Tipo"],
+                pregunta=reemplazo["Pregunta"],
+                a=reemplazo["A"],
+                b=reemplazo["B"],
+                c=reemplazo["C"],
+                d=reemplazo["D"],
+                correcta=reemplazo["Correcta"],
+            )
             enunciados_existentes.add(normalizar_enunciado(reemplazo["Pregunta"]))
             bloques_existentes.add(
                 (

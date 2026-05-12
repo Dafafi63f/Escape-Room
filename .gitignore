@@ -1,2 +1,4 @@
 ﻿github.txt
 
+__pycache__/
+*.py[cod]

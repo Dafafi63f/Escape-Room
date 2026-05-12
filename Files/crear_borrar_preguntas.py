@@ -13,7 +13,7 @@ import random
 import sys
 from pathlib import Path
 from utils_orden_temas import cargar_orden_temas
-from utils_dataset_csv import guardar_filas_csv, ordenar_filas_por_tema_y_id, renumerar_ids
+from utils_dataset_csv import fila_pregunta, guardar_filas_csv, ordenar_filas_por_tema_y_id, renumerar_ids
 from borrar_pycache import borrar_pycache_en_proyecto
 
 # Rutas relativas al directorio del proyecto
@@ -139,15 +139,20 @@ def crear_preguntas(cantidad):
 
     max_id = max(int(f["Id"]) for f in filas)
     for i, p in enumerate(nuevas):
-        filas.append({
-            "Id": str(max_id + 1 + i),
-            "Pregunta": p["Pregunta"],
-            "Materia": p["Materia"],
-            "Dificultad": p["Dificultad"],
-            "Tipo": p["Tipo"],
-            "A": p["A"], "B": p["B"], "C": p["C"], "D": p["D"],
-            "Correcta": p["Correcta"],
-        })
+        filas.append(
+            fila_pregunta(
+                id_=max_id + 1 + i,
+                materia=p["Materia"],
+                dificultad=p["Dificultad"],
+                tipo=p["Tipo"],
+                pregunta=p["Pregunta"],
+                a=p["A"],
+                b=p["B"],
+                c=p["C"],
+                d=p["D"],
+                correcta=p["Correcta"],
+            )
+        )
 
     filas = ordenar_filas_por_tema_y_id(filas)
     renumerar_ids(filas)

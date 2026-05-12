@@ -7,6 +7,8 @@ from pathlib import Path
 import pandas as pd
 
 BASE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE / "Files"))
+from utils_dataset_csv import complejidad_global_valor, mapa_metadatos_por_materia  # noqa: E402
 
 # Evitar UnicodeEncodeError en Windows al imprimir caracteres especiales
 if sys.platform == "win32":
@@ -61,20 +63,66 @@ if errores_coherencia:
 else:
     print(f"\n4. Coherencia Correcta <-> opciones: OK")
 
-# 5. Campos obligatorios no vacíos
-campos_obligatorios = ["Pregunta", "Materia", "Dificultad", "Tipo", "A", "B", "C", "D"]
+# 5. Campos obligatorios no vacíos (solo columnas del CSV; metadatos vienen del listado)
+campos_obligatorios = [
+    "Pregunta",
+    "Materia",
+    "Dificultad",
+    "Tipo",
+    "A",
+    "B",
+    "C",
+    "D",
+]
 vacios = {}
 for col in campos_obligatorios:
     if col in df.columns:
         n_vacios = df[col].isna() | (df[col].astype(str).str.strip() == "")
         vacios[col] = n_vacios.sum()
+    else:
+        vacios[col] = len(df)
 if any(v > 0 for v in vacios.values()):
-    print(f"\n5. Campos vacíos:")
+    print(f"\n5. Campos vacíos o ausentes:")
     for col, n in vacios.items():
         if n > 0:
             print(f"   - {col}: {n} vacíos")
 else:
     print(f"\n5. Campos obligatorios: OK (ninguno vacío)")
+
+# 5b. Complejidad global (derivada): Nivel del listado + Dificultad de la fila (misma formula que el juego)
+mapa = mapa_metadatos_por_materia(BASE / "Data" / "listado_materias.csv")
+incoherentes = []
+materias_desconocidas = []
+if "Dificultad" in df.columns and "Materia" in df.columns:
+    for _, row in df.iterrows():
+        mat = str(row.get("Materia", "") or "").strip()
+        meta = mapa.get(mat)
+        if not meta:
+            materias_desconocidas.append(row.get("Id"))
+            continue
+        try:
+            esperado = complejidad_global_valor(
+                str(meta.get("Nivel", "")), str(row.get("Dificultad", ""))
+            )
+        except (TypeError, ValueError):
+            incoherentes.append(row.get("Id"))
+            continue
+        if "ComplejidadGlobal" in df.columns and str(row.get("ComplejidadGlobal", "")).strip() != "":
+            try:
+                actual = int(float(str(row.get("ComplejidadGlobal", "")).strip() or "0"))
+                if esperado != actual:
+                    incoherentes.append(row.get("Id"))
+            except ValueError:
+                incoherentes.append(row.get("Id"))
+if materias_desconocidas:
+    print(
+        f"\n5b. Materia sin entrada en listado_materias.csv: {len(materias_desconocidas)} filas "
+        f"(muestra Id): {materias_desconocidas[:8]}"
+    )
+if incoherentes:
+    print(f"\n5b. ComplejidadGlobal en CSV no coincide con derivada (muestra Id): {incoherentes[:8]}")
+if not materias_desconocidas and not incoherentes:
+    print("\n5b. Materias reconocibles en listado y complejidad derivada: OK")
 
 # 6. Valores esperados en Dificultad y Tipo
 dificultades_validas = ["Facil", "Media", "Dificil"]

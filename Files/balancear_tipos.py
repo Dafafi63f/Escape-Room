@@ -10,7 +10,7 @@ import re
 from collections import defaultdict
 from objetivos_balanceo import preguntas_por_tipo_global
 from utils_orden_temas import cargar_orden_temas
-from utils_dataset_csv import guardar_filas_csv
+from utils_dataset_csv import fila_pregunta, guardar_filas_csv
 from borrar_pycache import borrar_pycache_en_proyecto
 
 PATH_PREGUNTAS = "Data/Preguntas.csv"
@@ -132,15 +132,20 @@ def main():
                 claves_existentes.add((pregunta, a, b, c, d))
 
                 max_id += 1
-                nuevas_filas.append({
-                    "Id": str(max_id),
-                    "Pregunta": pregunta,
-                    "Materia": tema,
-                    "Dificultad": t.get("dificultad", "Media"),
-                    "Tipo": tipo_a_añadir,
-                    "A": a, "B": b, "C": c, "D": d,
-                    "Correcta": t["correcta"],
-                })
+                nuevas_filas.append(
+                    fila_pregunta(
+                        id_=max_id,
+                        materia=tema,
+                        dificultad=t.get("dificultad", "Media"),
+                        tipo=tipo_a_añadir,
+                        pregunta=pregunta,
+                        a=a,
+                        b=b,
+                        c=c,
+                        d=d,
+                        correcta=t["correcta"],
+                    )
+                )
 
         # Si faltan
         faltan = n_a_añadir - len(nuevas_filas) if tipo_a_añadir else 0
@@ -158,15 +163,20 @@ def main():
                     if clave not in claves_existentes:
                         claves_existentes.add(clave)
                         max_id += 1
-                        nuevas_filas.append({
-                            "Id": str(max_id),
-                            "Pregunta": pregunta,
-                            "Materia": tema,
-                            "Dificultad": t.get("dificultad", "Media"),
-                            "Tipo": tipo_a_añadir,
-                            "A": a, "B": b, "C": c, "D": d,
-                            "Correcta": t["correcta"],
-                        })
+                        nuevas_filas.append(
+                            fila_pregunta(
+                                id_=max_id,
+                                materia=tema,
+                                dificultad=t.get("dificultad", "Media"),
+                                tipo=tipo_a_añadir,
+                                pregunta=pregunta,
+                                a=a,
+                                b=b,
+                                c=c,
+                                d=d,
+                                correcta=t["correcta"],
+                            )
+                        )
                         faltan -= 1
                 idx_tema += 1
                 if idx_tema > len(temas) * 5:

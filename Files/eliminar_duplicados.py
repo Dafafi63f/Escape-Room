@@ -8,7 +8,7 @@ son idénticos.
 import csv
 import json
 import random
-from utils_dataset_csv import guardar_filas_csv, ordenar_filas_por_tema_y_id, renumerar_ids
+from utils_dataset_csv import fila_pregunta, guardar_filas_csv, ordenar_filas_por_tema_y_id, renumerar_ids
 from borrar_pycache import borrar_pycache_en_proyecto
 
 PATH_PREGUNTAS = "Data/Preguntas.csv"
@@ -120,15 +120,18 @@ def main():
         materia = (fila.get("Materia") or fila.get("Tema") or "").strip()
         reemplazo = generar_reemplazo(materia, plantillas, claves_existentes)
         if reemplazo:
-            filas[idx] = {
-                "Id": fila["Id"],
-                "Pregunta": reemplazo["Pregunta"],
-                "Materia": materia,
-                "Dificultad": reemplazo["Dificultad"],
-                "Tipo": reemplazo["Tipo"],
-                "A": reemplazo["A"], "B": reemplazo["B"], "C": reemplazo["C"], "D": reemplazo["D"],
-                "Correcta": reemplazo["Correcta"],
-            }
+            filas[idx] = fila_pregunta(
+                id_=fila["Id"],
+                materia=materia,
+                dificultad=reemplazo["Dificultad"],
+                tipo=reemplazo["Tipo"],
+                pregunta=reemplazo["Pregunta"],
+                a=reemplazo["A"],
+                b=reemplazo["B"],
+                c=reemplazo["C"],
+                d=reemplazo["D"],
+                correcta=reemplazo["Correcta"],
+            )
             clave_nueva = (reemplazo["Pregunta"], reemplazo["A"], reemplazo["B"], reemplazo["C"], reemplazo["D"])
             claves_existentes.add(clave_nueva)
             reemplazadas += 1

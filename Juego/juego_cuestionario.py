@@ -162,6 +162,11 @@ def cargar_materias(path_csv: Path) -> dict[str, dict[str, str]]:
 
 
 def cargar_preguntas(path_csv: Path, materias_meta: dict[str, dict[str, str]]) -> list[Pregunta]:
+    """
+    Lee el CSV de preguntas. Esquema esperado: Id, Materia, Dificultad, Tipo, Pregunta, A, B, C, D, Correcta.
+    Tematica, grupo, nivel, curso y semestre se obtienen de `materias_meta` (listado_materias.csv);
+    si el CSV incluyera esas columnas (formato antiguo), los valores no vacíos del CSV prevalecen.
+    """
     if not path_csv.exists():
         raise FileNotFoundError(f"No se encontró el dataset: {path_csv}")
 
@@ -173,16 +178,22 @@ def cargar_preguntas(path_csv: Path, materias_meta: dict[str, dict[str, str]]) -
             if correcta not in {"A", "B", "C", "D"}:
                 continue
             materia = (row.get("Materia") or row.get("Tema") or "Sin materia").strip()
+            mm = materias_meta.get(materia, {})
+
+            def _campo(csv_key: str, meta_key: str) -> str:
+                v = (row.get(csv_key) or "").strip()
+                return v if v else mm.get(meta_key, "")
+
             pregunta = Pregunta(
                 texto=(row.get("Pregunta") or "").strip(),
                 materia=materia,
-                tematica=materias_meta.get(materia, {}).get("tematica", ""),
+                tematica=_campo("Tematica", "tematica"),
                 dificultad=(row.get("Dificultad") or "Desconocida").strip(),
                 tipo=(row.get("Tipo") or "General").strip(),
-                grupo=materias_meta.get(materia, {}).get("grupo", ""),
-                nivel=materias_meta.get(materia, {}).get("nivel", ""),
-                curso=materias_meta.get(materia, {}).get("curso", ""),
-                semestre=materias_meta.get(materia, {}).get("semestre", ""),
+                grupo=_campo("Grupo", "grupo"),
+                nivel=_campo("Nivel", "nivel"),
+                curso=_campo("Curso", "curso"),
+                semestre=_campo("Semestre", "semestre"),
                 opciones={
                     "A": (row.get("A") or "").strip(),
                     "B": (row.get("B") or "").strip(),

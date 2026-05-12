@@ -10,7 +10,7 @@ import json
 from collections import defaultdict
 from objetivos_balanceo import objetivos_dificultad_por_totales
 from utils_orden_temas import cargar_orden_temas
-from utils_dataset_csv import guardar_filas_csv
+from utils_dataset_csv import fila_pregunta, guardar_filas_csv
 from borrar_pycache import borrar_pycache_en_proyecto
 
 PATH_PREGUNTAS = "Data/Preguntas.csv"
@@ -133,15 +133,20 @@ def main():
                 pregunta = pregunta.rstrip() + " (variante)"
             claves_existentes.add((pregunta, a, b, c, d))
             max_id += 1
-            nuevas_filas.append({
-                "Id": str(max_id),
-                "Pregunta": pregunta,
-                "Materia": tema,
-                "Dificultad": dificultad,
-                "Tipo": t.get("tipo", "Teoria"),
-                "A": a, "B": b, "C": c, "D": d,
-                "Correcta": t["correcta"],
-            })
+            nuevas_filas.append(
+                fila_pregunta(
+                    id_=max_id,
+                    materia=tema,
+                    dificultad=dificultad,
+                    tipo=t.get("tipo", "Teoria"),
+                    pregunta=pregunta,
+                    a=a,
+                    b=b,
+                    c=c,
+                    d=d,
+                    correcta=t["correcta"],
+                )
+            )
             añadidas += 1
             idx_tema += 1
             if idx_tema > len(temas_con_plantillas) * 20:
@@ -174,15 +179,20 @@ def main():
                     pregunta = pregunta.rstrip() + " (variante)"
                 claves_existentes.add((pregunta, a, b, c, d))
                 max_id += 1
-                nuevas_filas.append({
-                    "Id": str(max_id),
-                    "Pregunta": pregunta,
-                    "Materia": tema,
-                    "Dificultad": dificultad,
-                    "Tipo": t.get("tipo", "Teoria"),
-                    "A": a, "B": b, "C": c, "D": d,
-                    "Correcta": t["correcta"],
-                })
+                nuevas_filas.append(
+                    fila_pregunta(
+                        id_=max_id,
+                        materia=tema,
+                        dificultad=dificultad,
+                        tipo=t.get("tipo", "Teoria"),
+                        pregunta=pregunta,
+                        a=a,
+                        b=b,
+                        c=c,
+                        d=d,
+                        correcta=t["correcta"],
+                    )
+                )
                 añadidas += 1
         # Si faltan, añadir a cualquier tema con plantillas
         if añadidas < cantidad:

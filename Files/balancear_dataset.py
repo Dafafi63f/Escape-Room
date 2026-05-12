@@ -1,30 +1,20 @@
 # -*- coding: utf-8 -*-
 """
 Balancea el dataset: elimina preguntas de temas con exceso (priorizando las de menor
-encaje semántico) y genera preguntas nuevas desde plantillas para temas con déficit.
+encaje semántico, ver `utils_puntuacion_materia.py`) y genera preguntas nuevas desde plantillas
+para temas con déficit.
 Objetivo: mismo número de preguntas por cada materia del listado (400 en total; ver `objetivos_balanceo.py`).
 """
 
 import csv
 import json
 import re
-import sys
 from collections import defaultdict
 from objetivos_balanceo import TARGET_TOTAL_PREGUNTAS, preguntas_por_materia
 from utils_orden_temas import cargar_orden_temas
-from utils_dataset_csv import guardar_filas_csv
+from utils_dataset_csv import fila_pregunta, guardar_filas_csv
+from utils_puntuacion_materia import MATERIA_TO_ID, MATERIAS, puntuar_texto_completo
 from borrar_pycache import borrar_pycache_en_proyecto
-
-# Añadir ruta para importar corregir_temas_semantica
-sys.path.insert(0, ".")
-from importlib.util import spec_from_file_location, module_from_spec
-_spec = spec_from_file_location("corr", "Files/corregir_temas_semantica.py")
-_corr = module_from_spec(_spec)
-_spec.loader.exec_module(_corr)
-
-MATERIAS = _corr.MATERIAS
-MATERIA_TO_ID = _corr.MATERIA_TO_ID
-puntuar_texto_completo = _corr.puntuar_texto_completo
 
 TARGET = preguntas_por_materia()
 TARGET_TOTAL = TARGET_TOTAL_PREGUNTAS
@@ -214,15 +204,20 @@ def main():
         generadas = generar_preguntas_desde_plantillas(tema, deficit, plantillas)
         for g in generadas:
             max_id += 1
-            nuevas_filas.append({
-                "Id": str(max_id),
-                "Pregunta": g["Pregunta"],
-                "Materia": g["Materia"],
-                "Dificultad": g["Dificultad"],
-                "Tipo": g["Tipo"],
-                "A": g["A"], "B": g["B"], "C": g["C"], "D": g["D"],
-                "Correcta": g["Correcta"],
-            })
+            nuevas_filas.append(
+                fila_pregunta(
+                    id_=max_id,
+                    materia=g["Materia"],
+                    dificultad=g["Dificultad"],
+                    tipo=g["Tipo"],
+                    pregunta=g["Pregunta"],
+                    a=g["A"],
+                    b=g["B"],
+                    c=g["C"],
+                    d=g["D"],
+                    correcta=g["Correcta"],
+                )
+            )
 
     todas = filas_filtradas + nuevas_filas
 
@@ -248,15 +243,20 @@ def main():
                     if extra_añadidas >= faltan_total:
                         break
                     max_id += 1
-                    todas.append({
-                        "Id": str(max_id),
-                        "Pregunta": g["Pregunta"],
-                        "Materia": g["Materia"],
-                        "Dificultad": g["Dificultad"],
-                        "Tipo": g["Tipo"],
-                        "A": g["A"], "B": g["B"], "C": g["C"], "D": g["D"],
-                        "Correcta": g["Correcta"],
-                    })
+                    todas.append(
+                        fila_pregunta(
+                            id_=max_id,
+                            materia=g["Materia"],
+                            dificultad=g["Dificultad"],
+                            tipo=g["Tipo"],
+                            pregunta=g["Pregunta"],
+                            a=g["A"],
+                            b=g["B"],
+                            c=g["C"],
+                            d=g["D"],
+                            correcta=g["Correcta"],
+                        )
+                    )
                     extra_añadidas += 1
                     claves_existentes.add((g["Pregunta"], g["A"], g["B"], g["C"], g["D"]))
             idx_tema += 1
