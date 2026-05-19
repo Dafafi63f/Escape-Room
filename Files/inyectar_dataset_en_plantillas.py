@@ -3,6 +3,10 @@
 """
 Inyecta las preguntas actuales del dataset en plantillas.json, manteniendo
 las plantillas existentes y evitando duplicados exactos.
+
+Cada fila añadida lleva `"uso": "dataset_400"` para distinguirla del resto.
+Ejecutar tras cambiar `Preguntas.csv` para que el banco de plantillas siga
+siendo más amplio que el dataset publicado (véase `asegurar_plantillas_sobre_dataset.py`).
 """
 
 import csv

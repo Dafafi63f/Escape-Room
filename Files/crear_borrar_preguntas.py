@@ -6,7 +6,7 @@ Uso:
   python crear_borrar_preguntas.py borrar 30   -> borra 30 preguntas aleatorias
 
 Al terminar, el script ordena por listado+Id ligero; para el orden canónico completo
-del TFG ejecutar `reordenar_balance_por_materia.py` o `ordenar_dataset.py`.
+del TFG ejecutar `python Files/balance.py reordenar`.
 """
 
 import argparse

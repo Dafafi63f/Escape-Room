@@ -170,7 +170,7 @@ def ordenar_filas_por_tema_y_id(filas: list[dict]) -> list[dict]:
     No aplica el orden canónico completo del banco (bloques 5+5 Teoría/Cálculo,
     escalón TF…TM…TD / CF…CM…CD, reparto F/M/D por bloque de 10 ni ciclo ABCD).
     Tras editar el CSV con scripts de mantenimiento, conviene ejecutar
-    `reordenar_balance_por_materia.py` (o `ordenar_dataset.py`, que delega en él).
+    `python Files/balance.py reordenar`.
     """
     _, tema_rank = cargar_orden_temas()
     return sorted(

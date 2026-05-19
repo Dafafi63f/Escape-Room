@@ -6,11 +6,13 @@ Genera un informe detallado.
 
 import json
 from collections import defaultdict
+from objetivos_balanceo import plantillas_minimas_por_materia, preguntas_por_materia
 from utils_orden_temas import cargar_orden_temas
 from borrar_pycache import borrar_pycache_en_proyecto
 
 PATH_PLANTILLAS = "Data/plantillas.json"
-TARGET_POR_TEMA = 75
+TARGET_POR_TEMA = plantillas_minimas_por_materia()
+PREGUNTAS_DATASET_POR_TEMA = preguntas_por_materia()
 
 
 def expandir_variaciones(template):
@@ -101,10 +103,13 @@ def main():
         if n_calculo == 0 and tema in temas_materias:
             temas_sin_calculo.append(tema)
 
+        n_items = len(items)
+        ratio_ds = n_items / PREGUNTAS_DATASET_POR_TEMA if tema in temas_materias else 0
         estado = "OK" if generables >= TARGET_POR_TEMA else f"BAJO ({generables})"
         dup_str = f" [DUP:{duplicados}]" if duplicados else ""
+        ratio_str = f" | plant:{n_items:2} ({ratio_ds:.1f}×ds)" if tema in temas_materias else ""
         print(f"   {tema[:50]:<50} | gen:{n_general:2} dif:{n_dificil:2} calc:{n_calculo:2} | "
-              f"generables:~{generables:3} {estado}{dup_str}")
+              f"generables:~{generables:3} {estado}{ratio_str}{dup_str}")
 
     # 3. Resumen
     print("\n3. RESUMEN")

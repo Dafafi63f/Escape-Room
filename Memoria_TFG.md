@@ -420,9 +420,10 @@ Esta seccion resume los ficheros relevantes del codigo y de los datos para que l
 
 | Fichero | Rol |
 |---------|-----|
-| `Preguntas.csv` | Banco principal: **400** preguntas, separador `;`, UTF-8. **10 columnas** en orden: `Id`;`Materia`;`Dificultad`;`Tipo`;`Pregunta`;`A`;`B`;`C`;`D`;`Correcta`. Grupo, nivel, curso, semestre, tematica del grado e identificador de catalogo **no** se duplican aqui: vienen de `listado_materias.csv` unido por `Materia`. La complejidad intrinseca de partida (`Nivel` del listado + `Dificultad` de la pregunta) se calcula en el juego y en `utils_dataset_csv.complejidad_global_valor` sin columna propia en el CSV. **Orden de filas canónico:** materias en el orden del listado; por cada materia, **5 Teoría** seguidas de **5 Cálculo**; dentro de cada mitad, dificultad no decreciente (**Facil → Media → Dificil**, escalón TF…TM…TD y CF…CM…CD, con empate por `Id`); reparto global de dificultad **134 / 133 / 133**; `Correcta` en ciclo **A,B,C,D,…** según `(Id−1) mod 4`. Lo aplica `Files/reordenar_balance_por_materia.py` (invocado al final de `balanceo_completo.py` o vía `ordenar_dataset.py`). |
+| `Preguntas.csv` | Banco principal: **400** preguntas, separador `;`, UTF-8. **10 columnas** en orden: `Id`;`Materia`;`Dificultad`;`Tipo`;`Pregunta`;`A`;`B`;`C`;`D`;`Correcta`. Grupo, nivel, curso, semestre, tematica del grado e identificador de catalogo **no** se duplican aqui: vienen de `listado_materias.csv` unido por `Materia`. La complejidad intrinseca de partida (`Nivel` del listado + `Dificultad` de la pregunta) se calcula en el juego y en `utils_dataset_csv.complejidad_global_valor` sin columna propia en el CSV. **Orden de filas canónico:** materias en el orden del listado; por cada materia, **5 Teoría** seguidas de **5 Cálculo**; dentro de cada mitad, dificultad no decreciente (**Facil → Media → Dificil**, escalón TF…TM…TD y CF…CM…CD, con empate por `Id`); reparto global de dificultad **134 / 133 / 133**; `Correcta` en ciclo **A,B,C,D,…** según `(Id−1) mod 4`. Lo aplica `python Files/balance.py reordenar` (al final de `balance.py conservador` o `balance.py agresivo`). |
 | `listado_materias.csv` | **40** materias del grado con columnas `Id`, `Materia`, `Grupo`, `Nivel`, `Curso`, `Semestre`, `Tematica` (y metadatos usados por el juego). |
 | `plantillas.json` | Plantillas por materia para generar o sustituir preguntas en los scripts de mantenimiento y balanceo. |
+| `criterios_clasificacion_materia.csv` | Palabras clave y notas por materia; fuente de `utils_puntuacion_materia.py` (clasificación semántica en balance agresivo). |
 | `Historic_qualificacions_MatCAD_completo.csv` | Tabla historica de qualificacions (CSV) para analisis estadistico auxiliar. |
 
 ### 14.2 Objetivos de balanceo (`Files/objetivos_balanceo.py`)
@@ -434,7 +435,13 @@ El tamano objetivo del banco tras el pipeline completo es **`TARGET_TOTAL_PREGUN
 - **Por dificultad global:** reparto lo mas equilibrado en tres niveles (p. ej. 134 / 133 / 133 para 400 filas).
 - **Por respuesta correcta:** A, B, C y D lo mas equilibradas posible (100 cada una con 400 filas).
 
-`Files/balanceo_completo.py` ejecuta primero `eliminar_duplicados.py` una sola vez. Despues, en bucle (hasta un maximo de iteraciones), lanza en orden: `balancear_dataset.py`, `balancear_tipo_y_dificultad.py`, `balancear_tipos.py`, `balancear_dificultad_global.py` y `balancear_correctas.py`; comprueba los criterios y, si todo coincide, ejecuta **`reordenar_balance_por_materia.py`** una vez al final (orden canónico: listado de materias, bloques 5+5 Teoría/Cálculo, escalón TF…TM…TD / CF…CM…CD, triple F/M/D por bloque de 10 compatible con 134/133/133 global, `Id` 1…400 y permutación de opciones para el ciclo de `Correcta`). El script `ordenar_dataset.py` **delega** en `reordenar_balance_por_materia.py` para no duplicar lógica.
+**Clasificación por contenido:** `utils_clasificacion_pregunta.clasificar_pregunta(enunciado, A, B, C, D, correcta)` devuelve la mejor tripleta Materia + Tipo + Dificultad inferida solo del texto. `comparar_con_asignacion(fila)` contrasta con las columnas del CSV; la **Dificultad** del banco canónico sigue la escalera del bloque (F/M/D), por lo que la inferida es orientativa salvo contrastes fuertes (Facil vs Dificil).
+
+**`Files/balance.py`** es el punto único de entrada: `validar`, `ajustar`, `reordenar`, `corregir`, `conservador` (flujo habitual) y `agresivo`. Por defecto **`ajustar` y `conservador` regeneran** preguntas desde `plantillas.json`; no reetiquetan el mismo enunciado. `agresivo` añade `duplicados.py exacto` y `reordenar` completo.
+
+**`Files/duplicados.py`** centraliza la deduplicación: `revisar`, `plantillas`, `todo` (flujo recomendado), `exacto` y `enunciado`. Criterios compartidos en `utils_deduplicacion.py`.
+
+Scripts antiguos de balanceo y deduplicación (`balancear_*.py`, `balanceo_completo.py`, `ordenar_dataset.py`, `eliminar_duplicados*.py`, `deduplicar_plantillas.py`, etc.) se han **unificado** en `balance.py`, `dataset_pipeline.py` y `duplicados.py`; no deben invocarse por nombre antiguo.
 
 ### 14.3 Catalogo de scripts en `Files/`
 
@@ -444,29 +451,46 @@ El tamano objetivo del banco tras el pipeline completo es **`TARGET_TOTAL_PREGUN
 | `utils_orden_temas.py` | Carga el orden de materias desde `listado_materias.csv`. |
 | `utils_texto.py` | Normalizacion de texto (p. ej. deduplicacion por enunciado). |
 | `objetivos_balanceo.py` | Constantes y funciones de objetivos numericos del pipeline (400 preguntas). |
-| `reordenar_balance_por_materia.py` | **Orden canónico** del CSV: listado de materias, 5+5 Teoría/Cálculo, escalón TF…TM…TD / CF…CM…CD, reparto F/M/D por bloque de 10 (14+13+13 triples), `Id` 1…400, ciclo `Correcta` = (Id−1) mod 4. Opción `--explicar` imprime la lógica sin modificar el archivo. Expone `comprobar_orden_canonico_df` para validación. |
-| `ordenar_dataset.py` | Entrada de mantenimiento: delega en `reordenar_balance_por_materia.py` (mismo resultado que ejecutar ese script). |
+| `balance.py` | **CLI única de balance:** `validar`, `ajustar`, `reordenar`, `corregir`, `conservador`, `agresivo`. |
+| `balance_lib.py` | Validación, orden canónico (`reordenar`, `comprobar_orden_canonico_df`), `ajustar`, parches `corregir`. |
+| `dataset_pipeline.py` | Regeneración del dataset desde plantillas (materias, tipos, dificultad, correctas); `sustituir_filas_incoherentes`. |
 | `validar_csv.py` | Validacion de integridad del CSV de preguntas y del orden canónico. |
 | `revision_final.py` | Revision amplia: nulos, duplicados, distribuciones, orden canónico (`comprobar_orden_canonico_df`). |
 | `estadisticas_dataset.py` | Estadisticas del banco de preguntas. |
 | `estadisticas_historic_qualificacions.py` | Estadisticas sobre el CSV historico de qualificacions. |
-| `balanceo_completo.py` | Orquestacion del balanceo completo hasta criterios o tope de iteraciones. |
-| `balancear_dataset.py` | Equilibra el numero de preguntas por materia hacia el objetivo. |
-| `balancear_tipo_y_dificultad.py` | Ajusta tipo y dificultad dentro de cada materia. |
-| `balancear_tipos.py` | Equilibra `Teoria` / `Calculo` a nivel global. |
-| `balancear_dificultad_global.py` | Equilibra `Facil` / `Media` / `Dificil` segun el total de filas. |
-| `balancear_correctas.py` | Permuta opciones para equilibrar la columna `Correcta`. |
-| `eliminar_duplicados.py` | Elimina o sustituye duplicados exactos (mismo enunciado y opciones). |
-| `eliminar_duplicados_enunciado.py` | Duplicados por texto de pregunta; opcion `--inplace` para sobrescribir el CSV. |
+| `duplicados.py` | **CLI única de deduplicación:** `revisar`, `plantillas`, `todo`, `exacto`, `enunciado`. |
+| `duplicados_lib.py` | Lógica de revisión, dedup plantillas/dataset, exacto y enunciado. |
+| `utils_deduplicacion.py` | Criterios compartidos (similitud semántica, esqueletos, familias de plantilla). |
 | `reducir_dataset_objetivo.py` | Reduce el dataset a un total objetivo con criterios de diversidad. |
 | `crear_borrar_preguntas.py` | Anade o elimina preguntas desde plantillas (CLI). |
-| `utils_puntuacion_materia.py` | Keywords por Id de materia y `puntuar_texto_completo` usados por `balancear_dataset.py` para priorizar eliminaciones. |
+| `utils_puntuacion_materia.py` | Keywords por Id de materia (`puntuar_texto_completo`, `mejor_materia_por_texto`). |
+| `utils_clasificacion_pregunta.py` | **Clasificación unificada:** dado enunciado+opciones+correcta, infiere Materia, Tipo y Dificultad; `comparar_con_asignacion` detecta incoherencias. |
+| `clasificar_pregunta.py` | CLI: clasificar una pregunta, un Id o todo el dataset (`--solo-incoherentes`). |
+| `aplicar_clasificacion_optima.py` | Revisa las 400 filas: sustituye por regeneración desde plantillas cuando Materia/Tipo (o Dificultad con contraste fuerte) no encajan con el texto; ajusta 5+5 y reordena. |
+| `revisar_materia_contenido.py` | Variante de revisión/sustitución (dataset y/o `plantillas.json`); ver `aplicar_clasificacion_optima.py` para el flujo completo del banco. |
+| `aplicar_correcciones_materia.py` | Parches manuales puntuales (Ids concretos); uso excepcional tras revisión docente. |
 | `inyectar_dataset_en_plantillas.py` | Vuelca preguntas del CSV en `plantillas.json` sin duplicar entradas. |
 | `revisar_plantillas.py` | Comprueba cobertura entre plantillas y listado de materias. |
-| `deduplicar_plantillas.py` | Deduplicacion dentro de `plantillas.json`. |
+| `ampliar_plantillas.py` | Amplía el pool de plantillas; al final llama a `duplicados.py revisar`. |
+| `asegurar_plantillas_sobre_dataset.py` | Inyecta el dataset en plantillas y comprueba mínimos por materia. |
+| `exportar_criterios_clasificacion_materia.py` | Regenera columnas derivadas de `criterios_clasificacion_materia.csv`. |
 | `borrar_pycache.py` | Limpieza de carpetas `__pycache__` tras ejecuciones. |
 
-### 14.4 Juego y empaquetado (`Juego/`)
+### 14.4 Flujo de mantenimiento recomendado
+
+Tras editar preguntas o plantillas a mano:
+
+1. `python Files/duplicados.py revisar` — informe en consola (sin modificar archivos).
+2. `python Files/duplicados.py todo --dry-run` y, si conviene, `todo --inplace`.
+3. `python Files/aplicar_clasificacion_optima.py --dry-run` y `python Files/aplicar_clasificacion_optima.py --inplace` — coherencia Materia+Tipo+Dificultad por contenido (regeneración, no reetiquetado).
+4. `python Files/balance.py conservador` — ajuste numérico y orden canónico.
+5. `python Files/balance.py validar --detalle` — comprobación final.
+
+Informes de revisión: salida por consola (no hace falta guardar ficheros `.txt` en `Data/`).
+
+Coherencia metadatos↔texto: `clasificar_pregunta.py --dataset --solo-incoherentes` (solo lectura); sustitución automática del banco con `aplicar_clasificacion_optima.py --inplace`. Validaciones: `validar_csv.py`, `revision_final.py`. Recuperación fuerte: `balance.py agresivo`.
+
+### 14.5 Juego y empaquetado (`Juego/`)
 
 | Elemento | Descripcion |
 |----------|-------------|
@@ -474,6 +498,6 @@ El tamano objetivo del banco tras el pipeline completo es **`TARGET_TOTAL_PREGUN
 | `ranking_quiz.csv` | Fichero **generado al jugar** (persistencia de partidas); ruta por defecto en la carpeta `Juego/` al ejecutar el `.py`. |
 | `juego_cuestionario.spec`, `build_exe_onefile.ps1`, carpeta `build/` | Artefactos PyInstaller / script de construccion del ejecutable. |
 
-### 14.5 Coherencia con el modelo de datos del TFG
+### 14.6 Coherencia con el modelo de datos del TFG
 
 Las secciones 4 y 6 proponen columnas futuras (`Materias_relacionadas`, `Prerequisitos`). El CSV actual **no** las incluye aun; el esquema vigente es el de la tabla 14.1 (**10 columnas** en `Preguntas.csv`, metadatos curriculares solo en `listado_materias.csv`). La columna unica de disciplina en el banco de preguntas es **`Materia`**, alineada con `listado_materias.csv`.

@@ -4,7 +4,7 @@ Objetivos compartidos del pipeline de balanceo de `Data/Preguntas.csv`.
 
 El orden de filas canónico del CSV (materias según listado, ladder TF…TM…TD y
 CF…CM…CD, reparto global de dificultad y ciclo de `Correcta`) lo aplica
-`reordenar_balance_por_materia.py`, invocado al cerrar `balanceo_completo.py` o vía `ordenar_dataset.py`.
+`Files/balance.py reordenar`, invocado al cerrar `balance.py agresivo` o `balance.py conservador`.
 """
 from __future__ import annotations
 
@@ -12,6 +12,10 @@ from utils_orden_temas import cargar_orden_temas
 
 # Total de filas que deben quedar tras el balanceo completo.
 TARGET_TOTAL_PREGUNTAS = 400
+
+# El banco de plantillas debe ser más amplio que el CSV publicado (reserva para
+# sustituciones sin repetir enunciados del dataset activo).
+MIN_PLANTILLAS_POR_MATERIA_FACTOR = 2
 
 
 def num_materias_listado() -> int:
@@ -25,6 +29,11 @@ def preguntas_por_materia() -> int:
     if n == 0:
         return TARGET_TOTAL_PREGUNTAS
     return TARGET_TOTAL_PREGUNTAS // n
+
+
+def plantillas_minimas_por_materia() -> int:
+    """Mínimo de entradas en plantillas.json por materia ( > preguntas en el CSV )."""
+    return preguntas_por_materia() * MIN_PLANTILLAS_POR_MATERIA_FACTOR
 
 
 def preguntas_por_tipo_global() -> int:

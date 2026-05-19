@@ -10,7 +10,7 @@ from utils_orden_temas import cargar_orden_temas
 
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE / "Files"))
-from reordenar_balance_por_materia import comprobar_orden_canonico_df  # noqa: E402
+from balance_lib import comprobar_orden_canonico_df  # noqa: E402
 
 df = pd.read_csv(BASE / "Data" / "Preguntas.csv", sep=";", encoding="utf-8")
 orden_materias, _ = cargar_orden_temas()
@@ -97,7 +97,7 @@ print("   Por Correcta:")
 for c, n in df["Correcta"].value_counts().items():
     print(f"      {c}: {n}")
 
-# 9. Orden canónico (mismo criterio que `reordenar_balance_por_materia.py`)
+# 9. Orden canónico (balance_lib.comprobar_orden_canonico_df)
 print("\n9. ORDEN CANONICO (listado + ladder TF..TD / CF..CD + ciclo ABCD)")
 errores_orden = comprobar_orden_canonico_df(df)
 if errores_orden:

@@ -9,7 +9,7 @@ import pandas as pd
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE / "Files"))
 from utils_dataset_csv import complejidad_global_valor, mapa_metadatos_por_materia  # noqa: E402
-from reordenar_balance_por_materia import comprobar_orden_canonico_df  # noqa: E402
+from balance_lib import comprobar_orden_canonico_df  # noqa: E402
 
 # Evitar UnicodeEncodeError en Windows al imprimir caracteres especiales
 if sys.platform == "win32":
@@ -146,10 +146,10 @@ if errores_orden:
     for msg in errores_orden[:25]:
         print(f"   - {msg}")
 else:
-    print("\n7. Orden canónico (reordenar_balance_por_materia): OK")
+    print("\n7. Orden canónico (balance_lib): OK")
 
 # 8. Filas que antes eran problemáticas (spot-check)
-ids_problematicos = [38, 41, 44, 265, 326, 336, 347, 575, 576, 577, 622, 628, 651, 670, 1032]
+ids_problematicos = [38, 41, 44, 265, 326, 336, 347, 396]
 filas_check = df[df["Id"].isin(ids_problematicos)]
 print(f"\n8. Revisión de filas antes problemáticas (muestra):")
 for _, row in filas_check.head(5).iterrows():
