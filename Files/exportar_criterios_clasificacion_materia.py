@@ -58,7 +58,7 @@ _CORREGIR_CICLO_26_30: dict[int, int] = {
 NOTAS_POR_ID: dict[int, str] = {
     3: "Comparte «entropía» con Teoria de la Informació y «cuello de botella» con HPC.",
     5: "«kernel» también puntúa en Àlgebra y Visió; en SO suele ir con proceso/thread.",
-    7: "Comparte «gradiente» con Optimització i Càlcul DV.",
+    7: "",
     11: "SQL/ACID; «consistencia» también en BDD No Relacionals.",
     15: "Geometría 3D; puede solapar con Àlgebra (volúmenes) o TDA.",
     16: "Fourier/complejos; «convolución» también en Xarxes/Visió.",

@@ -11,6 +11,7 @@ siendo más amplio que el dataset publicado (véase `asegurar_plantillas_sobre_d
 
 import csv
 import json
+import re
 from pathlib import Path
 from borrar_pycache import borrar_pycache_en_proyecto
 
@@ -48,6 +49,11 @@ def key_from_row(r: dict) -> tuple:
     )
 
 
+def es_pregunta_variante_dataset(pregunta: str) -> bool:
+    # Evita propagar preguntas de emergencia tipo "(variante N)" al banco base.
+    return bool(re.search(r"\(\s*variante(?:\s+\d+)?\s*\)\s*$", (pregunta or ""), flags=re.I))
+
+
 def main() -> None:
     with PATH_PLANTILLAS.open("r", encoding="utf-8") as f:
         plantillas = json.load(f)
@@ -64,8 +70,12 @@ def main() -> None:
     added = 0
     already_present = 0
     missing_topic = 0
+    skipped_variantes = 0
 
     for r in rows:
+        if es_pregunta_variante_dataset(r.get("Pregunta", "")):
+            skipped_variantes += 1
+            continue
         tema = (r.get("Materia") or r.get("Tema") or "").strip()
         if not tema:
             continue
@@ -112,6 +122,7 @@ def main() -> None:
     print(f"Añadidas a plantillas: {added}")
     print(f"Ya presentes: {already_present}")
     print(f"Temas creados en plantillas: {missing_topic}")
+    print(f"Saltadas por sufijo variante: {skipped_variantes}")
     print(f"Faltantes tras inyección: {missing_from_dataset}")
 
 

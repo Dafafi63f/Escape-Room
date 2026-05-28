@@ -28,6 +28,7 @@ PATH_CRIT = BASE / "Data" / "criterios_clasificacion_materia.csv"
 
 # Id -> nueva Materia (tras revisión manual + keywords corregidos)
 CAMBIOS_MATERIA: dict[int, str] = {
+    11: "Càlcul Numèric",
     13: "Càlcul Numèric",
     15: "Càlcul en Diverses Variables",
     24: "Bases de Dades Relacionals",
