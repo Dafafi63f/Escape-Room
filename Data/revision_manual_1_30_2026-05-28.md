@@ -67,7 +67,7 @@ Objetivo: dejar trazabilidad de la revision manual de las preguntas `Id 1..30` p
 
 ## Alertas operativas para no romper nada
 
-- Revisar `Files/recategorizar_lote_manual.py` antes de ejecutar:
+- Revisar `Files/dataset_plantillas_cli.py dataset recategorizar-lote ...` antes de ejecutar:
   - el script puede quedar con `OPERACIONES` no vacia e `INPLACE=True`.
   - ejecutar solo tras confirmar que el Id y materia destino son los deseados.
 - Si se vuelve a exportar criterios con `Files/exportar_criterios_clasificacion_materia.py`, validar que las notas de desambiguacion sigan alineadas con las keywords actuales.
