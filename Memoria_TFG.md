@@ -52,13 +52,25 @@ Dado el volumen total (400 preguntas), se considera razonable un plan de revisio
 
 Este enfoque reduce carga, mejora calidad experta y acorta tiempos de iteracion.
 
+### 5.1 Estado de la revision manual (2026-06-01)
+
+| Tramo | Ids | Materias (resumen) | Registro |
+|-------|-----|-------------------|----------|
+| Hecho | 1–30 | Àlgebra, Càlcul I, Fonaments | `Data/revision_manual.md` |
+| Hecho | 31–130 | Iniciació … Modelització i Inferència (13 materias) | `Data/revision_manual.md` |
+| Pendiente | 131–400 | Desde Tècniques de Disseny d'Algoritmes | `Data/revision_manual.md` |
+
+**Progreso:** 130 / 400 preguntas revisadas (~32,5 %). Tras cada lote: `balance_lib.ejecutar_validar` y, si se usan bancos fijos, `python Files/fix_final_materias.py` + `python Files/sync_plantillas_materias.py --inyectar`.
+
+**Cambios destacados en 31–130:** Programari (terminal/shell/git, sin HPC); Grafs sin TSP/Floyd; POO solo Python; Probabilitat con una Bayes; BDR id 105 normalización; EDO sin Wronskiano y id 120 PVI; Modelització sin RL, bloque de inferencia coherente.
+
 ## 6. Proximos pasos
 
 1. Definir criterios de etiquetado para `Materias_relacionadas` y `Prerequisitos`.
 2. Adaptar scripts de validacion y estadisticas para soportar etiquetas multiples.
 3. Mantener compatibilidad temporal para leer datasets antiguos con columna `Tema` (los scripts en `Files/` la normalizan a `Materia` al cargar o guardar; ver `utils_dataset_csv.py`).
 4. Actualizar el juego para incorporar modos de seleccion por relacion entre materias.
-5. Ejecutar una primera ronda de revision docente por bloques.
+5. Ejecutar una primera ronda de revision docente por bloques (en curso: **130/400**; ver seccion 5.1 y `Data/revision_manual.md`).
 
 ## 7. Contribucion esperada
 
@@ -469,6 +481,12 @@ Scripts antiguos de balanceo y deduplicación (`balancear_*.py`, `balanceo_compl
 | `aplicar_clasificacion_optima.py` | Revisa las 400 filas: sustituye por regeneración desde plantillas cuando Materia/Tipo (o Dificultad con contraste fuerte) no encajan con el texto; ajusta 5+5 y reordena. |
 | `revisar_materia_contenido.py` | Variante de revisión/sustitución (dataset y/o `plantillas.json`); ver `aplicar_clasificacion_optima.py` para el flujo completo del banco. |
 | `aplicar_correcciones_materia.py` | Parches manuales puntuales (Ids concretos); uso excepcional tras revisión docente. |
+| `fix_final_materias.py` | **Mantenimiento principal** del banco revisado: reclasificación por contenido, bancos fijos por materia, validación y guardado de `Preguntas.csv`. |
+| `sync_plantillas_materias.py` | Mismas reglas de contenido sobre `plantillas.json`; `--inyectar` vuelca el CSV. |
+| `limpiar_duplicados_csv.py` | Solo elimina duplicados (materia+enunciado); no rellena filas (usar `fix_final_materias.py`). |
+| `revisar_castellano_csv.py` | Ortografía y parches por Id; no usar en bloques ya cerrados (p. ej. Programari 42–50, POO 91–100). |
+| `reparar_materia_algoritmes.py` | Legacy: movimientos por Id vía `recategorizar_y_equilibrar` (supersedido por `fix_final_materias.py`). |
+| `recategorizar_y_equilibrar.py` | Mueve un `Id` a otra materia manteniendo balance 5+5. |
 | `inyectar_dataset_en_plantillas.py` | Vuelca preguntas del CSV en `plantillas.json` sin duplicar entradas. |
 | `revisar_plantillas.py` | Comprueba cobertura entre plantillas y listado de materias. |
 | `ampliar_plantillas.py` | Amplía el pool de plantillas; al final llama a `duplicados.py revisar`. |
@@ -486,7 +504,7 @@ Tras editar preguntas o plantillas a mano:
 4. `python Files/balance.py conservador` — ajuste numérico y orden canónico.
 5. `python Files/balance.py validar --detalle` — comprobación final.
 
-Informes de revisión: salida por consola (no hace falta guardar ficheros `.txt` en `Data/`).
+Informes de revisión: salida por consola (no hace falta guardar ficheros `.txt` en `Data/`). **Trazabilidad de revision manual:** un solo fichero `Data/revision_manual.md` (actualizar al cerrar cada tramo de Ids).
 
 Coherencia metadatos↔texto: `clasificar_pregunta.py --dataset --solo-incoherentes` (solo lectura); sustitución automática del banco con `aplicar_clasificacion_optima.py --inplace`. Validaciones: `validar_csv.py`, `revision_final.py`. Recuperación fuerte: `balance.py agresivo`.
 

@@ -626,24 +626,11 @@ PATCHES: dict[int, dict[str, str]] = {
         "Fallido de predicción", "Error de caché", "Interrupción",
         "Dependencia que impide ejecución paralela", "D",
     ),
-    # Iniciació: quitar 4× complejidad BST
-    31: _row(
-        "Iniciació a la Programació", "Facil", "Teoria",
-        "¿Qué es la redirección en la terminal?",
-        "Un comando", "Una variable", "Enviar salida o entrada a archivos o comandos", "Un pipe", "C",
-    ),
+    # Iniciació: solo Python/programación (shell → Programari de Sistema)
     32: _row(
         "Iniciació a la Programació", "Facil", "Teoria",
         "¿Qué es una variable?",
         "Función", "Clase", "Constante", "Contenedor con nombre para un valor", "D",
-    ),
-    33: _row(
-        "Iniciació a la Programació", "Media", "Teoria",
-        "¿Qué hace el operador de tubería (pipe) `|` en una shell tipo Unix?",
-        "Conecta la salida estándar de un comando con la entrada estándar del siguiente",
-        "Crea siempre un archivo temporal en disco",
-        "Ejecuta el segundo comando antes que el primero",
-        "Duplica la entrada estándar al error estándar", "A",
     ),
     34: _row(
         "Iniciació a la Programació", "Dificil", "Teoria",

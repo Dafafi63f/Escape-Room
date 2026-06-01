@@ -266,12 +266,12 @@
     },
     {
       "pregunta": "¿Qué es un subespacio vectorial?",
-      "A": "Un conjunto cualquiera",
-      "B": "Solo los vectores nulos",
-      "C": "Un subconjunto cerrado bajo suma y producto por escalar",
-      "D": "El espacio completo",
-      "correcta": "C",
-      "dificultad": "Media",
+      "A": "Un subconjunto cerrado bajo suma y producto por escalar",
+      "B": "Un conjunto cualquiera de vectores",
+      "C": "Un conjunto de matrices invertibles",
+      "D": "El conjunto de autovalores",
+      "correcta": "A",
+      "dificultad": "Facil",
       "tipo": "Teoria",
       "uso": "dataset_400"
     },
@@ -351,6 +351,61 @@
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es un subespacio vectorial?",
+      "A": "Un subconjunto cerrado bajo suma y producto por escalar",
+      "B": "Un conjunto cualquiera de vectores",
+      "C": "Un conjunto de matrices invertibles",
+      "D": "El conjunto de autovalores",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el determinante de [[2,1],[5,3]]?",
+      "A": "1",
+      "B": "2",
+      "C": "3",
+      "D": "4",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el rango de la matriz [[1,2],[2,4]]?",
+      "A": "0",
+      "B": "1",
+      "C": "2",
+      "D": "3",
+      "correcta": "B",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el módulo del vector (3,4)?",
+      "A": "5",
+      "B": "7",
+      "C": "12",
+      "D": "25",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es la traza de matriz diagonal con elementos 1,2,3?",
+      "A": "1",
+      "B": "3",
+      "C": "6",
+      "D": "5",
+      "correcta": "C",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Càlcul en una Variable": [
@@ -361,7 +416,7 @@
       "C": "El hessiano",
       "D": "La integral",
       "correcta": "A",
-      "dificultad": "Facil",
+      "dificultad": "Dificil",
       "tipo": "Teoria",
       "uso": "general"
     },
@@ -658,7 +713,84 @@
       "C": "2",
       "D": "6",
       "correcta": "B",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué mide la derivada de f en un punto?",
+      "A": "La tasa de cambio instantánea",
+      "B": "El área bajo la curva",
+      "C": "El valor medio en todo el intervalo",
+      "D": "El máximo global",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuándo converge la serie geométrica Σ r^n (n=0..∞)?",
+      "A": "Cuando |r|<1",
+      "B": "Cuando r>1",
+      "C": "Cuando r=2",
+      "D": "Cuando r<−2",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué expresa el teorema del valor medio para derivadas en [a,b]?",
+      "A": "Existe c en (a,b) con f'(c)=(f(b)-f(a))/(b-a)",
+      "B": "f es constante en [a,b]",
+      "C": "f tiene máximo en c",
+      "D": "f'(a)=f'(b)",
+      "correcta": "A",
       "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué significa que una sucesión de funciones converja uniformemente en [a,b]?",
+      "A": "Que el supremo de |f_n-f| en [a,b] tiende a 0",
+      "B": "Que converge punto a punto en un único x",
+      "C": "Que todas las derivadas convergen",
+      "D": "Que la integral de f_n es constante",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el límite de (x^2-1)/(x-1) cuando x tiende a 1?",
+      "A": "0",
+      "B": "1",
+      "C": "2",
+      "D": "No existe",
+      "correcta": "C",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿A qué valor converge la serie geométrica Σ_{n=0}∞ (1/2)^n?",
+      "A": "1",
+      "B": "2",
+      "C": "3",
+      "D": "No converge",
+      "correcta": "B",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es la integral de e^x dx?",
+      "A": "e^x",
+      "B": "xe^x",
+      "C": "e^x/x",
+      "D": "e^(x+1)",
+      "correcta": "A",
+      "dificultad": "Facil",
       "tipo": "Calculo",
       "uso": "dataset_400"
     }
@@ -671,7 +803,7 @@
       "C": "Solo fetch",
       "D": "2 fases",
       "correcta": "A",
-      "dificultad": "Media",
+      "dificultad": "Dificil",
       "tipo": "Teoria",
       "uso": "general"
     },
@@ -682,7 +814,7 @@
       "C": "Disco",
       "D": "Red",
       "correcta": "A",
-      "dificultad": "Facil",
+      "dificultad": "Dificil",
       "tipo": "Teoria",
       "uso": "general"
     },
@@ -709,11 +841,22 @@
       "uso": "general"
     },
     {
+      "pregunta": "¿Cuántos valores puede representar 1 bit?",
+      "A": "8",
+      "B": "0",
+      "C": "2",
+      "D": "1",
+      "correcta": "C",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
       "pregunta": "¿Qué es el orden de convergencia?",
-      "A": "Potencia del paso en el error",
-      "B": "Número de evaluaciones",
-      "C": "Estabilidad",
-      "D": "Consistencia",
+      "A": "Tasa con la que el error decrece al refinar el paso o las iteraciones",
+      "B": "Número de evaluaciones de f",
+      "C": "Estabilidad del método",
+      "D": "Consistencia del esquema",
       "correcta": "A",
       "dificultad": "Dificil",
       "tipo": "Teoria",
@@ -753,33 +896,11 @@
       "uso": "general"
     },
     {
-      "pregunta": "¿Qué es el pipeline en una CPU?",
-      "A": "Ejecución superpuesta de instrucciones",
-      "B": "Caché",
-      "C": "Bus de datos",
-      "D": "ALU",
-      "correcta": "A",
-      "tipo": "Teoria",
-      "uso": "dificil",
-      "dificultad": "Dificil"
-    },
-    {
       "pregunta": "¿Qué es la localidad espacial en acceso a memoria?",
       "A": "Direcciones cercanas se acceden juntas",
       "B": "Misma dirección se reutiliza",
       "C": "Acceso aleatorio",
       "D": "Paginação",
-      "correcta": "A",
-      "tipo": "Teoria",
-      "uso": "dificil",
-      "dificultad": "Dificil"
-    },
-    {
-      "pregunta": "¿Qué garantiza el algoritmo del banquero?",
-      "A": "Evitar deadlock",
-      "B": "Fairness",
-      "C": "Throughput máximo",
-      "D": "Latencia mínima",
       "correcta": "A",
       "tipo": "Teoria",
       "uso": "dificil",
@@ -940,17 +1061,6 @@
       "uso": "dataset_400"
     },
     {
-      "pregunta": "¿Qué es un hazard de datos en pipeline?",
-      "A": "Fallido de predicción",
-      "B": "Error de caché",
-      "C": "Interrupción",
-      "D": "Dependencia que impide ejecución paralela",
-      "correcta": "D",
-      "dificultad": "Media",
-      "tipo": "Teoria",
-      "uso": "dataset_400"
-    },
-    {
       "pregunta": "¿Qué mide el CPI (cycles per instruction)?",
       "A": "Ciclos de reloj por instrucción",
       "B": "Ancho de banda",
@@ -1015,6 +1125,72 @@
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
+    },
+    {
+      "pregunta": "1 TFLOPS ejecutar 10^12 operaciones ¿tiempo?",
+      "A": "1",
+      "B": "10",
+      "C": "0.1",
+      "D": "1 s",
+      "correcta": "D",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué problema busca mitigar la política LRU en una caché?",
+      "A": "Reducir fallos de caché al reutilizar datos recientes",
+      "B": "Aumentar la frecuencia del reloj",
+      "C": "Eliminar la memoria virtual",
+      "D": "Duplicar el ancho de palabra",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si un procesador ejecuta 2·10^9 ciclos/s con CPI medio 2, ¿cuántas instrucciones/s ejecuta?",
+      "A": "10^9",
+      "B": "2·10^9",
+      "C": "4·10^9",
+      "D": "5·10^8",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si una CPU de 3 GHz tarda 6 ciclos en completar una instrucción concreta, ¿tiempo por instrucción?",
+      "A": "0.5 ns",
+      "B": "2 ns",
+      "C": "6 ns",
+      "D": "18 ns",
+      "correcta": "B",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si una caché tiene tasa de aciertos 95% y el acceso en fallo cuesta 100 ns extra, ¿penalización media por acceso?",
+      "A": "5 ns",
+      "B": "95 ns",
+      "C": "100 ns",
+      "D": "10 ns",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Un pipeline ideal de 5 etapas ejecuta 100 instrucciones. Si el llenado y vaciado añaden 4 ciclos, ¿ciclos totales?",
+      "A": "100",
+      "B": "104",
+      "C": "500",
+      "D": "96",
+      "correcta": "B",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Iniciació a la Programació": [
@@ -1036,15 +1212,15 @@
       "C": "Conjunto",
       "D": "Pila",
       "correcta": "A",
-      "dificultad": "Facil",
+      "dificultad": "Dificil",
       "tipo": "Teoria",
       "uso": "general"
     },
     {
       "pregunta": "¿Qué es un bucle while?",
-      "A": "Itera mientras condición sea verdadera",
-      "B": "Itera n veces",
-      "C": "Itera sobre lista",
+      "A": "Itera mientras la condición sea verdadera",
+      "B": "Itera un número fijo de veces",
+      "C": "Itera solo sobre listas",
       "D": "No existe",
       "correcta": "A",
       "dificultad": "Facil",
@@ -1058,53 +1234,20 @@
       "C": "Valor inicial",
       "D": "Nombre",
       "correcta": "A",
-      "dificultad": "Facil",
+      "dificultad": "Dificil",
       "tipo": "Teoria",
       "uso": "general"
     },
     {
       "pregunta": "¿Qué es un bucle for?",
-      "A": "Iteración sobre secuencia o rango",
+      "A": "Repite la ejecución sobre una secuencia o un rango",
       "B": "Condicional",
       "C": "Función",
       "D": "Clase",
       "correcta": "A",
-      "dificultad": "Facil",
+      "dificultad": "Media",
       "tipo": "Teoria",
       "uso": "general"
-    },
-    {
-      "pregunta": "¿Qué es un algoritmo?",
-      "A": "Secuencia finita de pasos para resolver un problema",
-      "B": "Programa",
-      "C": "Código",
-      "D": "Función",
-      "correcta": "A",
-      "dificultad": "Facil",
-      "tipo": "Teoria",
-      "uso": "general"
-    },
-    {
-      "pregunta": "¿Cuál es la complejidad de buscar en un árbol binario de búsqueda balanceado?",
-      "A": "O(log n)",
-      "B": "O(n)",
-      "C": "O(n²)",
-      "D": "O(1)",
-      "correcta": "A",
-      "tipo": "Teoria",
-      "uso": "dificil",
-      "dificultad": "Dificil"
-    },
-    {
-      "pregunta": "¿Qué estructura usa LIFO?",
-      "A": "Pila",
-      "B": "Cola",
-      "C": "Lista",
-      "D": "Árbol",
-      "correcta": "A",
-      "tipo": "Teoria",
-      "uso": "dificil",
-      "dificultad": "Dificil"
     },
     {
       "pregunta": "En recursión de cola, ¿qué ventaja tiene?",
@@ -1168,31 +1311,20 @@
       "C": "6",
       "D": "Error",
       "correcta": "A",
-      "dificultad": "Facil",
+      "dificultad": "Media",
       "tipo": "Calculo",
       "uso": "calculo"
     },
     {
-      "pregunta": "Retorno 10%, 20%. ¿Media?",
-      "A": "15%",
-      "B": "10%",
-      "C": "20%",
-      "D": "30%",
+      "pregunta": "3*4 en Python?",
+      "A": "12",
+      "B": "34",
+      "C": "7",
+      "D": "Error",
       "correcta": "A",
       "dificultad": "Facil",
       "uso": "calculo",
       "tipo": "Calculo"
-    },
-    {
-      "pregunta": "¿Qué es la redirección en la terminal?",
-      "A": "Un comando",
-      "B": "Una variable",
-      "C": "Enviar salida o entrada a archivos o comandos",
-      "D": "Un pipe",
-      "correcta": "C",
-      "dificultad": "Facil",
-      "tipo": "Teoria",
-      "uso": "dataset_400"
     },
     {
       "pregunta": "¿Qué es una variable?",
@@ -1206,17 +1338,6 @@
       "uso": "dataset_400"
     },
     {
-      "pregunta": "¿Qué hace el operador de tubería (pipe) `|` en una shell tipo Unix?",
-      "A": "Conecta la salida estándar de un comando con la entrada estándar del siguiente",
-      "B": "Crea siempre un archivo temporal en disco",
-      "C": "Ejecuta el segundo comando antes que el primero",
-      "D": "Duplica la entrada estándar al error estándar",
-      "correcta": "A",
-      "dificultad": "Media",
-      "tipo": "Teoria",
-      "uso": "dataset_400"
-    },
-    {
       "pregunta": "¿Cómo se define el operador módulo %?",
       "A": "Potencia",
       "B": "Resto de la división entera",
@@ -1224,7 +1345,7 @@
       "D": "Multiplicación",
       "correcta": "B",
       "dificultad": "Dificil",
-      "tipo": "Teoria",
+      "tipo": "Calculo",
       "uso": "dataset_400"
     },
     {
@@ -1239,28 +1360,6 @@
       "uso": "dataset_400"
     },
     {
-      "pregunta": "¿Qué comando sube un nivel de directorio?",
-      "A": "cd ..",
-      "B": "cd /",
-      "C": "cd -",
-      "D": "cd up",
-      "correcta": "A",
-      "dificultad": "Facil",
-      "tipo": "Calculo",
-      "uso": "dataset_400"
-    },
-    {
-      "pregunta": "¿Qué comando lista archivos incluyendo ocultos?",
-      "A": "ls",
-      "B": "ls -a",
-      "C": "dir",
-      "D": "ls -l",
-      "correcta": "B",
-      "dificultad": "Facil",
-      "tipo": "Calculo",
-      "uso": "dataset_400"
-    },
-    {
       "pregunta": "¿Cuántas iteraciones realiza for i in range(5)?",
       "A": "4",
       "B": "6",
@@ -1272,40 +1371,128 @@
       "uso": "dataset_400"
     },
     {
-      "pregunta": "¿Cuántos valores puede representar 1 bit?",
-      "A": "8",
-      "B": "0",
-      "C": "2",
-      "D": "1",
+      "pregunta": "¿Qué es un condicional if?",
+      "A": "Ejecuta código si la condición es verdadera",
+      "B": "Bucle",
+      "C": "Función",
+      "D": "Asignación",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "general"
+    },
+    {
+      "pregunta": "¿Cuál es 1111 en binario en decimal?",
+      "A": "14",
+      "B": "15",
+      "C": "16",
+      "D": "10",
+      "correcta": "B",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué operador combina condiciones (y)?",
+      "A": "OR",
+      "B": "NOT",
+      "C": "AND",
+      "D": "XOR",
       "correcta": "C",
       "dificultad": "Media",
       "tipo": "Calculo",
       "uso": "dataset_400"
     },
     {
-      "pregunta": "¿Qué comando crea un archivo vacío?",
-      "A": "mkfile",
-      "B": "new",
-      "C": "create",
-      "D": "touch",
-      "correcta": "D",
+      "pregunta": "¿Cuál es el resultado de [10, 20, 30][-1] en Python?",
+      "A": "10",
+      "B": "20",
+      "C": "30",
+      "D": "Error",
+      "correcta": "C",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es un condicional if?",
+      "A": "Ejecuta código si la condición es verdadera",
+      "B": "Bucle",
+      "C": "Función",
+      "D": "Asignación",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es un bucle while?",
+      "A": "Itera mientras la condición sea verdadera",
+      "B": "Itera un número fijo de veces",
+      "C": "Itera solo sobre listas",
+      "D": "No existe",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es un bucle for?",
+      "A": "Repite la ejecución sobre una secuencia o un rango",
+      "B": "Condicional",
+      "C": "Función",
+      "D": "Clase",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es un array (lista)?",
+      "A": "Estructura que almacena elementos indexados",
+      "B": "Diccionario",
+      "C": "Conjunto",
+      "D": "Pila",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es el ámbito (scope) de una variable?",
+      "A": "Zona del programa donde la variable es visible",
+      "B": "Tipo de dato",
+      "C": "Valor inicial",
+      "D": "Nombre",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es len([1, 2, 3, 4, 5]) en Python?",
+      "A": "5",
+      "B": "4",
+      "C": "6",
+      "D": "Error",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué hace el operador módulo (%)?",
+      "A": "Potencia",
+      "B": "Resto de la división entera",
+      "C": "División",
+      "D": "Multiplicación",
+      "correcta": "B",
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
     }
   ],
   "Programari de Sistema": [
-    {
-      "pregunta": "¿Qué es un mutex?",
-      "A": "Mecanismo de exclusión mutua",
-      "B": "Semáforo contador",
-      "C": "Condición de carrera",
-      "D": "Interrupción",
-      "correcta": "A",
-      "dificultad": "Media",
-      "tipo": "Teoria",
-      "uso": "general"
-    },
     {
       "pregunta": "¿Cuántos procesos pueden estar listos con {n} CPUs?",
       "A": "Cualquier número",
@@ -1446,17 +1633,6 @@
       "dificultad": "Dificil"
     },
     {
-      "pregunta": "Con 4 CPUs y 10 procesos listos, ¿cuántos pueden ejecutarse a la vez?",
-      "A": "4",
-      "B": "10",
-      "C": "1",
-      "D": "14",
-      "correcta": "A",
-      "dificultad": "Facil",
-      "uso": "calculo",
-      "tipo": "Calculo"
-    },
-    {
       "pregunta": "¿Cuántos procesos en estado listo con 1 CPU?",
       "A": "Cualquier número",
       "B": "1",
@@ -1523,42 +1699,6 @@
       "tipo": "Calculo"
     },
     {
-      "pregunta": "¿Cuántos threads por proceso típicamente?",
-      "A": "1 o más",
-      "B": "1",
-      "C": "0",
-      "D": "10",
-      "correcta": "A",
-      "dificultad": "Facil",
-      "uso": "calculo",
-      "tipo": "Calculo"
-    },
-    {
-      "pregunta": "Con {p} procesos, speedup ideal?",
-      "A": "{p}",
-      "B": "1",
-      "C": "log({p})",
-      "D": "{p}^2",
-      "correcta": "A",
-      "dificultad": "Facil",
-      "tipo": "Calculo",
-      "uso": "calculo",
-      "variaciones": [
-        {
-          "p": 2
-        },
-        {
-          "p": 4
-        },
-        {
-          "p": 8
-        },
-        {
-          "p": 16
-        }
-      ]
-    },
-    {
       "pregunta": "¿Cuántos procesos pueden estar listos con 1 CPUs?",
       "A": "Cualquier número",
       "B": "1",
@@ -1604,12 +1744,12 @@
     },
     {
       "pregunta": "¿Qué es un deadlock?",
-      "A": "Bloqueo mutuo donde procesos esperan recursos",
-      "B": "Una interrupción",
-      "C": "Un error de compilación",
-      "D": "Un buffer overflow",
+      "A": "Interbloqueo entre procesos que esperan recursos",
+      "B": "Fallo de página",
+      "C": "Quantum agotado",
+      "D": "Error de compilación",
       "correcta": "A",
-      "dificultad": "Dificil",
+      "dificultad": "Media",
       "tipo": "Teoria",
       "uso": "dataset_400"
     },
@@ -1678,6 +1818,259 @@
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es el pipeline en una CPU?",
+      "A": "Ejecución superpuesta de instrucciones",
+      "B": "Caché",
+      "C": "Bus de datos",
+      "D": "ALU",
+      "correcta": "A",
+      "tipo": "Teoria",
+      "uso": "dificil",
+      "dificultad": "Dificil"
+    },
+    {
+      "pregunta": "¿Qué garantiza el algoritmo del banquero?",
+      "A": "Evitar deadlock",
+      "B": "Fairness",
+      "C": "Throughput máximo",
+      "D": "Latencia mínima",
+      "correcta": "A",
+      "tipo": "Teoria",
+      "uso": "dificil",
+      "dificultad": "Dificil"
+    },
+    {
+      "pregunta": "¿Qué es un hazard de datos en pipeline?",
+      "A": "Fallido de predicción",
+      "B": "Error de caché",
+      "C": "Interrupción",
+      "D": "Dependencia que impide ejecución paralela",
+      "correcta": "D",
+      "dificultad": "Media",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es la redirección en la terminal?",
+      "A": "Enviar salida o entrada a archivos o comandos",
+      "B": "Un comando",
+      "C": "Una variable",
+      "D": "Un pipe",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué hace el operador de tubería (pipe) `|` en una shell tipo Unix?",
+      "A": "Conecta la salida estándar de un comando con la entrada estándar del siguiente",
+      "B": "Crea siempre un archivo temporal en disco",
+      "C": "Ejecuta el segundo comando antes que el primero",
+      "D": "Duplica la entrada estándar al error estándar",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué comando sube un nivel de directorio?",
+      "A": "cd ..",
+      "B": "cd /",
+      "C": "cd -",
+      "D": "cd up",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué comando lista archivos incluyendo ocultos?",
+      "A": "ls",
+      "B": "ls -a",
+      "C": "dir",
+      "D": "ls -l",
+      "correcta": "B",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué comando crea un archivo vacío?",
+      "A": "mkfile",
+      "B": "new",
+      "C": "create",
+      "D": "touch",
+      "correcta": "D",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si hay 3 procesos listos y el quantum es 4 ms, ¿cada cuánto vuelve un proceso en round-robin (sin bloqueos)?",
+      "A": "4 ms",
+      "B": "8 ms",
+      "C": "12 ms",
+      "D": "16 ms",
+      "correcta": "C",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Un proceso usa 120 MB y el sistema tiene páginas de 4 MB. ¿Cuántas páginas necesita?",
+      "A": "24",
+      "B": "28",
+      "C": "30",
+      "D": "32",
+      "correcta": "C",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Un pipeline ideal de 5 etapas ejecuta 100 instrucciones. Si el llenado y vaciado añaden 4 ciclos, ¿ciclos totales?",
+      "A": "100",
+      "B": "104",
+      "C": "500",
+      "D": "96",
+      "correcta": "B",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es un hilo (thread)?",
+      "A": "Unidad de ejecución dentro de un proceso",
+      "B": "Un proceso",
+      "C": "Un semáforo",
+      "D": "Un mutex",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es el quantum en la planificación Round-Robin?",
+      "A": "Tiempo máximo de CPU asignado antes de ceder el procesador",
+      "B": "Prioridad",
+      "C": "Tamaño de página",
+      "D": "Número de procesos",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es la inversión de prioridad en la planificación?",
+      "A": "Un proceso de baja prioridad bloquea a otro de alta prioridad",
+      "B": "Prioridad dinámica",
+      "C": "Aging",
+      "D": "Round-robin",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Con una sola CPU, ¿cuántos procesos pueden estar en estado «listo» a la vez?",
+      "A": "Cualquier número",
+      "B": "1",
+      "C": "0",
+      "D": "2",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Con 3 procesos listos y quantum de 4 ms, ¿cada cuánto vuelve un proceso al CPU en round-robin (sin bloqueos)?",
+      "A": "4 ms",
+      "B": "8 ms",
+      "C": "12 ms",
+      "D": "16 ms",
+      "correcta": "C",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Con páginas de 4 KB y dirección 8192, ¿cuál es el número de página?",
+      "A": "1",
+      "B": "2",
+      "C": "8",
+      "D": "4",
+      "correcta": "B",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es un shell en Unix/Linux?",
+      "A": "Interfaz que interpreta y ejecuta comandos del usuario",
+      "B": "El núcleo del sistema operativo",
+      "C": "Un compilador de C",
+      "D": "Un gestor de paquetes",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es la salida estándar (stdout)?",
+      "A": "Flujo donde un programa escribe su salida normal",
+      "B": "La entrada del teclado",
+      "C": "Solo mensajes de error",
+      "D": "Un archivo fijo en /tmp",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué hace `git commit` en un repositorio local?",
+      "A": "Registra una instantánea de los cambios preparados en el historial",
+      "B": "Sube automáticamente al servidor remoto",
+      "C": "Borra los cambios no guardados",
+      "D": "Crea siempre una rama nueva",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es un compilador?",
+      "A": "Programa que traduce código fuente a código objeto o ejecutable",
+      "B": "Programa que ejecuta el código línea a línea sin traducir",
+      "C": "El intérprete de comandos del sistema",
+      "D": "Una herramienta para clonar repositorios",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si en un directorio hay 5 archivos y ejecutas `ls | wc -l`, ¿qué número imprime wc -l?",
+      "A": "5",
+      "B": "1",
+      "C": "0",
+      "D": "10",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Tras `gcc main.c -o ejecutable`, ¿cómo se llama el binario generado?",
+      "A": "ejecutable",
+      "B": "main.c",
+      "C": "gcc",
+      "D": "a.out siempre",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Algorítmia i Combinatòria en Grafs. Mètodes Heurístics": [
@@ -1689,7 +2082,7 @@
       "D": "Clave-valor",
       "correcta": "A",
       "dificultad": "Facil",
-      "tipo": "Teoria",
+      "tipo": "Calculo",
       "uso": "general"
     },
     {
@@ -1737,7 +2130,7 @@
       "D": "Red neuronal",
       "correcta": "B",
       "dificultad": "Dificil",
-      "tipo": "Teoria",
+      "tipo": "Calculo",
       "uso": "general"
     },
     {
@@ -1907,10 +2300,10 @@
     },
     {
       "pregunta": "¿Qué es un grafo completo K_n?",
-      "A": "Todos los vértices conectados",
-      "B": "Árbol",
-      "C": "Grafo vacío",
-      "D": "Bipartito",
+      "A": "Todos los vértices están conectados entre sí",
+      "B": "Un grafo sin aristas",
+      "C": "Un árbol con raíz",
+      "D": "Un grafo bipartito siempre",
       "correcta": "A",
       "dificultad": "Facil",
       "tipo": "Teoria",
@@ -1995,13 +2388,13 @@
     },
     {
       "pregunta": "¿Qué es un grafo euleriano?",
-      "A": "Tiene circuito que recorre cada arista una vez",
+      "A": "Grafo con un circuito que recorre cada arista exactamente una vez",
       "B": "Grafo completo",
-      "C": "Árbol",
-      "D": "Bipartito",
+      "C": "Árbol de expansión mínima",
+      "D": "Grafo bipartito con matching perfecto",
       "correcta": "A",
       "dificultad": "Media",
-      "tipo": "Calculo",
+      "tipo": "Teoria",
       "uso": "dataset_400"
     },
     {
@@ -2014,6 +2407,149 @@
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el grado de un vértice en grafo completo K5?",
+      "A": "4",
+      "B": "5",
+      "C": "10",
+      "D": "20",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es un grafo euleriano?",
+      "A": "Grafo con un circuito que recorre cada arista exactamente una vez",
+      "B": "Grafo completo",
+      "C": "Árbol de expansión mínima",
+      "D": "Grafo bipartito con matching perfecto",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el grado de un vértice en el grafo completo K5?",
+      "A": "4",
+      "B": "5",
+      "C": "10",
+      "D": "20",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Para Floyd-Warshall en un grafo con n vértices, ¿cuál es la complejidad?",
+      "A": "O(n²)",
+      "B": "O(n³)",
+      "C": "O(n² log n)",
+      "D": "O(n⁴)",
+      "correcta": "B",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "En un grafo bipartito con partición (X, Y), ¿qué acota el tamaño del matching máximo?",
+      "A": "min(|X|, |Y|)",
+      "B": "max(|X|, |Y|)",
+      "C": "|X| + |Y|",
+      "D": "|E|",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuántos pares distintos forman C(6, 2)?",
+      "A": "12",
+      "B": "15",
+      "C": "18",
+      "D": "6",
+      "correcta": "B",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Grafo acíclico con 10 vértices y 7 aristas. ¿Cuántas componentes conexas?",
+      "A": "1",
+      "B": "3",
+      "C": "2",
+      "D": "4",
+      "correcta": "B",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuántos caminos de longitud 2 hay en el grafo completo K4?",
+      "A": "6",
+      "B": "4",
+      "C": "12",
+      "D": "16",
+      "correcta": "C",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Grafo acíclico con 10 vértices y 4 aristas. ¿Cuántas componentes conexas?",
+      "A": "1",
+      "B": "5",
+      "C": "6",
+      "D": "No está determinado",
+      "correcta": "C",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es un árbol en teoría de grafos?",
+      "A": "Grafo conexo sin ciclos",
+      "B": "Grafo completo",
+      "C": "Grafo con exactamente un ciclo por vértice",
+      "D": "Grafo bipartito con raíz",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué relaciona el lema del apretón de manos en un grafo finito?",
+      "A": "La suma de grados es el doble del número de aristas",
+      "B": "El número de aristas es siempre n−1",
+      "C": "Todo grafo tiene un camino euleriano",
+      "D": "El grafo es bipartito si la suma de grados es par",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué condición necesita un grafo conexo para tener un circuito euleriano?",
+      "A": "Todos los vértices tienen grado par",
+      "B": "Exactamente dos vértices tienen grado impar",
+      "C": "Es bipartito",
+      "D": "Tiene al menos un ciclo hamiltoniano",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuántas aristas tiene el grafo completo K5?",
+      "A": "4",
+      "B": "5",
+      "C": "10",
+      "D": "20",
+      "correcta": "C",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Càlcul en Diverses Variables": [
@@ -2024,7 +2560,7 @@
       "C": "Coordenadas esféricas",
       "D": "Coordenadas polares 3D",
       "correcta": "A",
-      "dificultad": "Media",
+      "dificultad": "Facil",
       "tipo": "Teoria",
       "uso": "general"
     },
@@ -2218,7 +2754,7 @@
       "D": "-1",
       "correcta": "A",
       "dificultad": "Facil",
-      "tipo": "Calculo",
+      "tipo": "Teoria",
       "uso": "calculo"
     },
     {
@@ -2440,15 +2976,59 @@
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es el gradiente de f(x,y)?",
+      "A": "Vector (∂f/∂x, ∂f/∂y)",
+      "B": "La derivada",
+      "C": "El hessiano",
+      "D": "La integral",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el gradiente de f en mínimo?",
+      "A": "0",
+      "B": "1",
+      "C": "∞",
+      "D": "-1",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Para x = r·cos(θ) e y = r·sin(θ), ¿cuál es el jacobiano |∂(x,y)/∂(r,θ)|?",
+      "A": "r",
+      "B": "r²",
+      "C": "1",
+      "D": "r/2",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "En coordenadas polares, ¿cuál es el jacobiano de la transformación (r, θ) → (x, y)?",
+      "A": "r",
+      "B": "r²",
+      "C": "1",
+      "D": "r/2",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Càlcul Numèric": [
     {
       "pregunta": "¿Qué es el método de Newton-Raphson?",
-      "A": "Iteración x_{n+1}=x_n - f(x_n)/f'(x_n)",
-      "B": "Bisección",
-      "C": "Trapecio",
-      "D": "Euler",
+      "A": "Método iterativo que usa f(x) y f'(x) para aproximar una raíz de f(x)=0",
+      "B": "Integración numérica por trapecios",
+      "C": "Resolución directa de sistemas lineales",
+      "D": "Búsqueda de raíz dividiendo un intervalo a la mitad",
       "correcta": "A",
       "dificultad": "Media",
       "tipo": "Teoria",
@@ -2457,9 +3037,9 @@
     {
       "pregunta": "¿Qué es la regla del trapecio?",
       "A": "Aproximación de integral por trapecios",
-      "B": "Simpson",
+      "B": "Método de Simpson",
       "C": "Monte Carlo",
-      "D": "Gauss",
+      "D": "Cuadratura de Gauss",
       "correcta": "A",
       "dificultad": "Facil",
       "tipo": "Teoria",
@@ -2489,10 +3069,10 @@
     },
     {
       "pregunta": "¿Qué es un punto fijo de y'=f(y)?",
-      "A": "Donde f(y)=0",
+      "A": "Valor y donde f(y)=0",
       "B": "Donde y'=1",
-      "C": "Máximo",
-      "D": "Mínimo",
+      "C": "Máximo local",
+      "D": "Mínimo local",
       "correcta": "A",
       "dificultad": "Media",
       "tipo": "Teoria",
@@ -2725,7 +3305,7 @@
       "C": "El error máximo",
       "D": "El criterio de parada (error aceptable)",
       "correcta": "D",
-      "dificultad": "Media",
+      "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
     },
@@ -2736,6 +3316,61 @@
       "C": "O(1/h)",
       "D": "O(h²)",
       "correcta": "D",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es el orden de convergencia?",
+      "A": "Tasa con la que el error decrece al refinar el paso o las iteraciones",
+      "B": "Número de evaluaciones de f",
+      "C": "Estabilidad del método",
+      "D": "Consistencia del esquema",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si el valor real es 10 y la aproximación es 11, ¿cuál es el error relativo?",
+      "A": "0,1",
+      "B": "1",
+      "C": "0,01",
+      "D": "10",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Newton-Raphson para f(x)=x²−2 con x₀=1. ¿Cuál es x₁?",
+      "A": "1",
+      "B": "1,5",
+      "C": "2",
+      "D": "0,5",
+      "correcta": "B",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuántas iteraciones de bisección en [0,1] se necesitan para error < 0,001?",
+      "A": "10",
+      "B": "9",
+      "C": "11",
+      "D": "8",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Regla de Simpson para ∫₀¹ x² dx con 2 subintervalos. ¿Resultado?",
+      "A": "1/3",
+      "B": "1/2",
+      "C": "1/4",
+      "D": "1",
+      "correcta": "A",
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
@@ -2794,7 +3429,7 @@
       "D": "Tanh",
       "correcta": "A",
       "dificultad": "Facil",
-      "tipo": "Teoria",
+      "tipo": "Calculo",
       "uso": "general"
     },
     {
@@ -2810,10 +3445,10 @@
     },
     {
       "pregunta": "En inferencia bayesiana, si el prior es conjugado con el likelihood, ¿qué propiedad tiene el posterior?",
-      "A": "Es del mismo tipo que el prior",
-      "B": "Es siempre normal",
-      "C": "No depende del prior",
-      "D": "Es insesgado",
+      "A": "Es de la misma familia paramétrica que el prior",
+      "B": "Es siempre una normal",
+      "C": "No depende de los datos",
+      "D": "Tiene media 0",
       "correcta": "A",
       "tipo": "Teoria",
       "uso": "dificil",
@@ -2997,10 +3632,10 @@
     },
     {
       "pregunta": "¿Qué es la esperanza E(X)?",
-      "A": "Media de la distribución",
-      "B": "Varianza",
-      "C": "Moda",
-      "D": "Mediana",
+      "A": "Media (valor medio) de la distribución de X",
+      "B": "Medida de dispersión de X",
+      "C": "Valor más probable de X",
+      "D": "Mediana de X",
       "correcta": "A",
       "dificultad": "Facil",
       "tipo": "Teoria",
@@ -3093,6 +3728,116 @@
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es la varianza de constante 5?",
+      "A": "0",
+      "B": "5",
+      "C": "25",
+      "D": "1",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si X~Poisson, λ=2, ¿P(X=0)?",
+      "A": "0",
+      "B": "e^(-2)",
+      "C": "1-e^(-2)",
+      "D": "2",
+      "correcta": "B",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuándo son independientes dos eventos A y B?",
+      "A": "Si P(A∩B)=P(A)·P(B)",
+      "B": "Si P(A|B)=P(B|A)",
+      "C": "Si P(A)+P(B)=1",
+      "D": "Si P(A∪B)=P(A)+P(B)",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si P(B)>0, ¿qué expresa P(A|B)=P(A∩B)/P(B)?",
+      "A": "Definición de probabilidad condicional",
+      "B": "Regla de la multiplicación",
+      "C": "Ley de probabilidad total",
+      "D": "Definición de independencia",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es la fórmula de la probabilidad de la unión P(A∪B)?",
+      "A": "P(A)+P(B)−P(A∩B)",
+      "B": "P(A)+P(B)",
+      "C": "P(A)·P(B)",
+      "D": "P(A)−P(B)",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es la varianza de la variable aleatoria constante X=5?",
+      "A": "0",
+      "B": "5",
+      "C": "25",
+      "D": "1",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si X sigue Binomial(n=5, p=0,5), ¿cuál es E(X)?",
+      "A": "2",
+      "B": "5",
+      "C": "1,25",
+      "D": "2,5",
+      "correcta": "D",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si X~Poisson con λ=2, ¿cuál es P(X=0)?",
+      "A": "0",
+      "B": "e^(-2)",
+      "C": "1−e^(-2)",
+      "D": "2",
+      "correcta": "B",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Con una moneda justa, ¿cuál es P(obtener 2 caras en 2 lanzamientos)?",
+      "A": "0,25",
+      "B": "0,5",
+      "C": "1",
+      "D": "0",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si A y B son independientes con P(A)=0,5 y P(B)=0,4, ¿cuál es P(A∩B)?",
+      "A": "1",
+      "B": "0,2",
+      "C": "0,1",
+      "D": "0,9",
+      "correcta": "B",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Programació Orientada als Objectes": [
@@ -3102,28 +3847,6 @@
       "B": "Iteración",
       "C": "Herencia",
       "D": "Polimorfismo",
-      "correcta": "A",
-      "dificultad": "Facil",
-      "tipo": "Teoria",
-      "uso": "general"
-    },
-    {
-      "pregunta": "¿Qué es la memoización?",
-      "A": "Almacenar resultados de subproblemas",
-      "B": "Iteración",
-      "C": "Recursión pura",
-      "D": "Podar",
-      "correcta": "A",
-      "dificultad": "Media",
-      "tipo": "Teoria",
-      "uso": "general"
-    },
-    {
-      "pregunta": "¿Qué es un condicional if?",
-      "A": "Ejecuta código si condición es verdadera",
-      "B": "Bucle",
-      "C": "Función",
-      "D": "Asignación",
       "correcta": "A",
       "dificultad": "Facil",
       "tipo": "Teoria",
@@ -3142,10 +3865,10 @@
     },
     {
       "pregunta": "¿Qué es el acoplamiento en diseño de software?",
-      "A": "Grado de dependencia entre módulos",
-      "B": "Cohesión",
-      "C": "Herencia",
-      "D": "Polimorfismo",
+      "A": "Grado de dependencia entre módulos o clases",
+      "B": "Número de métodos públicos",
+      "C": "Tamaño de la jerarquía de herencia",
+      "D": "Uso de tipado estático",
       "correcta": "A",
       "tipo": "Teoria",
       "uso": "dificil",
@@ -3196,17 +3919,6 @@
       "dificultad": "Dificil"
     },
     {
-      "pregunta": "En branch and bound para programación entera, ¿de dónde se obtiene cota inferior?",
-      "A": "Relajación lineal",
-      "B": "Solución factible",
-      "C": "Redondeo",
-      "D": "Dual",
-      "correcta": "A",
-      "tipo": "Teoria",
-      "uso": "dificil",
-      "dificultad": "Dificil"
-    },
-    {
       "pregunta": "2+2 en Java (enteros)?",
       "A": "4",
       "B": "22",
@@ -3224,7 +3936,7 @@
       "C": "Cero",
       "D": "Exactamente dos",
       "correcta": "A",
-      "dificultad": "Facil",
+      "dificultad": "Dificil",
       "uso": "calculo",
       "tipo": "Calculo"
     },
@@ -3251,22 +3963,11 @@
       "uso": "calculo"
     },
     {
-      "pregunta": "Fibonacci F(5)?",
-      "A": "5",
-      "B": "8",
-      "C": "3",
-      "D": "13",
-      "correcta": "A",
-      "dificultad": "Facil",
-      "uso": "calculo",
-      "tipo": "Calculo"
-    },
-    {
       "pregunta": "¿Qué es la herencia?",
-      "A": "Subclase hereda de superclase",
-      "B": "Composición",
-      "C": "Encapsulación",
-      "D": "Polimorfismo",
+      "A": "Una subclase hereda atributos y métodos de una superclase",
+      "B": "Ocultar datos internos",
+      "C": "Sustituir una implementación por otra",
+      "D": "Definir varios métodos con el mismo nombre",
       "correcta": "A",
       "dificultad": "Facil",
       "tipo": "Teoria",
@@ -3274,7 +3975,7 @@
     },
     {
       "pregunta": "¿Qué es una interfaz?",
-      "A": "Contrato de métodos a implementar",
+      "A": "Contrato que declara métodos a implementar",
       "B": "Clase abstracta",
       "C": "Herencia",
       "D": "Composición",
@@ -3285,23 +3986,23 @@
     },
     {
       "pregunta": "¿Qué es el encapsulamiento?",
-      "A": "Ocultar datos internos",
-      "B": "Herencia",
-      "C": "Polimorfismo",
-      "D": "Abstracción",
+      "A": "Ocultar el estado interno y exponer una interfaz controlada",
+      "B": "Herencia múltiple",
+      "C": "Crear instancias sin constructor",
+      "D": "Importar módulos",
       "correcta": "A",
-      "dificultad": "Media",
+      "dificultad": "Facil",
       "tipo": "Teoria",
       "uso": "dataset_400"
     },
     {
       "pregunta": "¿Qué es el polimorfismo?",
-      "A": "Mismo interfaz, distinto comportamiento",
-      "B": "Herencia",
-      "C": "Abstracción",
-      "D": "Encapsulación",
+      "A": "La misma interfaz con distintas implementaciones",
+      "B": "Copiar código entre clases",
+      "C": "Ejecutar código en paralelo",
+      "D": "Compilar a bytecode",
       "correcta": "A",
-      "dificultad": "Dificil",
+      "dificultad": "Media",
       "tipo": "Teoria",
       "uso": "dataset_400"
     },
@@ -3339,35 +4040,90 @@
       "uso": "dataset_400"
     },
     {
-      "pregunta": "¿Cuál es la complejidad de búsqueda binaria?",
-      "A": "O(n²)",
-      "B": "O(log n)",
-      "C": "O(1)",
-      "D": "O(n)",
-      "correcta": "B",
+      "pregunta": "¿Qué es la herencia?",
+      "A": "Una subclase hereda atributos y métodos de una superclase",
+      "B": "Ocultar datos internos",
+      "C": "Sustituir una implementación por otra",
+      "D": "Definir varios métodos con el mismo nombre",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es una interfaz?",
+      "A": "Contrato que declara métodos a implementar",
+      "B": "Clase abstracta",
+      "C": "Herencia",
+      "D": "Composición",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es el encapsulamiento?",
+      "A": "Ocultar el estado interno y exponer una interfaz controlada",
+      "B": "Herencia múltiple",
+      "C": "Crear instancias sin constructor",
+      "D": "Importar módulos",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es el polimorfismo?",
+      "A": "La misma interfaz con distintas implementaciones",
+      "B": "Copiar código entre clases",
+      "C": "Ejecutar código en paralelo",
+      "D": "Compilar a bytecode",
+      "correcta": "A",
       "dificultad": "Media",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es el acoplamiento en diseño de software?",
+      "A": "Grado de dependencia entre módulos o clases",
+      "B": "Número de métodos públicos",
+      "C": "Tamaño de la jerarquía de herencia",
+      "D": "Uso de tipado estático",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuánto es 2+2 en Java (enteros)?",
+      "A": "4",
+      "B": "22",
+      "C": "2+2",
+      "D": "Error",
+      "correcta": "A",
+      "dificultad": "Facil",
       "tipo": "Calculo",
       "uso": "dataset_400"
     },
     {
-      "pregunta": "Complejidad búsqueda en lista no ordenada de n elementos?",
-      "A": "O(n)",
-      "B": "O(log n)",
-      "C": "O(1)",
-      "D": "O(n²)",
+      "pregunta": "En Java 8+, ¿cuántos métodos abstractos puede exigir una interfaz?",
+      "A": "0 o más",
+      "B": "Al menos 1",
+      "C": "Exactamente 1",
+      "D": "0",
       "correcta": "A",
       "dificultad": "Media",
       "tipo": "Calculo",
       "uso": "dataset_400"
     },
     {
-      "pregunta": "¿Cuál es la complejidad de Fibonacci recursivo puro?",
-      "A": "O(n)",
-      "B": "O(n²)",
-      "C": "O(log n)",
-      "D": "O(2^n)",
-      "correcta": "D",
-      "dificultad": "Dificil",
+      "pregunta": "En la sucesión de Fibonacci, ¿cuánto vale F(5)? (F(0)=0, F(1)=1)",
+      "A": "5",
+      "B": "8",
+      "C": "3",
+      "D": "13",
+      "correcta": "A",
+      "dificultad": "Media",
       "tipo": "Calculo",
       "uso": "dataset_400"
     }
@@ -3739,17 +4495,6 @@
       "uso": "general"
     },
     {
-      "pregunta": "Si W(t) es el Wronskiano de dos soluciones y W(t0)=0 para algún t0, ¿qué se concluye?",
-      "A": "Soluciones linealmente dependientes",
-      "B": "Independientes",
-      "C": "PVI tiene solución única",
-      "D": "W es constante",
-      "correcta": "A",
-      "tipo": "Teoria",
-      "uso": "dificil",
-      "dificultad": "Dificil"
-    },
-    {
       "pregunta": "Para EDO rígida, ¿qué tipo de método es preferible?",
       "A": "Implícito",
       "B": "Explícito Euler",
@@ -3805,17 +4550,6 @@
       "tipo": "Calculo"
     },
     {
-      "pregunta": "Wronskiano de {e^x, e^(-x)}?",
-      "A": "-2",
-      "B": "0",
-      "C": "2",
-      "D": "1",
-      "correcta": "A",
-      "dificultad": "Media",
-      "uso": "calculo",
-      "tipo": "Calculo"
-    },
-    {
       "pregunta": "¿Cuántas constantes en solución general EDO orden 2?",
       "A": "2",
       "B": "1",
@@ -3838,11 +4572,11 @@
       "uso": "dataset_400"
     },
     {
-      "pregunta": "¿Qué es el Wronskiano?",
-      "A": "Determinante para independencia lineal de soluciones",
-      "B": "Jacobiano",
-      "C": "Hessiano",
-      "D": "Gradiente",
+      "pregunta": "¿Qué indica el orden de una EDO?",
+      "A": "El orden de la derivada más alta que aparece",
+      "B": "El número de variables independientes",
+      "C": "El número de soluciones distintas",
+      "D": "El paso del método numérico",
       "correcta": "A",
       "dificultad": "Facil",
       "tipo": "Teoria",
@@ -3926,13 +4660,46 @@
       "uso": "dataset_400"
     },
     {
-      "pregunta": "¿Cuál es el volumen del paralelepípedo con (1,0,0) (0,1,0) (0,0,1)?",
-      "A": "2",
-      "B": "0",
-      "C": "3",
-      "D": "1",
-      "correcta": "D",
+      "pregunta": "Si y''+y=0 con y(0)=-1 e y'(0)=0, ¿cuál es y(π)?",
+      "A": "1",
+      "B": "-1",
+      "C": "0",
+      "D": "π",
+      "correcta": "A",
       "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el orden del método de Euler?",
+      "A": "1",
+      "B": "2",
+      "C": "0",
+      "D": "3",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es la solución de y'=y, y(0)=1?",
+      "A": "e^x",
+      "B": "x",
+      "C": "1",
+      "D": "e",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es la solución general de y''+y=0?",
+      "A": "A cos x + B sin x",
+      "B": "e^x",
+      "C": "x",
+      "D": "A e^x",
+      "correcta": "A",
+      "dificultad": "Media",
       "tipo": "Calculo",
       "uso": "dataset_400"
     }
@@ -4049,11 +4816,11 @@
       "tipo": "Calculo"
     },
     {
-      "pregunta": "¿Qué es una ley científica?",
-      "A": "Descripción de relación constante en la naturaleza",
-      "B": "Hipótesis",
-      "C": "Teoría",
-      "D": "Modelo",
+      "pregunta": "¿Qué es un modelo estadístico?",
+      "A": "Representación matemática simplificada de un fenómeno",
+      "B": "La verdad exacta del sistema real",
+      "C": "Solo un gráfico exploratorio",
+      "D": "Un programa informático sin datos",
       "correcta": "A",
       "dificultad": "Facil",
       "tipo": "Teoria",
@@ -4093,11 +4860,22 @@
       "uso": "dataset_400"
     },
     {
-      "pregunta": "¿Cómo se define un análisis exploratorio?",
-      "A": "Explorar datos sin hipótesis previas",
-      "B": "Validación",
-      "C": "Modelado",
-      "D": "Inferencia",
+      "pregunta": "¿Qué es un intervalo de confianza?",
+      "A": "Rango que, con un nivel de confianza, contiene el parámetro",
+      "B": "Probabilidad de que H0 sea cierta",
+      "C": "Siempre coincide con la media muestral",
+      "D": "Solo se usa en inferencia bayesiana",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es el error tipo I en un contraste?",
+      "A": "Rechazar H0 cuando H0 es cierta",
+      "B": "No rechazar H0 cuando H1 es cierta",
+      "C": "Confundir correlación con causalidad",
+      "D": "Estimar mal la desviación típica",
       "correcta": "A",
       "dificultad": "Dificil",
       "tipo": "Teoria",
@@ -4126,11 +4904,11 @@
       "uso": "dataset_400"
     },
     {
-      "pregunta": "IC 95% para media, n=100, s=10. Margen error aprox?",
-      "A": "2",
-      "B": "10",
-      "C": "1",
-      "D": "5",
+      "pregunta": "Desviación típica de 2, 4, 6 y 8 (aprox)",
+      "A": "2,24",
+      "B": "2",
+      "C": "3",
+      "D": "1",
       "correcta": "A",
       "dificultad": "Media",
       "tipo": "Calculo",
@@ -4162,7 +4940,7 @@
   "Tècniques de Disseny d'Algoritmes": [
     {
       "pregunta": "¿Qué es la subestructura óptima?",
-      "A": "Solución óptima contiene subproblemas óptimos",
+      "A": "La solución óptima se compone de soluciones óptimas de subproblemas",
       "B": "Elección voraz",
       "C": "Solapamiento",
       "D": "Recursión",
@@ -4220,9 +4998,9 @@
       "A": "Explora todo el espacio",
       "B": "Programación dinámica",
       "C": "Branch and bound",
-      "D": "Toma decisiones locales óptimas",
+      "D": "En cada paso elige la opción localmente óptima",
       "correcta": "D",
-      "dificultad": "Facil",
+      "dificultad": "Media",
       "tipo": "Teoria",
       "uso": "dataset_400"
     },
@@ -4233,8 +5011,8 @@
       "C": "O(log n)",
       "D": "O(n²)",
       "correcta": "A",
-      "dificultad": "Media",
-      "tipo": "Teoria",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
       "uso": "dataset_400"
     },
     {
@@ -4277,39 +5055,182 @@
       "C": "O(log n)",
       "D": "O(n²)",
       "correcta": "A",
-      "dificultad": "Facil",
+      "dificultad": "Media",
       "tipo": "Calculo",
       "uso": "dataset_400"
     },
     {
-      "pregunta": "¿Cuál es 1111 en binario en decimal?",
-      "A": "14",
-      "B": "15",
-      "C": "16",
-      "D": "10",
+      "pregunta": "¿Qué es un algoritmo?",
+      "A": "Secuencia finita de pasos para resolver un problema",
+      "B": "Programa",
+      "C": "Código",
+      "D": "Función",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "general"
+    },
+    {
+      "pregunta": "¿Cuál es la complejidad de buscar en un árbol binario de búsqueda balanceado?",
+      "A": "O(log n)",
+      "B": "O(n)",
+      "C": "O(n²)",
+      "D": "O(1)",
+      "correcta": "A",
+      "tipo": "Teoria",
+      "uso": "dificil",
+      "dificultad": "Dificil"
+    },
+    {
+      "pregunta": "¿Qué es la memoización?",
+      "A": "Almacenar resultados de subproblemas ya resueltos",
+      "B": "Iteración",
+      "C": "Recursión pura",
+      "D": "Podar ramas del árbol de búsqueda",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "general"
+    },
+    {
+      "pregunta": "¿Qué estructura usa LIFO?",
+      "A": "Pila",
+      "B": "Cola",
+      "C": "Lista",
+      "D": "Árbol",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "En branch and bound para programación entera, ¿de dónde se obtiene cota inferior?",
+      "A": "Relajación lineal",
+      "B": "Solución factible",
+      "C": "Redondeo",
+      "D": "Dual",
+      "correcta": "A",
+      "tipo": "Teoria",
+      "uso": "dificil",
+      "dificultad": "Dificil"
+    },
+    {
+      "pregunta": "Fibonacci F(5)?",
+      "A": "5",
+      "B": "8",
+      "C": "3",
+      "D": "13",
+      "correcta": "A",
+      "dificultad": "Media",
+      "uso": "calculo",
+      "tipo": "Calculo"
+    },
+    {
+      "pregunta": "¿Cuál es la complejidad de búsqueda binaria?",
+      "A": "O(n²)",
+      "B": "O(log n)",
+      "C": "O(1)",
+      "D": "O(n)",
       "correcta": "B",
       "dificultad": "Media",
       "tipo": "Calculo",
       "uso": "dataset_400"
     },
     {
-      "pregunta": "¿Qué operador combina condiciones (y)?",
-      "A": "OR",
-      "B": "NOT",
-      "C": "AND",
-      "D": "XOR",
-      "correcta": "C",
+      "pregunta": "Complejidad búsqueda en lista no ordenada de n elementos?",
+      "A": "O(n)",
+      "B": "O(log n)",
+      "C": "O(1)",
+      "D": "O(n²)",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es la complejidad de Fibonacci recursivo puro?",
+      "A": "O(n)",
+      "B": "O(n²)",
+      "C": "O(log n)",
+      "D": "O(2^n)",
+      "correcta": "D",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es un algoritmo voraz?",
+      "A": "Explora todo el espacio",
+      "B": "Programación dinámica",
+      "C": "Branch and bound",
+      "D": "En cada paso elige la opción localmente óptima",
+      "correcta": "D",
+      "dificultad": "Media",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es la subestructura óptima?",
+      "A": "La solución óptima se compone de soluciones óptimas de subproblemas",
+      "B": "Elección voraz",
+      "C": "Solapamiento",
+      "D": "Recursión",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es la memoización?",
+      "A": "Almacenar resultados de subproblemas ya resueltos",
+      "B": "Iteración",
+      "C": "Recursión pura",
+      "D": "Podar ramas del árbol de búsqueda",
+      "correcta": "A",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es la complejidad media de quicksort?",
+      "A": "O(n log n)",
+      "B": "O(n)",
+      "C": "O(log n)",
+      "D": "O(n²)",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es la complejidad de la búsqueda binaria?",
+      "A": "O(n)",
+      "B": "O(1)",
+      "C": "O(n²)",
+      "D": "O(log n)",
+      "correcta": "D",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "En una tabla hash con buena función de dispersión, ¿cuál es la complejidad media de búsqueda?",
+      "A": "O(1)",
+      "B": "O(n)",
+      "C": "O(log n)",
+      "D": "O(n²)",
+      "correcta": "A",
       "dificultad": "Media",
       "tipo": "Calculo",
       "uso": "dataset_400"
     },
     {
-      "pregunta": "1 TFLOPS ejecutar 10^12 operaciones ¿tiempo?",
-      "A": "1",
-      "B": "10",
-      "C": "0.1",
-      "D": "1 s",
-      "correcta": "D",
+      "pregunta": "¿Cuál es la complejidad de buscar en una lista no ordenada de n elementos?",
+      "A": "O(n)",
+      "B": "O(log n)",
+      "C": "O(1)",
+      "D": "O(n²)",
+      "correcta": "A",
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
@@ -4343,7 +5264,7 @@
       "A": "La correlación de Pearson",
       "B": "Un coste óptimo de emparejar puntos birth-death entre diagramas",
       "C": "El volumen del complejo",
-      "D": "La entropía de Shannon",
+      "D": "La curvatura media de la superficie",
       "correcta": "B",
       "dificultad": "Dificil",
       "tipo": "Teoria",
@@ -4534,6 +5455,17 @@
       "correcta": "B",
       "dificultad": "Dificil",
       "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "La distancia de Wasserstein entre diagramas de persistencia mide:",
+      "A": "La correlación de Pearson",
+      "B": "Un coste óptimo de emparejar puntos birth-death entre diagramas",
+      "C": "El volumen del complejo",
+      "D": "La curvatura media de la superficie",
+      "correcta": "B",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
       "uso": "dataset_400"
     }
   ],
@@ -4733,6 +5665,28 @@
       "D": "-1",
       "correcta": "D",
       "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el conjugado de 3+4i?",
+      "A": "3-4i",
+      "B": "3+4i",
+      "C": "-3-4i",
+      "D": "4+3i",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el residuo de 1/z en z=0?",
+      "A": "1",
+      "B": "0",
+      "C": "∞",
+      "D": "-1",
+      "correcta": "A",
+      "dificultad": "Media",
       "tipo": "Calculo",
       "uso": "dataset_400"
     }
@@ -5199,6 +6153,39 @@
       "D": "1 (la complementaria queda implícita)",
       "correcta": "D",
       "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuántos estados hay en un espacio con 10 variables binarias?",
+      "A": "1024",
+      "B": "100",
+      "C": "20",
+      "D": "512",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "En un modelo de regresión con multicolinealidad severa, ¿qué problema afecta a los coeficientes estimados?",
+      "A": "No normalidad",
+      "B": "Inconsistencia",
+      "C": "Alta varianza",
+      "D": "Sesgo",
+      "correcta": "C",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuánto vale sigmoid(0)?",
+      "A": "0.5",
+      "B": "0",
+      "C": "1",
+      "D": "-1",
+      "correcta": "A",
+      "dificultad": "Facil",
       "tipo": "Calculo",
       "uso": "dataset_400"
     }
@@ -5715,6 +6702,28 @@
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el gradiente de x²+y² en (0,0)?",
+      "A": "(0,0)",
+      "B": "(2,2)",
+      "C": "(1,1)",
+      "D": "(1,0)",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el hessiano de x²+y² en (0,0)?",
+      "A": "Definido positivo",
+      "B": "Negativo",
+      "C": "Indefinido",
+      "D": "Cero",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Aprenentatge Computacional": [
@@ -5915,6 +6924,39 @@
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es validación cruzada?",
+      "A": "Dividir datos en folds para evaluar robustez",
+      "B": "Train-test split",
+      "C": "Holdout",
+      "D": "Bootstrap",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el softmax de [0,0]?",
+      "A": "[0.5, 0.5]",
+      "B": "[0, 0]",
+      "C": "[1, 1]",
+      "D": "[0, 0.5]",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuántos parámetros en modelo con 3 inputs?",
+      "A": "≥3",
+      "B": "3",
+      "C": "1",
+      "D": "0",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Computació i Simulació d'Altes Prestacions": [
@@ -5958,7 +7000,7 @@
       "C": "Ejecución simultánea de tareas en múltiples procesadores",
       "D": "Secuencial",
       "correcta": "C",
-      "dificultad": "Facil",
+      "dificultad": "Dificil",
       "tipo": "Teoria",
       "uso": "dataset_400"
     },
@@ -6069,7 +7111,7 @@
       "D": "Es igual al número de nodos",
       "correcta": "B",
       "dificultad": "Media",
-      "tipo": "Teoria",
+      "tipo": "Calculo",
       "uso": "web_seed"
     },
     {
@@ -6104,6 +7146,97 @@
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "web_seed"
+    },
+    {
+      "pregunta": "Con 4 CPUs y 10 procesos listos, ¿cuántos pueden ejecutarse a la vez?",
+      "A": "4",
+      "B": "10",
+      "C": "1",
+      "D": "14",
+      "correcta": "A",
+      "dificultad": "Media",
+      "uso": "calculo",
+      "tipo": "Calculo"
+    },
+    {
+      "pregunta": "Con {p} procesos, speedup ideal?",
+      "A": "{p}",
+      "B": "1",
+      "C": "log({p})",
+      "D": "{p}^2",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "calculo",
+      "variaciones": [
+        {
+          "p": 2
+        },
+        {
+          "p": 4
+        },
+        {
+          "p": 8
+        },
+        {
+          "p": 16
+        }
+      ]
+    },
+    {
+      "pregunta": "¿Cuántos threads por proceso típicamente?",
+      "A": "1 o más",
+      "B": "1",
+      "C": "0",
+      "D": "10",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "uso": "calculo",
+      "tipo": "Calculo"
+    },
+    {
+      "pregunta": "¿Qué es un mutex?",
+      "A": "Mecanismo de exclusión mutua",
+      "B": "Cola de mensajes",
+      "C": "Planificador",
+      "D": "Página de memoria",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "general"
+    },
+    {
+      "pregunta": "¿Qué es un semáforo?",
+      "A": "Variable entera para sincronización entre procesos",
+      "B": "Tipo de cola de mensajes",
+      "C": "Planificador de CPU",
+      "D": "Página de memoria",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es un hilo (thread)?",
+      "A": "Unidad de ejecución dentro de un proceso",
+      "B": "Un proceso",
+      "C": "Un semáforo",
+      "D": "Un mutex",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si el speedup con p procesadores es p/2, ¿cuál es la eficiencia?",
+      "A": "50%",
+      "B": "100%",
+      "C": "25%",
+      "D": "p/2",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Equacions en Derivades Parcials": [
@@ -6114,7 +7247,7 @@
       "C": "Calor",
       "D": "Transporte",
       "correcta": "A",
-      "dificultad": "Media",
+      "dificultad": "Dificil",
       "tipo": "Teoria",
       "uso": "general"
     },
@@ -6200,7 +7333,7 @@
       "A": "Elíptico",
       "B": "Parabólico",
       "C": "Hiperbólico (ondas)",
-      "D": "Estatico degenerado",
+      "D": "Estático degenerado",
       "correcta": "C",
       "dificultad": "Dificil",
       "tipo": "Teoria",
@@ -6263,7 +7396,7 @@
     },
     {
       "pregunta": "En una EDP de segundo orden, si B^2-4AC>0 en un punto, como se clasifica la ecuacion en ese punto?",
-      "A": "Eliptica",
+      "A": "Elíptica",
       "B": "Hiperbolica",
       "C": "Parabolica",
       "D": "Degenerada",
@@ -6304,6 +7437,39 @@
       "dificultad": "Media",
       "tipo": "Calculo",
       "uso": "web_seed"
+    },
+    {
+      "pregunta": "¿Qué es u_xx en 1D?",
+      "A": "Segunda derivada espacial",
+      "B": "Derivada temporal",
+      "C": "Laplaciano 2D",
+      "D": "Gradiente",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "En una EDP de segundo orden, si B²−4AC>0 en un punto, ¿cómo se clasifica la ecuación en ese punto?",
+      "A": "Elíptica",
+      "B": "Hiperbólica",
+      "C": "Parabólica",
+      "D": "Degenerada",
+      "correcta": "B",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Solución u(x,t)=f(x-ct) satisface ecuación?",
+      "A": "Onda",
+      "B": "Calor",
+      "C": "Laplace",
+      "D": "Poisson",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Física, Abstracció i Computació": [
@@ -6537,6 +7703,17 @@
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si pH = -log[H⁺]. Si [H⁺]=0.001, pH?",
+      "A": "3",
+      "B": "2",
+      "C": "4",
+      "D": "1",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Teoria de la Informació": [
@@ -6736,7 +7913,7 @@
       "C": "Grafo",
       "D": "Columnar",
       "correcta": "A",
-      "dificultad": "Facil",
+      "dificultad": "Dificil",
       "tipo": "Teoria",
       "uso": "general"
     },
@@ -6924,6 +8101,28 @@
       "D": "JSON/BSON",
       "correcta": "D",
       "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué ventaja ofrece NoSQL para datos no estructurados?",
+      "A": "Normalización",
+      "B": "Esquema flexible",
+      "C": "ACID estricto",
+      "D": "JOINs eficientes",
+      "correcta": "B",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es el modelo documento?",
+      "A": "Almacena datos en documentos (ej. JSON)",
+      "B": "Tablas y filas",
+      "C": "Nodos y aristas",
+      "D": "Clave-valor",
+      "correcta": "A",
+      "dificultad": "Facil",
       "tipo": "Calculo",
       "uso": "dataset_400"
     }
@@ -7115,6 +8314,28 @@
       "dificultad": "Facil",
       "tipo": "Teoria",
       "uso": "web_seed"
+    },
+    {
+      "pregunta": "¿Cuántos parámetros reales independientes describen un estado puro de un qubit (sin fase global)?",
+      "A": "1",
+      "B": "2",
+      "C": "3",
+      "D": "4",
+      "correcta": "B",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "En un sistema de n qubits, ¿cuántas amplitudes complejas tiene el vector de estado en la base computacional?",
+      "A": "n",
+      "B": "2n",
+      "C": "n^2",
+      "D": "2^n",
+      "correcta": "D",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Modelització i Simulació": [
@@ -7304,6 +8525,17 @@
       "dificultad": "Facil",
       "tipo": "Calculo",
       "uso": "web_seed"
+    },
+    {
+      "pregunta": "En un modelo discreto con paso Δt=0.1 s, ¿cuántos pasos cubren 5 s?",
+      "A": "25",
+      "B": "50",
+      "C": "40",
+      "D": "5",
+      "correcta": "B",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Sistemes Distribuïts i el Núvol": [
@@ -7377,7 +8609,7 @@
       "pregunta": "¿Qué es el teorema CAP?",
       "A": "Solo 2 de 3: Consistencia, Disponibilidad, Tolerancia a particiones",
       "B": "Teorema de codificación",
-      "C": "Ley de Amdahl",
+      "C": "Solo rendimiento gráfico",
       "D": "Teorema de Shannon",
       "correcta": "A",
       "dificultad": "Dificil",
@@ -7558,7 +8790,7 @@
       "C": "Revisión narrativa",
       "D": "Estudio piloto",
       "correcta": "A",
-      "dificultad": "Facil",
+      "dificultad": "Dificil",
       "tipo": "Teoria",
       "uso": "general"
     },
@@ -7724,6 +8956,50 @@
       "D": "55",
       "correcta": "D",
       "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué tamaño tiene la salida del pooling 2×2 sobre 4×4, ¿salida?",
+      "A": "2×2",
+      "B": "4×4",
+      "C": "1×1",
+      "D": "8×8",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es la salida de ReLU(0)?",
+      "A": "0",
+      "B": "1",
+      "C": "-1",
+      "D": "0.5",
+      "correcta": "A",
+      "dificultad": "Media",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es el softmax?",
+      "A": "Función que convierte logits en probabilidades",
+      "B": "ReLU",
+      "C": "Sigmoid",
+      "D": "Tanh",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Cuál es el softmax de [0,0]?",
+      "A": "[0.5, 0.5]",
+      "B": "[0, 0]",
+      "C": "[1, 1]",
+      "D": "[0, 0.5]",
+      "correcta": "A",
+      "dificultad": "Facil",
       "tipo": "Calculo",
       "uso": "dataset_400"
     }
@@ -8224,7 +9500,7 @@
       "C": "3",
       "D": "4",
       "correcta": "B",
-      "dificultad": "Facil",
+      "dificultad": "Media",
       "tipo": "Calculo",
       "uso": "dataset_400"
     },
@@ -8304,6 +9580,28 @@
       "dificultad": "Facil",
       "tipo": "Teoria",
       "uso": "web_seed"
+    },
+    {
+      "pregunta": "¿Cuántos vértices tiene un 0-símplice en un complejo simplicial?",
+      "A": "1",
+      "B": "2",
+      "C": "3",
+      "D": "0",
+      "correcta": "A",
+      "dificultad": "Facil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "¿Qué es el complejo de Čech para radio r?",
+      "A": "Grafo completo",
+      "B": "Complejo donde k+1 puntos forman k-símplice si las bolas de radio r se intersectan",
+      "C": "Árbol de expansión",
+      "D": "Red neuronal",
+      "correcta": "B",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
     }
   ],
   "Internet de les Coses": [
@@ -9060,6 +10358,17 @@
       "C": "8",
       "D": "3",
       "correcta": "D",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "uso": "dataset_400"
+    },
+    {
+      "pregunta": "Si una galaxia tiene z=0.02 y c≈300000 km/s, ¿velocidad radial aproximada v≈zc?",
+      "A": "300 km/s",
+      "B": "6000 km/s",
+      "C": "15000 km/s",
+      "D": "30000 km/s",
+      "correcta": "B",
       "dificultad": "Dificil",
       "tipo": "Calculo",
       "uso": "dataset_400"
