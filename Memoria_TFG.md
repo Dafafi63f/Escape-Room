@@ -9,7 +9,7 @@ Este Trabajo de Fin de Grado plantea el diseño e implementacion de un sistema d
 - analisis de calidad del dataset,
 - y evolucion hacia modelos pedagogicos mas realistas (multiasignatura y prerequisitos).
 
-El punto de partida actual es un banco de 400 preguntas en formato CSV y un juego en Python que selecciona preguntas por `Materia` y `Dificultad`. Las filas del CSV siguen un **orden canónico** (listado de materias, bloques 5+5 Teoría/Cálculo, escalón de dificultad y ciclo de respuestas correctas; ver sección **14**). El inventario de ficheros de datos y scripts queda descrito en la **seccion 14**.
+El punto de partida actual es un banco de 480 preguntas en formato CSV y un juego en Python que selecciona preguntas por `Materia` y `Dificultad`. Las filas del CSV siguen un **orden canónico** (listado de materias, bloques 5+5 Teoría/Cálculo, escalón de dificultad y ciclo de respuestas correctas; ver sección **14**). El inventario de ficheros de datos y scripts queda descrito en la **seccion 14**.
 
 ## 2. Estado actual del sistema
 
@@ -44,7 +44,7 @@ Con esta estructura se mantiene compatibilidad con el flujo actual y se habilita
 
 ## 5. Alcance de revision de preguntas
 
-Dado el volumen total (400 preguntas), se considera razonable un plan de revision distribuida:
+Dado el volumen total (480 preguntas), se considera razonable un plan de revision distribuida:
 
 - revision prioritaria por asignaturas impartidas por cada docente,
 - revision secundaria por asignaturas afines,
@@ -52,17 +52,20 @@ Dado el volumen total (400 preguntas), se considera razonable un plan de revisio
 
 Este enfoque reduce carga, mejora calidad experta y acorta tiempos de iteracion.
 
-### 5.1 Estado de la revision manual (2026-06-01)
+### 5.1 Estado de la revision manual (2026-06-02)
 
 | Tramo | Ids | Materias (resumen) | Registro |
 |-------|-----|-------------------|----------|
 | Hecho | 1–30 | Àlgebra, Càlcul I, Fonaments | `Data/revision_manual.md` |
 | Hecho | 31–130 | Iniciació … Modelització i Inferència (13 materias) | `Data/revision_manual.md` |
-| Pendiente | 131–400 | Desde Tècniques de Disseny d'Algoritmes | `Data/revision_manual.md` |
+| Hecho | 131–200 | Tècniques … Optimització (7 materias) | `Data/revision_manual.md` |
+| Pendiente | 241–480 | Aprenentatge Computacional … Visió per Computador (20 materias; ids tras ampliación 12/materia) | `Data/revision_manual.md` |
 
-**Progreso:** 130 / 400 preguntas revisadas (~32,5 %). Tras cada lote: `balance_lib.ejecutar_validar` y, si se usan bancos fijos, `python Files/fix_final_materias.py` + `python Files/sync_plantillas_materias.py --inyectar`.
+**Progreso:** ~200 / 480 preguntas revisadas en contenido previo (los **Id** cambiaron al pasar de 10 a 12 por materia; revalidar por bloque). Tras cada lote: `balance_lib.ejecutar_validar` y `python Files/inyectar_dataset_en_plantillas.py`.
 
-**Cambios destacados en 31–130:** Programari (terminal/shell/git, sin HPC); Grafs sin TSP/Floyd; POO solo Python; Probabilitat con una Bayes; BDR id 105 normalización; EDO sin Wronskiano y id 120 PVI; Modelització sin RL, bloque de inferencia coherente.
+**Cambios destacados en 31–130:** Programari (terminal/shell/git, sin HPC); Grafs con A* y Dijkstra (sin ruta del viajante); POO solo Python; Probabilitat con una Bayes; BDR id 105 normalización; EDO sin Wronskiano y id 120 PVI; Modelització sin RL, bloque de inferencia coherente.
+
+**Cambios destacados en 131–200:** Complexa/Fourier; Dades Complexes (Puig, bootstrap); IA (temario UAB, sin A*); MN (PDF 01–19); Optimització (Simplex/Newton/KKT). Visualització 3D (141–150): revisado sin alterar contenido salvo petición explícita.
 
 ## 6. Proximos pasos
 
@@ -70,7 +73,7 @@ Este enfoque reduce carga, mejora calidad experta y acorta tiempos de iteracion.
 2. Adaptar scripts de validacion y estadisticas para soportar etiquetas multiples.
 3. Mantener compatibilidad temporal para leer datasets antiguos con columna `Tema` (los scripts en `Files/` la normalizan a `Materia` al cargar o guardar; ver `utils_dataset_csv.py`).
 4. Actualizar el juego para incorporar modos de seleccion por relacion entre materias.
-5. Ejecutar una primera ronda de revision docente por bloques (en curso: **130/400**; ver seccion 5.1 y `Data/revision_manual.md`).
+5. Ejecutar una primera ronda de revision docente por bloques (en curso: **~200/480**; ver seccion 5.1 y `Data/revision_manual.md`).
 
 ## 7. Contribucion esperada
 
@@ -91,7 +94,7 @@ En esta iteracion se han aplicado cambios concretos sobre el modelo de materias 
 - Se ha reforzado la unicidad de combinaciones `(Grupo, Nivel, Curso, Semestre)` para evitar secuencias repetidas.
 - Se han consolidado 10 grupos tematicos globales, asignando cada materia a una sola tematica.
 - Se han realizado ajustes de coherencia en grupos y niveles para reflejar simultaneidad o progresion cuando correspondia.
-- El banco `Data/Preguntas.csv` queda definido con **400** preguntas, columna **`Materia`** (no `Tema`) y **10 columnas** (`Id`, `Materia`, `Dificultad`, `Tipo`, `Pregunta`, `A`…`D`, `Correcta`); el resto de metadatos academicos sale de `listado_materias.csv` al cargar o al guardar con `utils_dataset_csv.guardar_filas_csv`.
+- El banco `Data/Preguntas.csv` queda definido con **480** preguntas (**12 por materia**: 2FT 2MT 2DT 2FC 2MC 2DC), columna **`Materia`** (no `Tema`) y **10 columnas** (`Id`, `Materia`, `Dificultad`, `Tipo`, `Pregunta`, `A`…`D`, `Correcta`); el resto de metadatos academicos sale de `listado_materias.csv` al cargar o al guardar con `utils_dataset_csv.guardar_filas_csv`.
 
 En la aplicacion del quiz (`Juego/juego_cuestionario.py`):
 
@@ -426,13 +429,13 @@ Para subir cambios, GitHub requiere autenticacion mediante **Personal Access Tok
 
 ## 14. Estructura del repositorio, `Data/` y scripts (`Files/`)
 
-Esta seccion resume los ficheros relevantes del codigo y de los datos para que la memoria coincida con el estado actual del proyecto (400 preguntas, CSV minimo de **10 columnas** mas `listado_materias.csv`, pipeline de balanceo en Python).
+Esta seccion resume los ficheros relevantes del codigo y de los datos para que la memoria coincida con el estado actual del proyecto (480 preguntas, CSV minimo de **10 columnas** mas `listado_materias.csv`, pipeline de balanceo en Python).
 
 ### 14.1 Carpeta `Data/`
 
 | Fichero | Rol |
 |---------|-----|
-| `Preguntas.csv` | Banco principal: **400** preguntas, separador `;`, UTF-8. **10 columnas** en orden: `Id`;`Materia`;`Dificultad`;`Tipo`;`Pregunta`;`A`;`B`;`C`;`D`;`Correcta`. Grupo, nivel, curso, semestre, tematica del grado e identificador de catalogo **no** se duplican aqui: vienen de `listado_materias.csv` unido por `Materia`. La complejidad intrinseca de partida (`Nivel` del listado + `Dificultad` de la pregunta) se calcula en el juego y en `utils_dataset_csv.complejidad_global_valor` sin columna propia en el CSV. **Orden de filas canónico:** materias en el orden del listado; por cada materia, **5 Teoría** seguidas de **5 Cálculo**; dentro de cada mitad, dificultad no decreciente (**Facil → Media → Dificil**, escalón TF…TM…TD y CF…CM…CD, con empate por `Id`); reparto global de dificultad **134 / 133 / 133**; `Correcta` en ciclo **A,B,C,D,…** según `(Id−1) mod 4`. Lo aplica `python Files/balance.py reordenar` (al final de `balance.py conservador` o `balance.py agresivo`). |
+| `Preguntas.csv` | Banco principal: **480** preguntas (**40 × 12**), separador `;`, UTF-8. **10 columnas** en orden: `Id`;`Materia`;`Dificultad`;`Tipo`;`Pregunta`;`A`;`B`;`C`;`D`;`Correcta`. **Estructura por materia:** 2FT 2MT 2DT 2FC 2MC 2DC (6 Teoría + 6 Cálculo, ladder F→M→D en cada mitad). Reparto global: **160 / 160 / 160** dificultad; **120** por letra A–D; `Correcta` según `(Id−1) mod 4`. Ampliación: `python Files/ampliar_dataset_480.py`; ladder: `python Files/balance.py ordenar-ladder`. |
 | `listado_materias.csv` | **40** materias del grado con columnas `Id`, `Materia`, `Grupo`, `Nivel`, `Curso`, `Semestre`, `Tematica` (y metadatos usados por el juego). |
 | `plantillas.json` | Plantillas por materia para generar o sustituir preguntas en los scripts de mantenimiento y balanceo. |
 | `criterios_clasificacion_materia.csv` | Palabras clave y notas por materia; fuente de `utils_puntuacion_materia.py` (clasificación semántica en balance agresivo). |
@@ -440,12 +443,12 @@ Esta seccion resume los ficheros relevantes del codigo y de los datos para que l
 
 ### 14.2 Objetivos de balanceo (`Files/objetivos_balanceo.py`)
 
-El tamano objetivo del banco tras el pipeline completo es **`TARGET_TOTAL_PREGUNTAS = 400`**. A partir de ahi se derivan, con las 40 materias del listado:
+El tamano objetivo del banco tras el pipeline completo es **`TARGET_TOTAL_PREGUNTAS = 480`**. A partir de ahi se derivan, con las 40 materias del listado:
 
-- **Por materia:** 10 preguntas por materia (400 / 40).
-- **Por tipo global:** 200 `Teoria` y 200 `Calculo`.
-- **Por dificultad global:** reparto lo mas equilibrado en tres niveles (p. ej. 134 / 133 / 133 para 400 filas).
-- **Por respuesta correcta:** A, B, C y D lo mas equilibradas posible (100 cada una con 400 filas).
+- **Por materia:** 12 preguntas (2FT 2MT 2DT 2FC 2MC 2DC).
+- **Por tipo global:** 240 `Teoria` y 240 `Calculo`.
+- **Por dificultad global:** 160 / 160 / 160 (Facil / Media / Dificil).
+- **Por respuesta correcta:** 120 por letra A–D.
 
 **Clasificación por contenido:** `utils_clasificacion_pregunta.clasificar_pregunta(enunciado, A, B, C, D, correcta)` devuelve la mejor tripleta Materia + Tipo + Dificultad inferida solo del texto. `comparar_con_asignacion(fila)` contrasta con las columnas del CSV; la **Dificultad** del banco canónico sigue la escalera del bloque (F/M/D), por lo que la inferida es orientativa salvo contrastes fuertes (Facil vs Dificil).
 
@@ -459,7 +462,10 @@ Scripts antiguos de balanceo y deduplicación (`balancear_*.py`, `balanceo_compl
 
 | Script | Funcion resumida |
 |--------|------------------|
-| `utils_dataset_csv.py` | Lectura/escritura CSV, `COLUMNAS_PREGUNTAS`, `fila_pregunta`, `materia_de_fila`, comprobacion interna con metadatos del listado al guardar, `ordenar_filas_por_tema_y_id` (orden ligero por listado + Id; no sustituye al orden canónico completo). |
+| `utils_dataset_csv.py` | Lectura/escritura CSV, `COLUMNAS_PREGUNTAS`, `fila_pregunta`, `materia_de_fila`, comprobacion interna con metadatos del listado al guardar, `ordenar_filas_por_tema_y_id` (orden ligero por listado + Id; no sustituye al orden canónico completo), `borrar_pycache_en_proyecto`. |
+| `utils_variedad.py` | Similitud Jaccard entre enunciados (variedad temática por materia). |
+| `variedad_materias.py` | **CLI variedad:** `analizar`, `diversificar` (plantillas), `curado` (parches por Id). |
+| `dataset_plantillas_cli.py` | Enrutador: balance, recategorizar, validar, revision, variedad, plantillas. |
 | `utils_orden_temas.py` | Carga el orden de materias desde `listado_materias.csv`. |
 | `utils_texto.py` | Normalizacion de texto (p. ej. deduplicacion por enunciado). |
 | `objetivos_balanceo.py` | Constantes y funciones de objetivos numericos del pipeline (400 preguntas). |
@@ -467,8 +473,7 @@ Scripts antiguos de balanceo y deduplicación (`balancear_*.py`, `balanceo_compl
 | `balance_lib.py` | Validación, orden canónico (`reordenar`, `comprobar_orden_canonico_df`), `ajustar`, parches `corregir`. |
 | `dataset_pipeline.py` | Regeneración del dataset desde plantillas (materias, tipos, dificultad, correctas); `sustituir_filas_incoherentes`. |
 | `validar_csv.py` | Validacion de integridad del CSV de preguntas y del orden canónico. |
-| `revision_final.py` | Revision amplia: nulos, duplicados, distribuciones, orden canónico (`comprobar_orden_canonico_df`). |
-| `estadisticas_dataset.py` | Estadisticas del banco de preguntas. |
+| `revision_final.py` | Revision amplia: nulos, duplicados, distribuciones, orden canónico; `--estadisticas` solo tablas. |
 | `estadisticas_historic_qualificacions.py` | Estadisticas sobre el CSV historico de qualificacions. |
 | `duplicados.py` | **CLI única de deduplicación:** `revisar`, `plantillas`, `todo`, `exacto`, `enunciado`. |
 | `duplicados_lib.py` | Lógica de revisión, dedup plantillas/dataset, exacto y enunciado. |
@@ -492,7 +497,7 @@ Scripts antiguos de balanceo y deduplicación (`balancear_*.py`, `balanceo_compl
 | `ampliar_plantillas.py` | Amplía el pool de plantillas; al final llama a `duplicados.py revisar`. |
 | `asegurar_plantillas_sobre_dataset.py` | Inyecta el dataset en plantillas y comprueba mínimos por materia. |
 | `exportar_criterios_clasificacion_materia.py` | Regenera columnas derivadas de `criterios_clasificacion_materia.csv`. |
-| `borrar_pycache.py` | Limpieza de carpetas `__pycache__` tras ejecuciones. |
+| `borrar_pycache.py` | Borra carpetas `__pycache__` (delega en `utils_dataset_csv.borrar_pycache_en_proyecto`). |
 
 ### 14.4 Flujo de mantenimiento recomendado
 
@@ -506,7 +511,7 @@ Tras editar preguntas o plantillas a mano:
 
 Informes de revisión: salida por consola (no hace falta guardar ficheros `.txt` en `Data/`). **Trazabilidad de revision manual:** un solo fichero `Data/revision_manual.md` (actualizar al cerrar cada tramo de Ids).
 
-Coherencia metadatos↔texto: `clasificar_pregunta.py --dataset --solo-incoherentes` (solo lectura); sustitución automática del banco con `aplicar_clasificacion_optima.py --inplace`. Validaciones: `validar_csv.py`, `revision_final.py`. Recuperación fuerte: `balance.py agresivo`.
+Coherencia metadatos↔texto: `clasificar_pregunta.py --dataset --solo-incoherentes` (solo lectura); sustitución automática del banco con `aplicar_clasificacion_optima.py --inplace`. Validaciones: `validar_csv.py`, `revision_final.py`. Variedad temática: `variedad_materias.py analizar` / `diversificar` / `curado`. Recuperación fuerte: `balance.py agresivo`.
 
 ### 14.5 Juego y empaquetado (`Juego/`)
 

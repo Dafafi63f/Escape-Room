@@ -105,7 +105,7 @@ def destino_por_contenido(pregunta: str) -> str | None:
     p = (pregunta or "").lower()
     if es_paralelismo(pregunta):
         return HPC
-    if "memoización" in p or "memoizacion" in p:
+    if "evita recalcular subproblemas" in p:
         return DEST
     if "tflops" in p:
         return FON

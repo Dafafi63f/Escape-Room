@@ -75,13 +75,13 @@ must_tec = [
         "Tipo": "Teoria",
     },
     {
-        "Pregunta": "¿Qué es la memoización?",
-        "A": "Almacenar resultados de subproblemas",
-        "B": "Iteración",
-        "C": "Recursión pura",
-        "D": "Podar",
+        "Pregunta": "¿En programación dinámica top-down, qué estrategia evita recalcular subproblemas?",
+        "A": "Guardar en una tabla o caché los resultados de subproblemas ya resueltos",
+        "B": "Rellenar una tabla de abajo arriba iterativamente",
+        "C": "Recursión pura sin almacenar resultados",
+        "D": "Podar ramas del árbol de búsqueda",
         "Correcta": "A",
-        "Dificultad": "Dificil",
+        "Dificultad": "Media",
         "Tipo": "Teoria",
     },
 ]
@@ -156,7 +156,7 @@ def _destino_por_contenido(pregunta: str) -> str | None:
     p = (pregunta or "").lower()
     if _es_paralelismo({"Pregunta": pregunta}):
         return HPC
-    if "memoización" in p or "memoizacion" in p:
+    if "evita recalcular subproblemas" in p:
         return DEST
     if "tflops" in p:
         return FON
@@ -1366,7 +1366,7 @@ while t > 5:
 
 _materias = sorted({r.get("Materia") for r in rows})
 for _ in range(500):
-    if len(rows) == 400 and all(_count(m) == 10 for m in _materias):
+    if len(rows) == 480 and all(_count(m) == 12 for m in _materias):
         break
     over = [m for m in _materias if _count(m) > 10]
     under = [m for m in _materias if _count(m) < 10]
@@ -1420,13 +1420,13 @@ for _ in range(500):
                 break
         else:
             break
-    elif len(rows) > 400:
+    elif len(rows) > 480:
         rows.pop()
     else:
         break
 
 for materia in {r.get("Materia") for r in rows}:
-    if _count(materia) == 10:
+    if _count(materia) == 12:
         _balance_tipo(materia)
 
 for i, r in enumerate(rows, start=1):

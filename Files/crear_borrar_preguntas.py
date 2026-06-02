@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 from utils_orden_temas import cargar_orden_temas
 from utils_dataset_csv import fila_pregunta, guardar_filas_csv, ordenar_filas_por_tema_y_id, renumerar_ids
-from borrar_pycache import borrar_pycache_en_proyecto
+from utils_dataset_csv import borrar_pycache_en_proyecto
 
 # Rutas relativas al directorio del proyecto
 BASE = Path(__file__).resolve().parent.parent

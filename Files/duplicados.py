@@ -23,7 +23,7 @@ from pathlib import Path
 FILES = Path(__file__).resolve().parent
 sys.path.insert(0, str(FILES))
 
-from borrar_pycache import borrar_pycache_en_proyecto
+from utils_dataset_csv import borrar_pycache_en_proyecto
 
 
 def main(argv: list[str] | None = None) -> int:

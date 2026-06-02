@@ -26,7 +26,7 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from borrar_pycache import borrar_pycache_en_proyecto
+from utils_dataset_csv import borrar_pycache_en_proyecto
 from objetivos_balanceo import plantillas_minimas_por_materia
 from utils_deduplicacion import (
     clave_bloque_exacto,

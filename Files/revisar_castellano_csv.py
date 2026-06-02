@@ -58,7 +58,7 @@ CORRECCIONES: dict[str, dict[str, str]] = {
     "136": {"Pregunta": "¿Cuál es la complejidad media de quicksort?"},
     "137": {"Pregunta": "¿Cuál es la complejidad de la búsqueda binaria?"},
     "138": {
-        "Pregunta": "En una tabla hash con buena función de dispersión, ¿cuál es la complejidad media de búsqueda?",
+        "Pregunta": "¿Cuál es la complejidad temporal en el peor caso de merge sort sobre n elementos?",
     },
     "140": {
         "Pregunta": "¿Cuál es la complejidad de buscar en una lista no ordenada de n elementos?",

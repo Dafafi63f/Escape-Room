@@ -223,7 +223,7 @@ NUEVAS_SEMILLAS: dict[str, list[dict]] = {
             "pregunta": "En simulación de eventos discretos, ¿qué estructura gestiona el próximo evento?",
             "A": "Lista/cola de eventos ordenada por tiempo",
             "B": "Matriz de covarianza",
-            "C": "Tabla hash de gradientes",
+            "C": "Cola de prioridades de gradientes",
             "D": "Pila LIFO de hilos",
             "correcta": "A",
             "dificultad": "Media",

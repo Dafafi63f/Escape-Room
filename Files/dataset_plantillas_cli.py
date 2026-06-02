@@ -190,6 +190,27 @@ def _cmd_plantillas_revisar(_args: argparse.Namespace) -> int:
     return _run("revisar_plantillas.py", [])
 
 
+def _cmd_dataset_validar(_args: argparse.Namespace) -> int:
+    return _run("validar_csv.py", [])
+
+
+def _cmd_dataset_revision(_args: argparse.Namespace) -> int:
+    forward: list[str] = []
+    if args.estadisticas:
+        forward.append("--estadisticas")
+    return _run("revision_final.py", forward)
+
+
+def _cmd_dataset_variedad(args: argparse.Namespace) -> int:
+    forward = [args.accion_variedad]
+    if args.accion_variedad == "diversificar":
+        if args.dry_run:
+            forward.append("--dry-run")
+        if args.umbral is not None:
+            forward.extend(["--umbral", str(args.umbral)])
+    return _run("variedad_materias.py", forward)
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="CLI unificada de dataset/plantillas")
     sub = p.add_subparsers(dest="grupo", required=True)
@@ -226,6 +247,27 @@ def build_parser() -> argparse.ArgumentParser:
     p_lote.add_argument("--inplace", action="store_true")
     p_lote.add_argument("--dry-run", action="store_true")
     p_lote.set_defaults(func=_cmd_dataset_recategorizar_lote)
+
+    p_val = sub_ds.add_parser("validar", help="Validación integral del CSV")
+    p_val.set_defaults(func=_cmd_dataset_validar)
+
+    p_rev = sub_ds.add_parser("revision", help="Revisión amplia o solo estadísticas")
+    p_rev.add_argument(
+        "--estadisticas",
+        action="store_true",
+        help="Solo tablas de distribución (sin chequeos de calidad)",
+    )
+    p_rev.set_defaults(func=_cmd_dataset_revision)
+
+    p_var = sub_ds.add_parser("variedad", help="Análisis y diversificación temática")
+    p_var.add_argument(
+        "accion_variedad",
+        choices=["analizar", "diversificar", "curado"],
+        help="Subcomando de variedad_materias.py",
+    )
+    p_var.add_argument("--dry-run", action="store_true")
+    p_var.add_argument("--umbral", type=float, default=None)
+    p_var.set_defaults(func=_cmd_dataset_variedad)
 
     p_pl = sub.add_parser("plantillas", help="Operaciones sobre plantillas")
     sub_pl = p_pl.add_subparsers(dest="accion", required=True)

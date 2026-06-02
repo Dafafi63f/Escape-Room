@@ -17,7 +17,7 @@ from pathlib import Path
 from difflib import SequenceMatcher
 from utils_orden_temas import cargar_orden_temas
 from utils_dataset_csv import guardar_filas_csv, materia_de_fila
-from borrar_pycache import borrar_pycache_en_proyecto
+from utils_dataset_csv import borrar_pycache_en_proyecto
 
 
 BASE = Path(__file__).resolve().parent.parent

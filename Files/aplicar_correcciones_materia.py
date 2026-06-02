@@ -18,7 +18,7 @@ from balance_lib import PATCHES as _PATCHES_ALL
 PATCHES_CONTENIDO: dict[int, dict[str, str]] = {
     22: _PATCHES_ALL[22],
 }
-from borrar_pycache import borrar_pycache_en_proyecto
+from utils_dataset_csv import borrar_pycache_en_proyecto
 from utils_dataset_csv import guardar_filas_csv, materia_de_fila
 from utils_puntuacion_materia import recargar_criterios
 

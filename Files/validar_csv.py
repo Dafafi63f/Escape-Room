@@ -1,15 +1,20 @@
 """
 Script para validar la integridad del CSV de preguntas.
 """
+import re
 import sys
 from pathlib import Path
 
 import pandas as pd
 
+MATERIA_CRIPTO = "Informació i Seguretat"
+_PATRON_HASH = re.compile(r"\bhash(?:ing|es|ed)?\b", re.IGNORECASE)
+
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE / "Files"))
 from utils_dataset_csv import complejidad_global_valor, mapa_metadatos_por_materia  # noqa: E402
 from balance_lib import comprobar_orden_canonico_df  # noqa: E402
+from utils_variedad import UMBRAL_VALIDACION, alertas_variedad_csv  # noqa: E402
 
 # Evitar UnicodeEncodeError en Windows al imprimir caracteres especiales
 if sys.platform == "win32":
@@ -139,19 +144,45 @@ if len(tipo_inv) > 0:
 if len(diff_inv) == 0 and len(tipo_inv) == 0:
     print(f"\n6. Dificultad y Tipo: OK")
 
-# 7. Orden canónico del banco (listado, ladder TF..TD / CF..CD, bloques F/M/D, ciclo ABCD)
+# 7. «hash» solo en Informació i Seguretat (criptografía)
+hash_fuera_cripto = []
+for _, row in df.iterrows():
+    texto = " ".join(str(row.get(c, "") or "") for c in ("Pregunta", "A", "B", "C", "D"))
+    if _PATRON_HASH.search(texto) and str(row.get("Materia", "")).strip() != MATERIA_CRIPTO:
+        hash_fuera_cripto.append(int(row["Id"]))
+if hash_fuera_cripto:
+    print(
+        f"\n7. «hash» fuera de {MATERIA_CRIPTO}: {len(hash_fuera_cripto)} filas "
+        f"(Ids): {hash_fuera_cripto[:12]}"
+    )
+else:
+    print(f"\n7. «hash» solo en {MATERIA_CRIPTO}: OK")
+
+# 8. Variedad temática dentro de cada materia (pares con enunciado muy parecido)
+variedad_alertas = alertas_variedad_csv(df.to_dict("records"), umbral=UMBRAL_VALIDACION)
+if variedad_alertas:
+    print(
+        f"\n8. Variedad temática: {len(variedad_alertas)} pares similares "
+        f"(Jaccard≥{UMBRAL_VALIDACION})"
+    )
+    for mat, a, b, sim in variedad_alertas[:15]:
+        print(f"   - {mat}: Id {a} vs {b} (sim={sim})")
+else:
+    print("\n8. Variedad temática por materia: OK")
+
+# 9. Orden canónico del banco (listado, ladder TF..TD / CF..CD, bloques F/M/D, ciclo ABCD)
 errores_orden = comprobar_orden_canonico_df(df)
 if errores_orden:
-    print(f"\n7. Orden canónico: {len(errores_orden)} incidencias")
+    print(f"\n9. Orden canónico: {len(errores_orden)} incidencias")
     for msg in errores_orden[:25]:
         print(f"   - {msg}")
 else:
-    print("\n7. Orden canónico (balance_lib): OK")
+    print("\n9. Orden canónico (balance_lib): OK")
 
-# 8. Filas que antes eran problemáticas (spot-check)
+# 10. Filas que antes eran problemáticas (spot-check)
 ids_problematicos = [38, 41, 44, 265, 326, 336, 347, 396]
 filas_check = df[df["Id"].isin(ids_problematicos)]
-print(f"\n8. Revisión de filas antes problemáticas (muestra):")
+print(f"\n10. Revisión de filas antes problemáticas (muestra):")
 for _, row in filas_check.head(5).iterrows():
     preg = str(row["Pregunta"])[:60] + "..." if len(str(row["Pregunta"])) > 60 else row["Pregunta"]
     print(f"   Id {row['Id']}: {preg} | Correcta={row['Correcta']}")

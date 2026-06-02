@@ -7,6 +7,8 @@ Uso:
   python Files/balance.py validar [--detalle] [--estricto]
   python Files/balance.py ajustar [--dry-run] [--sin-dificultad] [--intercambios]
   python Files/balance.py reordenar [--solo-metadatos] [--explicar]
+  python Files/balance.py ordenar-ladder   # solo ladder F→M→D (mantiene Id y A-D)
+  python Files/ampliar_dataset_480.py      # 400→480 (12/materia, 2FT…2DC)
   python Files/balance.py corregir              # parches + git HEAD (destructivo)
   python Files/balance.py conservador           # regenerar + reordenar (flujo habitual)
   python Files/balance.py conservador --corregir  # incluye corregir antes
@@ -32,7 +34,7 @@ BASE = Path(__file__).resolve().parent.parent
 FILES = Path(__file__).resolve().parent
 sys.path.insert(0, str(FILES))
 
-from borrar_pycache import borrar_pycache_en_proyecto
+from utils_dataset_csv import borrar_pycache_en_proyecto
 from objetivos_balanceo import (
     TARGET_TOTAL_PREGUNTAS,
     objetivos_correcta_por_letra,
@@ -86,6 +88,16 @@ def cmd_reordenar(args: argparse.Namespace) -> int:
             explicar=args.explicar,
             sin_permutar_respuestas=args.sin_permutar_respuestas,
         )
+    except SystemExit as e:
+        code = e.code
+        return int(code) if isinstance(code, int) else 1
+
+
+def cmd_ordenar_ladder(_args: argparse.Namespace) -> int:
+    from balance_lib import ejecutar_ordenar_ladder
+
+    try:
+        return ejecutar_ordenar_ladder()
     except SystemExit as e:
         code = e.code
         return int(code) if isinstance(code, int) else 1
@@ -209,7 +221,7 @@ def cmd_agresivo(_args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Balance del dataset Preguntas.csv (400 filas, 40 materias)."
+        description="Balance del dataset Preguntas.csv (480 filas, 40 materias × 12)."
     )
     sub = parser.add_subparsers(dest="comando", required=True)
 
@@ -233,6 +245,11 @@ def main(argv: list[str] | None = None) -> int:
     p_re.add_argument("--solo-metadatos", action="store_true")
     p_re.add_argument("--explicar", action="store_true")
     p_re.add_argument("--sin-permutar-respuestas", action="store_true")
+
+    sub.add_parser(
+        "ordenar-ladder",
+        help="Orden F→M→D por bloque (Teoría/Cálculo); mantiene Id y opciones",
+    )
 
     sub.add_parser("corregir", help="Restaura desde git HEAD y aplica parches (destructivo)")
 
@@ -259,6 +276,7 @@ def main(argv: list[str] | None = None) -> int:
         "validar": cmd_validar,
         "ajustar": cmd_ajustar,
         "reordenar": cmd_reordenar,
+        "ordenar-ladder": cmd_ordenar_ladder,
         "corregir": cmd_corregir,
         "conservador": cmd_conservador,
         "agresivo": cmd_agresivo,

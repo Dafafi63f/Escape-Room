@@ -13,7 +13,7 @@ import csv
 import json
 import re
 from pathlib import Path
-from borrar_pycache import borrar_pycache_en_proyecto
+from utils_dataset_csv import borrar_pycache_en_proyecto
 
 
 BASE = Path(__file__).resolve().parent.parent

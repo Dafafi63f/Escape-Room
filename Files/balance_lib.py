@@ -22,8 +22,14 @@ BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from objetivos_balanceo import (
+    CALCULO_POR_MATERIA,
+    FMD_POR_MATERIA,
+    PREGUNTAS_POR_MATERIA,
+    SLOTS_CANONICOS_12,
     TARGET_TOTAL_PREGUNTAS,
+    TEORIA_POR_MATERIA,
     objetivos_correcta_por_letra,
+    objetivos_dificultad_globales,
     objetivos_dificultad_por_totales,
     preguntas_por_materia,
     preguntas_por_tipo_global,
@@ -43,11 +49,8 @@ def ord_diff(k: object) -> int:
 
 
 def target_fmd(bloque_idx: int) -> tuple[int, int, int]:
-    if bloque_idx < 14:
-        return (4, 3, 3)
-    if bloque_idx < 27:
-        return (3, 4, 3)
-    return (3, 3, 4)
+    _ = bloque_idx
+    return FMD_POR_MATERIA
 
 
 def labels_from_fmd(f: int, m: int, d: int) -> tuple[str, ...]:
@@ -98,48 +101,61 @@ def comprobar_orden_canonico_df(df) -> list[str]:
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
     temas, _ = cargar_orden_temas()
-    if len(df) != 400:
-        errs.append(f"Filas: se esperaban 400, hay {len(df)}")
+    n_tgt = TARGET_TOTAL_PREGUNTAS
+    n_tipo = preguntas_por_tipo_global()
+    tgt_diff = objetivos_dificultad_globales()
+    tgt_corr = objetivos_correcta_por_letra(n_tgt)
+    if len(df) != n_tgt:
+        errs.append(f"Filas: se esperaban {n_tgt}, hay {len(df)}")
     if set(df["Materia"].unique()) - set(temas):
         errs.append(f"Materias no listadas: {set(df['Materia'].unique()) - set(temas)}")
-    if df["Tipo"].value_counts().get("Teoria", 0) != 200 or df["Tipo"].value_counts().get("Calculo", 0) != 200:
-        errs.append("Tipos globales distintos de 200/200")
+    if df["Tipo"].value_counts().get("Teoria", 0) != n_tipo or df["Tipo"].value_counts().get("Calculo", 0) != n_tipo:
+        errs.append(f"Tipos globales distintos de {n_tipo}/{n_tipo}")
     dc = df["Dificultad"].value_counts()
-    if dc.get("Facil", 0) != 134 or dc.get("Media", 0) != 133 or dc.get("Dificil", 0) != 133:
-        errs.append(f"Dificultad global: {dc.to_dict()} (obj. 134/133/133)")
+    if (
+        dc.get("Facil", 0) != tgt_diff["Facil"]
+        or dc.get("Media", 0) != tgt_diff["Media"]
+        or dc.get("Dificil", 0) != tgt_diff["Dificil"]
+    ):
+        errs.append(f"Dificultad global: {dc.to_dict()} (obj. {tgt_diff})")
     for L in LETRAS_ORDEN:
-        if df["Correcta"].value_counts().get(L, 0) != 100:
-            errs.append(f"Correcta {L}: {df['Correcta'].value_counts().get(L, 0)} (obj. 100)")
+        if df["Correcta"].value_counts().get(L, 0) != tgt_corr[L]:
+            errs.append(f"Correcta {L}: {df['Correcta'].value_counts().get(L, 0)} (obj. {tgt_corr[L]})")
     esp = df["Id"].astype(int).map(lambda x: LETRAS_ORDEN[(x - 1) % 4])
     corr = df["Correcta"].astype(str).str.strip().str.upper()
     bad_ciclo = df[corr != esp]
     if len(bad_ciclo):
         errs.append(f"Ciclo Correcta vs Id: {len(bad_ciclo)} filas (muestra Id {bad_ciclo['Id'].head(5).tolist()})")
 
+    ppm = preguntas_por_materia()
+    pat_tipo = ["Teoria"] * TEORIA_POR_MATERIA + ["Calculo"] * CALCULO_POR_MATERIA
     for bi, tema in enumerate(temas):
         sub = df[df["Materia"] == tema].copy()
-        if len(sub) != 10:
-            errs.append(f"{tema!r}: {len(sub)} filas (obj. 10)")
+        if len(sub) != ppm:
+            errs.append(f"{tema!r}: {len(sub)} filas (obj. {ppm})")
             continue
         sub["_ord"] = sub["Id"].astype(int)
         sub = sub.sort_values("_ord")
         tipos = sub["Tipo"].tolist()
-        if tipos != ["Teoria"] * 5 + ["Calculo"] * 5:
-            errs.append(f"{tema!r}: tipo no es TTTTTCCCCC: {tipos}")
+        if tipos != pat_tipo:
+            errs.append(f"{tema!r}: tipo no es {''.join('T' if t == 'Teoria' else 'C' for t in pat_tipo)}: {tipos}")
         fmd = target_fmd(bi)
         vc = sub["Dificultad"].value_counts()
         if vc.get("Facil", 0) != fmd[0] or vc.get("Media", 0) != fmd[1] or vc.get("Dificil", 0) != fmd[2]:
             errs.append(f"{tema!r}: F/M/D bloque {vc.to_dict()} vs obj. {fmd}")
-        difs_t = [ord_diff(x) for x in sub.iloc[:5]["Dificultad"]]
-        for i in range(4):
+        difs_t = [ord_diff(x) for x in sub.iloc[:TEORIA_POR_MATERIA]["Dificultad"]]
+        for i in range(TEORIA_POR_MATERIA - 1):
             if difs_t[i] > difs_t[i + 1]:
                 errs.append(f"{tema!r}: ladder Teoría roto en pos. {i}: {difs_t}")
                 break
-        difs_c = [ord_diff(x) for x in sub.iloc[5:10]["Dificultad"]]
-        for i in range(4):
+        difs_c = [ord_diff(x) for x in sub.iloc[TEORIA_POR_MATERIA:ppm]["Dificultad"]]
+        for i in range(CALCULO_POR_MATERIA - 1):
             if difs_c[i] > difs_c[i + 1]:
                 errs.append(f"{tema!r}: ladder Cálculo roto en pos. {i}: {difs_c}")
                 break
+        slots = list(zip(sub["Tipo"], sub["Dificultad"]))
+        if list(slots) != list(SLOTS_CANONICOS_12):
+            errs.append(f"{tema!r}: estructura distinta de 2FT 2MT 2DT 2FC 2MC 2DC")
     return errs
 
 
@@ -168,11 +184,12 @@ def ejecutar_reordenar(
     nuevas: list[dict] = []
     for bi, tema in enumerate(temas):
         bloque = por_materia[tema]
-        if len(bloque) != 10:
-            raise SystemExit(f"{tema!r}: se esperaban 10 filas, hay {len(bloque)}")
+        ppm = preguntas_por_materia()
+        if len(bloque) != ppm:
+            raise SystemExit(f"{tema!r}: se esperaban {ppm} filas, hay {len(bloque)}")
         teo = [x for x in bloque if str(x.get("Tipo", "")).strip() == "Teoria"]
         cal = [x for x in bloque if str(x.get("Tipo", "")).strip() == "Calculo"]
-        if len(teo) != 5 or len(cal) != 5:
+        if len(teo) != TEORIA_POR_MATERIA or len(cal) != CALCULO_POR_MATERIA:
             raise SystemExit(f"{tema!r}: tipo {len(teo)} Teoria / {len(cal)} Calculo")
         teo.sort(key=lambda x: (ord_diff(x.get("Dificultad")), int(x["Id"])))
         cal.sort(key=lambda x: (ord_diff(x.get("Dificultad")), int(x["Id"])))
@@ -193,7 +210,7 @@ def ejecutar_reordenar(
         )
         nuevas.extend(bloque_filas)
 
-    assert len(nuevas) == 400
+    assert len(nuevas) == TARGET_TOTAL_PREGUNTAS
     for i, r in enumerate(nuevas, start=1):
         r["Id"] = str(i)
         if not sin_permutar:
@@ -208,7 +225,65 @@ def ejecutar_reordenar(
 
     guardar_filas_csv(list(COLUMNAS_PREGUNTAS), nuevas, PATH_CSV)
     modo = "solo metadatos" if solo_metadatos else ("sin permutar A-D" if sin_permutar else "ABCD cíclico")
-    print(f"OK: orden canónico, Id 1..400 ({modo})")
+    print(f"OK: orden canónico, Id 1..{TARGET_TOTAL_PREGUNTAS} ({modo})")
+    return 0
+
+
+def ejecutar_ordenar_ladder() -> int:
+    """Ordena filas por ladder F→M→D dentro de cada bloque (6 Teoría + 6 Cálculo).
+
+    No renumerar Id ni permutar A-D. Útil tras revisar contenido sin pasar por `reordenar` completo.
+    """
+    import csv
+
+    import pandas as pd
+
+    rows = list(csv.DictReader(PATH_CSV.open(encoding="utf-8"), delimiter=";"))
+    temas, _ = cargar_orden_temas()
+    por_materia: dict[str, list[dict]] = {t: [] for t in temas}
+    for r in rows:
+        por_materia[str(r["Materia"]).strip()].append(r)
+
+    nuevas: list[dict] = []
+
+    def ladder_sort_block(block: list[dict]) -> list[dict]:
+        block = sorted(block, key=lambda r: int(r["Id"]))
+        ids = [int(r["Id"]) for r in block]
+        teo = sorted(
+            [r for r in block if str(r.get("Tipo", "")).strip() == "Teoria"],
+            key=lambda r: (ord_diff(r.get("Dificultad")), int(r["Id"])),
+        )
+        cal = sorted(
+            [r for r in block if str(r.get("Tipo", "")).strip() == "Calculo"],
+            key=lambda r: (ord_diff(r.get("Dificultad")), int(r["Id"])),
+        )
+        n_teo = TEORIA_POR_MATERIA
+        head, tail_t = (teo[:n_teo], teo[n_teo:]) if len(teo) >= n_teo else (teo, [])
+        pool = sorted(tail_t + cal, key=lambda r: (ord_diff(r.get("Dificultad")), int(r["Id"])))
+        if len(head) + len(pool) != len(block):
+            return block
+        ordered = head + pool
+        out: list[dict] = []
+        for slot, src in zip(ids, ordered, strict=True):
+            row = {c: src[c] for c in COLUMNAS_PREGUNTAS}
+            row["Id"] = str(slot)
+            out.append(row)
+        return out
+
+    ppm = preguntas_por_materia()
+    for tema in temas:
+        bloque = por_materia[tema]
+        if len(bloque) != ppm:
+            raise SystemExit(f"{tema!r}: se esperaban {ppm} filas, hay {len(bloque)}")
+        nuevas.extend(ladder_sort_block(bloque))
+
+    nuevas.sort(key=lambda r: int(r["Id"]))
+    guardar_filas_csv(list(COLUMNAS_PREGUNTAS), nuevas, PATH_CSV)
+    df = pd.read_csv(PATH_CSV, sep=";", encoding="utf-8")
+    errs = [e for e in comprobar_orden_canonico_df(df) if "ladder" in e]
+    if errs:
+        raise SystemExit("Ladder aún roto:\n" + "\n".join(errs))
+    print("OK: ladder F->M->D por bloque (Id y Correcta sin cambios)")
     return 0
 
 
@@ -762,8 +837,8 @@ def ejecutar_corregir() -> int:
     except subprocess.CalledProcessError:
         print("Error: no se pudo leer HEAD:Data/Preguntas.csv desde git")
         return 1
-    if len(rows) != 400:
-        print(f"Se esperaban 400 filas en git, hay {len(rows)}")
+    if len(rows) != TARGET_TOTAL_PREGUNTAS:
+        print(f"Se esperaban {TARGET_TOTAL_PREGUNTAS} filas en git, hay {len(rows)}")
         return 1
 
     print("2) Aplicando parches de contenido/materia…")

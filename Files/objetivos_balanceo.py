@@ -11,7 +11,27 @@ from __future__ import annotations
 from utils_orden_temas import cargar_orden_temas
 
 # Total de filas que deben quedar tras el balanceo completo.
-TARGET_TOTAL_PREGUNTAS = 400
+TARGET_TOTAL_PREGUNTAS = 480
+
+# 12 preguntas por materia: 2FT 2MT 2DT 2FC 2MC 2DC (teoría luego cálculo, ladder F→D).
+PREGUNTAS_POR_MATERIA = 12
+SLOTS_CANONICOS_12: tuple[tuple[str, str], ...] = (
+    ("Teoria", "Facil"),
+    ("Teoria", "Facil"),
+    ("Teoria", "Media"),
+    ("Teoria", "Media"),
+    ("Teoria", "Dificil"),
+    ("Teoria", "Dificil"),
+    ("Calculo", "Facil"),
+    ("Calculo", "Facil"),
+    ("Calculo", "Media"),
+    ("Calculo", "Media"),
+    ("Calculo", "Dificil"),
+    ("Calculo", "Dificil"),
+)
+TEORIA_POR_MATERIA = 6
+CALCULO_POR_MATERIA = 6
+FMD_POR_MATERIA = (4, 4, 4)
 
 # El banco de plantillas debe ser más amplio que el CSV publicado (reserva para
 # sustituciones sin repetir enunciados del dataset activo).
@@ -27,8 +47,9 @@ def preguntas_por_materia() -> int:
     """Preguntas por cada materia del listado (TARGET_TOTAL / N materias)."""
     n = num_materias_listado()
     if n == 0:
-        return TARGET_TOTAL_PREGUNTAS
-    return TARGET_TOTAL_PREGUNTAS // n
+        return PREGUNTAS_POR_MATERIA
+    q = TARGET_TOTAL_PREGUNTAS // n
+    return q if q == PREGUNTAS_POR_MATERIA else PREGUNTAS_POR_MATERIA
 
 
 def plantillas_minimas_por_materia() -> int:

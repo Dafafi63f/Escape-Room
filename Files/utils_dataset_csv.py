@@ -183,3 +183,20 @@ def renumerar_ids(filas: list[dict], start: int = 1) -> None:
     """Renumera la columna Id en el orden actual de la lista."""
     for i, fila in enumerate(filas, start=start):
         fila["Id"] = str(i)
+
+
+def borrar_pycache_en_proyecto(base: Path | None = None) -> tuple[int, int]:
+    """Borra carpetas ``__pycache__`` bajo ``base`` (por defecto raíz del proyecto)."""
+    import shutil
+
+    objetivo = base or BASE
+    carpetas = [p for p in objetivo.rglob("__pycache__") if p.is_dir()]
+    borradas = 0
+    errores = 0
+    for p in carpetas:
+        try:
+            shutil.rmtree(p)
+            borradas += 1
+        except OSError:
+            errores += 1
+    return borradas, errores

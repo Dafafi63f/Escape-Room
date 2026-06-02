@@ -8,7 +8,7 @@ import json
 from collections import defaultdict
 from objetivos_balanceo import plantillas_minimas_por_materia, preguntas_por_materia
 from utils_orden_temas import cargar_orden_temas
-from borrar_pycache import borrar_pycache_en_proyecto
+from utils_dataset_csv import borrar_pycache_en_proyecto
 
 PATH_PLANTILLAS = "Data/plantillas.json"
 TARGET_POR_TEMA = plantillas_minimas_por_materia()

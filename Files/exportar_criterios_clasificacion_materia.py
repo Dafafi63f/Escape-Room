@@ -19,7 +19,7 @@ import csv
 from collections import defaultdict
 from pathlib import Path
 
-from borrar_pycache import borrar_pycache_en_proyecto
+from utils_dataset_csv import borrar_pycache_en_proyecto
 from utils_puntuacion_materia import MATERIAS, recargar_criterios, SEP_KEYWORDS
 
 BASE = Path(__file__).resolve().parent.parent

@@ -38,9 +38,9 @@ for r in rows:
     seen.add(key)
     out.append(r)
 
-if len(out) != 400:
+if len(out) != 480:
     print(
-        f"AVISO: tras deduplicar quedan {len(out)} filas (esperadas 400). "
+        f"AVISO: tras deduplicar quedan {len(out)} filas (esperadas 480). "
         "Ejecuta fix_final_materias.py antes de reordenar.",
         file=sys.stderr,
     )
