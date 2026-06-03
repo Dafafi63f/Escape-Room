@@ -462,8 +462,11 @@ def ejecutar_todo(inplace: bool = False, dry_run: bool = False, seed: int = 42) 
 
     guardar_filas_csv(fieldnames, filas_nuevas, PATH_PREGUNTAS)
 
-    if ejecutar_reordenar(solo_metadatos=True) != 0:
-        return 1
+    try:
+        if ejecutar_reordenar(solo_metadatos=True) != 0:
+            return 1
+    except SystemExit as e:
+        print(f"AVISO: reordenar omitido ({e})")
     rc_val = ejecutar_validar()
     if rc_val != 0:
         return rc_val

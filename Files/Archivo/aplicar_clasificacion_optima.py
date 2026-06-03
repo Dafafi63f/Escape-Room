@@ -1,6 +1,8 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+LEGACY — deshabilitado (banco cerrado 2026-06-03). No ejecutar.
+
 Revisa todas las preguntas y ajusta Materia + Tipo + Dificultad a la combinación óptima
 inferida del enunciado (clasificar_pregunta).
 
@@ -25,8 +27,8 @@ import csv
 import sys
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+BASE = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from balance_lib import ejecutar_reordenar, ejecutar_validar
 from dataset_pipeline import (
@@ -125,4 +127,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from utils_banco_cerrado import rechazar_script_deprecado
+
+    rechazar_script_deprecado("aplicar_clasificacion_optima.py")
     raise SystemExit(main())

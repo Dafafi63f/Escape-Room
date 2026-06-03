@@ -9,11 +9,17 @@ Este Trabajo de Fin de Grado plantea el diseño e implementacion de un sistema d
 - analisis de calidad del dataset,
 - y evolucion hacia modelos pedagogicos mas realistas (multiasignatura y prerequisitos).
 
-El punto de partida actual es un banco de 480 preguntas en formato CSV y un juego en Python que selecciona preguntas por `Materia` y `Dificultad`. Las filas del CSV siguen un **orden canónico** (listado de materias, bloques 5+5 Teoría/Cálculo, escalón de dificultad y ciclo de respuestas correctas; ver sección **14**). El inventario de ficheros de datos y scripts queda descrito en la **seccion 14**.
+El punto de partida actual es un banco de 480 preguntas en formato CSV y un juego en Python con **modo libre** implementado (`Juego/juego_cuestionario.py`). Los modos **historia** (progresión narrativa) y **feedback** (retroalimentación pedagógica) están **en desarrollo**. Las filas del CSV siguen un **orden canónico** (listado de materias, bloques 5+5 Teoría/Cálculo, escalón de dificultad y ciclo de respuestas correctas; ver sección **14**). El inventario de ficheros de datos y scripts queda descrito en la **seccion 14**.
 
 ## 2. Estado actual del sistema
 
-Actualmente, cada pregunta se representa con una etiqueta principal de `Materia` en `Data/Preguntas.csv`. El juego (`Juego/juego_cuestionario.py`) utiliza esta etiqueta para filtrar preguntas en partida y enriquecerlas con metadatos del archivo `Data/listado_materias.csv`.
+Actualmente, cada pregunta se representa con una etiqueta principal de `Materia` en `Data/Preguntas.csv`. El **modo libre** del juego utiliza esta etiqueta para filtrar preguntas en partida y enriquecerlas con metadatos del archivo `Data/listado_materias.csv`.
+
+| Modo | Estado | Descripción breve |
+|------|--------|-------------------|
+| **Libre** | Implementado | Partida configurable, filtros, dificultad progresiva, ranking. **Banco:** (1) dataset = MODO FINAL; (2–3) plantillas = MODO BETA (todo el pool o solo entradas no presentes en el CSV revisado). |
+| **Historia** | En desarrollo | Avance por escenas o salas ligadas al grado (escape room / novela gráfica); los puzles del banco desbloquean la narrativa. |
+| **Feedback** | En desarrollo | Tras cada respuesta, explicación orientada al aprendizaje (acierto/error, conceptos, vínculo con materias y, en el futuro, prerrequisitos). |
 
 Esta modelizacion es funcional para una primera version, pero presenta limitaciones didacticas:
 
@@ -52,28 +58,30 @@ Dado el volumen total (480 preguntas), se considera razonable un plan de revisio
 
 Este enfoque reduce carga, mejora calidad experta y acorta tiempos de iteracion.
 
-### 5.1 Estado de la revision manual (2026-06-02)
+### 5.1 Estado de la revision manual (2026-06-03)
 
 | Tramo | Ids | Materias (resumen) | Registro |
 |-------|-----|-------------------|----------|
 | Hecho | 1–30 | Àlgebra, Càlcul I, Fonaments | `Data/revision_manual.md` |
 | Hecho | 31–130 | Iniciació … Modelització i Inferència (13 materias) | `Data/revision_manual.md` |
 | Hecho | 131–200 | Tècniques … Optimització (7 materias) | `Data/revision_manual.md` |
-| Pendiente | 241–480 | Aprenentatge Computacional … Visió per Computador (20 materias; ids tras ampliación 12/materia) | `Data/revision_manual.md` |
+| Hecho | 201–240 | Visualització 3D … Optimització (cierre bloque 20 materias) | `Data/revision_manual.md` |
+| Hecho | 241–480 | Aprenentatge Computacional … Visió per Computador (20 materias) | `Data/revision_manual.md` |
 
-**Progreso:** ~200 / 480 preguntas revisadas en contenido previo (los **Id** cambiaron al pasar de 10 a 12 por materia; revalidar por bloque). Tras cada lote: `balance_lib.ejecutar_validar` y `python Files/inyectar_dataset_en_plantillas.py`.
+**Progreso:** **480 / 480** — banco cerrado por el autor (redacción genérica, sin referencias a temario de asignatura). Mantenimiento de artefactos: `limpiar_plantillas.py` → `inyectar_dataset_en_plantillas.py` → `sincronizar_plantillas_repuesto.py` → `auditar_distractores.py` (ver `Data/revision_manual.md` cabecera).
 
 **Cambios destacados en 31–130:** Programari (terminal/shell/git, sin HPC); Grafs con A* y Dijkstra (sin ruta del viajante); POO solo Python; Probabilitat con una Bayes; BDR id 105 normalización; EDO sin Wronskiano y id 120 PVI; Modelització sin RL, bloque de inferencia coherente.
 
-**Cambios destacados en 131–200:** Complexa/Fourier; Dades Complexes (Puig, bootstrap); IA (temario UAB, sin A*); MN (PDF 01–19); Optimització (Simplex/Newton/KKT). Visualització 3D (141–150): revisado sin alterar contenido salvo petición explícita.
+**Cambios destacados en 131–200:** Complexa/Fourier; Dades Complexes (regresión, bootstrap); IA (búsqueda y razonamiento, sin A*); MN (cálculo numérico); Optimització (Simplex/Newton/KKT). Visualització 3D (141–150): revisado sin alterar contenido salvo petición explícita.
 
 ## 6. Proximos pasos
 
 1. Definir criterios de etiquetado para `Materias_relacionadas` y `Prerequisitos`.
 2. Adaptar scripts de validacion y estadisticas para soportar etiquetas multiples.
 3. Mantener compatibilidad temporal para leer datasets antiguos con columna `Tema` (los scripts en `Files/` la normalizan a `Materia` al cargar o guardar; ver `utils_dataset_csv.py`).
-4. Actualizar el juego para incorporar modos de seleccion por relacion entre materias.
-5. Ejecutar una primera ronda de revision docente por bloques (en curso: **~200/480**; ver seccion 5.1 y `Data/revision_manual.md`).
+4. Implementar **modo historia** y **modo feedback** en el cliente de juego (hoy solo está el **modo libre**); en paralelo, preparar selección por `Materias_relacionadas` / prerrequisitos cuando existan en el CSV.
+5. ~~Revision por bloques del banco~~ **Hecho (480/480)**; opcional: pulido de distractores según `Data/auditoria_distractores.md` y ampliar pool en materias con pocas plantillas extra.
+6. **Futuro:** unicidad semántica completa (ver §11.3 «Tareas pendientes»): 3 pares en CSV, ~13 intra-materia en plantillas, catálogo internet por materia, etc.
 
 ## 7. Contribucion esperada
 
@@ -96,7 +104,7 @@ En esta iteracion se han aplicado cambios concretos sobre el modelo de materias 
 - Se han realizado ajustes de coherencia en grupos y niveles para reflejar simultaneidad o progresion cuando correspondia.
 - El banco `Data/Preguntas.csv` queda definido con **480** preguntas (**12 por materia**: 2FT 2MT 2DT 2FC 2MC 2DC), columna **`Materia`** (no `Tema`) y **10 columnas** (`Id`, `Materia`, `Dificultad`, `Tipo`, `Pregunta`, `A`…`D`, `Correcta`); el resto de metadatos academicos sale de `listado_materias.csv` al cargar o al guardar con `utils_dataset_csv.guardar_filas_csv`.
 
-En la aplicacion del quiz (`Juego/juego_cuestionario.py`):
+En la aplicacion del quiz — **modo libre** (`Juego/juego_cuestionario.py`):
 
 - Se carga `Data/listado_materias.csv` como fuente de metadatos academicos.
 - Cada pregunta se enriquece con `grupo`, `nivel`, `curso` y `semestre` a partir de su `materia`.
@@ -244,7 +252,17 @@ flowchart LR
 
 ## 11. Seccion tecnica del script del juego en Python
 
-El archivo `Juego/juego_cuestionario.py` implementa el motor principal del quiz en consola. Su diseño separa la carga de datos, la logica de partida y la persistencia de resultados para facilitar mantenimiento y evolucion.
+El archivo `Juego/juego_cuestionario.py` implementa hoy el **modo libre** del quiz en consola. Los modos **historia** y **feedback** se documentan como trabajo en curso y compartirán la misma capa de carga de `Data/Preguntas.csv` y `listado_materias.csv` cuando se implementen.
+
+El diseño separa la carga de datos, la logica de partida y la persistencia de resultados para facilitar mantenimiento y evolucion hacia los otros modos.
+
+### 11.0 Modos de juego (alcance TFG)
+
+| Modo | Estado | Motor actual |
+|------|--------|----------------|
+| Libre | **Implementado** | `juego_cuestionario.py` — banco 1 dataset (final) o 2–3 plantillas (beta), filtros, ranking |
+| Historia | **En desarrollo** | Narrativa por escenas; el banco de preguntas como retos de avance |
+| Feedback | **En desarrollo** | Explicación y contexto didáctico tras cada respuesta (no solo acierto/fallo) |
 
 ### 11.1 Entrada de datos y resolucion de rutas
 
@@ -266,9 +284,31 @@ Cada fila del CSV se transforma en una instancia de la clase `Pregunta`, que inc
 
 Este modelo evita trabajar con diccionarios sueltos durante la partida y mejora la legibilidad de la logica.
 
-### 11.3 Flujo de partida y filtros
+### 11.3 Banco de preguntas y flujo de partida (modo libre)
 
-Al iniciar, el jugador elige nombre y numero de preguntas objetivo. Luego selecciona un filtro principal entre:
+Al iniciar cada partida, el jugador elige el **banco**:
+
+| Opción | Calidad | Fuente |
+|--------|---------|--------|
+| 1 — Dataset | **MODO SEGURO** (por defecto) | `Data/Preguntas.csv` — **480** preguntas revisadas |
+| 2 — Todo | **MODO BETA** | **480 + 960 = 1440** (dataset + pool extra de plantillas) |
+| 3 — Plantillas extra | **MODO BETA** | **960** instancias (**24** por materia, 2× el dataset; no revisadas) |
+
+Equilibrio del pool extra: `python Files/equilibrar_pool_extra_juego.py --inplace` (tras cambios en `plantillas.json`). Si hay duplicados o variantes sintéticas (`ampliado_perm`, `pool_extra`, …): `python Files/dedup_reemplazar_plantillas.py --inplace` y después volver a equilibrar. Catálogo de reemplazo: `Files/catalogo_internet_plantillas.py`.
+
+La coincidencia con el dataset usa la misma clave que el mantenimiento (materia + enunciado + opciones + correcta). Las plantillas con placeholders sin sustituir se omiten.
+
+**Estado de datos (cerrado para uso, 2026-06):** `Preguntas.csv` (**480**), `plantillas.json` (copias `dataset_480` alineadas, pool extra **960**, bancos del juego **480 / 960 / 1440**) y metadatos en `listado_materias.csv` se consideran **correctos y listos para usar**. El **modo seguro** (banco 1) es el recomendado para evaluación del TFG; modos 2–3 son beta.
+
+**Tareas pendientes (futuro — calidad / unicidad semántica):** no bloquean el uso actual; revisar con `python Files/duplicados.py revisar`.
+
+1. **CSV (modo seguro):** sustituir o reescribir **3 pares similares** (Ids 14↔21, 298↔322, 69↔72).
+2. **Plantillas (misma materia):** reducir **~13 pares similares** intra-materia (p. ej. repuesto vs `internet`).
+3. **Plantillas (entre materias):** ampliar `catalogo_internet_plantillas.py` con preguntas distintas por materia, no solo sufijo `[materia]`, para bajar **~129 pares** entre temas de la misma temática.
+4. **Limpieza opcional:** alinear o eliminar entradas `repuesto` que dupliquen enunciado pero no opciones del CSV (p. ej. LSTM, ratio de Sharpe).
+5. **Modo beta:** valorar dedup semántica al cargar el banco extra si se exige unicidad global entre las 960 instancias jugables.
+
+Tras elegir banco, el jugador indica nombre y numero de preguntas objetivo. Luego selecciona un filtro principal entre:
 
 - todas las preguntas,
 - filtrado por tematica,
@@ -357,7 +397,7 @@ Evaluar el correcto funcionamiento del videojuego y su valor como herramienta de
 
 3. Descripción del videojuego y alcance
 
-El proyecto consistirá en el desarrollo de un videojuego tipo escape room con elementos de novela gráfica. El jugador avanzará a través de diferentes escenas o “salas”, cada una asociada a una temática concreta del grado.
+El proyecto consistirá en el desarrollo de un videojuego tipo escape room con elementos de novela gráfica. El jugador avanzará a través de diferentes escenas o “salas”, cada una asociada a una temática concreta del grado. Esa experiencia corresponde al **modo historia** (en desarrollo). Hoy el repositorio ofrece un **modo libre** operativo (cuestionario con filtros y ranking) y planifica además un **modo feedback** (explicaciones tras cada respuesta).
 
 Para avanzar en la historia, el jugador deberá resolver puzles matemáticos y computacionales, tales como:
 
@@ -435,9 +475,11 @@ Esta seccion resume los ficheros relevantes del codigo y de los datos para que l
 
 | Fichero | Rol |
 |---------|-----|
-| `Preguntas.csv` | Banco principal: **480** preguntas (**40 × 12**), separador `;`, UTF-8. **10 columnas** en orden: `Id`;`Materia`;`Dificultad`;`Tipo`;`Pregunta`;`A`;`B`;`C`;`D`;`Correcta`. **Estructura por materia:** 2FT 2MT 2DT 2FC 2MC 2DC (6 Teoría + 6 Cálculo, ladder F→M→D en cada mitad). Reparto global: **160 / 160 / 160** dificultad; **120** por letra A–D; `Correcta` según `(Id−1) mod 4`. Ampliación: `python Files/ampliar_dataset_480.py`; ladder: `python Files/balance.py ordenar-ladder`. |
+| `Preguntas.csv` | Banco principal: **480** preguntas (**40 × 12**), separador `;`, UTF-8. **10 columnas** en orden: `Id`;`Materia`;`Dificultad`;`Tipo`;`Pregunta`;`A`;`B`;`C`;`D`;`Correcta`. **Estructura por materia:** 2FT 2MT 2DT 2FC 2MC 2DC (6 Teoría + 6 Cálculo, ladder F→M→D en cada mitad). Reparto global: **160 / 160 / 160** dificultad; **120** por letra A–D; `Correcta` según `(Id−1) mod 4`. Validación: `python Files/mantenimiento.py validar`. Regeneración histórica: solo `Files/Archivo/` con `TFG_PERMITIR_CSV=1`. |
 | `listado_materias.csv` | **40** materias del grado con columnas `Id`, `Materia`, `Grupo`, `Nivel`, `Curso`, `Semestre`, `Tematica` (y metadatos usados por el juego). |
-| `plantillas.json` | Plantillas por materia para generar o sustituir preguntas en los scripts de mantenimiento y balanceo. |
+| `plantillas.json` | Pool por materia para mantenimiento; el juego puede usarlo en **MODO BETA** (opciones 2–3 del modo libre). **MODO FINAL** = solo `Preguntas.csv`. |
+| `auditoria_distractores.md` / `.json` | Informe de calidad de opciones A–D (generado por `auditar_distractores.py`). |
+| `revision_manual.md` | Trazabilidad interna de la revisión por bloques de Ids. |
 | `criterios_clasificacion_materia.csv` | Palabras clave y notas por materia; fuente de `utils_puntuacion_materia.py` (clasificación semántica en balance agresivo). |
 | `Historic_qualificacions_MatCAD_completo.csv` | Tabla historica de qualificacions (CSV) para analisis estadistico auxiliar. |
 
@@ -452,72 +494,98 @@ El tamano objetivo del banco tras el pipeline completo es **`TARGET_TOTAL_PREGUN
 
 **Clasificación por contenido:** `utils_clasificacion_pregunta.clasificar_pregunta(enunciado, A, B, C, D, correcta)` devuelve la mejor tripleta Materia + Tipo + Dificultad inferida solo del texto. `comparar_con_asignacion(fila)` contrasta con las columnas del CSV; la **Dificultad** del banco canónico sigue la escalera del bloque (F/M/D), por lo que la inferida es orientativa salvo contrastes fuertes (Facil vs Dificil).
 
-**`Files/balance.py`** es el punto único de entrada: `validar`, `ajustar`, `reordenar`, `corregir`, `conservador` (flujo habitual) y `agresivo`. Por defecto **`ajustar` y `conservador` regeneran** preguntas desde `plantillas.json`; no reetiquetan el mismo enunciado. `agresivo` añade `duplicados.py exacto` y `reordenar` completo.
+**`Files/mantenimiento.py`** es el punto único de entrada del banco cerrado (`validar`, `revision`, `plantillas`, `auditar-*`, …). **`Files/balance.py`** solo delega `validar`. Los comandos de regeneración (`conservador`, `agresivo`, …) están en `Files/Archivo/` y bloqueados para el CSV.
 
 **`Files/duplicados.py`** centraliza la deduplicación: `revisar`, `plantillas`, `todo` (flujo recomendado), `exacto` y `enunciado`. Criterios compartidos en `utils_deduplicacion.py`.
 
 Scripts antiguos de balanceo y deduplicación (`balancear_*.py`, `balanceo_completo.py`, `ordenar_dataset.py`, `eliminar_duplicados*.py`, `deduplicar_plantillas.py`, etc.) se han **unificado** en `balance.py`, `dataset_pipeline.py` y `duplicados.py`; no deben invocarse por nombre antiguo.
 
-### 14.3 Catalogo de scripts en `Files/`
+### 14.3 Catálogo de scripts: `Files/` (activos) vs `Files/Archivo/` (legado)
 
-| Script | Funcion resumida |
-|--------|------------------|
-| `utils_dataset_csv.py` | Lectura/escritura CSV, `COLUMNAS_PREGUNTAS`, `fila_pregunta`, `materia_de_fila`, comprobacion interna con metadatos del listado al guardar, `ordenar_filas_por_tema_y_id` (orden ligero por listado + Id; no sustituye al orden canónico completo), `borrar_pycache_en_proyecto`. |
-| `utils_variedad.py` | Similitud Jaccard entre enunciados (variedad temática por materia). |
-| `variedad_materias.py` | **CLI variedad:** `analizar`, `diversificar` (plantillas), `curado` (parches por Id). |
-| `dataset_plantillas_cli.py` | Enrutador: balance, recategorizar, validar, revision, variedad, plantillas. |
-| `utils_orden_temas.py` | Carga el orden de materias desde `listado_materias.csv`. |
-| `utils_texto.py` | Normalizacion de texto (p. ej. deduplicacion por enunciado). |
-| `objetivos_balanceo.py` | Constantes y funciones de objetivos numericos del pipeline (400 preguntas). |
-| `balance.py` | **CLI única de balance:** `validar`, `ajustar`, `reordenar`, `corregir`, `conservador`, `agresivo`. |
-| `balance_lib.py` | Validación, orden canónico (`reordenar`, `comprobar_orden_canonico_df`), `ajustar`, parches `corregir`. |
-| `dataset_pipeline.py` | Regeneración del dataset desde plantillas (materias, tipos, dificultad, correctas); `sustituir_filas_incoherentes`. |
-| `validar_csv.py` | Validacion de integridad del CSV de preguntas y del orden canónico. |
-| `revision_final.py` | Revision amplia: nulos, duplicados, distribuciones, orden canónico; `--estadisticas` solo tablas. |
-| `estadisticas_historic_qualificacions.py` | Estadisticas sobre el CSV historico de qualificacions. |
-| `duplicados.py` | **CLI única de deduplicación:** `revisar`, `plantillas`, `todo`, `exacto`, `enunciado`. |
-| `duplicados_lib.py` | Lógica de revisión, dedup plantillas/dataset, exacto y enunciado. |
-| `utils_deduplicacion.py` | Criterios compartidos (similitud semántica, esqueletos, familias de plantilla). |
-| `reducir_dataset_objetivo.py` | Reduce el dataset a un total objetivo con criterios de diversidad. |
-| `crear_borrar_preguntas.py` | Anade o elimina preguntas desde plantillas (CLI). |
-| `utils_puntuacion_materia.py` | Keywords por Id de materia (`puntuar_texto_completo`, `mejor_materia_por_texto`). |
-| `utils_clasificacion_pregunta.py` | **Clasificación unificada:** dado enunciado+opciones+correcta, infiere Materia, Tipo y Dificultad; `comparar_con_asignacion` detecta incoherencias. |
-| `clasificar_pregunta.py` | CLI: clasificar una pregunta, un Id o todo el dataset (`--solo-incoherentes`). |
-| `aplicar_clasificacion_optima.py` | Revisa las 400 filas: sustituye por regeneración desde plantillas cuando Materia/Tipo (o Dificultad con contraste fuerte) no encajan con el texto; ajusta 5+5 y reordena. |
-| `revisar_materia_contenido.py` | Variante de revisión/sustitución (dataset y/o `plantillas.json`); ver `aplicar_clasificacion_optima.py` para el flujo completo del banco. |
-| `aplicar_correcciones_materia.py` | Parches manuales puntuales (Ids concretos); uso excepcional tras revisión docente. |
-| `fix_final_materias.py` | **Mantenimiento principal** del banco revisado: reclasificación por contenido, bancos fijos por materia, validación y guardado de `Preguntas.csv`. |
-| `sync_plantillas_materias.py` | Mismas reglas de contenido sobre `plantillas.json`; `--inyectar` vuelca el CSV. |
-| `limpiar_duplicados_csv.py` | Solo elimina duplicados (materia+enunciado); no rellena filas (usar `fix_final_materias.py`). |
-| `revisar_castellano_csv.py` | Ortografía y parches por Id; no usar en bloques ya cerrados (p. ej. Programari 42–50, POO 91–100). |
-| `reparar_materia_algoritmes.py` | Legacy: movimientos por Id vía `recategorizar_y_equilibrar` (supersedido por `fix_final_materias.py`). |
-| `recategorizar_y_equilibrar.py` | Mueve un `Id` a otra materia manteniendo balance 5+5. |
-| `inyectar_dataset_en_plantillas.py` | Vuelca preguntas del CSV en `plantillas.json` sin duplicar entradas. |
-| `revisar_plantillas.py` | Comprueba cobertura entre plantillas y listado de materias. |
-| `ampliar_plantillas.py` | Amplía el pool de plantillas; al final llama a `duplicados.py revisar`. |
-| `asegurar_plantillas_sobre_dataset.py` | Inyecta el dataset en plantillas y comprueba mínimos por materia. |
-| `exportar_criterios_clasificacion_materia.py` | Regenera columnas derivadas de `criterios_clasificacion_materia.csv`. |
-| `borrar_pycache.py` | Borra carpetas `__pycache__` (delega en `utils_dataset_csv.borrar_pycache_en_proyecto`). |
+**Criterio:** en **`Files/`** queda todo lo que usa el banco cerrado (solo lectura del CSV o mantenimiento de `plantillas.json`). En **`Files/Archivo/`** queda la regeneración/reescritura histórica del CSV y CLIs sustituidos; al ejecutarlos, `utils_banco_cerrado.py` bloquea salvo `TFG_PERMITIR_CSV=1`.
 
-### 14.4 Flujo de mantenimiento recomendado
+#### Entrada y orquestación (`Files/`)
 
-Tras editar preguntas o plantillas a mano:
+| Script | Función |
+|--------|---------|
+| `mantenimiento.py` | **CLI principal:** `validar`, `revision`, `dataset`, `auditar-*`, `plantillas`, `duplicados`, `criterios`, `pycache`. |
+| `balance.py` | Alias → `mantenimiento.py` (solo `validar` operativo; resto mensaje de banco cerrado). |
+| `duplicados.py` + `duplicados_lib.py` | Dedup y revisión (`revisar`, `plantillas`, …). |
+| `plantillas_sync.py` | `inyectar`, `limpiar`, `repuesto`, `pipeline` sobre `plantillas.json`. |
+| `equilibrar_pool_extra_juego.py` | Pool extra 24×40 para el juego (solo JSON). |
+| `dedup_reemplazar_plantillas.py` | Purga sintéticas + catálogo internet + dedup (JSON). |
+| `validacion_dataset.py` | Revisión amplia del CSV (`mantenimiento revision` / `dataset`). |
+| `auditoria.py` | Distractores y `auditar-plantillas`. |
+| `clasificar_pregunta.py` | Clasificación por contenido (lectura). |
+| `exportar_criterios_clasificacion_materia.py` | Regenera `criterios_clasificacion_materia.csv`. |
+| `estadisticas_historic_qualificacions.py` | Estadísticas del histórico de qualificacions. |
+| `borrar_pycache.py` | Limpieza de `__pycache__`. |
 
-1. `python Files/duplicados.py revisar` — informe en consola (sin modificar archivos).
-2. `python Files/duplicados.py todo --dry-run` y, si conviene, `todo --inplace`.
-3. `python Files/aplicar_clasificacion_optima.py --dry-run` y `python Files/aplicar_clasificacion_optima.py --inplace` — coherencia Materia+Tipo+Dificultad por contenido (regeneración, no reetiquetado).
-4. `python Files/balance.py conservador` — ajuste numérico y orden canónico.
-5. `python Files/balance.py validar --detalle` — comprobación final.
+#### Bibliotecas compartidas (`Files/` — no ejecutar como CLI salvo las de arriba)
 
-Informes de revisión: salida por consola (no hace falta guardar ficheros `.txt` en `Data/`). **Trazabilidad de revision manual:** un solo fichero `Data/revision_manual.md` (actualizar al cerrar cada tramo de Ids).
+| Módulo | Función |
+|--------|---------|
+| `utils_dataset_csv.py` | CSV, columnas, guardado con metadatos, `borrar_pycache_en_proyecto`. |
+| `utils_banco_cerrado.py` | Protección del CSV cerrado. |
+| `objetivos_balanceo.py` | Objetivos 480, `USO_PLANTILLA_DATASET`, slots 12×40. |
+| `balance_lib.py` | Validación y orden canónico (usado por `validar`). |
+| `utils_orden_temas.py`, `utils_texto.py` | Orden de materias y normalización. |
+| `utils_deduplicacion.py` | Criterios de similitud. |
+| `utils_plantillas_pool.py` | Pool plantillas y etiqueta `dataset_480`. |
+| `utils_clasificacion_pregunta.py`, `utils_puntuacion_materia.py` | Clasificación semántica. |
+| `plantillas_repuesto_catalogo.py`, `catalogo_internet_plantillas.py` | Catálogos de ampliación (datos). |
 
-Coherencia metadatos↔texto: `clasificar_pregunta.py --dataset --solo-incoherentes` (solo lectura); sustitución automática del banco con `aplicar_clasificacion_optima.py --inplace`. Validaciones: `validar_csv.py`, `revision_final.py`. Variedad temática: `variedad_materias.py analizar` / `diversificar` / `curado`. Recuperación fuerte: `balance.py agresivo`.
+#### Legado / regeneración (`Files/Archivo/` — no usar en operación normal)
+
+| Script | Motivo en Archivo |
+|--------|-------------------|
+| `dataset_pipeline.py` | Regeneración masiva del CSV. |
+| `fix_final_materias.py` | Reclasificación y guardado del banco (histórico). |
+| `aplicar_clasificacion_optima.py`, `aplicar_correcciones_materia.py` | Sustitución/regeneración por contenido. |
+| `ampliar_dataset_480.py` | Ampliación 400→480 (ya aplicada). |
+| `ampliar_plantillas.py`, `ampliar_plantillas_desde_web.py` | Ampliación antigua del JSON (sustituido por `equilibrar` + `catalogo_internet`). |
+| `reducir_dataset_objetivo.py`, `crear_borrar_preguntas.py` | Ajuste de tamaño del CSV. |
+| `recategorizar_y_equilibrar.py`, `reparar_materia_algoritmes.py` | Movimientos puntuales de Ids. |
+| `limpiar_duplicados_csv.py`, `revisar_castellano_csv.py` | Limpieza/ortografía CSV. |
+| `revisar_materia_contenido.py` | Revisión/sustitución por materia. |
+| `variedad_materias.py` + `utils_variedad.py` | Variedad temática (Jaccard). |
+| `dataset_plantillas_cli.py`, `materias_cli.py` | Enrutadores CLI antiguos. |
+| `sync_plantillas_materias.py` | Reubica plantillas por reglas de contenido (sustituido por `plantillas pipeline`). |
+| `balance.py` | Copia legacy de validación; usar `Files/balance.py` o `mantenimiento.py validar`. |
+
+Scripts unificados que **ya no existen** en la raíz de `Files/` (nombres antiguos en documentación vieja): `validar_csv.py`, `revision_final.py`, `limpiar_plantillas.py`, `sincronizar_plantillas_repuesto.py`, `auditar_distractores.py`, `auditar_plantillas_global.py`, `asegurar_plantillas_sobre_dataset.py`, `revisar_plantillas.py` → cubiertos por `validacion_dataset.py`, `plantillas_sync.py`, `auditoria.py`, `mantenimiento.py`.
+
+### 14.4 Mantenimiento (banco cerrado)
+
+**Banco cerrado (2026-06-03):** `Data/Preguntas.csv` está protegido. `guardar_filas_csv()` y scripts en `Files/Archivo/` fallan salvo `TFG_PERMITIR_CSV=1`.
+
+**CLI:** `python Files/mantenimiento.py <comando>` (alias: `python Files/balance.py validar`).
+
+| Comando | Función |
+|---------|---------|
+| `validar` [--detalle] | Balance y orden canónico (solo lectura) |
+| `revision` / `revision --estadisticas` | Revisión del CSV |
+| `dataset` [--variedad] | Validación extendida |
+| `auditar-distractores` | Genera `Data/auditoria_distractores.md` |
+| `auditar-plantillas` | Cobertura de `plantillas.json` |
+| `plantillas pipeline` | limpiar → inyectar → repuesto → dedup |
+| `criterios` | Actualiza `criterios_clasificacion_materia.csv` |
+| `duplicados revisar` / `plantillas` | Ver `duplicados.py` |
+| `dedup_reemplazar_plantillas.py --inplace` | Purga sintéticas, dedup, inyecta catálogo internet; luego `equilibrar_pool_extra_juego.py --inplace` |
+
+**Otros:** `python Files/borrar_pycache.py` [--dry-run] · `clasificar_pregunta.py` (sin `--inplace`).
+
+**Flujo habitual:** (1) `validar` → (2) `plantillas pipeline` → (3) `criterios` → (4) `auditar-distractores`.
+
+**No ejecutar:** scripts en `Files/Archivo/`, ni `mantenimiento.py conservador|agresivo|ajustar|…`.
+
+**Documentación del banco:** `Data/revision_manual.md` (trazabilidad por materia). Informe de distractores: `Data/auditoria_distractores.md` (generado).
 
 ### 14.5 Juego y empaquetado (`Juego/`)
 
 | Elemento | Descripcion |
 |----------|-------------|
-| `juego_cuestionario.py` | Motor del cuestionario en consola: resolucion de rutas a `Data/`, filtros, dificultad progresiva, puntuacion, ranking. |
+| `juego_cuestionario.py` | **Modo libre**: banco dataset (final) o plantillas (beta), filtros, ranking. **Historia** / **feedback**: en desarrollo (§11.0). |
 | `ranking_quiz.csv` | Fichero **generado al jugar** (persistencia de partidas); ruta por defecto en la carpeta `Juego/` al ejecutar el `.py`. |
 | `juego_cuestionario.spec`, `build_exe_onefile.ps1`, carpeta `build/` | Artefactos PyInstaller / script de construccion del ejecutable. |
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Reubica entradas en plantillas.json según las mismas reglas de contenido que
@@ -20,7 +20,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent
+BASE = Path(__file__).resolve().parent.parent.parent
 PATH_PL = BASE / "Data" / "plantillas.json"
 PATH_CSV = BASE / "Data" / "Preguntas.csv"
 
@@ -297,7 +297,7 @@ def main() -> None:
 
     if args.inyectar:
         subprocess.run(
-            [sys.executable, str(BASE / "Files" / "inyectar_dataset_en_plantillas.py")],
+            [sys.executable, str(BASE / "Files" / "mantenimiento.py"), "plantillas", "inyectar"],
             cwd=BASE,
             check=True,
         )

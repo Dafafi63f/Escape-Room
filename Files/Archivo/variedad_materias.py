@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Variedad temática del banco: análisis, diversificación automática y parches curados.
 
@@ -18,7 +18,7 @@ from pathlib import Path
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-BASE = Path(__file__).resolve().parent.parent
+BASE = Path(__file__).resolve().parent.parent.parent
 PATH_CSV = BASE / "Data" / "Preguntas.csv"
 PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
 LETTERS = "ABCD"
@@ -800,4 +800,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    from utils_banco_cerrado import rechazar_script_deprecado
+
+    rechazar_script_deprecado("variedad_materias.py")
     raise SystemExit(main())

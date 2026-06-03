@@ -18,6 +18,7 @@ import re
 import unicodedata
 from difflib import SequenceMatcher
 
+from utils_plantillas_pool import es_uso_copia_dataset
 from utils_texto import normalizar_pregunta
 
 _STOPWORDS = frozenset(
@@ -445,19 +446,28 @@ def es_duplicado_de_alguna(candidata: dict, otras: list[dict]) -> bool:
     return False
 
 
+def _bucket_key_plantilla(fila: dict) -> str:
+    toks = sorted(clave_enunciado(fila).split())
+    if len(toks) >= 3:
+        return " ".join(toks[:3])
+    return clave_enunciado(fila)[:40]
+
+
 def deduplicar_plantillas_dict(
     plantillas: dict, solo_exactas: bool = False
 ) -> tuple[dict, int, int]:
-    """Unicidad global entre materias. Prioriza uso general > dataset_400 > …"""
+    """Unicidad global entre materias. Prioriza general > repuesto > … > dataset_*."""
     priority = {
         "general": 0,
-        "internet": 1,
-        "dificil": 2,
-        "calculo": 3,
-        "dataset_400": 4,
-        "ampliado_var": 5,
-        "ampliado_perm": 6,
-        "ampliado_num": 7,
+        "repuesto": 1,
+        "reserva": 1,
+        "internet": 2,
+        "dificil": 3,
+        "calculo": 4,
+        "dataset_480": 5,
+        "ampliado_var": 6,
+        "ampliado_perm": 7,
+        "ampliado_num": 8,
     }
     exact_removed = 0
     similar_removed = 0
@@ -474,8 +484,10 @@ def deduplicar_plantillas_dict(
         )
     )
 
+    from collections import defaultdict
+
     seen_exact: set[tuple] = set()
-    kept_global: list[dict] = []
+    kept_by_bucket: dict[str, list[dict]] = defaultdict(list)
     cleaned: dict = {tema: [] for tema in plantillas}
 
     for tema, t in flat:
@@ -485,14 +497,14 @@ def deduplicar_plantillas_dict(
             continue
 
         comp = {"Pregunta": t.get("pregunta", ""), **t}
-        if not solo_exactas and es_duplicado_de_alguna(
-            comp, [{"Pregunta": x.get("pregunta", ""), **x} for x in kept_global]
-        ):
-            similar_removed += 1
-            continue
+        if not solo_exactas:
+            bucket = _bucket_key_plantilla(comp)
+            if es_duplicado_de_alguna(comp, kept_by_bucket[bucket]):
+                similar_removed += 1
+                continue
+            kept_by_bucket[bucket].append(comp)
 
         seen_exact.add(k)
-        kept_global.append(t)
         cleaned[tema].append(t)
 
     return cleaned, exact_removed, similar_removed
@@ -501,14 +513,24 @@ def deduplicar_plantillas_dict(
 def quitar_plantillas_presentes_en_dataset(
     plantillas: dict, filas_dataset: list[dict]
 ) -> tuple[dict, int]:
-    """Elimina plantillas que dupliquen alguna fila del CSV (pool independiente del banco)."""
+    """Elimina plantillas del pool que dupliquen el CSV (conserva copias ``dataset_*``)."""
+    from collections import defaultdict
+
+    ds_por_bucket: dict[str, list[dict]] = defaultdict(list)
+    for r in filas_dataset:
+        ds_por_bucket[_bucket_key_plantilla(r)].append(r)
+
     removed = 0
     cleaned: dict = {}
     for tema, items in plantillas.items():
         kept = []
         for t in items:
+            if es_uso_copia_dataset(str(t.get("uso", ""))):
+                kept.append(t)
+                continue
             comp = {"Pregunta": t.get("pregunta", ""), **t}
-            if es_duplicado_de_alguna(comp, filas_dataset):
+            candidatos = ds_por_bucket.get(_bucket_key_plantilla(comp), [])
+            if candidatos and es_duplicado_de_alguna(comp, candidatos):
                 removed += 1
             else:
                 kept.append(t)

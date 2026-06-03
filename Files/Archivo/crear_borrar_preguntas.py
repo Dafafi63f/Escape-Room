@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Script para crear o borrar x preguntas del dataset de forma aleatoria.
 Uso:
@@ -20,20 +20,18 @@ from utils_dataset_csv import fila_pregunta, guardar_filas_csv, ordenar_filas_po
 from utils_dataset_csv import borrar_pycache_en_proyecto
 
 # Rutas relativas al directorio del proyecto
-BASE = Path(__file__).resolve().parent.parent
+BASE = Path(__file__).resolve().parent.parent.parent
 PATH_PREGUNTAS = BASE / "Data" / "Preguntas.csv"
 PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
 
 
 def cargar_plantillas():
-    """Carga plantillas priorizando uso general."""
+    """Carga plantillas: general + repuesto (subtemas no en el dataset activo)."""
+    from utils_plantillas_pool import pool_plantillas_materia
+
     with open(PATH_PLANTILLAS, "r", encoding="utf-8") as f:
         raw = json.load(f)
-    result = {}
-    for tema, items in raw.items():
-        generales = [t for t in items if t.get("uso") == "general"]
-        result[tema] = generales if generales else items
-    return result
+    return {tema: pool_plantillas_materia(items) for tema, items in raw.items()}
 
 
 def expandir_plantilla(template):
@@ -216,6 +214,9 @@ def main():
 
 
 if __name__ == "__main__":
+    from utils_banco_cerrado import rechazar_script_deprecado
+
+    rechazar_script_deprecado("crear_borrar_preguntas.py")
     try:
         main()
     finally:

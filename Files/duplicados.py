@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Punto único de entrada para deduplicación de Preguntas.csv y plantillas.json.
+Deduplicación de plantillas y revisión del banco cerrado.
 
-Uso:
+Uso seguro:
   python Files/duplicados.py revisar
   python Files/duplicados.py plantillas
-  python Files/duplicados.py todo --dry-run
-  python Files/duplicados.py todo --inplace
-  python Files/duplicados.py exacto          # duplicados exactos A-D (balance agresivo)
-  python Files/duplicados.py enunciado [--inplace]
 
-Flujo recomendado: revisar → todo --inplace → balance.py conservador (Memoria_TFG.md §14.4).
+Bloqueado (modifica Preguntas.csv): todo --inplace, enunciado --inplace, exacto.
+Ver Memoria_TFG.md §14.4
 """
 
 from __future__ import annotations
@@ -70,8 +67,14 @@ def main(argv: list[str] | None = None) -> int:
         if args.comando == "plantillas":
             return ejecutar_plantillas()
         if args.comando == "exacto":
-            return ejecutar_exacto()
+            from utils_banco_cerrado import rechazar_mutacion_dataset
+
+            rechazar_mutacion_dataset("duplicados.py exacto")
         if args.comando == "todo":
+            from utils_banco_cerrado import rechazar_mutacion_dataset
+
+            if args.inplace:
+                rechazar_mutacion_dataset("duplicados.py todo --inplace")
             if not args.inplace and not args.dry_run:
                 print("Indica --inplace o --dry-run")
                 return 2
@@ -81,6 +84,10 @@ def main(argv: list[str] | None = None) -> int:
                 seed=args.seed,
             )
         if args.comando == "enunciado":
+            from utils_banco_cerrado import rechazar_mutacion_dataset
+
+            if args.inplace:
+                rechazar_mutacion_dataset("duplicados.py enunciado --inplace")
             return ejecutar_enunciado(
                 inplace=args.inplace,
                 output=args.output,

@@ -1,9 +1,10 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CLI unificada para operaciones de dataset/plantillas.
+LEGACY — deshabilitado (banco cerrado 2026-06-03).
 
-Fase 1 de consolidación: este archivo enruta a scripts existentes.
+CLI unificada para regeneración de dataset/plantillas. No ejecutar.
+Ver Memoria_TFG.md §14.4
 """
 
 from __future__ import annotations
@@ -16,13 +17,17 @@ import sys
 import unicodedata
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent
-FILES = Path(__file__).resolve().parent
+ARCHIVO = Path(__file__).resolve().parent
+FILES = ARCHIVO.parent
+BASE = FILES.parent
 PATH_CSV = BASE / "Data" / "Preguntas.csv"
 
 
 def _run(script_name: str, args: list[str]) -> int:
-    cmd = [sys.executable, str(FILES / script_name), *args]
+    candidato = ARCHIVO / script_name
+    if not candidato.is_file():
+        candidato = FILES / script_name
+    cmd = [sys.executable, str(candidato), *args]
     # Evita fallos cp1252 cuando la ruta del proyecto contiene emoji.
     preview = " ".join([script_name, *args])
     print(f">>> {preview}")
@@ -297,5 +302,8 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    from utils_banco_cerrado import rechazar_script_deprecado
+
+    rechazar_script_deprecado("dataset_plantillas_cli.py")
     raise SystemExit(main())
 

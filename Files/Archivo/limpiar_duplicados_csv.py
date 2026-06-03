@@ -1,12 +1,7 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Elimina filas duplicadas (misma Materia + mismo enunciado) en Preguntas.csv.
-
-**No** rellena materias ni clona filas: para eso usar ``fix_final_materias.py``.
-
-Uso:
-  python Files/limpiar_duplicados_csv.py
+LEGACY — deshabilitado (banco cerrado 2026-06-03). No ejecutar.
 """
 
 from __future__ import annotations
@@ -15,12 +10,16 @@ import csv
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from balance_lib import ejecutar_reordenar, ejecutar_validar
 from utils_dataset_csv import guardar_filas_csv
 
-PATH = Path(__file__).resolve().parent.parent / "Data" / "Preguntas.csv"
+PATH = Path(__file__).resolve().parent.parent.parent / "Data" / "Preguntas.csv"
+
+from utils_banco_cerrado import rechazar_mutacion_dataset
+
+rechazar_mutacion_dataset("limpiar_duplicados_csv.py (legacy)")
 
 with PATH.open(encoding="utf-8", newline="") as f:
     reader = csv.DictReader(f, delimiter=";")

@@ -164,6 +164,9 @@ def ejecutar_reordenar(
     explicar: bool = False,
     sin_permutar_respuestas: bool = False,
 ) -> int:
+    from utils_banco_cerrado import rechazar_mutacion_dataset
+
+    rechazar_mutacion_dataset("balance_lib.ejecutar_reordenar")
     import pandas as pd
 
     if explicar:
@@ -234,6 +237,9 @@ def ejecutar_ordenar_ladder() -> int:
 
     No renumerar Id ni permutar A-D. Útil tras revisar contenido sin pasar por `reordenar` completo.
     """
+    from utils_banco_cerrado import rechazar_mutacion_dataset
+
+    rechazar_mutacion_dataset("balance_lib.ejecutar_ordenar_ladder")
     import csv
 
     import pandas as pd
@@ -371,8 +377,9 @@ def ejecutar_validar(detalle: bool = False, estricto: bool = False) -> int:
     for m in msgs:
         print(f"  - {m}")
     print(
-        "\nSugerencia: python Files/balance.py conservador "
-        "(regenera desde plantillas) o python Files/balance.py agresivo"
+        "\nSugerencia: revisar avisos en Data/revision_manual.md; "
+        "validar con python Files/balance.py validar. "
+        "No regenerar el banco (cerrado 2026-06-03)."
     )
     return 1
 
@@ -579,6 +586,9 @@ def ejecutar_ajuste(
     sin_dificultad: bool = False,
     intercambios: bool = False,
 ) -> int:
+    from utils_banco_cerrado import rechazar_mutacion_dataset
+
+    rechazar_mutacion_dataset("balance_lib.ejecutar_ajuste")
     if intercambios:
         return _ejecutar_ajuste_intercambios(
             dry_run=dry_run, sin_dificultad=sin_dificultad
@@ -831,6 +841,9 @@ def aplicar_parches(rows: list[dict]) -> int:
 
 
 def ejecutar_corregir() -> int:
+    from utils_banco_cerrado import rechazar_mutacion_dataset
+
+    rechazar_mutacion_dataset("balance_lib.ejecutar_corregir")
     print("1) Cargando base git HEAD…")
     try:
         rows = cargar_git_rows()

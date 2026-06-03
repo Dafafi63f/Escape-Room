@@ -133,16 +133,29 @@ def cargar_filas_csv(path_csv: Path | None = None) -> tuple[list[str], list[dict
 
 
 def guardar_filas_csv(
-    fieldnames: list[str] | None, filas: list[dict], path_csv: Path | None = None
+    fieldnames: list[str] | None,
+    filas: list[dict],
+    path_csv: Path | None = None,
+    *,
+    permitir_escritura: bool = False,
 ) -> None:
     """
     Guarda filas en CSV ';' con UTF-8.
     Solo persiste COLUMNAS_PREGUNTAS (en ese orden). Antes de escribir, enriquece en copia
     para comprobar coherencia con el listado; no vuelca al CSV columnas derivadas.
     El primer argumento se conserva por compatibilidad con scripts antiguos y no determina el orden.
+
+    Con el banco cerrado (utils_banco_cerrado.BANCO_CERRADO), no escribe salvo
+    permitir_escritura=True o la variable de entorno TFG_PERMITIR_CSV=1.
     """
+    from utils_banco_cerrado import rechazar_mutacion_dataset
+
     _ = fieldnames
     path = path_csv or PATH_PREGUNTAS
+    rechazar_mutacion_dataset(
+        f"guardar_filas_csv → {path.name}",
+        force=permitir_escritura,
+    )
     mapa = mapa_metadatos_por_materia()
     out_fn = list(COLUMNAS_PREGUNTAS)
     out_rows: list[dict] = []

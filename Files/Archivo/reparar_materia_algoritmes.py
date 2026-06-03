@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Reubica preguntas según reglas del proyecto (movimientos puntuales por Id).
@@ -13,8 +13,8 @@ import csv
 import sys
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+BASE = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from recategorizar_y_equilibrar import recategorizar_y_equilibrar_por_id
 
@@ -82,4 +82,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from utils_banco_cerrado import rechazar_script_deprecado
+
+    rechazar_script_deprecado("reparar_materia_algoritmes.py")
     raise SystemExit(main())

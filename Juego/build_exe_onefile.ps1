@@ -7,8 +7,12 @@ Set-Location $gameDir
 Write-Host "==> Carpeta de juego: $gameDir"
 
 # Asegura que PyInstaller esté disponible.
-python -m pip show pyinstaller *> $null
-if ($LASTEXITCODE -ne 0) {
+$pyiOk = $false
+try {
+    python -m PyInstaller --version | Out-Null
+    if ($LASTEXITCODE -eq 0) { $pyiOk = $true }
+} catch { $pyiOk = $false }
+if (-not $pyiOk) {
     Write-Host "==> Instalando PyInstaller..."
     python -m pip install pyinstaller
 }

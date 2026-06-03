@@ -81,7 +81,7 @@ Id;Materia;Dificultad;Tipo;Pregunta;A;B;C;D;Correcta
 80;Càlcul en Diverses Variables;Facil;Calculo;Integral doble de 1 sobre [0,1]×[0,1]?;2;0;0.5;1;D
 81;Càlcul en Diverses Variables;Media;Calculo;¿Cuánto es ∫∫_D 1 dA si D es círculo radio 1?;π;1;2π;π/2;A
 82;Càlcul en Diverses Variables;Media;Calculo;Para x = r·cos(θ) e y = r·sin(θ), ¿cuál es el jacobiano |∂(x,y)/∂(r,θ)|?;r²;r;1;r/2;B
-83;Càlcul en Diverses Variables;Dificil;Calculo;¿Cuál es la derivada parcial ∂/∂y de x²y?;2xy;y²;x²;2x;C
+83;Càlcul en Diverses Variables;Dificil;Teoria;¿Qué es el problema del vanishing gradient?;Gradientes muy pequeños en capas profundas;Exploding gradient;Overfitting;Underfitting;A
 84;Càlcul en Diverses Variables;Dificil;Calculo;∂/∂y de x²y³?;2xy³;x²y²;6xy;3x²y²;D
 85;Càlcul Numèric;Facil;Teoria;¿Qué es la regla del trapecio?;Aproximación de integral por trapecios;Método de Simpson;Monte Carlo;Cuadratura de Gauss;A
 86;Càlcul Numèric;Facil;Teoria;¿Qué es el error de redondeo?;Error de truncamiento;Error por precisión finita de coma flotante;Error de modelo;Error de medición;B
@@ -110,7 +110,7 @@ Id;Materia;Dificultad;Tipo;Pregunta;A;B;C;D;Correcta
 109;Programació Orientada als Objectes;Facil;Teoria;¿Qué es la herencia?;Una subclase hereda atributos y métodos de una superclase;Ocultar datos internos;Sustituir una implementación por otra;Definir varios métodos con el mismo nombre;A
 110;Programació Orientada als Objectes;Facil;Teoria;¿Qué es el encapsulamiento?;Herencia múltiple;Ocultar el estado interno y exponer una interfaz controlada;Crear instancias sin constructor;Importar módulos;B
 111;Programació Orientada als Objectes;Media;Teoria;¿Qué es el polimorfismo?;Copiar código entre clases;Ejecutar código en paralelo;La misma interfaz con distintas implementaciones;Compilar a bytecode;C
-112;Programació Orientada als Objectes;Media;Teoria;¿Qué caracteriza un método estático (@staticmethod) en Python?;Recibe self obligatorio;Es siempre privado;Solo existe en Java;No requiere instancia; se invoca desde la clase;D
+112;Programació Orientada als Objectes;Media;Teoria;¿Qué caracteriza un método estático (@staticmethod) en Python?;Recibe self obligatorio;Es siempre privado;Solo existe en Java;No requiere instancia: se invoca desde la clase;D
 113;Programació Orientada als Objectes;Dificil;Teoria;¿Qué es el acoplamiento en diseño de software?;Grado de dependencia entre módulos o clases;Número de métodos públicos;Tamaño de la jerarquía de herencia;Uso de tipado estático;A
 114;Programació Orientada als Objectes;Dificil;Teoria;¿Qué es la cohesión en diseño de software?;Herencia entre clases;Grado en que los elementos de un módulo pertenecen juntos;Número de instancias creadas;Velocidad de ejecución;B
 115;Programació Orientada als Objectes;Facil;Calculo;En Python, si C es una clase, ¿cuántas instancias crea la expresión C()?;0;2;1;Depende del nombre de la clase;C
@@ -240,77 +240,77 @@ Id;Materia;Dificultad;Tipo;Pregunta;A;B;C;D;Correcta
 239;Optimització;Dificil;Calculo;Con 3 restricciones de desigualdad, ¿cuántas ecuaciones de complementariedad λᵢ·gᵢ(x)=0 aparecen en KKT?;0;1;3;2;C
 240;Optimització;Dificil;Calculo;¿Cuántas variables en problema con 3 restricciones y 2 variables?;5;6;3;2;D
 241;Aprenentatge Computacional;Facil;Teoria;¿Qué es un batch?;Subconjunto de datos en una iteración;Epoch;Dataset completo;Muestra;A
-242;Aprenentatge Computacional;Facil;Teoria;¿Qué es el learning rate decay?;Aumentar η;Reducir η durante entrenamiento;η constante;Adaptive;B
+242;Aprenentatge Computacional;Facil;Teoria;¿Qué es el overfitting?;El modelo se ajusta demasiado al entrenamiento y generaliza mal;Falta siempre de datos de entrenamiento;Subajuste por modelo demasiado simple;Error exclusivo de redes profundas;A
 243;Aprenentatge Computacional;Media;Teoria;¿Qué es validación cruzada?;Train-test split;Holdout;Dividir datos en folds para evaluar robustez;Bootstrap;C
-244;Aprenentatge Computacional;Media;Teoria;¿Qué es el bias-variance tradeoff?;Overfitting;Underfitting;Regularización;Compromiso entre sesgo y varianza del modelo;D
+244;Aprenentatge Computacional;Media;Teoria;¿Qué describe el compromiso bias-variance en aprendizaje automático?;Solo el sesgo determina el error de test;Aumentar siempre la varianza mejora la generalización;Compromiso entre sesgo y varianza del error de predicción;Eliminar la varianza añadiendo más features;C
 245;Aprenentatge Computacional;Dificil;Teoria;¿Cómo se define un modelo predictivo?;Modelo que predice salida a partir de entrada;Modelo discriminativo;Modelo descriptivo;Modelo generativo;A
-246;Aprenentatge Computacional;Dificil;Teoria;¿Qué es el early stopping?;Regularización;Parar entrenamiento cuando valida empeora;Dropout;Batch norm;B
-247;Aprenentatge Computacional;Facil;Calculo;¿Cuántos parámetros en modelo con 3 inputs?;3;1;≥3;0;C
-248;Aprenentatge Computacional;Facil;Calculo;¿Cuántas épocas mínimo para ver todos los datos?;0;10;100;1;D
-249;Aprenentatge Computacional;Media;Calculo;¿Cuántos parámetros en regresión lineal con 5 features?;6;1;10;5;A
-250;Aprenentatge Computacional;Media;Calculo;¿Cuántos pesos en capa 100→50?;5000;5050;150;50;B
-251;Aprenentatge Computacional;Dificil;Calculo;Descenso en gradiente: si ∂L/∂w=4 y η=0,25, ¿actualización −η·∂L/∂w?;−0,25;1;−1;−4;C
+246;Aprenentatge Computacional;Dificil;Teoria;¿Qué es el early stopping?;Aumentar épocas aunque empeore validación;Parar entrenamiento cuando la métrica en validación deja de mejorar;Sustituir el conjunto de entrenamiento por el de test;Fijar el learning rate en cero desde el inicio;B
+247;Aprenentatge Computacional;Facil;Calculo;En un paso de descenso por gradiente, con w=5, η=0,5 y ∂L/∂w=2, ¿cuál es el nuevo w (w←w−η∂L/∂w)?;4;6;5;3;A
+248;Aprenentatge Computacional;Facil;Calculo;Si cada epoch usa 8 batches y se entrenan 2 epochs, ¿cuántas actualizaciones de parámetros (un paso por batch)?;8;10;16;32;C
+249;Aprenentatge Computacional;Media;Calculo;Con validación cruzada k=5 y 500 muestras (folds equilibrados), ¿cuántas muestras hay en cada fold de validación?;50;100;125;250;B
+250;Aprenentatge Computacional;Media;Calculo;En clasificación binaria, con TP=18 y FP=2, ¿cuál es la precisión TP/(TP+FP)?;0,9;0,2;0,8;18;A
+251;Aprenentatge Computacional;Dificil;Calculo;Con precisión=0,6 y recall=0,75, ¿cuál es la F1 (media armónica 2PR/(P+R))?;0,675;0,667;0,7;0,6;B
 252;Aprenentatge Computacional;Dificil;Calculo;Cross-entropy para p=[1,0] y q=[1,0]?;1;∞;0.5;0;D
-253;Computació i Simulació d'Altes Prestacions;Facil;Teoria;¿Qué es un semáforo?;Variable entera para sincronización entre procesos;Tipo de cola de mensajes;Planificador de CPU;Página de memoria;A
-254;Computació i Simulació d'Altes Prestacions;Facil;Teoria;¿Qué es la escalabilidad fuerte?;Solo aumentar p;Mantener eficiencia al aumentar p y problema;Speedup lineal;Throughput;B
-255;Computació i Simulació d'Altes Prestacions;Media;Teoria;En computación paralela, ¿qué mide la escalabilidad fuerte?;Rendimiento al crecer datos y recursos proporcionalmente;Latencia de red únicamente;Rendimiento con problema fijo al aumentar recursos;Consumo eléctrico por nodo;C
-256;Computació i Simulació d'Altes Prestacions;Media;Teoria;¿Qué es MPI?;Memoria compartida;GPU;Cluster;Message Passing Interface para paralelismo;D
-257;Computació i Simulació d'Altes Prestacions;Dificil;Teoria;¿Qué es la computación paralela?;Ejecución simultánea de tareas en múltiples procesadores;Distribuida;En la nube;Secuencial;A
+253;Computació i Simulació d'Altes Prestacions;Facil;Teoria;¿Para qué sirve principalmente OpenMP?;Paralelismo con memoria compartida en CPUs (directivas pragma);Paso de mensajes entre nodos de un clúster;Programar solo kernels en GPU NVIDIA;Sustituir el compilador del sistema operativo;A
+254;Computació i Simulació d'Altes Prestacions;Facil;Teoria;¿Qué es CUDA en computación de altas prestaciones?;API de NVIDIA para programar GPUs (kernels, hilos en dispositivo);Implementación de MPI para clústeres;Conjunto de directivas OpenACC;Protocolo de mensajería IoT;A
+255;Computació i Simulació d'Altes Prestacions;Media;Teoria;¿Qué caracteriza OpenACC?;Directivas de alto nivel para offload a aceleradores (p. ej. GPU);Biblioteca exclusiva de paso de mensajes entre nodos;Sustituto obligatorio de OpenMP en CPUs;Estándar solo para bases de datos distribuidas;A
+256;Computació i Simulació d'Altes Prestacions;Media;Teoria;¿Qué es Open MPI (OpenMPI)?;Implementación de MPI para comunicación entre procesos en clúster;Extensión de OpenMP para más de 64 threads en un solo núcleo;API CUDA para compilar en CPU sin GPU;Driver de red para contenedores Docker;A
+257;Computació i Simulació d'Altes Prestacions;Dificil;Teoria;¿Qué pareja API–modelo de programación es habitual en HPC?;OpenMP en memoria compartida (nodo) y OpenMPI en memoria distribuida (clúster);CUDA solo en CPU y OpenACC solo como MPI entre racks;OpenMPI con memoria compartida UMA y OpenMP entre racks;OpenACC sin aceleradores y CUDA sin GPU;A
 258;Computació i Simulació d'Altes Prestacions;Dificil;Teoria;La ley de Amdahl describe principalmente:;El tiempo de acceso a disco SSD;La cota superior del speedup al paralelizar limitada por la fracción secuencial;La eficiencia energética de GPUs;El ancho de banda de una red InfiniBand;B
-259;Computació i Simulació d'Altes Prestacions;Facil;Calculo;¿Qué es un hilo (thread)?;Un proceso;Un semáforo;Unidad de ejecución dentro de un proceso;Un mutex;C
-260;Computació i Simulació d'Altes Prestacions;Facil;Calculo;¿Qué es un mutex?;Cola de mensajes;Planificador;Página de memoria;Mecanismo de exclusión mutua;D
-261;Computació i Simulació d'Altes Prestacions;Media;Calculo;Con 4 CPUs y 10 procesos listos, ¿cuántos pueden ejecutarse a la vez?;4;10;1;14;A
-262;Computació i Simulació d'Altes Prestacions;Media;Calculo;Si el speedup con p procesadores es p/2, ¿cuál es la eficiencia?;100%;50%;25%;p/2;B
-263;Computació i Simulació d'Altes Prestacions;Dificil;Calculo;16 nodos tiempo 8s mismo problema 1 nodo 64s ¿escalabilidad fuerte?;Speedup 4;No;Sí speedup 8;Speedup 8;C
-264;Computació i Simulació d'Altes Prestacions;Dificil;Calculo;Si un programa tiene fracción paralelizable p=0.9, el speedup máximo teórico (Amdahl) al infinito es:;9;100;1/0.9;10;D
-265;Equacions en Derivades Parcials;Facil;Teoria;¿Qué es u_xx en 1D?;Segunda derivada espacial;Derivada temporal;Laplaciano 2D;Gradiente;A
-266;Equacions en Derivades Parcials;Facil;Teoria;¿Qué es u_t en la ecuación del calor?;Derivada espacial;Derivada temporal de u;Laplaciano;Fuente;B
-267;Equacions en Derivades Parcials;Media;Teoria;La ecuación del calor clásica es un ejemplo de EDP:;Elíptica;Hiperbólica pura;Parabólica;Algebraica;C
+259;Computació i Simulació d'Altes Prestacions;Facil;Calculo;Si el tiempo en 1 procesador es 80 s y en 4 procesadores 20 s (mismo problema), ¿speedup S=T₁/Tₚ?;2;4;8;20;B
+260;Computació i Simulació d'Altes Prestacions;Facil;Calculo;Con speedup S=6 y p=8 procesadores, ¿eficiencia E=S/p?;75%;50%;6/8;100%;A
+261;Computació i Simulació d'Altes Prestacions;Media;Calculo;En CUDA, un bloque tiene 128 threads. ¿Cuántos warps de 32 threads contiene?;2;4;8;128;B
+262;Computació i Simulació d'Altes Prestacions;Media;Calculo;Con `mpirun -np 4`, ¿cuántos procesos MPI se lanzan habitualmente?;1;2;4;8;C
+263;Computació i Simulació d'Altes Prestacions;Dificil;Calculo;Mismo problema: 1 nodo 64 s, 16 nodos 8 s. ¿Speedup S=T₁/T₁₆?;4;8;16;2;B
+264;Computació i Simulació d'Altes Prestacions;Dificil;Calculo;Si la fracción serial del programa es s=0,1, ¿speedup máximo teórico (Amdahl, N→∞)?;9;100;0,1;10;D
+265;Equacions en Derivades Parcials;Facil;Teoria;¿Cuál es la forma habitual de la ecuación de Burgers con viscosidad ν?;u_t + u·u_x = ν·u_xx;u_t = α·u_xx;u_xx + u_yy = 0;u_tt = c²·u_xx;A
+266;Equacions en Derivades Parcials;Facil;Teoria;¿Qué es u_t en la ecuación del calor?;Derivada espacial;Derivada temporal de u;Laplaciano;Término fuente independiente de u;B
+267;Equacions en Derivades Parcials;Media;Teoria;El modelo lineal de tránsito u_t + c·u_x = 0 es una EDP de tipo:;Elíptica;Parabólica;Hiperbólica;Algebraica;C
 268;Equacions en Derivades Parcials;Media;Teoria;¿Qué es la condición CFL?;Condición de contorno;Condición inicial;Convergencia;Restricción de estabilidad en diferencias finitas;D
 269;Equacions en Derivades Parcials;Dificil;Teoria;¿Qué es una EDP elíptica?;Ej: Laplace, sin dependencia temporal;Onda;Calor;Transporte;A
 270;Equacions en Derivades Parcials;Dificil;Teoria;La ecuación u_tt = c² u_xx es el prototipo clásico de EDP de tipo:;Elíptico;Hiperbólico (ondas);Parabólico;Estático degenerado;B
-271;Equacions en Derivades Parcials;Facil;Calculo;¿Cuántos puntos en malla 10×10?;81;121;100;20;C
-272;Equacions en Derivades Parcials;Facil;Calculo;¿Cuántas condiciones iniciales para ecuación del calor 1D?;2;0;3;1;D
-273;Equacions en Derivades Parcials;Media;Calculo;Solución u(x,t)=f(x-ct) satisface ecuación?;Onda;Calor;Laplace;Poisson;A
-274;Equacions en Derivades Parcials;Media;Calculo;CFL para ecuación onda con c=1, Δt=0.1, Δx=0.2?;1;0.5;2;0.1;B
-275;Equacions en Derivades Parcials;Dificil;Calculo;En una EDP de segundo orden, si B²−4AC>0 en un punto, ¿cómo se clasifica la ecuación en ese punto?;Elíptica;Parabólica;Hiperbólica;Degenerada;C
-276;Equacions en Derivades Parcials;Dificil;Calculo;En una EDP de segundo orden, si B^2-4AC>0 en un punto, como se clasifica la ecuacion en ese punto?;Elíptica;Parabolica;Degenerada;Hiperbolica;D
-277;Física, Abstracció i Computació;Facil;Teoria;¿Qué es la primera ley de Newton?;Un cuerpo mantiene su estado si no hay fuerza neta;Gravitación;Inercia;Segunda;A
-278;Física, Abstracció i Computació;Facil;Teoria;En dinámica molecular, el integrador velocity-Verlet se usa principalmente para:;Diagonalizar matrices;Avanzar posiciones y velocidades con estabilidad energética razonable;Generar números aleatorios cuánticos;Resolver ecuaciones algebraicas;B
-279;Física, Abstracció i Computació;Media;Teoria;¿Qué es la datación radiométrica?;Medir distancias;Espectroscopía;Determinar edad por desintegración de isótopos;Fotometría;C
-280;Física, Abstracció i Computació;Media;Teoria;¿Qué es la extinción interestelar?;Redshift;Paralaje;Refracción;Atenuación de luz por polvo;D
-281;Física, Abstracció i Computació;Dificil;Teoria;¿Qué es la velocidad de escape?;Velocidad mínima para escapar del campo gravitatorio;Velocidad orbital;Velocidad de la luz;Velocidad terminal;A
-282;Física, Abstracció i Computació;Dificil;Teoria;¿Qué es la energía potencial?;Térmica;Energía almacenada por posición o configuración;Cinética;Nuclear;B
-283;Física, Abstracció i Computació;Facil;Calculo;Si pH = -log[H⁺]. Si [H⁺]=0.001, pH?;2;4;3;1;C
-284;Física, Abstracció i Computació;Facil;Calculo;¿Cuántos átomos en H₂O?;2;1;4;3;D
-285;Física, Abstracció i Computació;Media;Calculo;z=1 en redshift. ¿Factor expansión?;2;1;0;10;A
-286;Física, Abstracció i Computació;Media;Calculo;¿Cuál es la energía cinética de m=2 kg y v=3 m/s?;0;9 J;18 J;6 J;B
-287;Física, Abstracció i Computació;Dificil;Calculo;Un coche pasa de 10 m/s a 25 m/s en 5 s. ¿Cuál es su aceleración media?;5 m/s²;7.5 m/s²;3 m/s²;15 m/s²;C
-288;Física, Abstracció i Computació;Dificil;Calculo;Energía cinética (1/2)mv². m=1, v=4?;4;2;16;8;D
+271;Equacions en Derivades Parcials;Facil;Calculo;Malla 1D en [0,1] con 11 nodos equiespaciados (incluye x=0 y x=1). ¿Paso espacial Δx?;0,01;0,1;0,11;1;B
+272;Equacions en Derivades Parcials;Facil;Calculo;La ecuación del calor u_t=α·u_xx (parabólica) en 1D requiere, además de contornos, ¿cuántas condiciones iniciales en t=0?;2;0;3;1;D
+273;Equacions en Derivades Parcials;Media;Calculo;En u_t + c·u_x = 0 (tránsito), un perfil u=f(x−ct) se desplaza con velocidad c. Si c=5, ¿desplazamiento en Δt=0,4?;0,4;1;2;5;C
+274;Equacions en Derivades Parcials;Media;Calculo;Ecuación de onda: número de Courant σ=c·Δt/Δx con c=1, Δt=0,1, Δx=0,2. ¿σ?;1;0,5;2;0,1;B
+275;Equacions en Derivades Parcials;Dificil;Calculo;EDP de 2º orden: si B²−4AC>0 en un punto, ¿tipo en ese punto?;Elíptica;Parabólica;Hiperbólica;Degenerada;C
+276;Equacions en Derivades Parcials;Dificil;Calculo;Calor 1D explícito: r=α·Δt/Δx². Con α=2, Δt=0,01, Δx=0,2, ¿r?;0,25;0,5;1;2;B
+277;Física, Abstracció i Computació;Facil;Teoria;En cinemática del MRU, ¿qué define la velocidad media?;Desplazamiento dividido entre el tiempo empleado;La fuerza neta dividida por la masa;El ángulo de reflexión respecto a la normal;La variación de energía interna por calor;A
+278;Física, Abstracció i Computació;Facil;Teoria;¿Qué enuncia la tercera ley de Newton (pares acción-reacción)?;A toda acción corresponde una reacción igual y opuesta;F = m·a en cualquier referencial acelerado;La luz se refleja con ángulo igual al de incidencia;El calor fluye espontáneamente del frío al caliente;A
+279;Física, Abstracció i Computació;Media;Teoria;En dinámica, ¿qué expresa la segunda ley de Newton?;La fuerza neta sobre un cuerpo es F=m·a;La velocidad es siempre constante sin roce;V = I·R en todo conductor;v = λ·f para cualquier partícula;A
+280;Física, Abstracció i Computació;Media;Teoria;En electricidad, ¿qué establece la ley de Ohm en un conductor óhmico?;V = I·R;E = m·c²;F = G·m₁·m₂/r²;P = σ·T⁴;A
+281;Física, Abstracció i Computació;Dificil;Teoria;En campos, ¿cómo se define el campo eléctrico E en un punto?;Fuerza eléctrica por unidad de carga de prueba positiva;Trabajo por unidad de masa;Flujo magnético por unidad de volumen;Presión por unidad de temperatura;A
+282;Física, Abstracció i Computació;Dificil;Teoria;En energía mecánica, si solo actúan fuerzas conservativas, ¿qué se conserva?;La suma de energía cinética y potencial mecánica;La corriente eléctrica en un circuito abierto;El índice de refracción del medio;La frecuencia de un fotón emitido;A
+283;Física, Abstracció i Computació;Facil;Calculo;Electricidad: V=I·R. Con R=10 Ω e I=2 A, ¿tensión V?;5 V;20 V;0,2 V;12 V;B
+284;Física, Abstracció i Computació;Facil;Calculo;Ondas: v=λ·f. Con λ=2 m y f=5 Hz, ¿velocidad v?;2,5 m/s;10 m/s;7 m/s;0,4 m/s;B
+285;Física, Abstracció i Computació;Media;Calculo;Termodinámica: gas ideal p·V=n·R·T. Con n=1 mol, T=300 K, R≈8,31, ¿p·V aproximado (J)?;2493;300;8,31;831;B
+286;Física, Abstracció i Computació;Media;Calculo;Energía cinética (1/2)m·v². Con m=2 kg y v=3 m/s, ¿E?;0 J;9 J;18 J;6 J;B
+287;Física, Abstracció i Computació;Dificil;Calculo;Cinemática: un coche pasa de 10 m/s a 25 m/s en 5 s. ¿Aceleración media?;5 m/s²;7,5 m/s²;3 m/s²;15 m/s²;C
+288;Física, Abstracció i Computació;Dificil;Calculo;Óptica: reflexión en espejo plano. Si el ángulo de incidencia es 35°, ¿ángulo de reflexión respecto a la normal?;70°;35°;55°;0°;B
 289;Teoria de la Informació;Facil;Teoria;¿Qué expresa H(X) en teoría de la información?;Entropía de la variable aleatoria X;Error cuadrático medio;Capacidad de memoria caché;Tiempo de convergencia;A
-290;Teoria de la Informació;Facil;Teoria;"La información mutua I(X;Y) es siempre:";Negativa;No negativa;Menor que -1;Compleja;B
+290;Teoria de la Informació;Facil;Teoria;¿Qué objetivo tiene la codificación de fuente?;Añadir paridad para corregir errores de canal;Comprimir la salida usando menos bits (p. ej. Huffman);Cifrar con clave pública RSA;Medir la capacidad de un canal ruidoso;B
 291;Teoria de la Informació;Media;Teoria;¿Qué es la entropía condicional?;Entropía conjunta;Información mutua;Incertidumbre de X dado Y;Entropía de fuente;C
-292;Teoria de la Informació;Media;Teoria;"¿Qué es la información mutua I(X;Y)?";Entropía conjunta;Entropía condicional;Capacidad;Reducción de entropía de X al conocer Y;D
-293;Teoria de la Informació;Dificil;Teoria;¿Qué es la entropía de Shannon?;Medida de incertidumbre de una fuente;Información mutua;Capacidad del canal;Redundancia;A
+292;Teoria de la Informació;Media;Teoria;¿Qué hace la codificación de canal frente a la de fuente?;Comprime símbolos según su probabilidad;Elimina la entropía de la fuente;Es equivalente a un archivo ZIP;Añade redundancia para detectar o corregir errores de transmisión;D
+293;Teoria de la Informació;Dificil;Teoria;En compresión sin pérdida, la longitud media por símbolo no puede ser menor que:;La entropía H(X) de la fuente;La capacidad del canal;El número de símbolos del alfabeto;La latencia de la red;A
 294;Teoria de la Informació;Dificil;Teoria;El primer teorema de Shannon (codificación sin ruido) afirma, en esencia, que:;La capacidad de un canal siempre es log₂ del alfabeto;La tasa mínima de bits por símbolo puede acercarse a la entropía de la fuente;La entropía crece siempre al aplicar XOR;Toda fuente i.i.d. tiene entropía nula;B
-295;Teoria de la Informació;Facil;Calculo;¿Qué es la entropía condicional H(X|Y)?;Suma de entropías marginales siempre;Capacidad de canal C;Incertidumbre de X una vez observado Y;Código Huffman óptimo;C
-296;Teoria de la Informació;Facil;Calculo;En teoría de la información, ¿qué es la capacidad de canal?;Entropía de la fuente únicamente;Número de símbolos del alfabeto;Longitud del mensaje en bytes;Tasa máxima transmisible con error arbitrariamente pequeño;D
+295;Teoria de la Informació;Facil;Calculo;Si H(X,Y)=3 bits y H(Y)=1 bit, ¿cuántos bits tiene H(X|Y)?;4 bits;1 bit;2 bits;3 bits;C
+296;Teoria de la Informació;Facil;Calculo;Un mensaje ocupa 1000 bits y un 10% son redundancia de canal (paridad). ¿Bits de información útil aproximados?;1000;100;1100;900;D
 297;Teoria de la Informació;Media;Calculo;¿Cuándo alcanza máximo la entropía de una Bernoulli(p)?;p=0.5;p=0.1;p=0.9;p=1;A
-298;Teoria de la Informació;Media;Calculo;¿Cuál es la información de p=1/8?;3 bits;0.125;1;8;B
-299;Teoria de la Informació;Dificil;Calculo;"¿Qué mide la información mutua I(X;Y)?";Solo la entropía marginal H(X);La latencia de red;Cuánto reduce conocer Y la incertidumbre sobre X;El tamaño del alfabeto;C
-300;Teoria de la Informació;Dificil;Calculo;¿Cuál es la entropía máxima de una fuente con 4 símbolos?;log2(4);2;4;2 bits;D
-301;Bases de Dades No Relacionals;Facil;Teoria;¿Qué es MongoDB?;Base de datos documental NoSQL;Base relacional;Grafo;Clave-valor puro;A
-302;Bases de Dades No Relacionals;Facil;Teoria;¿De qué concepto se trata cuando: qué ventaja tiene nosql para datos no estructurados?;Normalización;Esquema flexible;ACID estricto;JOINs eficientes;B
-303;Bases de Dades No Relacionals;Media;Teoria;¿Qué es Cassandra?;Documental;Relacional;Base de datos NoSQL columnar distribuida;Grafo;C
-304;Bases de Dades No Relacionals;Media;Teoria;¿Cómo se define el operador $project en MongoDB?;Ordenación;Agrupación;Filtrado;Proyección de campos;D
-305;Bases de Dades No Relacionals;Dificil;Teoria;¿Qué es una base clave-valor?;Almacén donde se accede por clave;Documental;Grafo;Columnar;A
-306;Bases de Dades No Relacionals;Dificil;Teoria;¿Qué es un documento en MongoDB?;Una fila;Estructura JSON/BSON que representa un registro;Una columna;Una tabla;B
-307;Bases de Dades No Relacionals;Facil;Calculo;¿Qué es el modelo documento?;Tablas y filas;Nodos y aristas;Almacena datos en documentos (ej. JSON);Clave-valor;C
-308;Bases de Dades No Relacionals;Facil;Calculo;¿Cuántos tipos principales de NoSQL hay?;2;3;1;4;D
+298;Teoria de la Informació;Media;Calculo;¿Cuántos bits de auto-información tiene un símbolo con p=1/8?;0,125;3 bits;1 bit;8 bits;B
+299;Teoria de la Informació;Dificil;Calculo;El segundo teorema de Shannon (canal con ruido) establece que:;La entropía de toda fuente es cero;La información mutua es siempre negativa;Por debajo de la capacidad C se puede transmitir con error arbitrariamente pequeño;Huffman elimina todo error de canal;C
+300;Teoria de la Informació;Dificil;Calculo;Con Huffman óptimo y probabilidades (1/2, 1/4, 1/4), ¿longitud media en bits/símbolo?;2;1;2,5;1,5;D
+301;Bases de Dades No Relacionals;Facil;Teoria;¿Qué es MongoDB?;Base de datos documental (documentos JSON/BSON);Base de datos de grafos Neo4j;Sistema relacional SQL;Motor Redis solo clave-valor;A
+302;Bases de Dades No Relacionals;Facil;Teoria;Para modelar relaciones explícitas (p. ej. una red social), ¿qué sistema encaja mejor?;MongoDB (documentos);Neo4j (grafos);Tabla SQL con muchos JOIN;CSV en disco;B
+303;Bases de Dades No Relacionals;Media;Teoria;¿Cómo se organizan los datos en MongoDB?;Tablas con esquema fijo obligatorio;Solo nodos sin relaciones;Colecciones de documentos JSON/BSON;Índices Cypher en aristas;C
+304;Bases de Dades No Relacionals;Media;Teoria;¿Qué lenguaje de consulta usa Neo4j?;SQL estándar;Pipeline MongoDB ($match, $group);Datalog en tablas;Cypher;D
+305;Bases de Dades No Relacionals;Dificil;Teoria;En Neo4j, ¿qué representan los nodos y las relaciones?;Entidades y conexiones tipadas entre ellas;Filas y columnas de una tabla;Documentos BSON anidados;Pares clave→valor;A
+306;Bases de Dades No Relacionals;Dificil;Teoria;¿Qué es un documento en MongoDB?;Una fila de una tabla SQL;Estructura JSON/BSON que representa un registro;Una arista dirigida en Neo4j;Un nodo sin propiedades;B
+307;Bases de Dades No Relacionals;Facil;Calculo;¿Qué operador de agregación MongoDB filtra documentos como un WHERE?;$sort;$project;$match;$group;C
+308;Bases de Dades No Relacionals;Facil;Calculo;Un grafo en Neo4j tiene 5 relaciones dirigidas. ¿Qué devuelve MATCH ()-[r]->() RETURN count(r)?;3;10;1;5;D
 309;Bases de Dades No Relacionals;Media;Calculo;¿Qué operador compara igualdad en consultas MongoDB?;$eq;==;igual;=;A
-310;Bases de Dades No Relacionals;Media;Calculo;¿Cuántos folds en validación cruzada 5-fold?;1;5;10;20;B
-311;Bases de Dades No Relacionals;Dificil;Calculo;¿Qué formato usa típicamente MongoDB para documentos?;XML;CSV;JSON/BSON;SQL;C
-312;Bases de Dades No Relacionals;Dificil;Calculo;Si 1 BTC vale 40.000 €, ¿cuánto valen 0,5 BTC?;80.000 €;40.000 €;10.000 €;20.000 €;D
+310;Bases de Dades No Relacionals;Media;Calculo;¿Qué patrón Cypher lista vecinos directos salientes de un nodo n?;MATCH (n)-[*]-() sin límite;MATCH (n)-[r]->(m) RETURN n, r, m;db.collection.find({});$project { campo: 1 };B
+311;Bases de Dades No Relacionals;Dificil;Calculo;¿Qué formato usan típicamente los documentos en MongoDB?;XML;CSV;JSON/BSON;SQL estándar;C
+312;Bases de Dades No Relacionals;Dificil;Calculo;Colección MongoDB: 500 documentos de 2 KB cada uno. ¿Tamaño aproximado?;2 KB;500 KB;250 KB;1000 KB;D
 313;Informació Quàntica;Facil;Teoria;¿Qué hace la puerta Hadamard?;Crea superposición |0⟩→(|0⟩+|1⟩)/√2;NOT;CNOT;Fase;A
 314;Informació Quàntica;Facil;Teoria;La medida en base computacional de un qubit en superposición produce:;Un vector continuo;Un resultado clásico 0 o 1 según probabilidades;Siempre 0;Siempre 1;B
 315;Informació Quàntica;Media;Teoria;¿Qué propiedad algebraica deben cumplir las matrices que representan puertas cuánticas en un qubit?;Ser simétricas definidas positivas;Tener determinante nulo;Ser unitarias (conservan la norma del estado);Ser triangulares inferiores;C
@@ -321,96 +321,96 @@ Id;Materia;Dificultad;Tipo;Pregunta;A;B;C;D;Correcta
 320;Informació Quàntica;Facil;Calculo;¿Qué establece el teorema de no-clonación?;Cualquier estado cuántico puede copiarse perfectamente;Solo aplica a qubits en estado |0⟩;Equivale a la codificación Huffman;No existe procedimiento universal que clone un estado desconocido;D
 321;Informació Quàntica;Media;Calculo;En un sistema de n qubits, ¿cuántas amplitudes complejas hay en la base computacional?;2^n;n;2n;n²;A
 322;Informació Quàntica;Media;Calculo;¿Cuántos parámetros reales independientes describen un estado puro de un qubit (sin fase global)?;1;2;3;4;B
-323;Informació Quàntica;Dificil;Calculo;En un sistema de n qubits, ¿cuántas amplitudes complejas tiene el vector de estado en la base computacional?;n;2n;2^n;n^2;C
-324;Informació Quàntica;Dificil;Calculo;¿Cuántos estados de Bell hay para dos qubits?;2;8;1;4;D
-325;Modelització i Simulació;Facil;Teoria;¿Qué es la simulación en tiempo real?;Resultados sincronizados con el tiempo físico;Batch;Offline;Monte Carlo;A
-326;Modelització i Simulació;Facil;Teoria;¿Qué es la validación de un modelo de simulación?;Verificar implementación;Comprobar que representa bien la realidad;Calibración;Sensibilidad;B
-327;Modelització i Simulació;Media;Teoria;¿Qué es la lista de eventos (event list)?;Historial de ejecución;Lista de procesos;Cola ordenada de eventos futuros en simulación;Log de errores;C
-328;Modelització i Simulació;Media;Teoria;En validación de modelos de simulación, calibrar parámetros significa:;Eliminar todas las variables;Fijar semilla aleatoria a cero siempre;Usar solo datos sintéticos;Ajustarlos para reproducir observaciones reales;D
-329;Modelització i Simulació;Dificil;Teoria;¿Qué es el reloj de simulación?;Variable que avanza el tiempo simulado;Tiempo real;Timestamp;Contador de iteraciones;A
-330;Modelització i Simulació;Dificil;Teoria;¿Qué es un modelo de eventos discretos?;Red neuronal;Sistema que cambia en instantes discretos;Modelo continuo;Ecuación diferencial;B
-331;Modelització i Simulació;Facil;Calculo;¿Qué es la simulación de Monte Carlo?;Simulación determinística;Optimización lineal;Muestreo aleatorio para estimar cantidades;Regresión;C
-332;Modelització i Simulació;Facil;Calculo;Si una simulación discreta procesa 500 eventos en 10 segundos simulados, la tasa media es:;5 eventos/seg;5000 eventos/seg;0.5 eventos/seg;50 eventos/seg;D
-333;Modelització i Simulació;Media;Calculo;En un modelo discreto con paso Δt=0.1 s, ¿cuántos pasos cubren 5 s?;50;25;40;5;A
-334;Modelització i Simulació;Media;Calculo;¿Qué es la validación de un modelo?;Verificar sintaxis;Comprobar que el modelo representa bien la realidad;Depuración;Documentación;B
-335;Modelització i Simulació;Dificil;Calculo;En Monte Carlo, al aumentar N muestras, el error típico decrece como:;O(1/N);O(log N);O(1/sqrt(N));No decrece;C
-336;Modelització i Simulació;Dificil;Calculo;Dos procesos de Poisson independientes con tasas λ₁=2 y λ₂=3 (mismo tiempo). El primer evento del proceso superpuesto tiene tasa λ₁+λ₂. ¿E[T₁] en la misma unidad de tiempo?;5;1/6;6;1/5;D
+323;Informació Quàntica;Dificil;Calculo;¿Cuál es la dimensión del espacio de Hilbert de n qubits?;n;2n;n²;2^n;C
+324;Informació Quàntica;Dificil;Calculo;Tras aplicar la puerta H a |0⟩, ¿probabilidad de medir |1⟩?;0;1;1/4;1/2;D
+325;Modelització i Simulació;Facil;Teoria;En anàlisi dimensional, ¿qué exige la homogeneidad de una ecuación física?;Que todos los términos tengan las mismas dimensiones (M,L,T);Que las constantes sean adimensionales siempre;Que no aparezca el tiempo;Que la solución sea única;A
+326;Modelització i Simulació;Facil;Teoria;Con [F]=M·L·T⁻² en F=G·m₁·m₂/r², ¿dimensión de G?;M·L·T⁻²;M⁻¹·L³·T⁻²;M·L⁻³·T²;L³·T⁻²;B
+327;Modelització i Simulació;Media;Teoria;Para x_{n+1}=α x_n+β con α≠1, la solución cerrada es:;x_n=α^n x_0 solamente;x_n=x_0+nβ;x_n=α^n x_0+β(1-α^n)/(1-α);x_n=β/(1-α) para todo n;C
+328;Modelització i Simulació;Media;Teoria;En el sistema dinámico discreto x_{n+1}=f(x_n), un punto fijo x* cumple:;f(x*)=0;f'(x*)=0;f(x*)=1;f(x*)=x;D
+329;Modelització i Simulació;Dificil;Teoria;Estabilidad local (1D) del punto fijo x*: si |f'(x*)|<1, el punto es:;Estable;Inestable;Siempre repulsor;Independiente de f';A
+330;Modelització i Simulació;Dificil;Teoria;Mapa logístico x_{n+1}=μ x_n(1-x_n) con μ>1 en (0,1]. ¿Punto fijo interior distinto de 0?;μ;1-1/μ;1/μ;μ-1;B
+331;Modelització i Simulació;Facil;Calculo;x_{n+1}=x_n/3+2^n con x_0=1. ¿Cuánto vale x_2?;2;22/9;12;3;C
+332;Modelització i Simulació;Facil;Calculo;Teranyina clàssica p_n=(c-a)-p_{n-1} con c-a=2, p_0=2, p_1=0. ¿p_2?;0;1;4;2;D
+333;Modelització i Simulació;Media;Calculo;En una cadena de Markov, matriz P fila-estocástica significa:;Cada columna suma 1;Cada fila suma 1;P es simétrica;det(P)=0;A
+334;Modelització i Simulació;Media;Calculo;Vector fila π con π=πP y Σπ_i=1 describe:;Solo un autovector cualquiera;La distribución estacionaria de la cadena;La matriz de transición;El estado absorbente único;B
+335;Modelització i Simulació;Dificil;Calculo;Modelo de Leslie: el crecimiento asintótico de la población lo dicta principalmente:;El determinante de L;La traza de L;El radio espectral (autovalor de Perron);El número de filas;C
+336;Modelització i Simulació;Dificil;Calculo;Con x_{n+1}=0,5 x_n+3 y x_0=2, ¿cuánto vale x_3?;4;5;6;5,5;D
 337;Sistemes Distribuïts i el Núvol;Facil;Teoria;¿Qué ventaja principal aporta la replicación en sistemas distribuidos?;Mayor disponibilidad y tolerancia a fallos;Elimina toda latencia de red;Evita la sincronización completamente;Reduce a cero el almacenamiento;A
-338;Sistemes Distribuïts i el Núvol;Facil;Teoria;¿Qué es un pod en Kubernetes?;Nodo;Unidad mínima desplegable (uno o más contenedores);Servicio;Deployment;B
+338;Sistemes Distribuïts i el Núvol;Facil;Teoria;El modelo IaaS en cloud ofrece principalmente:;Solo aplicaciones SaaS listas para usar;Recursos virtualizados (compute, almacenamiento, red) configurables por el cliente;Solo bases de datos gestionadas sin VMs;Solo CDN de contenido estático;B
 339;Sistemes Distribuïts i el Núvol;Media;Teoria;En el teorema CAP, bajo partición de red se prioriza normalmente:;Siempre consistencia y disponibilidad simultáneas;Solo rendimiento gráfico;Consistencia o disponibilidad (no ambas fuertes a la vez);Solo latencia cero;C
 340;Sistemes Distribuïts i el Núvol;Media;Teoria;¿Qué describe la consistencia eventual?;Nunca hay discrepancias de réplicas;Lecturas siempre linealizables;No existe replicación;Las réplicas convergen si cesan escrituras;D
 341;Sistemes Distribuïts i el Núvol;Dificil;Teoria;¿Qué es el teorema CAP?;Solo 2 de 3: Consistencia, Disponibilidad, Tolerancia a particiones;Teorema de codificación;Solo rendimiento gráfico;Teorema de Shannon;A
-342;Sistemes Distribuïts i el Núvol;Dificil;Teoria;¿Cómo se define el throughput?;Capacidad;Cantidad de trabajo por unidad de tiempo;Ancho de banda;Latencia;B
-343;Sistemes Distribuïts i el Núvol;Facil;Calculo;¿Cuántas capas en red con 3 hidden?;3;2;4;5;C
-344;Sistemes Distribuïts i el Núvol;Facil;Calculo;¿Cuántos particiones con 100 datos y 10 particiones?;100;1;5;10;D
-345;Sistemes Distribuïts i el Núvol;Media;Calculo;¿Cuál es la parte real de e^(iπ/2)?;0;1;-1;i;A
-346;Sistemes Distribuïts i el Núvol;Media;Calculo;Leverage 5x posición 1000€ ¿exposición?;200;5000€;5000;1000;B
-347;Sistemes Distribuïts i el Núvol;Dificil;Calculo;¿Cuál es la capacidad del BSC con p=0?;0;2;1;0.5;C
-348;Sistemes Distribuïts i el Núvol;Dificil;Calculo;¿Qué capa del OSI usa un load balancer de capa 4?;3;1;7;4;D
+342;Sistemes Distribuïts i el Núvol;Dificil;Teoria;La tríada CIA en seguridad de sistemas distribuidos incluye:;CPU, I/O y almacenamiento;Confidencialidad, integridad y disponibilidad;Solo cifrado asimétrico;Coste, ingreso y beneficio;B
+343;Sistemes Distribuïts i el Núvol;Facil;Calculo;¿Dónde se almacenan los objetos en Amazon S3?;En volúmenes EBS montados en una EC2;En tablas SQL de RDS;En buckets;En subnets de la VPC;C
+344;Sistemes Distribuïts i el Núvol;Facil;Calculo;Disponibilidad A=MTBF/(MTBF+MTTR) con MTBF=500 h y MTTR=2 h. ¿A aproximada?;99,6%;50%;25%;100%;A
+345;Sistemes Distribuïts i el Núvol;Media;Calculo;En Redis, ¿cuál es más durable entre guardados habituales?;RDB solo por snapshots periódicos;AOF (log de escrituras);Redis no persiste nunca;RDB y AOF son idénticos;B
+346;Sistemes Distribuïts i el Núvol;Media;Calculo;4 instancias EC2 de 2 vCPU cada una. ¿vCPU totales?;2;8;4;16;B
+347;Sistemes Distribuïts i el Núvol;Dificil;Calculo;Despliegue multi-AZ en cloud busca principalmente:;una sola zona sin copia;eliminar backups;alta disponibilidad entre zonas distintas;desactivar toda replicación;C
+348;Sistemes Distribuïts i el Núvol;Dificil;Calculo;Un Application Load Balancer (ALB) en AWS enruta principalmente en:;Capa 1 (física);Capa 4 (transporte);Capa 3 (red);Capa 7 (aplicación);D
 349;Xarxes Neuronals i Aprenentatge Profund;Facil;Teoria;¿Qué es batch normalization?;Normalizar activaciones por batch;Normalización de entrada;Regularización L2;Dropout;A
 350;Xarxes Neuronals i Aprenentatge Profund;Facil;Teoria;¿Qué es el mecanismo de atención?;Convolución;Ponderar inputs por relevancia;Pooling;Batch norm;B
-351;Xarxes Neuronals i Aprenentatge Profund;Media;Teoria;¿Qué es una residual connection?;Conexión que suma entrada a salida de capa;Skip connection;Ambas;Ninguna;C
+351;Xarxes Neuronals i Aprenentatge Profund;Media;Teoria;¿Qué es una conexión residual (skip connection)?;Solo max-pooling;Desactiva neuronas al azar;Suma la entrada de la capa a su salida;Es un kernel de convolución;C
 352;Xarxes Neuronals i Aprenentatge Profund;Media;Teoria;¿Qué es self-attention?;Convolución;Pooling;RNN;Mecanismo donde posiciones se atienden entre sí;D
-353;Xarxes Neuronals i Aprenentatge Profund;Dificil;Teoria;¿Qué es el meta-análisis?;Combinación estadística de resultados de varios estudios;Un solo estudio;Revisión narrativa;Estudio piloto;A
+353;Xarxes Neuronals i Aprenentatge Profund;Dificil;Teoria;¿Para qué se usa típicamente una LSTM?;Secuencias con memoria (series temporales, texto);Solo clustering k-means;Integración numérica de EDO;Consultas SQL JOIN;A
 354;Xarxes Neuronals i Aprenentatge Profund;Dificil;Teoria;¿Qué hace la capa de dropout?;Pooling;Desactiva neuronas aleatoriamente en entrenamiento;Convolución;Normalización;B
 355;Xarxes Neuronals i Aprenentatge Profund;Facil;Calculo;¿Qué es el softmax?;ReLU;Sigmoid;Función que convierte logits en probabilidades;Tanh;C
-356;Xarxes Neuronals i Aprenentatge Profund;Facil;Calculo;¿Qué tamaño tiene la salida del pooling 2×2 sobre 4×4, ¿salida?;4×4;1×1;8×8;2×2;D
+356;Xarxes Neuronals i Aprenentatge Profund;Facil;Calculo;Max-pooling 2×2 con stride 2 sobre entrada 4×4, ¿tamaño de salida?;4×4;1×1;8×8;2×2;D
 357;Xarxes Neuronals i Aprenentatge Profund;Media;Calculo;¿Cuál es la salida de ReLU(0)?;0;1;-1;0.5;A
-358;Xarxes Neuronals i Aprenentatge Profund;Media;Calculo;¿Cuántas variables en min x+y?;3;2;0;1;B
-359;Xarxes Neuronals i Aprenentatge Profund;Dificil;Calculo;¿Cuántos parámetros capa densa 10→5?;10;15;55;50;C
+358;Xarxes Neuronals i Aprenentatge Profund;Media;Calculo;Kernel 3×3 con 1 canal de entrada, ¿parámetros del filtro (sin sesgo)?;6;9;12;27;B
+359;Xarxes Neuronals i Aprenentatge Profund;Dificil;Calculo;Capa densa 10→5 con sesgo, ¿parámetros entrenables?;50;15;55;10;C
 360;Xarxes Neuronals i Aprenentatge Profund;Dificil;Calculo;¿Cuál es el softmax de [0,0]?;[0, 0];[1, 1];[0, 0.5];[0.5, 0.5];D
-361;Anàlisi de Dades Financeres;Facil;Teoria;¿Qué es el PIB real?;PIB ajustado por inflación;PIB nominal;PIB per cápita;PIB potencial;A
-362;Anàlisi de Dades Financeres;Facil;Teoria;¿Qué es la teoría del consumidor?;Del productor;Maximización de utilidad sujeto a restricción presupuestaria;Del mercado;De la firma;B
+361;Anàlisi de Dades Financeres;Facil;Teoria;¿Qué describe mejor la ingeniería financiera?;Aplicar modelos matemáticos y computacionales a mercados y productos financieros;Solo contabilidad de costes históricos;Diseño de hardware de bajo consumo;Teoría de grupos en álgebra pura;A
+362;Anàlisi de Dades Financeres;Facil;Teoria;¿Cuál es el payoff de una opción call europea al vencimiento (strike K, spot S)?;max(K−S, 0);max(S−K, 0);Siempre S−K;Siempre K−S;B
 363;Anàlisi de Dades Financeres;Media;Teoria;El ratio de Sharpe mide:;Solo la rentabilidad nominal sin riesgo;El apalancamiento máximo permitido;Exceso de rentabilidad por unidad de volatilidad total;La liquidez intradía;C
-364;Anàlisi de Dades Financeres;Media;Teoria;¿Qué mide el coeficiente Gini?;Desempleo;Pobreza;Inflación;Desigualdad de ingresos;D
+364;Anàlisi de Dades Financeres;Media;Teoria;En gestión de carteras, la matriz de covarianzas de rendimientos sirve principalmente para:;Calcular solo la media histórica;Fijar el tipo de cambio oficial;Medir el desempleo nacional;Cuantificar cómo covarian los activos al combinar pesos;D
 365;Anàlisi de Dades Financeres;Dificil;Teoria;¿Qué mide el coeficiente beta de un activo financiero?;Sensibilidad de la rentabilidad del activo respecto al mercado;Exceso de rentabilidad por unidad de volatilidad;Probabilidad de default anual;Dividendo por acción;A
 366;Anàlisi de Dades Financeres;Dificil;Teoria;En el modelo de valoración de activos CAPM, ¿qué interpreta el coeficiente beta de un activo?;La volatilidad idiosincrática sin riesgo sistemático;La sensibilidad del exceso de rentabilidad del activo respecto al del mercado;La correlación con la tasa libre de riesgo únicamente;El alfa anualizado tras impuestos;B
-367;Anàlisi de Dades Financeres;Facil;Calculo;Riesgo relativo 3. ¿Cuántas veces más riesgo?;2;1;3;0;C
-368;Anàlisi de Dades Financeres;Facil;Calculo;OR=2. ¿Riesgo duplicado?;No;Depende;Mitad;Sí;D
-369;Anàlisi de Dades Financeres;Media;Calculo;Beta=1.5, mercado sube 10%. ¿Activo esperado?;15%;10%;5%;1.5;A
-370;Anàlisi de Dades Financeres;Media;Calculo;PMC=0.8. ¿Multiplicador keynesiano?;4;5;1.25;0.8;B
-371;Anàlisi de Dades Financeres;Dificil;Calculo;Si inflación 2%, ¿precio real de 100€ nominales?;100;100*(1+2/100);100/(1+2/100);2;C
-372;Anàlisi de Dades Financeres;Dificil;Calculo;PIB nominal 110 real 100 ¿deflactor?;10%;10;110;1.1;D
+367;Anàlisi de Dades Financeres;Facil;Calculo;Interés simple 5% anual. ¿Interés en euros de 200€ en 1 año?;5;20;10;200;C
+368;Anàlisi de Dades Financeres;Facil;Calculo;Volatilidad anual 20% (0,20). ¿Varianza?;0,02;0,2;4;0,04;D
+369;Anàlisi de Dades Financeres;Media;Calculo;Beta=1.5, mercado sube 10%. ¿Rentabilidad esperada del activo (aprox.)?;15%;10%;5%;1,5;A
+370;Anàlisi de Dades Financeres;Media;Calculo;VaR al 99% con Monte Carlo: ¿qué percentil del P&L simulado se usa como umbral?;50%;1%;99% solo de ganancias;Media aritmética;B
+371;Anàlisi de Dades Financeres;Dificil;Calculo;Tipo de interés 10% anual. ¿Valor presente de 110€ dentro de 1 año?;121;110;100;10;C
+372;Anàlisi de Dades Financeres;Dificil;Calculo;¿Cuál es el payoff de una opción put europea al vencimiento (strike K, spot S)?;max(S−K, 0);S+K;min(S, K);max(K−S, 0);D
 373;Anàlisi de Dades Temporals;Facil;Teoria;¿Qué describe la autocorrelación en una serie temporal?;Dependencia entre observaciones separadas por un retardo;Correlación entre variables distintas en un mismo instante;Error de medición sistemático;Solo tendencia determinista;A
-374;Anàlisi de Dades Temporals;Facil;Teoria;¿Qué es la raíz unitaria?;Raíz de un polinomio;Problema en series no estacionarias;Eigenvalor 1;Punto fijo;B
+374;Anàlisi de Dades Temporals;Facil;Teoria;¿Qué indica la presencia de raíz unitaria en una serie?;Estacionariedad fuerte garantizada;Comportamiento no estacionario (p. ej. necesidad de diferenciar);Periodicidad estacional fija;Media móvil óptima;B
 375;Anàlisi de Dades Temporals;Media;Teoria;¿Qué es la ventana de predicción?;Tamaño del entrenamiento;Lag máximo;Horizonte temporal a predecir;Orden del modelo;C
-376;Anàlisi de Dades Temporals;Media;Teoria;Un proceso AR(1) estacionario requiere típicamente:;|phi| > 1;phi = 2;phi siempre complejo;|phi| < 1;D
+376;Anàlisi de Dades Temporals;Media;Teoria;Un proceso AR(1) estacionario requiere típicamente:;Raíz característica fuera del círculo unitario (|φ|>1);φ = 2 siempre;φ debe ser número imaginario puro;|φ| < 1;D
 377;Anàlisi de Dades Temporals;Dificil;Teoria;¿Qué indica un test de Dickey-Fuller en series temporales?;Ayuda a detectar raíz unitaria (no estacionariedad);Mide la media móvil óptima;Calcula el periodo estacional automáticamente;Estima el beta de un activo;A
 378;Anàlisi de Dades Temporals;Dificil;Teoria;¿Qué es una media móvil?;Media aritmética;Promedio sobre ventana deslizante;Mediana;Moda;B
-379;Anàlisi de Dades Temporals;Facil;Calculo;¿Cuántas observaciones para ARIMA(1,0,1)?;1;0;≥2;10;C
+379;Anàlisi de Dades Temporals;Facil;Calculo;Serie con 100 observaciones. Tras diferenciar una vez (d=1), ¿cuántas quedan?;100;101;99;1;C
 380;Anàlisi de Dades Temporals;Facil;Calculo;Media de serie [10,20,30]?;15;25;60;20;D
-381;Anàlisi de Dades Temporals;Media;Calculo;¿Cuál es la solución de dy/dx=cos(x)?;y=sen(x)+C;y=sen(x);y=cos(x);y=-cos(x)+C;A
+381;Anàlisi de Dades Temporals;Media;Calculo;Primera diferencia de [5,8,12]. ¿Segundo valor de la serie diferenciada?;4;3;5;12;A
 382;Anàlisi de Dades Temporals;Media;Calculo;Tendencia lineal: pendiente 2, ordenada 1. Valor en t=3?;3;7;6;5;B
-383;Anàlisi de Dades Temporals;Dificil;Calculo;¿Cuántos parámetros autoregresivos tiene un modelo AR(2)?;0;1;2;3;C
+383;Anàlisi de Dades Temporals;Dificil;Calculo;¿Cuántos coeficientes autoregresivos tiene un modelo AR(2)?;0;1;2;3;C
 384;Anàlisi de Dades Temporals;Dificil;Calculo;Para la serie 2 4 6 8 10 ¿media móvil de orden 2 en t=5?;10;6;8;9;D
 385;Anàlisi Topològica de Dades;Facil;Teoria;¿Qué es un diagrama de persistencia en TDA?;Gráfico birth-death de características topológicas por escala;Matriz de confusión de un clasificador;Árbol de expansión mínima;Histograma de luminosidad;A
 386;Anàlisi Topològica de Dades;Facil;Teoria;¿Qué captura de forma típica β1 en datos geométricos?;Número de componentes conexas;Número de ciclos/agujeros de dimensión 1;Número de tetraedros;Rango de una matriz;B
 387;Anàlisi Topològica de Dades;Media;Teoria;En un diagrama de persistencia, ¿qué representa la coordenada de nacimiento (birth) de un punto?;La escala en la que desaparece;El número de vértices del complejo;La escala de filtración en la que aparece la característica;La dimensión del espacio ambiente;C
-388;Anàlisi Topològica de Dades;Media;Teoria;En una filtración de Vietoris-Rips, si aumenta epsilon normalmente:;Disminuye el número de aristas siempre;Se eliminan todos los símplices;No cambia la complejidad;Aparecen más conexiones y se fusionan componentes;D
+388;Anàlisi Topològica de Dades;Media;Teoria;En una filtración de Vietoris-Rips, si aumenta ε normalmente:;Disminuye el número de aristas siempre;Se eliminan todos los símplices;No cambia la complejidad;Aparecen más conexiones y pueden fusionarse componentes;D
 389;Anàlisi Topològica de Dades;Dificil;Teoria;¿Cómo se define la homología persistente?;Método para extraer características topológicas a múltiples escalas;PCA;Regresión lineal;Clustering jerárquico;A
-390;Anàlisi Topològica de Dades;Dificil;Teoria;En homología persistente, ¿qué cuenta habitualmente el número de Betti β₁?;Componentes conexas;Túneles o ciclos de dimensión 1;Cavidades tridimensionales;Puntos aislados;B
-391;Anàlisi Topològica de Dades;Facil;Calculo;En homología persistente, ¿qué cuenta habitualmente el número de Betti β₀?;Túneles de dimensión 1;Cavidades tridimensionales;Componentes conexas;Puntos en el infinito;C
-392;Anàlisi Topològica de Dades;Facil;Calculo;En una filtración de Vietoris-Rips, si aumenta ε normalmente:;Disminuye siempre el número de aristas;Se eliminan todos los símplices;El complejo queda sin vértices;Aparecen más conexiones y pueden fusionarse componentes;D
+390;Anàlisi Topològica de Dades;Dificil;Teoria;En un diagrama de persistencia, ¿qué mide death−birth de una barra?;Solo la dimensión β;La persistencia (duración) de la característica;El número total de vértices;La tasa de inflación;B
+391;Anàlisi Topològica de Dades;Facil;Calculo;¿Cuántos vértices tiene un 2-símplice (triángulo)?;2;3;4;5;C
+392;Anàlisi Topològica de Dades;Facil;Calculo;¿Cuántos vértices tiene un 1-símplice (arista)?;1;2;3;4;D
 393;Anàlisi Topològica de Dades;Media;Calculo;En homología persistente, si birth=1 y death=4, ¿cuál es la persistencia (death−birth)?;3;1;2;4;A
 394;Anàlisi Topològica de Dades;Media;Calculo;En un complejo con 2 componentes conexas, ¿cuál es β₀?;3;2;1;0;B
 395;Anàlisi Topològica de Dades;Dificil;Calculo;¿Qué es el complejo de Čech para radio r?;Grafo completo;Árbol de expansión;Complejo donde k+1 puntos forman k-símplice si las bolas de radio r se intersectan;Red neuronal;C
-396;Anàlisi Topològica de Dades;Dificil;Calculo;¿Qué representa el número de Betti β₀ en un complejo simplicial?;Túneles;Cavidades;Dimensión;Componentes conexas;D
+396;Anàlisi Topològica de Dades;Dificil;Calculo;¿Qué es un 2-símplice en un complejo simplicial?;Un vértice;Un segmento (arista);Un tetraedro;Un triángulo;D
 397;Internet de les Coses;Facil;Teoria;¿Qué es un gateway en IoT?;Dispositivo que conecta sensores con la nube;Sensor;Actuador;Base de datos;A
 398;Internet de les Coses;Facil;Teoria;¿Qué es la escalabilidad en IoT?;Velocidad;Capacidad de soportar muchos dispositivos;Seguridad;Conectividad;B
 399;Internet de les Coses;Media;Teoria;¿Qué es MQTT?;HTTP;CoAP;Protocolo ligero pub/sub para IoT;TCP;C
 400;Internet de les Coses;Media;Teoria;¿Qué es la conectividad en IoT?;Ancho de banda;Latencia;Throughput;Formas en que dispositivos se conectan a la red;D
 401;Internet de les Coses;Dificil;Teoria;¿Por qué MQTT suele usarse en IoT frente a HTTP clásico para telemetría periódica?;Por su modelo ligero publish/subscribe y cabeceras reducidas frente a peticiones HTTP repetitivas;Porque MQTT obliga siempre a conexiones UDP sin cifrado;Porque HTTP no puede usar TLS;Porque elimina la necesidad de broker;A
-402;Internet de les Coses;Dificil;Teoria;¿Qué es un sensor en IoT?;Actuador;Dispositivo que captura datos del entorno;Gateway;Protocolo;B
+402;Internet de les Coses;Dificil;Teoria;¿Qué es un actuador en IoT?;Sensor;Dispositivo que ejecuta acciones físicas en el entorno;Gateway;Broker MQTT;B
 403;Internet de les Coses;Facil;Calculo;¿Cuántos dispositivos en red con /24?;256;255;254;24;C
 404;Internet de les Coses;Facil;Calculo;¿Cuántos niveles QoS tiene MQTT?;2;1;4;3;D
 405;Internet de les Coses;Media;Calculo;Un dispositivo IoT envía 2 mensajes por segundo durante 5 minutos sin pausa. ¿Cuántos mensajes envía en total?;600;300;120;60;A
 406;Internet de les Coses;Media;Calculo;Un sensor envía 1 lectura por segundo durante 5 minutos. ¿Cuántas lecturas envía?;60;300;120;600;B
 407;Internet de les Coses;Dificil;Calculo;Si cada mensaje IoT ocupa 200 bytes y se envían 50 mensajes por segundo, ¿qué caudal se genera?;5 KB/s;50 KB/s;10 KB/s;100 KB/s;C
 408;Internet de les Coses;Dificil;Calculo;Latencia 10ms + procesamiento 5ms?;5ms;10ms;50ms;15ms;D
-409;Mètodes d Anàlisi en Ciències de la Salut;Facil;Teoria;¿Qué es el valor predictivo positivo (VPP)?;P(enfermo|test positivo);P(test positivo|enfermo);Sensibilidad;Prevalencia;A
+409;Mètodes d Anàlisi en Ciències de la Salut;Facil;Teoria;¿Qué es el valor predictivo positivo (VPP)?;P(enfermo|test positivo);P(test positivo|sano);Sensibilidad;Prevalencia;A
 410;Mètodes d Anàlisi en Ciències de la Salut;Facil;Teoria;Sensibilidad=0.9, especificidad=0.7. Con prevalencia 0.1, ¿VPP aproximado?;Alto;Bajo;0.5;Depende del tamaño muestral;B
 411;Mètodes d Anàlisi en Ciències de la Salut;Media;Teoria;¿Qué mide la heterogeneidad en un meta-análisis?;Tamaño del efecto;Sesgo de publicación;Variabilidad entre estudios más allá del azar;Calidad metodológica;C
-412;Mètodes d Anàlisi en Ciències de la Salut;Media;Teoria;Sensibilidad=0.8, especificidad=0.8. Con prevalencia 0.1, ¿VPP aproximado?;Alto;0.5;Depende del tamaño muestral;Bajo;D
+412;Mètodes d Anàlisi en Ciències de la Salut;Media;Teoria;¿Qué es el análisis de mediación?;Mediana;Media;Moda;Estudiar si un efecto pasa por una variable intermedia;D
 413;Mètodes d Anàlisi en Ciències de la Salut;Dificil;Teoria;¿Cómo se define la sensibilidad de una prueba diagnóstica?;Proporción de verdaderos positivos entre los enfermos;Prevalencia;Especificidad;Valor predictivo positivo;A
 414;Mètodes d Anàlisi en Ciències de la Salut;Dificil;Teoria;¿Qué objetivo metodológico principal persigue la aleatorización en un ensayo clínico controlado?;Eliminar la necesidad de consentimiento informado;Reducir sesgos de selección y confundidores entre intervención y desenlace;Sustituir el análisis por intención de tratar;Obligar ciego doble en fase IV obligatoriamente;B
 415;Mètodes d Anàlisi en Ciències de la Salut;Facil;Calculo;¿Cuántos estudios en meta-análisis de 5 estudios?;1;10;5;0;C
@@ -419,63 +419,63 @@ Id;Materia;Dificultad;Tipo;Pregunta;A;B;C;D;Correcta
 418;Mètodes d Anàlisi en Ciències de la Salut;Media;Calculo;¿Qué es el odds ratio (razón de momios) en epidemiología?;Igual al NNT siempre;Cociente de odds entre expuestos y no expuestos;La especificidad del test;El intervalo de confianza del 95% obligatoriamente;B
 419;Mètodes d Anàlisi en Ciències de la Salut;Dificil;Calculo;Prevalencia 50%, sensibilidad 0,9, especificidad 0,9. ¿VPP (valor predictivo positivo) aproximado?;0,67;0,05;0,90;0,50;C
 420;Mètodes d Anàlisi en Ciències de la Salut;Dificil;Calculo;Sensibilidad 0.9, 100 enfermos. ¿Verdaderos positivos?;9;100;10;90;D
-421;Anàlisi de Dades en Astrofísica;Facil;Teoria;¿Qué es el redshift?;Desplazamiento al rojo por efecto Doppler cosmológico;Color de una estrella;Temperatura superficial;Masa estelar;A
-422;Anàlisi de Dades en Astrofísica;Facil;Teoria;¿Cómo se define la función de luminosidad?;Magnitud absoluta;Distribución del número de objetos por luminosidad;Espectro de energía;Brillo aparente;B
-423;Anàlisi de Dades en Astrofísica;Media;Teoria;¿Qué es la ley de Stefan-Boltzmann?;Ley de Hubble;Ecuación de estado;Luminosidad proporcional a T⁴;Ley de Wien;C
-424;Anàlisi de Dades en Astrofísica;Media;Teoria;¿Qué tipo es una estrella con temperatura 3000 K?;O;M;G;Depende del espectro;D
-425;Anàlisi de Dades en Astrofísica;Dificil;Teoria;En astrofísica observacional, ¿qué corrige principalmente la extinción interestelar en magnitudes fotométricas?;La atenuación de la luz por polvo y gas entre la fuente y el observador;El efecto Doppler transversal;El paralaje galáctico;La nutación del eje terrestre;A
-426;Anàlisi de Dades en Astrofísica;Dificil;Teoria;¿Cómo se define la magnitud aparente?;Temperatura;Brillo observado desde la Tierra;Luminosidad;Magnitud absoluta;B
-427;Anàlisi de Dades en Astrofísica;Facil;Calculo;Paralaje 0.1 arcsec ¿distancia en pc?;0.1;100;10;Ninguna de las anteriores;C
-428;Anàlisi de Dades en Astrofísica;Facil;Calculo;Paralaje 50 mas (1 mas = 1 pc). ¿Distancia aproximada en pc?;50;1;20;0,02;D
-429;Anàlisi de Dades en Astrofísica;Media;Calculo;Con paralaje p=0,01 arcsec (10 mas), ¿distancia aproximada en pc (d≈1/p)?;100;1;10;1000;A
-430;Anàlisi de Dades en Astrofísica;Media;Calculo;Luminosidad 4L0 distancia 2d0 ¿flujo ratio?;Ninguna de las anteriores;1;2;4;B
-431;Anàlisi de Dades en Astrofísica;Dificil;Calculo;Si una galaxia tiene z=0.02 y c≈300000 km/s, ¿velocidad radial aproximada v≈zc?;300 km/s;15000 km/s;6000 km/s;30000 km/s;C
-432;Anàlisi de Dades en Astrofísica;Dificil;Calculo;¿Cuántos bits para 8 símbolos equiprobables?;2;4;8;3;D
+421;Anàlisi de Dades en Astrofísica;Facil;Teoria;En astronomía gamma VHE, ¿qué umbral de energía se usa habitualmente?;E > 100 GeV;E > 1 keV;Solo rayos X blandos;E < 1 MeV siempre;A
+422;Anàlisi de Dades en Astrofísica;Facil;Teoria;¿Para qué sirve principalmente una biblioteca como Gammapy?;Edición de vídeo;Análisis de datos de astronomía gamma de muy alta energía;Simulación de redes neuronales;Gestión de bases SQL;B
+423;Anàlisi de Dades en Astrofísica;Media;Teoria;En el método de fondo on/off (Li & Ma), ¿qué es α?;Número de fotones on;Significancia en σ;Ratio de exposición región on/off;Redshift de la fuente;C
+424;Anàlisi de Dades en Astrofísica;Media;Teoria;En astronomía gamma con fondo on/off, la fórmula de Li & Ma cuantifica principalmente:;Paralaje trigonométrico;Ajuste de H₀ con MCMC;Temperatura espectral de una estrella;Significancia estadística de un exceso;D
+425;Anàlisi de Dades en Astrofísica;Dificil;Teoria;En detección de ondas gravitacionales, el blanqueamiento del dato busca principalmente:;Igualar sensibilidad en frecuencia (normalizar el ruido);Medir redshift cosmológico;Corregir extinción interestelar;Calcular función de luminosidad;A
+426;Anàlisi de Dades en Astrofísica;Dificil;Teoria;Si la frecuencia de muestreo es fs, ¿cuál es la frecuencia de Nyquist?;fs;fs/2;2·fs;fs/4;B
+427;Anàlisi de Dades en Astrofísica;Facil;Calculo;Poisson con λ=4. ¿P(X=0)? (P=e^{-λ}λ^k/k!);0,36;0,18;0,018 (aprox.);0,001;C
+428;Anàlisi de Dades en Astrofísica;Facil;Calculo;Una región on y tres regiones off del mismo tamaño. ¿α en Li & Ma?;3;1;1/2;1/3;D
+429;Anàlisi de Dades en Astrofísica;Media;Calculo;ΛCDM plano: H(z)=H₀√(Ω_m(1+z)³+(1−Ω_m)). ¿H(z) en z=0?;H₀;0;H₀√Ω_m;H₀(1+Ω_m);A
+430;Anàlisi de Dades en Astrofísica;Media;Calculo;Si z=0,02 y c≈300000 km/s, ¿velocidad radial aproximada v≈zc?;300 km/s;6000 km/s;15000 km/s;30000 km/s;B
+431;Anàlisi de Dades en Astrofísica;Dificil;Calculo;Al comparar ASD a 100 Hz (antigua vs generación más sensible), si ASD_antigua/ASD_nueva ≈ 1,7, ¿valor del cociente?;0,5;1;1,7;10;C
+432;Anàlisi de Dades en Astrofísica;Dificil;Calculo;Poisson con λ=4. ¿P(X=2)?;0,018;0,036;0,073;0,15 (aprox.);D
 433;Bioinformàtica;Facil;Teoria;¿Qué mide la distancia de Hamming entre dos cadenas del mismo largo?;Número de posiciones en que difieren los símbolos;Coste mínimo de inserción y borrado;Suma de valores ASCII;Longitud de la subcadena común más larga;A
-434;Bioinformàtica;Facil;Teoria;¿Qué es un k-mer?;Gen;Subsecuencia de longitud k;Proteína;Cromosoma;B
+434;Bioinformàtica;Facil;Teoria;¿Qué es un k-mer?;Gen;Subcadena contigua de longitud k;Proteína;Cromosoma;B
 435;Bioinformàtica;Media;Teoria;¿Cuántas bases nitrogenadas hay en ADN?;20;2;4 (A,T,C,G);5;C
-436;Bioinformàtica;Media;Teoria;¿Qué es el resumen automático?;Traducción;Abstractivo;Extractivo;Generar versión condensada del texto;D
+436;Bioinformàtica;Media;Teoria;¿Qué herramienta busca similitud local de secuencias en bases de datos?;UPGMA;Needleman-Wunsch global;Histograma de persistencia;BLAST;D
 437;Bioinformàtica;Dificil;Teoria;En inferencia filogenética por distancias (p.ej. UPGMA), ¿qué supuesto fuerte se asume sobre la matriz de distancias?;Que las distancias sean ultramétricas (molecular clock implícito en UPGMA);Que las distancias sigan exactamente un árbol aditivo sin error;Que no haya homoplasia;Que la raíz esté siempre en el taxón externo conocido;A
 438;Bioinformàtica;Dificil;Teoria;¿Qué es el alineamiento múltiple de secuencias?;Pareado;Alinear 3+ secuencias simultáneamente;BLAST;Búsqueda;B
 439;Bioinformàtica;Facil;Calculo;¿Cuántos codones posibles?;20;4;64;61;C
 440;Bioinformàtica;Facil;Calculo;Distancia Hamming entre ATCG y ATTG?;0;2;4;1;D
 441;Bioinformàtica;Media;Calculo;¿Qué mide el porcentaje de identidad entre dos secuencias alineadas?;Fracción de posiciones coincidentes en el alineamiento;Número de intrones;Temperatura de hibridación únicamente;El genoma completo de la especie;A
 442;Bioinformàtica;Media;Calculo;k-mer de longitud 3 en secuencia 10. ¿Cuántos?;3;8;10;7;B
-443;Bioinformàtica;Dificil;Calculo;¿Cuántos codones distintos codifica el código genético estándar?;20;4;64;61;C
+443;Bioinformàtica;Dificil;Calculo;¿Cuántos aminoácidos estándar codifica el código genético?;64;61;20;4;C
 444;Bioinformàtica;Dificil;Calculo;En secuencia de longitud 100, ¿cuántos 3-mers solapados (paso 1) hay?;97;99;100;98;D
-445;Informació i Seguretat;Facil;Teoria;¿Qué es la esteganografía?;Ocultar información dentro de otro medio;Cifrado;Hash;Firma;A
-446;Informació i Seguretat;Facil;Teoria;El principio de mínimo privilegio recomienda:;Otorgar más permisos por defecto;Dar solo permisos necesarios para la tarea;Evitar auditorías;Eliminar autenticación;B
-447;Informació i Seguretat;Media;Teoria;¿Qué es un salt en hashing?;Clave;IV;Valor aleatorio para evitar rainbow tables;Nonce;C
-448;Informació i Seguretat;Media;Teoria;¿Qué es Diffie-Hellman?;Cifrado simétrico;Hash;Firma digital;Intercambio de claves sin canal seguro previo;D
-449;Informació i Seguretat;Dificil;Teoria;¿Cómo se define la tríada CIA?;Confidencialidad, Integridad, Disponibilidad;RSA, AES, SHA;Cifrado, Hash, Firma;Auth, Authz, Audit;A
-450;Informació i Seguretat;Dificil;Teoria;¿Cómo se define un hash criptográfico?;Cifrado;Función unidireccional que produce huella fija;Firma digital;Certificado;B
-451;Informació i Seguretat;Facil;Calculo;¿Cuántas rondas AES-128?;12;14;10;16;C
-452;Informació i Seguretat;Facil;Calculo;¿Cuántas claves posibles con n bits?;n;n²;2n;2^n;D
-453;Informació i Seguretat;Media;Calculo;¿Qué accuracy con 80 aciertos de 80?;1;0.8;80;0;A
+445;Informació i Seguretat;Facil;Teoria;En el cifrado de Vigenère, cada letra del mensaje se combina con la clave mediante:;Suma módulo 26 (o tamaño del alfabeto) con la letra clave correspondiente;Un único desplazamiento fijo k para todo el texto;Multiplicación de matrices 4×4 en GF(2⁸) como en AES;Aplicación directa de SHA-256 letra a letra;A
+446;Informació i Seguretat;Facil;Teoria;El cifrado de César (alfabeto n=26) transforma cada letra:;Multiplicando matrices 4×4;Sumando un desplazamiento k módulo 26 a la posición;Aplicando SHA-256;Generando bits con un LFSR;B
+447;Informació i Seguretat;Media;Teoria;En un filtro de Bloom, ¿qué efecto suele tener aumentar el número k de funciones hash?;Aumenta la probabilidad de falsos positivos;Elimina colisiones de hash;Reduce la probabilidad teórica de falsos positivos;Convierte el filtro en cifrado simétrico;C
+448;Informació i Seguretat;Media;Teoria;En una firma digital RSA estándar, ¿sobre qué se aplica típicamente la firma?;El mensaje en claro sin procesar;Solo la clave pública;La tabla S-box de AES;El resumen hash del mensaje;D
+449;Informació i Seguretat;Dificil;Teoria;¿Qué objetivo principal tiene la esteganografía?;Ocultar la existencia del mensaje dentro de otro fichero o medio;Garantizar que el algoritmo de cifrado sea secreto;Firmar legalmente con clave privada RSA;Sustituir el uso de funciones hash;A
+450;Informació i Seguretat;Dificil;Teoria;¿Cómo se define un hash criptográfico?;Cifrado reversible con clave simétrica;Función unidireccional que produce una huella de tamaño fijo;Firma digital con par de claves RSA;Certificado X.509 de una CA;B
+451;Informació i Seguretat;Facil;Calculo;En aritmética modular, ¿cuánto es (7·8) mod 13?;7;1;4;0;C
+452;Informació i Seguretat;Facil;Calculo;Espacio de claves uniforme de 8 bits. ¿Cuántas claves distintas hay?;8;16;64;256;D
+453;Informació i Seguretat;Media;Calculo;Al almacenar contraseñas con hash y salt, el salt sirve principalmente para:;Hacer distinto el hash de la misma contraseña entre usuarios;Cifrar la contraseña de forma reversible;Eliminar la necesidad de aplicar hash;Publicar la clave secreta en el servidor;A
 454;Informació i Seguretat;Media;Calculo;Si una contraseña tiene 8 caracteres y cada uno puede ser una de 26 letras minúsculas, ¿cuántas combinaciones hay?;8^26;26^8;2^8;26*8;B
-455;Informació i Seguretat;Dificil;Calculo;Mensaje 64 bits hash 256 bits ¿tamaño salida?;320;64;256;256 bits;C
-456;Informació i Seguretat;Dificil;Calculo;¿Cuántos bits tiene clave AES-128?;16;64;256;128;D
-457;Teoria de Jocs;Facil;Teoria;¿Qué es una estrategia dominante?;Mejor respuesta independiente del rival;Nash;Maximin;Pareto;A
-458;Teoria de Jocs;Facil;Teoria;¿Qué es la estrategia maximin?;Nash;Maximizar el peor resultado;Dominante;Pareto;B
-459;Teoria de Jocs;Media;Teoria;¿Qué es el equilibrio correlacionado?;Puro;Mixto;Estrategias coordinadas por señal externa;Nash;C
-460;Teoria de Jocs;Media;Teoria;¿Qué es el equilibrio de Nash?;Óptimo Pareto;Dominante;Maximin;Ninguno mejora unilateralmente;D
-461;Teoria de Jocs;Dificil;Teoria;¿Cómo se define un juego repetido infinitamente?;Sin horizonte conocido;Finito;Un solo periodo;Estático;A
-462;Teoria de Jocs;Dificil;Teoria;En juego repetido con horizonte finito y factor δ, el Nash del one-shot:;Nunca es SPE;Siempre es SPE;Puede ser SPE;No existe SPE;B
-463;Teoria de Jocs;Facil;Calculo;¿Cuántos jugadores en juego 2×2?;4;1;2;3;C
-464;Teoria de Jocs;Facil;Calculo;¿Cuántos equilibrios de Nash máximo en 2×2?;1;2;0;4;D
-465;Teoria de Jocs;Media;Calculo;¿Cuántas estrategias puras en juego 2×2?;4;8;1;2;A
-466;Teoria de Jocs;Media;Calculo;Juego suma cero fila gana 5 ¿columna pierde?;-5;5;0;10;B
-467;Teoria de Jocs;Dificil;Calculo;Juego 2 jugadores 2 estrategias cada uno ¿cuántos perfiles?;8;2;4;Ninguna de las anteriores;C
-468;Teoria de Jocs;Dificil;Calculo;Estrategia maximin: ¿max de qué?;Máximos;Suma;Producto;Mínimos por fila;D
-469;Visió per Computador;Facil;Teoria;En una CNN, ¿qué hace un kernel de convolución?;Extrae patrones locales de la imagen;Ordena etiquetas alfabéticamente;Reduce siempre a un escalar;Sustituye la función de pérdida;A
-470;Visió per Computador;Facil;Teoria;¿Qué hace un filtro de convolución?;Pooling;Aplica kernel sobre imagen;ReLU;Normalización;B
-471;Visió per Computador;Media;Teoria;¿Qué efecto tiene el pooling en mapas de características?;Aumenta resolución espacial;Elimina no linealidades;Reduce dimensionalidad espacial y gana robustez;Convierte RGB en texto;C
-472;Visió per Computador;Media;Teoria;La IoU (Intersection over Union) se usa habitualmente para:;Medir precisión de punto flotante;Calcular entropía de canal;Ordenar clases por frecuencia;Evaluar solapamiento en detección/segmentación;D
-473;Visió per Computador;Dificil;Teoria;¿Qué es un píxel?;Elemento mínimo de una imagen;Filtro;Canal;Kernel;A
-474;Visió per Computador;Dificil;Teoria;¿Qué es el descriptor de características?;Filtro;Vector que describe región de la imagen;Detector;Kernel;B
-475;Visió per Computador;Facil;Calculo;¿Cuántos canales en RGB?;1;2;3;4;C
-476;Visió per Computador;Facil;Calculo;¿Cuántos valores en histograma 256 bins?;255;128;1;256;D
-477;Visió per Computador;Media;Calculo;Imagen 8×8, kernel 3×3, stride 1. ¿Output?;6×6;8×8;5×5;3×3;A
-478;Visió per Computador;Media;Calculo;¿Qué es la convolución 2D?;Pooling;Filtro deslizante sobre imagen;ReLU;Batch norm;B
-479;Visió per Computador;Dificil;Calculo;Convolución 3x3 con stride 1 y padding 0 sobre entrada de 32x32: ¿salida?;32x32;29x29;30x30;34x34;C
-480;Visió per Computador;Dificil;Calculo;¿Cuántas componentes tiene un color RGB?;4;1;2;3;D
+455;Informació i Seguretat;Dificil;Calculo;Tras un intercambio Diffie-Hellman (g^a mod p y g^b mod p), la clave compartida típica es:;(g+a+b) mod p;g^(a+b) mod p sin acuerdo de exponentes;g^(a·b) mod p;a+b enviado en claro;C
+456;Informació i Seguretat;Dificil;Calculo;¿Cuántos bits tiene típicamente la salida de SHA-256?;128;64;512;256;D
+457;Teoria de Jocs;Facil;Teoria;¿Qué es una estrategia estrictamente dominante?;Mejor respuesta para el jugador sea cual sea la estrategia del rival;Perfil de equilibrio de Nash;Estrategia maximin;Asignación óptima en sentido de Pareto;A
+458;Teoria de Jocs;Facil;Teoria;¿Qué define la estrategia maximin (criterio de Wald)?;Equilibrio de Nash;Maximizar el pago mínimo que puede obtener;Estrategia estrictamente dominante;Óptimo de Pareto;B
+459;Teoria de Jocs;Media;Teoria;¿Qué es un equilibrio correlacionado?;Solo estrategias mixtas del mismo jugador;Perfil donde cada uno maximiza en solitario;Distribución sobre perfiles coordinada por una señal pública;La misma definición que un Nash clásico;C
+460;Teoria de Jocs;Media;Teoria;¿Qué es un equilibrio de Nash?;Asignación que maximiza la suma de pagos;Estrategia dominante para todos;Resultado del criterio maximin;Ningún jugador mejora desviándose solo;D
+461;Teoria de Jocs;Dificil;Teoria;¿Qué describe un juego repetido con horizonte infinito (o muy largo)?;Rondas del stage-game con descuento δ y sin fecha final fija;Una sola jugada estática;Matriz 3×3 obligatoriamente;Juego sin pagos definidos;A
+462;Teoria de Jocs;Dificil;Teoria;En un juego repetido finito (horizonte T conocido), repetir el Nash del juego estático en cada periodo:;Siempre es un equilibrio perfecto en subjuegos (SPE);Puede ser SPE o no, según pagos y T;Impide cualquier equilibrio de Nash;Equivale siempre al óptimo de Pareto;B
+463;Teoria de Jocs;Facil;Calculo;¿Cuántas estrategias puras tiene cada jugador en un juego 2×2?;4;1;2;3;C
+464;Teoria de Jocs;Facil;Calculo;¿Cuál es el máximo de equilibrios de Nash en estrategias puras en un juego 2×2?;1;2;0;4;D
+465;Teoria de Jocs;Media;Calculo;En un juego 2×2, ¿cuántos perfiles de estrategia pura hay?;4;8;1;2;A
+466;Teoria de Jocs;Media;Calculo;En un juego de suma cero, si la fila gana 5, ¿pago de la columna (u+v=0)?;5;-5;0;10;B
+467;Teoria de Jocs;Dificil;Calculo;Jugador 1 con 3 estrategias y jugador 2 con 4. ¿Cuántos perfiles puros?;7;3;12;4;C
+468;Teoria de Jocs;Dificil;Calculo;La estrategia maximin del jugador fila elige:;El máximo entre los pagos máximos de cada fila;La suma de todos los pagos de la matriz;El producto de los mínimos por columna;El máximo entre los mínimos de cada fila;D
+469;Visió per Computador;Facil;Teoria;En una CNN, ¿qué hace un kernel de convolución?;Extrae patrones locales aplicando un filtro en ventanas de la imagen;Ordena etiquetas de clases alfabéticamente;Sustituye la función de pérdida del modelo;Calcula la IoU entre dos bounding boxes;A
+470;Visió per Computador;Facil;Teoria;¿Qué hace típicamente la activación ReLU en una capa de una CNN?;Suma todos los píxeles en un único escalar;Aplica max(0,·) elemento a elemento;Reduce resolución con ventana 2×2;Convierte obligatoriamente la imagen a escala de grises;B
+471;Visió per Computador;Media;Teoria;¿Qué efecto tiene el pooling (p. ej. max pooling) en mapas de características?;Aumenta la resolución espacial;Elimina la no linealidad de la red;Reduce dimensionalidad espacial y aporta invarianza local;Traduce la imagen RGB a texto;C
+472;Visió per Computador;Media;Teoria;La métrica IoU (Intersection over Union) se usa habitualmente para:;Medir la precisión en coma flotante de la GPU;Calcular la entropía de un canal de color;Ordenar clases por frecuencia en el dataset;Evaluar solapamiento entre predicción y verdad en detección/segmentación;D
+473;Visió per Computador;Dificil;Teoria;En una convolución 2D, el padding simétrico suele servir para:;Controlar el tamaño de salida y limitar pérdida de información en bordes;Eliminar canales de color de la imagen;Calcular el softmax de las clases;Duplicar siempre el número de filtros;A
+474;Visió per Computador;Dificil;Teoria;Un descriptor de características (p. ej. SIFT u ORB) en visión es:;Un filtro Gaussiano fijo de 3×3;Una representación (p. ej. vector) que resume una región o punto de interés;Solo la matriz de intrínsecos de la cámara;El tamaño del batch de entrenamiento;B
+475;Visió per Computador;Facil;Calculo;¿Cuántos canales de color tiene una imagen RGB estándar?;1;2;3;4;C
+476;Visió per Computador;Facil;Calculo;Imagen de 640×480 píxeles (ancho×alto). ¿Cuántos píxeles en total?;1120;640;480;307200;D
+477;Visió per Computador;Media;Calculo;Imagen 8×8, kernel 3×3, stride 1 y padding 0. ¿Tamaño de salida?;6×6;8×8;5×5;3×3;A
+478;Visió per Computador;Media;Calculo;Dos cajas de igual área 100 px² se solapan en 50 px². ¿IoU?;0,5;1/3 (≈0,33);0,75;1;B
+479;Visió per Computador;Dificil;Calculo;Convolución 3×3, stride 1 y padding 0 sobre entrada 32×32. ¿Tamaño de salida?;32×32;29×29;30×30;34×34;C
+480;Visió per Computador;Dificil;Calculo;Entrada 10×10, kernel 3×3, stride 2 y padding 0. ¿Tamaño de salida (fórmula habitual)?;10×10;8×8;5×5;4×4;D

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Similitud léxica entre enunciados (variedad temática por materia)."""
 
 from __future__ import annotations

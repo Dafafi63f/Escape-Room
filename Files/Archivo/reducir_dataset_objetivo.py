@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Reduce el dataset al objetivo manteniendo balance por tema y evitando:
@@ -6,7 +6,7 @@ Reduce el dataset al objetivo manteniendo balance por tema y evitando:
 - Preguntas muy similares (mismo enunciado con leves cambios o distractores distintos).
 
 Uso:
-  python Files/reducir_dataset_objetivo.py --target-total 400 --inplace
+  python Files/reducir_dataset_objetivo.py --target-total 480 --inplace
 """
 
 import argparse
@@ -20,7 +20,7 @@ from utils_dataset_csv import guardar_filas_csv, materia_de_fila
 from utils_dataset_csv import borrar_pycache_en_proyecto
 
 
-BASE = Path(__file__).resolve().parent.parent
+BASE = Path(__file__).resolve().parent.parent.parent
 PATH_PREGUNTAS = BASE / "Data" / "Preguntas.csv"
 
 
@@ -217,7 +217,7 @@ def reduce_dataset(rows: list[dict], target_total: int) -> list[dict]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--target-total", type=int, default=400)
+    parser.add_argument("--target-total", type=int, default=480)
     parser.add_argument("--inplace", action="store_true", help="Sobrescribe Data/Preguntas.csv")
     parser.add_argument("--output", type=str, default="Data/Preguntas_reducido.csv")
     args = parser.parse_args()
@@ -248,6 +248,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    from utils_banco_cerrado import rechazar_script_deprecado
+
+    rechazar_script_deprecado("reducir_dataset_objetivo.py")
     try:
         main()
     finally:

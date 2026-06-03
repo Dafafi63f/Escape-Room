@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Correcciones puntuales de redacción en Data/Preguntas.csv (por Id).
 
@@ -14,7 +14,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent
+BASE = Path(__file__).resolve().parent.parent.parent
 PATH_CSV = BASE / "Data" / "Preguntas.csv"
 
 # Id -> campos a sustituir (solo los listados)
@@ -184,4 +184,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    from utils_banco_cerrado import rechazar_script_deprecado
+
+    rechazar_script_deprecado("revisar_castellano_csv.py")
     main()

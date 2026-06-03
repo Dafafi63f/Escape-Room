@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Aplica correcciones de Materia/contenido revisadas manualmente."""
 
@@ -9,8 +9,8 @@ import json
 import sys
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+BASE = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from balance_lib import PATCHES as _PATCHES_ALL
 
@@ -173,6 +173,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    from utils_banco_cerrado import rechazar_script_deprecado
+
+    rechazar_script_deprecado("aplicar_correcciones_materia.py")
     try:
         main()
     finally:

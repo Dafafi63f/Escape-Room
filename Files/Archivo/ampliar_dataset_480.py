@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Amplía Data/Preguntas.csv de 400 a 480 filas (40 × 12).
 
 Estructura por materia: 2FT 2MT 2DT 2FC 2MC 2DC (orden canónico + ladder).
-Rellena huecos desde plantillas.json (uso != dataset_400).
+Rellena huecos desde plantillas.json (uso != dataset_480).
 
 Uso:
   python Files/ampliar_dataset_480.py
@@ -26,7 +26,7 @@ from objetivos_balanceo import PREGUNTAS_POR_MATERIA, SLOTS_CANONICOS_12, TARGET
 from utils_dataset_csv import COLUMNAS_PREGUNTAS, PATH_PREGUNTAS, fila_pregunta, guardar_filas_csv
 from utils_orden_temas import cargar_orden_temas
 
-BASE = Path(__file__).resolve().parent.parent
+BASE = Path(__file__).resolve().parent.parent.parent
 PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
 
 
@@ -238,6 +238,9 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from utils_banco_cerrado import rechazar_script_deprecado
+
+    rechazar_script_deprecado("ampliar_dataset_480.py")
     try:
         raise SystemExit(main())
     except SystemExit:

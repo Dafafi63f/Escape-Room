@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Recategoriza una pregunta por Id y equilibra materias con estrategia:
@@ -25,8 +25,8 @@ import re
 import sys
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+BASE = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from balance_lib import ejecutar_reordenar, ejecutar_validar
 from dataset_pipeline import generar_pregunta_para_slot
@@ -346,4 +346,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from utils_banco_cerrado import rechazar_script_deprecado
+
+    rechazar_script_deprecado("recategorizar_y_equilibrar.py")
     raise SystemExit(main())

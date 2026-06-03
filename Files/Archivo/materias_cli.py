@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 CLI unificada para operaciones de materias/criterios.
@@ -15,8 +15,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent
-FILES = Path(__file__).resolve().parent
+BASE = Path(__file__).resolve().parent.parent.parent
+FILES = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(FILES))
 
 from utils_dataset_csv import guardar_filas_csv, materia_de_fila
@@ -292,5 +292,8 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    from utils_banco_cerrado import rechazar_script_deprecado
+
+    rechazar_script_deprecado("materias_cli.py")
     raise SystemExit(main())
 

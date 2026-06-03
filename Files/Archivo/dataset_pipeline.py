@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Regeneracion del dataset desde plantillas (invocado por balance.py)."""
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pandas as pd
 
-BASE = Path(__file__).resolve().parent.parent
+BASE = Path(__file__).resolve().parent.parent.parent
 PATH_CSV = BASE / "Data" / "Preguntas.csv"
 PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
 
@@ -33,14 +33,11 @@ TARGET_TIPO_GLOBAL = preguntas_por_tipo_global()
 TARGET_POR_TIPO = TARGET_MATERIA // 2
 
 def cargar_plantillas():
+    from utils_plantillas_pool import pool_plantillas_materia
+
     with open(PATH_PLANTILLAS, "r", encoding="utf-8") as f:
         raw = json.load(f)
-    # Priorizar general; si no hay, usar cualquiera (dificil/calculo) para temas sin plantillas general
-    result = {}
-    for tema, items in raw.items():
-        generales = [t for t in items if t.get("uso") == "general"]
-        result[tema] = generales if generales else items
-    return result
+    return {tema: pool_plantillas_materia(items) for tema, items in raw.items()}
 
 
 def expandir_plantilla(template):
@@ -1004,7 +1001,7 @@ from pathlib import Path
 from objetivos_balanceo import lista_objetivos_correcta, objetivos_correcta_por_letra
 from utils_dataset_csv import COLUMNAS_PREGUNTAS
 
-BASE = Path(__file__).resolve().parent.parent
+BASE = Path(__file__).resolve().parent.parent.parent
 PATH_CSV = BASE / "Data" / "Preguntas.csv"
 
 
@@ -1181,6 +1178,9 @@ PASOS_PIPELINE = [
 
 
 def ejecutar_pipeline_regenerar(pasos=None, *, dry_run: bool = False, sin_dificultad: bool = False) -> int:
+    from utils_banco_cerrado import rechazar_mutacion_dataset
+
+    rechazar_mutacion_dataset("dataset_pipeline.ejecutar_pipeline_regenerar")
     lista = list(pasos or PASOS_PIPELINE)
     if sin_dificultad:
         lista = [(n, f) for n, f in lista if "dificultad" not in n.lower()]

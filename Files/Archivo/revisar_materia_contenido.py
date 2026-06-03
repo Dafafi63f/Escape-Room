@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Revisa coherencia Materia + Tipo + Dificultad frente al contenido (enunciado + opciones).
@@ -18,8 +18,8 @@ import json
 import sys
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+BASE = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from dataset_pipeline import sustituir_filas_incoherentes
 from utils_clasificacion_pregunta import comparar_con_asignacion, metadatos_optimos
@@ -160,4 +160,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from utils_banco_cerrado import rechazar_script_deprecado
+
+    rechazar_script_deprecado("revisar_materia_contenido.py")
     raise SystemExit(main())

@@ -13,6 +13,9 @@ from utils_orden_temas import cargar_orden_temas
 # Total de filas que deben quedar tras el balanceo completo.
 TARGET_TOTAL_PREGUNTAS = 480
 
+# Etiqueta ``uso`` en plantillas.json para copias alineadas con Preguntas.csv.
+USO_PLANTILLA_DATASET = "dataset_480"
+
 # 12 preguntas por materia: 2FT 2MT 2DT 2FC 2MC 2DC (teoría luego cálculo, ladder F→D).
 PREGUNTAS_POR_MATERIA = 12
 SLOTS_CANONICOS_12: tuple[tuple[str, str], ...] = (

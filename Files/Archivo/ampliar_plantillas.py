@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Amplía y equilibra Data/plantillas.json por materia.
 
-1. Fusiona plantillas actuales + origin/main (sin dataset_400 ni copias del CSV).
+1. Fusiona plantillas actuales + origin/main (sin dataset_480 ni copias del CSV).
 2. Rellena hasta --objetivo con variaciones materializadas, permutaciones y mutaciones numéricas.
 3. Dedup solo exacta global + quitar solapamiento semántico con el dataset activo.
 
@@ -38,7 +38,7 @@ from utils_deduplicacion import (
 from utils_dataset_csv import materia_de_fila
 from utils_orden_temas import cargar_orden_temas
 
-BASE = Path(__file__).resolve().parent.parent
+BASE = Path(__file__).resolve().parent.parent.parent
 PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
 PATH_PREGUNTAS = BASE / "Data" / "Preguntas.csv"
 GIT_PLANTILLAS_REF = "origin/main:Data/plantillas.json"
@@ -138,7 +138,7 @@ def fusionar_fuentes(
     resultado: list[dict] = []
 
     def intentar_anadir(t: dict) -> None:
-        if str(t.get("uso", "")).lower() == "dataset_400":
+        if str(t.get("uso", "")).lower() == "dataset_480":
             return
         k = clave_plantilla_exacta(t)
         if k in vistos:
@@ -371,6 +371,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    from utils_banco_cerrado import rechazar_script_deprecado
+
+    rechazar_script_deprecado("ampliar_plantillas.py")
     try:
         main()
     finally:
