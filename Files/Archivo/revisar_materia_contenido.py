@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Revisa coherencia Materia + Tipo + Dificultad frente al contenido (enunciado + opciones).
@@ -10,7 +10,25 @@ Ver también: clasificar_pregunta.py --dataset --solo-incoherentes;
   aplicar_clasificacion_optima.py --inplace (flujo recomendado del banco, Memoria §14.4).
 """
 
+import sys
+from pathlib import Path
+
+_SCRIPTS = Path(__file__).resolve().parent.parent / "Scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+
+
 from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+_FILES = Path(__file__).resolve().parent.parent
+_SCRIPTS = _FILES / "Scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+if str(_FILES) not in sys.path:
+    sys.path.insert(0, str(_FILES))
 
 import argparse
 import csv
@@ -19,7 +37,7 @@ import sys
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "Scripts"))
 
 from dataset_pipeline import sustituir_filas_incoherentes
 from utils_clasificacion_pregunta import comparar_con_asignacion, metadatos_optimos
@@ -69,7 +87,7 @@ def corregir_dataset(inplace: bool, dry_run: bool) -> int:
         print(f"Regeneradas: {n_gen} preguntas nuevas (1 por fila sustituida)")
         guardar_filas_csv(fieldnames, nuevas_filas, PATH_CSV)
         print("Guardado:", PATH_CSV)
-        print("Ejecuta después: python Files/balance.py conservador")
+        print("Ejecuta después: python Files/Scripts/balance.py conservador")
     return len(cambios)
 
 

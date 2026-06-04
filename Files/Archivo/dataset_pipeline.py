@@ -3,6 +3,16 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+_FILES = Path(__file__).resolve().parent.parent
+_SCRIPTS = _FILES / "Scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+if str(_FILES) not in sys.path:
+    sys.path.insert(0, str(_FILES))
+
 import csv
 import json
 import random
@@ -266,7 +276,7 @@ def ejecutar_balancear_materias() -> None:
 
     # Ordenar por tema siguiendo listado_materias, luego por Id (orden ligero).
     # Para el orden canónico del TFG (ladder TF..TD/CF..CD, bloques F/M/D, ciclo ABCD), ejecutar
-    # `python Files/balance.py reordenar` al final del pipeline agresivo.
+    # `python Files/Scripts/balance.py reordenar` al final del pipeline agresivo.
     temas_orden, _ = cargar_orden_temas()
     tema_rank = {t: i for i, t in enumerate(temas_orden)}
     fallback_rank = len(tema_rank)

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Reubica preguntas según reglas del proyecto (movimientos puntuales por Id).
@@ -7,14 +7,32 @@ Reubica preguntas según reglas del proyecto (movimientos puntuales por Id).
 Solo útil si hace falta repetir un movimiento concreto vía ``recategorizar_y_equilibrar``.
 """
 
+import sys
+from pathlib import Path
+
+_SCRIPTS = Path(__file__).resolve().parent.parent / "Scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+
+
 from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+_FILES = Path(__file__).resolve().parent.parent
+_SCRIPTS = _FILES / "Scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+if str(_FILES) not in sys.path:
+    sys.path.insert(0, str(_FILES))
 
 import csv
 import sys
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "Scripts"))
 
 from recategorizar_y_equilibrar import recategorizar_y_equilibrar_por_id
 

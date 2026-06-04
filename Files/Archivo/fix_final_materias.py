@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 LEGACY — deshabilitado (banco cerrado 2026-06-03).
@@ -6,12 +6,20 @@ LEGACY — deshabilitado (banco cerrado 2026-06-03).
 Regeneraba y reclasificaba todo el CSV. No ejecutar.
 Ver Memoria_TFG.md §14.4
 """
+
+import sys
+from pathlib import Path
+
+_SCRIPTS = Path(__file__).resolve().parent.parent / "Scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+
 import csv
 import sys
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "Scripts"))
 
 from utils_banco_cerrado import rechazar_mutacion_dataset
 

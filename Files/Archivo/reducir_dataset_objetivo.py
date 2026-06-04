@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Reduce el dataset al objetivo manteniendo balance por tema y evitando:
@@ -6,8 +6,16 @@ Reduce el dataset al objetivo manteniendo balance por tema y evitando:
 - Preguntas muy similares (mismo enunciado con leves cambios o distractores distintos).
 
 Uso:
-  python Files/reducir_dataset_objetivo.py --target-total 480 --inplace
+  python Files/Archivo/reducir_dataset_objetivo.py --target-total 480 --inplace
 """
+
+import sys
+from pathlib import Path
+
+_SCRIPTS = Path(__file__).resolve().parent.parent / "Scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+
 
 import argparse
 import csv

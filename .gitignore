@@ -1,4 +1,17 @@
-﻿github.txt
+﻿# --- Sesión y salida local ---
+*.txt
+Juego/Informes/*
+!Juego/Informes/.gitkeep
 
+# --- Build del .exe (generar con Juego/build_exe_onefile.ps1) ---
+Juego/build/
+Juego/*.spec
+*.exe
+
+# --- Python ---
 __pycache__/
 *.py[cod]
+*$py.class
+.venv/
+venv/
+.env

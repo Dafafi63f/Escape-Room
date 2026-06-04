@@ -252,17 +252,17 @@ flowchart LR
 
 ## 11. Seccion tecnica del script del juego en Python
 
-El archivo `Juego/juego_cuestionario.py` implementa hoy el **modo libre** del quiz en consola. Los modos **historia** y **feedback** se documentan como trabajo en curso y compartirán la misma capa de carga de `Data/Preguntas.csv` y `listado_materias.csv` cuando se implementen.
+El lanzador `Juego/juego_cuestionario.py` arranca el menú; la lógica está en el paquete **`Juego/Consola/`** (import `Consola`). El **modo libre** está implementado; **historia** (examen balanceado con histórico de qualificacions) y **feedback** comparten la misma capa de datos (`Data/Preguntas.csv`, `listado_materias.csv`, plantillas e histórico CSV).
 
-El diseño separa la carga de datos, la logica de partida y la persistencia de resultados para facilitar mantenimiento y evolucion hacia los otros modos.
+El diseño separa rutas, carga de datos, reglas de partida, modos e informes de examen (sin ranking global: sustituido por informes `.txt` en `Juego/Informes/`).
 
 ### 11.0 Modos de juego (alcance TFG)
 
-| Modo | Estado | Motor actual |
-|------|--------|----------------|
-| Libre | **Implementado** | `juego_cuestionario.py` — banco 1 dataset (final) o 2–3 plantillas (beta), filtros, ranking |
-| Historia | **En desarrollo** | Narrativa por escenas; el banco de preguntas como retos de avance |
-| Feedback | **En desarrollo** | Explicación y contexto didáctico tras cada respuesta (no solo acierto/fallo) |
+| Modo | Estado | Código |
+|------|--------|--------|
+| Libre | **Implementado** | `Consola/modo_libre.py` — banco dataset o plantillas (beta), filtros, informes |
+| Historia | **Implementado** (v1) | `Consola/modo_historia.py` + `generador_examen_historia.py` — examen balanceado |
+| Feedback | **En desarrollo** | `Consola/modo_feedback.py` — explicación tras cada respuesta |
 
 ### 11.1 Entrada de datos y resolucion de rutas
 
@@ -270,7 +270,8 @@ El script detecta automaticamente la ruta base del proyecto para funcionar tanto
 
 - `Data/Preguntas.csv` como dataset principal.
 - `Data/listado_materias.csv` para enriquecer cada pregunta con metadatos academicos.
-- `Juego/ranking_quiz.csv` para guardar puntuaciones entre partidas (se crea junto al script o al ejecutable; no forma parte de `Data/` versionada).
+- `Data/plantillas.json`, `Data/Historic_qualificacions_MatCAD_completo.csv` segun modo.
+- `Juego/Informes/` para informes de examen cerrado (`.txt`, gitignored salvo `.gitkeep`).
 
 La funcion de carga valida que cada pregunta tenga enunciado, cuatro opciones completas y respuesta correcta en el conjunto `{A, B, C, D}`.
 
@@ -336,16 +337,9 @@ El sistema de evaluacion aplica:
 
 La partida termina al agotar vidas o al completar el numero objetivo de preguntas.
 
-### 11.6 Persistencia y ranking
+### 11.6 Informes de partida
 
-Al finalizar, el script registra en `Juego/ranking_quiz.csv` (o junto al `.exe` si se empaqueta):
-
-- nombre del jugador,
-- puntos totales,
-- preguntas respondidas,
-- y numero de aciertos.
-
-Despues muestra un top de ranking ordenado por puntuacion (y por aciertos como criterio secundario).
+En partidas con correccion al final, `Consola/informe_examen.py` escribe un `.txt` en `Juego/Informes/` (o `Informes/` junto al `.exe` empaquetado), con ID de sesion y detalle de respuestas. No hay fichero de ranking global.
 
 ### 11.7 Valor para el TFG
 
@@ -519,7 +513,7 @@ Scripts antiguos de balanceo y deduplicación (`balancear_*.py`, `balanceo_compl
 | `clasificar_pregunta.py` | Clasificación por contenido (lectura). |
 | `exportar_criterios_clasificacion_materia.py` | Regenera `criterios_clasificacion_materia.csv`. |
 | `estadisticas_historic_qualificacions.py` | Estadísticas del histórico de qualificacions. |
-| `borrar_pycache.py` | Limpieza de `__pycache__`. |
+| *(raíz)* `borrar_pycache.py` | Limpieza de `__pycache__` en todo el proyecto (autónomo; ver también `utils_dataset_csv.borrar_pycache_en_proyecto` en scripts). |
 
 #### Bibliotecas compartidas (`Files/` — no ejecutar como CLI salvo las de arriba)
 
@@ -559,7 +553,7 @@ Scripts unificados que **ya no existen** en la raíz de `Files/` (nombres antigu
 
 **Banco cerrado (2026-06-03):** `Data/Preguntas.csv` está protegido. `guardar_filas_csv()` y scripts en `Files/Archivo/` fallan salvo `TFG_PERMITIR_CSV=1`.
 
-**CLI:** `python Files/mantenimiento.py <comando>` (alias: `python Files/balance.py validar`).
+**CLI:** `python Files/Scripts/mantenimiento.py <comando>` (alias: `python Files/Scripts/balance.py validar` si existe).
 
 | Comando | Función |
 |---------|---------|
@@ -573,7 +567,7 @@ Scripts unificados que **ya no existen** en la raíz de `Files/` (nombres antigu
 | `duplicados revisar` / `plantillas` | Ver `duplicados.py` |
 | `dedup_reemplazar_plantillas.py --inplace` | Purga sintéticas, dedup, inyecta catálogo internet; luego `equilibrar_pool_extra_juego.py --inplace` |
 
-**Otros:** `python Files/borrar_pycache.py` [--dry-run] · `clasificar_pregunta.py` (sin `--inplace`).
+**Otros:** `python borrar_pycache.py` [--dry-run] (raíz del TFG) · `python Files/Scripts/clasificar_pregunta.py` (sin `--inplace`).
 
 **Flujo habitual:** (1) `validar` → (2) `plantillas pipeline` → (3) `criterios` → (4) `auditar-distractores`.
 
@@ -583,11 +577,16 @@ Scripts unificados que **ya no existen** en la raíz de `Files/` (nombres antigu
 
 ### 14.5 Juego y empaquetado (`Juego/`)
 
+Documentacion: `Juego/README.md`, `Juego/Consola/README.md`, `Juego/Informes/README.md`, `Juego/Tests/README.md`.
+
 | Elemento | Descripcion |
 |----------|-------------|
-| `juego_cuestionario.py` | **Modo libre**: banco dataset (final) o plantillas (beta), filtros, ranking. **Historia** / **feedback**: en desarrollo (§11.0). |
-| `ranking_quiz.csv` | Fichero **generado al jugar** (persistencia de partidas); ruta por defecto en la carpeta `Juego/` al ejecutar el `.py`. |
-| `juego_cuestionario.spec`, `build_exe_onefile.ps1`, carpeta `build/` | Artefactos PyInstaller / script de construccion del ejecutable. |
+| `juego_cuestionario.py` | Lanzador del menu (modos libre, historia, feedback). |
+| `Consola/` | Paquete del juego (datos, modos, reglas, informes, rutas). |
+| `Informes/` | Informes `.txt` generados al jugar (local; `.gitignore`). |
+| `Tests/` | Pruebas unitarias (`python -m unittest discover -s Juego/Tests`). |
+| `build_exe_onefile.ps1` | Genera `juego_cuestionario.exe` (PyInstaller, empaqueta `Data/`). |
+| `build/`, `juego_cuestionario.spec`, `*.exe` | Artefactos locales de build; `build/` y `.exe` ignorados en git; el `.spec` se regenera y puede borrarse. |
 
 ### 14.6 Coherencia con el modelo de datos del TFG
 

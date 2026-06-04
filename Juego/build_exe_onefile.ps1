@@ -71,6 +71,14 @@ if ($LASTEXITCODE -ne 0) {
     throw "Fallo al generar el ejecutable."
 }
 
+Write-Host "==> Limpiando artefactos de build (build/, .spec)..."
+if (Test-Path $buildDir) { Remove-Item $buildDir -Recurse -Force }
+$specFile = Join-Path $gameDir "juego_cuestionario.spec"
+if (Test-Path $specFile) { Remove-Item $specFile -Force }
+if (Test-Path (Join-Path $gameDir "dist")) {
+    Remove-Item (Join-Path $gameDir "dist") -Recurse -Force
+}
+
 Write-Host ""
 Write-Host "Listo. Ejecutable generado en:"
 Write-Host "  $gameDir\juego_cuestionario.exe"

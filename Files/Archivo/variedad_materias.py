@@ -8,6 +8,16 @@ Variedad temática del banco: análisis, diversificación automática y parches 
 """
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+_FILES = Path(__file__).resolve().parent.parent
+_SCRIPTS = _FILES / "Scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+if str(_FILES) not in sys.path:
+    sys.path.insert(0, str(_FILES))
+
 import argparse
 import csv
 import json
@@ -23,7 +33,7 @@ PATH_CSV = BASE / "Data" / "Preguntas.csv"
 PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
 LETTERS = "ABCD"
 
-sys.path.insert(0, str(BASE / "Files"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "Scripts"))
 from utils_variedad import (  # noqa: E402
     UMBRAL_INFORME,
     agrupar_por_materia,

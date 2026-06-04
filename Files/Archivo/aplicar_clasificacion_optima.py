@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 LEGACY — deshabilitado (banco cerrado 2026-06-03). No ejecutar.
@@ -14,13 +14,31 @@ Estrategia:
 - No se reetiqueta el mismo enunciado.
 
 Uso:
-  python Files/aplicar_clasificacion_optima.py --dry-run
-  python Files/aplicar_clasificacion_optima.py --inplace
+  python Files/Archivo/aplicar_clasificacion_optima.py --dry-run
+  python Files/Archivo/aplicar_clasificacion_optima.py --inplace
 
 Ver Memoria_TFG.md §14.4 (tras duplicados.py, antes de balance.py conservador).
 """
 
+import sys
+from pathlib import Path
+
+_SCRIPTS = Path(__file__).resolve().parent.parent / "Scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+
+
 from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+_FILES = Path(__file__).resolve().parent.parent
+_SCRIPTS = _FILES / "Scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+if str(_FILES) not in sys.path:
+    sys.path.insert(0, str(_FILES))
 
 import argparse
 import csv
@@ -28,7 +46,7 @@ import sys
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "Scripts"))
 
 from balance_lib import ejecutar_reordenar, ejecutar_validar
 from dataset_pipeline import (

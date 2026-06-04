@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Correcciones puntuales de redacción en Data/Preguntas.csv (por Id).
 
@@ -6,7 +6,25 @@ No sustituye contenido de materia ya fijado por ``fix_final_materias.py``.
 Evitar parches por Id en bloques revisados (31–130) salvo ortografía menor.
 """
 
+import sys
+from pathlib import Path
+
+_SCRIPTS = Path(__file__).resolve().parent.parent / "Scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+
+
 from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+_FILES = Path(__file__).resolve().parent.parent
+_SCRIPTS = _FILES / "Scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+if str(_FILES) not in sys.path:
+    sys.path.insert(0, str(_FILES))
 
 import csv
 import re
