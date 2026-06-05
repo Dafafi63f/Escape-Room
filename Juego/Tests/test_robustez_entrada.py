@@ -12,7 +12,13 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from Consola.consola import pedir_entero_en_rango, pedir_opcion
-from Consola.entrada_menu import TipoTecla, _EventoTecla, elegir_indice_menu
+from Consola.entrada_menu import (
+    TECLA_AYUDA,
+    TECLA_FEEDBACK,
+    TipoTecla,
+    _EventoTecla,
+    elegir_indice_menu,
+)
 from Consola.motor_partida import ResultadoRespuesta, preguntar_con_reglas
 from Consola.modelos import Pregunta
 from Consola.motor_partida import EstadoPartida
@@ -21,6 +27,7 @@ from Consola.navegacion import (
     AccionPausa,
     SalirPrograma,
     VolverAtras,
+    menu_ayuda_dinamico,
     menu_pausa,
 )
 
@@ -72,17 +79,65 @@ class TestEntradaConsola(unittest.TestCase):
     def test_tecla_invalida_ignorada(self, _mock) -> None:
         self.assertEqual(pedir_opcion("m", ["1", "2"]), "2")
 
-    @patch("builtins.input", side_effect=EOFError)
+    @patch("Consola.entrada_menu._leer_tecla_texto_windows", side_effect=EOFError)
     def test_eof_en_leer_linea_sale_programa(self, _mock) -> None:
         from Consola.navegacion import leer_linea
 
         with self.assertRaises(SalirPrograma):
             leer_linea("x: ")
 
+    @patch("Consola.navegacion.invocar_feedback_rapido")
+    @patch("Consola.navegacion.feedback_rapido_disponible", return_value=True)
+    @patch(
+        "Consola.entrada_menu.leer_tecla",
+        side_effect=[_ev(TipoTecla.LETRA, TECLA_FEEDBACK), _ev(TipoTecla.ENTER)],
+    )
+    def test_tecla_f_abre_feedback(self, _mock_leer, _mock_disp, mock_invocar) -> None:
+        self.assertEqual(elegir_indice_menu(2, prompt="m"), 1)
+        mock_invocar.assert_called_once()
+
+    def test_pedir_texto_vacio_usa_default(self) -> None:
+        from Consola.consola import TEXTO_DEFAULT_VACIO, pedir_texto
+
+        with patch("Consola.consola.leer_linea", return_value=""):
+            self.assertEqual(pedir_texto("Nombre: "), TEXTO_DEFAULT_VACIO)
+        with patch("Consola.consola.leer_linea", return_value="  "):
+            self.assertEqual(pedir_texto("Nombre: ", default="Anonimo"), "Anonimo")
+
     def test_pedir_entero_rango_invertido_se_normaliza(self) -> None:
-        with patch("Consola.navegacion._input_seguro", return_value=""):
+        with patch("Consola.entrada_menu.leer_linea_teclado", return_value=""):
             v = pedir_entero_en_rango("n", 5, 2, 99)
         self.assertEqual(v, 5)
+
+
+class TestMenuAyuda(unittest.TestCase):
+    @patch(
+        "Consola.entrada_menu.leer_tecla",
+        side_effect=[_ev(TipoTecla.LETRA, TECLA_AYUDA), _ev(TipoTecla.ENTER)],
+    )
+    @patch("Consola.navegacion.menu_ayuda_dinamico")
+    def test_tecla_h_abre_ayuda_y_luego_responde(self, mock_ayuda, _mock_tecla) -> None:
+        self.assertEqual(pedir_opcion("m", ["1", "2"]), "1")
+        mock_ayuda.assert_called_once_with(en_partida=False)
+
+    @patch(
+        "Consola.entrada_menu.leer_tecla",
+        side_effect=[_ev(TipoTecla.SUPR)],
+    )
+    @patch("Consola.navegacion.limpiar_consola")
+    @patch("Consola.navegacion._dibujar_menu_ayuda")
+    def test_menu_ayuda_supr_cierra(self, _mock_dibujar, _mock_cls, _mock_tecla) -> None:
+        menu_ayuda_dinamico()
+
+    @patch(
+        "Consola.entrada_menu.leer_tecla",
+        side_effect=[_ev(TipoTecla.DIGITO, "5"), _ev(TipoTecla.SUPR)],
+    )
+    @patch("Consola.navegacion.limpiar_consola")
+    @patch("Consola.navegacion._dibujar_menu_ayuda")
+    def test_menu_ayuda_otra_tecla_ignorada(self, mock_dibujar, _mock_cls, _mock_tecla) -> None:
+        menu_ayuda_dinamico()
+        self.assertEqual(mock_dibujar.call_count, 2)
 
 
 class TestMenuPausa(unittest.TestCase):
@@ -99,8 +154,8 @@ class TestMenuPausa(unittest.TestCase):
         with self.assertRaises(SalirPrograma):
             menu_pausa()
 
-    @patch("Consola.entrada_menu.leer_tecla", return_value=_ev(TipoTecla.CTRL_C))
-    def test_ctrl_c_en_pausa_salir(self, _mock) -> None:
+    @patch("Consola.entrada_menu.leer_tecla", return_value=_ev(TipoTecla.ESCAPE))
+    def test_esc_en_pausa_salir(self, _mock) -> None:
         with self.assertRaises(SalirPrograma):
             elegir_indice_menu(3, defecto=1, en_pausa=True, prompt="")
 

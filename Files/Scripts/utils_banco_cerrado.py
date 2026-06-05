@@ -29,7 +29,7 @@ _ENV_OVERRIDE = "TFG_PERMITIR_CSV"
 SCRIPTS_SOLO_LECTURA = (
     "mantenimiento.py",
     "balance.py",
-    "borrar_pycache.py",
+    "borrar_temporales.py",
     "validacion_dataset.py",
     "auditoria.py",
     "clasificar_pregunta.py",

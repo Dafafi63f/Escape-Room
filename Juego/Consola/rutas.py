@@ -112,5 +112,30 @@ def ruta_informe_para_usuario(archivo: Path) -> str:
     return f"Juego/Informes/{archivo.name}"
 
 
+def resolver_dir_feedback() -> Path:
+    """Carpeta donde se guardan los avisos del modo feedback."""
+    if getattr(sys, "frozen", False):
+        base = Path(sys.executable).resolve().parent / "Feedback"
+    else:
+        base = _JUEGO_DIR / "Feedback"
+    base.mkdir(parents=True, exist_ok=True)
+    return base
+
+
+def ruta_feedback_para_usuario(archivo: Path) -> str:
+    return f"Juego/Feedback/{archivo.name}"
+
+
+def resolver_config_creador_privado() -> Path | None:
+    """JSON local del creador (datos personales y secretos; no se versiona)."""
+    try:
+        return _buscar_archivo(
+            "creador_privado.json",
+            ("creador_privado.json",),
+        )
+    except FileNotFoundError:
+        return None
+
+
 PATH_PREGUNTAS = resolver_dataset()
 PATH_MATERIAS = resolver_listado_materias()

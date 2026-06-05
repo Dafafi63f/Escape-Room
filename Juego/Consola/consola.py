@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Iterable
 
-from .entrada_menu import elegir_indice_menu, elegir_letra_menu, hint_controles_menu
+from .entrada_menu import elegir_indice_menu, elegir_letra_menu
 from .modelos import Pregunta
 from .navegacion import (
     ContextoPantalla,
@@ -19,6 +19,7 @@ from .navegacion import (
 )
 
 _ORDEN_DEFECTO_LETRAS = "ABCDSN"
+TEXTO_DEFAULT_VACIO = "(sin respuesta)"
 
 
 def _activar_menu_consola(titulo: str, dibujar: Callable[[], None]) -> None:
@@ -85,10 +86,11 @@ def pedir_opcion(
 def pedir_texto(
     mensaje: str,
     *,
-    default: str = "",
+    default: str | None = None,
     permitir_atras: bool = False,
     en_partida: bool = False,
 ) -> str:
+    defecto = TEXTO_DEFAULT_VACIO if default is None else default
     try:
         valor = leer_linea(
             mensaje,
@@ -98,7 +100,48 @@ def pedir_texto(
         )
     except (VolverAtras, IrMenuPrincipal, SalirPrograma):
         raise
-    return valor if valor else default
+    return valor.strip() if valor.strip() else defecto
+
+
+def pedir_texto_multilinea(
+    mensaje: str,
+    *,
+    default: str | None = None,
+    permitir_atras: bool = True,
+    enter_con_texto_termina: bool = False,
+) -> str:
+    """Varias lineas; Enter vacio termina. Sin texto, usa el valor por defecto."""
+    defecto = TEXTO_DEFAULT_VACIO if default is None else default
+    print(mensaje)
+    from .entrada_menu import TECLA_ATRAS_TEXTO
+
+    if enter_con_texto_termina:
+        print(
+            f"  (Enter tras escribir para continuar · Enter vacio = «{defecto}» · "
+            f"Supr/Retroceso borra · {TECLA_ATRAS_TEXTO} = atras si no hay texto)"
+        )
+    else:
+        print(
+            f"  (Enter vacio para terminar · Enter sin texto = «{defecto}» · "
+            f"Supr/Retroceso borra · {TECLA_ATRAS_TEXTO} = atras solo si no hay texto)"
+        )
+    lineas: list[str] = []
+    while True:
+        try:
+            linea = leer_linea("Linea: ", permitir_atras=permitir_atras)
+        except VolverAtras:
+            if lineas:
+                return "\n".join(lineas)
+            raise
+        except (IrMenuPrincipal, SalirPrograma):
+            raise
+        if not linea:
+            if lineas:
+                return "\n".join(lineas)
+            return defecto
+        lineas.append(linea)
+        if enter_con_texto_termina:
+            return "\n".join(lineas)
 
 
 def elegir_filtro(
@@ -167,8 +210,18 @@ def pedir_entero_en_rango(
 ) -> int:
     if maximo < minimo:
         maximo = minimo
+    from .entrada_menu import ContextoEntrada, establecer_contexto_entrada
+
     defecto = max(minimo, min(defecto, maximo))
-    print(hint_controles_menu(defecto=defecto, permitir_atras=permitir_atras))
+    establecer_contexto_entrada(
+        ContextoEntrada(
+            tipo="entero",
+            defecto=defecto,
+            permitir_atras=permitir_atras,
+            minimo=minimo,
+            maximo=maximo,
+        )
+    )
     while True:
         try:
             entrada = leer_linea(mensaje, permitir_atras=permitir_atras)

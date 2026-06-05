@@ -11,7 +11,7 @@ CLI unificada de mantenimiento (banco cerrado 480 preguntas).
   python Files/Scripts/mantenimiento.py plantillas {inyectar|limpiar|repuesto|comprobar|pipeline} ...
   python Files/Scripts/mantenimiento.py duplicados ...
   python Files/Scripts/mantenimiento.py criterios [--corregir-ids-permutados]
-  python borrar_pycache.py [--dry-run]   (raíz del TFG)
+  python borrar_temporales.py [--dry-run]   (raíz del TFG)
 
 Scripts de regeneración: Files/Archivo/ (bloqueados para el CSV).
 """
@@ -115,12 +115,16 @@ def cmd_criterios(args: argparse.Namespace) -> int:
     return subprocess.call(cmd)
 
 
-def cmd_pycache(args: argparse.Namespace) -> int:
+def cmd_temporales(args: argparse.Namespace) -> int:
     import subprocess
 
-    cmd = [sys.executable, str(ROOT / "borrar_pycache.py")]
+    cmd = [sys.executable, str(ROOT / "borrar_temporales.py")]
     if args.dry_run:
         cmd.append("--dry-run")
+    if args.solo_pycache:
+        cmd.append("--solo-pycache")
+    if args.solo_txt:
+        cmd.append("--solo-txt")
     return subprocess.call(cmd)
 
 
@@ -182,9 +186,19 @@ def main(argv: list[str] | None = None) -> int:
     p_crit.add_argument("--corregir-ids-permutados", action="store_true")
     p_crit.set_defaults(func=cmd_criterios)
 
-    p_py = sub.add_parser("pycache", help="Borra carpetas __pycache__")
+    p_tmp = sub.add_parser(
+        "temporales",
+        help="Borra __pycache__ y .txt temporales en todo el proyecto",
+    )
+    p_tmp.add_argument("--dry-run", action="store_true")
+    grupo_tmp = p_tmp.add_mutually_exclusive_group()
+    grupo_tmp.add_argument("--solo-pycache", action="store_true")
+    grupo_tmp.add_argument("--solo-txt", action="store_true")
+    p_tmp.set_defaults(func=cmd_temporales)
+
+    p_py = sub.add_parser("pycache", help="Alias de temporales --solo-pycache")
     p_py.add_argument("--dry-run", action="store_true")
-    p_py.set_defaults(func=cmd_pycache)
+    p_py.set_defaults(func=cmd_temporales, solo_pycache=True, solo_txt=False)
 
     for nombre in sorted(_COMANDOS_BALANCE_BLOQUEADOS):
         p = sub.add_parser(nombre, help=argparse.SUPPRESS)

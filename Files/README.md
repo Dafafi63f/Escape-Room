@@ -2,7 +2,7 @@
 
 Scripts y utilidades de **mantenimiento del banco**. No son necesarios para jugar; el juego está en [`../Juego/README.md`](../Juego/README.md) (paquete [`Consola`](../Juego/Consola/README.md)).
 
-Limpieza de cachés Python en todo el proyecto: [`../borrar_pycache.py`](../borrar_pycache.py) (raíz, no hace falta entrar aquí).
+Limpieza de artefactos temporales (`__pycache__` y `.txt`): [`../borrar_temporales.py`](../borrar_temporales.py) (raíz, no hace falta entrar aquí).
 
 | Carpeta | Documentación |
 |---------|----------------|

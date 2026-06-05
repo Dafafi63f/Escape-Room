@@ -12,6 +12,7 @@ from .consola import (
     pedir_texto,
 )
 from .datos import cargar_orden_materias
+from .entrada_menu import esperar_enter
 from .generador_examen_historia import (
     PerfilPedagogico,
     cargar_estadisticas_historicas,
@@ -162,13 +163,13 @@ def jugar_modo_historia(
         print(f"Preguntas: {len(plan.preguntas)}")
         print(f"Perfil: {perfil.value}")
         print(f"Materias: {', '.join(plan.materias)}")
-        print("Ctrl+C = pausa · Sin limpiar entre preguntas.")
+        print("Sin limpiar entre preguntas.")
         print("No verás si acertaste hasta el final (examen cerrado).")
         print("Al terminar se guarda un informe .txt en Juego/informes/.")
 
     limpiar_consola()
     _pantalla_inicio_examen()
-    input("\nPulsa Enter para comenzar el examen...")
+    esperar_enter("\nPulsa Enter para comenzar el examen")
 
     try:
         estado = ejecutar_lista_fija(

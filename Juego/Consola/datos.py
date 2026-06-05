@@ -189,7 +189,7 @@ def elegir_banco_preguntas(
     n_todo = conteos[BancoPreguntas.PLANTILLAS_TODO]
 
     from .entrada_menu import elegir_indice_menu
-    from .navegacion import ContextoPantalla, VolverAtras, establecer_contexto
+    from .navegacion import ContextoPantalla, VolverAtras
 
     def _mostrar_menu_banco() -> None:
         print("\nBanco de preguntas:")
@@ -201,7 +201,7 @@ def elegir_banco_preguntas(
             "dataset + plantillas no revisadas"
         )
         print(f"  3) Solo plantillas extra — MODO BETA ({n_extra} no revisadas)")
-        print("     Enter = banco 1 (modo seguro). Las opciones 2 y 3 incluyen contenido beta.")
+        print("     La opcion 1 es el banco seguro. Las opciones 2 y 3 incluyen contenido beta.")
 
     mapa_banco = {
         1: BancoPreguntas.DATASET,

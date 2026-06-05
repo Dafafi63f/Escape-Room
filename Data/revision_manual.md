@@ -1,6 +1,6 @@
 # Revisión manual del banco de preguntas
 
-> Documento **interno** de mantenimiento. El juego usa solo `Data/Preguntas.csv` (redacción **genérica**). **Modo libre** implementado; **modo historia** y **modo feedback** en desarrollo (ver `Memoria_TFG.md` §2 y §11.0).
+> Documento **interno** de mantenimiento. El juego usa solo `Data/Preguntas.csv` (redacción **genérica**). **Modos libre, historia y feedback** implementados en consola (ver `Memoria_TFG.md` §11.0).
 
 Trazabilidad de la revisión manual de `Data/Preguntas.csv`. Actualizar este único fichero al cerrar cada tramo.
 
@@ -250,7 +250,7 @@ Cálculo: mínimos cuadráticos, holguras, Hessiano \(2I\), complementariedad KK
 1. **Id 25** (Fonaments): reforzar dificultad o sustituir pregunta de CPU.
 2. **Id 104** (BDR): valorar `DELETE` en Difícil vs JOIN / integridad referencial.
 3. **Plantillas EDO:** comprobar plantilla «autovalores 2×2» en sección EDO (no en CSV 111–120).
-4. **Producto:** **modo historia** y **modo feedback** en desarrollo; evolución CSV (`Materias_relacionadas` / prerrequisitos). Bloques **289–480** documentados en secciones abajo.
+4. **Producto:** **modos historia y feedback** operativos en consola; evolución CSV (`Materias_relacionadas` / prerrequisitos) y capa gráfica pendientes. Bloques **289–480** documentados en secciones abajo.
 
 ### 301–312 (Bases de Dades No Relacionals)
 
@@ -684,7 +684,7 @@ Cálculo: mínimos cuadráticos, holguras, Hessiano \(2I\), complementariedad KK
 
 ## Cierre banco 480/480 (2026-06-03)
 
-- **Juego:** partida en **modo libre** (`Juego/juego_cuestionario.py`): banco **1 = dataset revisado (MODO FINAL)**; bancos **2–3 = plantillas (MODO BETA)**. **Historia** / **feedback**: en desarrollo.
+- **Juego:** partida en **modo libre** (`Juego/juego_cuestionario.py`): banco **1 = dataset revisado (MODO FINAL)**; bancos **2–3 = plantillas (MODO BETA)**. **Historia** y **feedback** (menú o tecla **F**) operativos en consola.
 - **Artefactos sincronizados:** `plantillas.json`, `criterios_clasificacion_materia.csv`, `auditoria_distractores.md`/`.json`, `plantillas_repuesto_catalogo.py`, `Memoria_TFG.md` §5.1 y §14.4.
 - **Opcional futuro:** id **83** (vanishing gradient en Càlcul DV) podría moverse a Xarxes Neuronals; pulido distractores según auditoría.
 

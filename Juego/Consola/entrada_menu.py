@@ -5,8 +5,11 @@ Lectura de teclas en menus (Windows: tecla a tecla).
 
   Enter     -> primera opcion (1 en menus; A en pregunta)
   1-9       -> opcion del menu; en pregunta ignorados (solo A-D)
+  H         -> ayuda contextual (controles del momento actual)
   Supr      -> atras (menu principal: cierra juego); en pausa = continuar; en pregunta: ignorada
-  Ctrl+C    -> pausa (en pausa: salir del programa)
+  Esc       -> pausa (Esc otra vez en pausa: salir); en texto con atras: volver atras
+  F         -> feedback al creador (sin borrar pantalla; no en menu de pausa)
+  Ctrl+C    -> interrupcion tipica de terminal (cierra el programa)
   A-D       -> respuesta en pregunta; fuera del examen, ignoradas
   S/N       -> solo en menus Si/No; fuera, ignoradas
   Resto     -> ignorado (sin mensaje)
@@ -16,10 +19,226 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Callable
+from dataclasses import dataclass
 from enum import Enum
+from typing import Literal
 
 _LETRAS_RESPUESTA = frozenset({"A", "B", "C", "D"})
 _LETRAS_SN = frozenset({"S", "N"})
+
+SIMBOLO_FOCO_ENTRADA = ">>"
+TECLA_AYUDA = "H"
+TECLA_FEEDBACK = "F"
+TECLA_ESC = "Esc"
+TECLA_ATRAS_TEXTO = TECLA_ESC
+TECLA_PAUSA = TECLA_ESC
+
+TipoEntrada = Literal[
+    "menu_numerico",
+    "menu_si_no",
+    "pregunta",
+    "enter_solo",
+    "tutorial",
+    "pausa",
+    "texto",
+    "entero",
+]
+
+
+@dataclass
+class ContextoEntrada:
+    """Estado de entrada actual; alimenta el menu de ayuda dinamico."""
+
+    tipo: TipoEntrada
+    defecto: int | str = 1
+    permitir_atras: bool = False
+    es_menu_principal: bool = False
+    en_partida: bool = False
+    en_pausa: bool = False
+    num_opciones: int | None = None
+    minimo: int | None = None
+    maximo: int | None = None
+
+
+_contexto_entrada: ContextoEntrada | None = None
+
+
+def establecer_contexto_entrada(ctx: ContextoEntrada | None) -> None:
+    global _contexto_entrada
+    _contexto_entrada = ctx
+
+
+def obtener_contexto_entrada() -> ContextoEntrada | None:
+    return _contexto_entrada
+
+
+def _formatear_prompt(prompt: str, *, con_dos_puntos: bool = True) -> str:
+    """Prefija >> al prompt: punto de clic y accion en una sola linea."""
+    texto = prompt.rstrip()
+    salto = ""
+    if texto.startswith("\n"):
+        salto = "\n"
+        texto = texto.lstrip("\n")
+    if con_dos_puntos and texto and not texto.endswith(":"):
+        texto += ":"
+    return f"{salto}{SIMBOLO_FOCO_ENTRADA} {texto} " if texto else f"{salto}{SIMBOLO_FOCO_ENTRADA} "
+
+
+def _imprimir_linea_accion(prompt: str, *, con_dos_puntos: bool = True) -> None:
+    """Linea de cierre del menu: una sola >> separada del contenido."""
+    print()
+    print(_formatear_prompt(prompt, con_dos_puntos=con_dos_puntos), end="", flush=True)
+
+
+def texto_controles_detallado() -> list[str]:
+    """Guía de controles para la pantalla de bienvenida."""
+    return [
+        "A diferencia de otros programas de consola, aquí NO se escriben comandos.",
+        "Cada acción se activa con una sola tecla, sin pulsar Enter (salvo donde se indique).",
+        "",
+        "En menús:",
+        "  · Enter  → opción por defecto (normalmente la 1)",
+        "  · 1-9    → elegir la opción con ese número",
+        "  · Supr   → volver atrás (en el menú principal: salir del juego)",
+        f"  · {TECLA_PAUSA}     → menú de pausa ({TECLA_PAUSA} otra vez en pausa: salir)",
+        "",
+        "En preguntas del examen:",
+        "  · A, B, C o D → responder (Enter = A)",
+        "  · Los números 1-9 no hacen nada durante la pregunta",
+        "",
+        "En menús Sí/No:",
+        "  · S o N → confirmar o rechazar (Enter = S)",
+        "",
+        "En campos de texto (nombre, mensaje, etc.):",
+        "  · Enter vacío → valor por defecto del campo",
+        f"  · Retroceso / Supr → borrar carácter",
+        f"  · {TECLA_ATRAS_TEXTO}     → volver atrás",
+        "",
+        "En cualquier momento (menus de teclas):",
+        "  · H      → ver controles del momento actual",
+        f"  · {TECLA_FEEDBACK}      → enviar feedback al creador (sin borrar pantalla)",
+        "",
+        "Ctrl+C cierra el programa al instante (comportamiento habitual de la terminal).",
+    ]
+
+
+def lineas_ayuda_dinamica(*, desde_menu_ayuda: bool = False) -> list[str]:
+    """Genera la ayuda segun la pantalla y el modo de entrada actuales."""
+    from .navegacion import obtener_contexto_pantalla
+
+    ctx_e = _contexto_entrada
+    ctx_p = obtener_contexto_pantalla()
+    lineas: list[str] = []
+
+    if ctx_p is not None:
+        lineas.append(f"Pantalla: {ctx_p.titulo}")
+        for linea in ctx_p.lineas:
+            lineas.append(f"  {linea}")
+        lineas.append("")
+
+    if ctx_e is None:
+        lineas.append("Controles generales:")
+        lineas.extend(texto_controles_detallado())
+        return lineas
+
+    if ctx_e.tipo == "menu_numerico":
+        lineas.append("Menu numerico:")
+        lineas.append(f"  Enter -> opcion {ctx_e.defecto} (por defecto)")
+        if ctx_e.num_opciones:
+            lineas.append(f"  1-{ctx_e.num_opciones} -> elegir opcion")
+        lineas.extend(_lineas_navegacion(ctx_e))
+    elif ctx_e.tipo == "menu_si_no":
+        lineas.append("Menu Si/No:")
+        lineas.append(f"  Enter -> {ctx_e.defecto} (por defecto)")
+        lineas.append("  S / N -> Si o No")
+        lineas.extend(_lineas_navegacion(ctx_e))
+    elif ctx_e.tipo == "pregunta":
+        lineas.append("Pregunta del examen:")
+        lineas.append(f"  Enter -> {ctx_e.defecto} (por defecto)")
+        lineas.append("  A / B / C / D -> responder")
+        lineas.append("  1-9 -> ignorados durante la pregunta")
+        lineas.append("  Supr -> sin efecto")
+        lineas.append(f"  {TECLA_PAUSA} -> menu de pausa")
+    elif ctx_e.tipo == "enter_solo":
+        lineas.append("Confirmacion:")
+        lineas.append("  Enter -> continuar")
+        lineas.extend(_lineas_navegacion(ctx_e))
+    elif ctx_e.tipo == "tutorial":
+        lineas.append("Tutorial inicial:")
+        lineas.append("  Haz clic en la ventana del juego (esta terminal)")
+        lineas.append(f"  {SIMBOLO_FOCO_ENTRADA} Enter -> continuar")
+        lineas.append(f"  {TECLA_PAUSA} -> menu de pausa")
+        lineas.append(f"  {TECLA_AYUDA} -> ver controles detallados")
+    elif ctx_e.tipo == "pausa":
+        lineas.append("Menu de pausa:")
+        lineas.append("  Enter -> opcion 1 (continuar)")
+        lineas.append("  1-3 -> elegir opcion")
+        lineas.append("  Supr -> continuar (cerrar pausa)")
+        lineas.append(f"  {TECLA_PAUSA} otra vez -> salir del programa")
+    elif ctx_e.tipo == "texto":
+        lineas.append("Entrada de texto:")
+        lineas.append("  Escribe y pulsa Enter para confirmar")
+        lineas.append("  Enter vacio -> valor por defecto del campo")
+        lineas.append("  Retroceso / Supr -> borrar caracter")
+        lineas.extend(_lineas_navegacion(ctx_e))
+    elif ctx_e.tipo == "entero":
+        lineas.append("Entrada numerica:")
+        if ctx_e.minimo is not None and ctx_e.maximo is not None:
+            lineas.append(f"  Escribe un numero entre {ctx_e.minimo} y {ctx_e.maximo}")
+        lineas.append(f"  Enter vacio -> {ctx_e.defecto} (por defecto)")
+        lineas.append("  Retroceso / Supr -> borrar caracter")
+        lineas.extend(_lineas_navegacion(ctx_e))
+
+    if not desde_menu_ayuda:
+        lineas.append("")
+        lineas.append(f"  {TECLA_AYUDA} -> abrir esta ayuda")
+        if ctx_e.tipo != "pausa":
+            lineas.append(
+                f"  {TECLA_FEEDBACK} -> feedback al creador (mantiene el contexto en pantalla)"
+            )
+        lineas.append("  La linea de accion de cada pantalla empieza por >>")
+    return lineas
+
+
+def _lineas_navegacion(ctx: ContextoEntrada) -> list[str]:
+    if ctx.tipo in ("texto", "entero"):
+        if ctx.permitir_atras:
+            return [f"  {TECLA_ATRAS_TEXTO} -> volver atras"]
+        return [f"  {TECLA_PAUSA} -> menu de pausa"]
+    if ctx.en_pausa:
+        return [
+            "  Supr -> continuar (cerrar pausa)",
+            f"  {TECLA_PAUSA} otra vez -> salir del programa",
+        ]
+    if ctx.es_menu_principal:
+        return [
+            "  Supr -> salir del juego",
+            f"  {TECLA_PAUSA} -> menu de pausa",
+        ]
+    if ctx.en_partida:
+        return [f"  {TECLA_PAUSA} -> menu de pausa"]
+    if ctx.permitir_atras:
+        return [
+            "  Supr -> volver atras",
+            f"  {TECLA_PAUSA} -> menu de pausa",
+        ]
+    return [
+        "  Supr -> volver al menu principal",
+        f"  {TECLA_PAUSA} -> menu de pausa",
+    ]
+
+
+class AbrirPausa(Exception):
+    """Esc fuera del menu de pausa: abrir el menu de pausa."""
+
+
+def _gestionar_tecla_escape(*, en_pausa: bool) -> None:
+    """Primer Esc abre pausa; segundo Esc (ya en pausa) sale del programa."""
+    from .navegacion import SalirPrograma
+
+    if en_pausa:
+        raise SalirPrograma() from None
+    raise AbrirPausa() from None
 
 
 def _es_menu_si_no(validas: set[str]) -> bool:
@@ -30,8 +249,10 @@ class TipoTecla(str, Enum):
     ENTER = "enter"
     DIGITO = "digito"
     LETRA = "letra"
+    CARACTER = "caracter"
+    BORRAR = "borrar"
     SUPR = "supr"
-    CTRL_C = "ctrl_c"
+    ESCAPE = "escape"
     IGNORAR = "ignorar"
 
 
@@ -43,36 +264,14 @@ class _EventoTecla:
         self.valor = valor
 
 
-def hint_controles_menu(
-    *,
-    defecto: int | str | None = 1,
-    permitir_atras: bool = False,
-    en_pausa: bool = False,
-    es_menu_principal: bool = False,
-    en_partida: bool = False,
-    menu_si_no: bool = False,
-) -> str:
-    partes = [f"Enter={defecto}"]
-    if menu_si_no:
-        partes.append("S/N=Si/No")
-    if es_menu_principal:
-        partes.append("Supr=salir")
-    elif en_pausa:
-        partes.append("Supr=continuar")
-        partes.append("Ctrl+C=salir")
-    else:
-        if not en_partida:
-            partes.append("Supr=atras")
-        partes.append("Ctrl+C=pausa")
-    return " [" + " · ".join(partes) + "]"
-
-
 def _leer_tecla_windows(*, en_pausa: bool) -> _EventoTecla:
     import msvcrt
 
     b = msvcrt.getch()
     if b == b"\x03":
-        return _EventoTecla(TipoTecla.CTRL_C)
+        raise KeyboardInterrupt
+    if b == b"\x1b":
+        return _EventoTecla(TipoTecla.ESCAPE)
     if b in (b"\r", b"\n"):
         return _EventoTecla(TipoTecla.ENTER)
     if b in (b"\x7f", b"\x08"):
@@ -96,6 +295,123 @@ def _leer_tecla_windows(*, en_pausa: bool) -> _EventoTecla:
     if c.isalpha():
         return _EventoTecla(TipoTecla.LETRA, c.upper())
     return _EventoTecla(TipoTecla.IGNORAR)
+
+
+def _leer_tecla_texto_windows() -> _EventoTecla:
+    """Tecla a tecla para escribir texto (incluye espacios y simbolos)."""
+    import msvcrt
+
+    b = msvcrt.getch()
+    if b == b"\x03":
+        raise KeyboardInterrupt
+    if b == b"\x1b":
+        return _EventoTecla(TipoTecla.ESCAPE)
+    if b in (b"\r", b"\n"):
+        return _EventoTecla(TipoTecla.ENTER)
+    if b in (b"\x08", b"\x7f"):
+        return _EventoTecla(TipoTecla.BORRAR)
+    if b in (b"\x00", b"\xe0"):
+        b2 = msvcrt.getch()
+        if b2 in (b"S", b"s"):
+            return _EventoTecla(TipoTecla.SUPR)
+        return _EventoTecla(TipoTecla.IGNORAR)
+
+    try:
+        c = b.decode("utf-8", errors="ignore")
+    except Exception:
+        return _EventoTecla(TipoTecla.IGNORAR)
+
+    if not c or not c.isprintable() or c == "\t":
+        return _EventoTecla(TipoTecla.IGNORAR)
+
+    if c.isalpha():
+        letra = c.upper()
+        if letra == TECLA_AYUDA:
+            return _EventoTecla(TipoTecla.LETRA, TECLA_AYUDA)
+        if letra == TECLA_FEEDBACK:
+            return _EventoTecla(TipoTecla.LETRA, TECLA_FEEDBACK)
+    return _EventoTecla(TipoTecla.CARACTER, c)
+
+
+def _redibujar_linea_texto(prompt: str, caracteres: list[str]) -> None:
+    """Reescribe prompt + texto en la misma linea (tras borrar o pausa)."""
+    contenido = "".join(caracteres)
+    print(f"\r{prompt}{contenido} \b", end="", flush=True)
+
+
+def _borrar_caracter_en_linea(prompt: str, caracteres: list[str]) -> None:
+    if caracteres:
+        caracteres.pop()
+        _redibujar_linea_texto(prompt, caracteres)
+
+
+def leer_linea_teclado(
+    mensaje: str,
+    *,
+    permitir_atras: bool = False,
+    en_partida: bool = False,
+    mayusculas: bool = False,
+) -> str:
+    """Linea de texto tecla a tecla; Esc = atras o pausa; Supr/Retroceso = borrar (Windows)."""
+    from .navegacion import SalirPrograma, VolverAtras, _gestionar_pausa, menu_ayuda_dinamico
+
+    establecer_contexto_entrada(
+        ContextoEntrada(
+            tipo="texto",
+            defecto="confirmar",
+            permitir_atras=permitir_atras,
+            en_partida=en_partida,
+        )
+    )
+    prompt = _formatear_prompt(mensaje)
+    caracteres: list[str] = []
+
+    def _mostrar_linea() -> None:
+        print()
+        print(prompt, end="", flush=True)
+        if caracteres:
+            print("".join(caracteres), end="", flush=True)
+
+    _mostrar_linea()
+
+    while True:
+        try:
+            ev = _leer_tecla_texto_windows()
+        except EOFError:
+            raise SalirPrograma() from None
+
+        if ev.tipo == TipoTecla.LETRA and ev.valor == TECLA_AYUDA:
+            menu_ayuda_dinamico(en_partida=en_partida)
+            _mostrar_linea()
+            continue
+        if ev.tipo == TipoTecla.LETRA and ev.valor == TECLA_FEEDBACK:
+            from .navegacion import feedback_rapido_disponible, invocar_feedback_rapido
+
+            if feedback_rapido_disponible():
+                invocar_feedback_rapido()
+            _mostrar_linea()
+            continue
+        if ev.tipo in (TipoTecla.BORRAR, TipoTecla.SUPR):
+            _borrar_caracter_en_linea(prompt, caracteres)
+            continue
+        if ev.tipo == TipoTecla.ESCAPE:
+            if permitir_atras:
+                print()
+                raise VolverAtras() from None
+            try:
+                _gestionar_pausa(en_partida=en_partida)
+            except SalirPrograma:
+                raise
+            _mostrar_linea()
+            continue
+        if ev.tipo == TipoTecla.ENTER:
+            print()
+            texto = "".join(caracteres).strip()
+            return texto.upper() if mayusculas else texto
+        if ev.tipo == TipoTecla.CARACTER:
+            caracteres.append(ev.valor)
+            print(ev.valor, end="", flush=True)
+            continue
 
 
 def _leer_tecla_fallback() -> _EventoTecla:
@@ -132,10 +448,8 @@ def _procesar_tecla(
 ) -> _EventoTecla | None:
     from .navegacion import IrMenuPrincipal, SalirPrograma, VolverAtras
 
-    if ev.tipo == TipoTecla.CTRL_C:
-        if en_pausa:
-            raise SalirPrograma() from None
-        raise KeyboardInterrupt
+    if ev.tipo == TipoTecla.ESCAPE:
+        _gestionar_tecla_escape(en_pausa=en_pausa)
 
     if ev.tipo == TipoTecla.SUPR:
         if en_pausa:
@@ -149,6 +463,8 @@ def _procesar_tecla(
         raise IrMenuPrincipal() from None
 
     if ev.tipo == TipoTecla.LETRA:
+        if ev.valor == TECLA_FEEDBACK:
+            return None
         if not en_partida and ev.valor in _LETRAS_RESPUESTA:
             return None
         if ev.valor in _LETRAS_SN and not menu_si_no:
@@ -165,6 +481,53 @@ def _procesar_tecla(
     return None
 
 
+def _inferir_tipo_entrada(
+    *,
+    en_pausa: bool,
+    en_partida: bool,
+    menu_si_no: bool,
+    tipo_entrada: TipoEntrada | None,
+) -> TipoEntrada:
+    if tipo_entrada is not None:
+        return tipo_entrada
+    if en_pausa:
+        return "pausa"
+    if en_partida:
+        return "pregunta"
+    if menu_si_no:
+        return "menu_si_no"
+    return "menu_numerico"
+
+
+def _registrar_contexto_entrada(
+    *,
+    tipo_entrada: TipoEntrada | None,
+    defecto: int | str,
+    permitir_atras: bool,
+    en_partida: bool,
+    en_pausa: bool,
+    es_menu_principal: bool,
+    menu_si_no: bool,
+    num_opciones: int | None = None,
+) -> None:
+    establecer_contexto_entrada(
+        ContextoEntrada(
+            tipo=_inferir_tipo_entrada(
+                en_pausa=en_pausa,
+                en_partida=en_partida,
+                menu_si_no=menu_si_no,
+                tipo_entrada=tipo_entrada,
+            ),
+            defecto=defecto,
+            permitir_atras=permitir_atras,
+            es_menu_principal=es_menu_principal,
+            en_partida=en_partida,
+            en_pausa=en_pausa,
+            num_opciones=num_opciones,
+        )
+    )
+
+
 def esperar_tecla_menu(
     prompt: str,
     *,
@@ -174,27 +537,48 @@ def esperar_tecla_menu(
     en_pausa: bool = False,
     es_menu_principal: bool = False,
     menu_si_no: bool = False,
+    tipo_entrada: TipoEntrada | None = None,
+    num_opciones: int | None = None,
     validar: Callable[[_EventoTecla], bool] | None = None,
 ) -> _EventoTecla:
     """Bucle hasta tecla valida; las ignoradas refrescan pantalla sin mensajes."""
-    from .navegacion import SalirPrograma, _gestionar_pausa, refrescar_pantalla_activa
-
-    hint = hint_controles_menu(
-        defecto=defecto,
-        permitir_atras=permitir_atras,
-        en_pausa=en_pausa,
-        es_menu_principal=es_menu_principal,
-        en_partida=en_partida,
-        menu_si_no=menu_si_no,
+    from .navegacion import (
+        SalirPrograma,
+        _gestionar_pausa,
+        feedback_rapido_disponible,
+        invocar_feedback_rapido,
+        menu_ayuda_dinamico,
+        refrescar_pantalla_activa,
     )
-    linea_prompt = f"{prompt.rstrip()}{hint}"
 
     while True:
-        print(linea_prompt, end="", flush=True)
+        _registrar_contexto_entrada(
+            tipo_entrada=tipo_entrada,
+            defecto=defecto,
+            permitir_atras=permitir_atras,
+            en_partida=en_partida,
+            en_pausa=en_pausa,
+            es_menu_principal=es_menu_principal,
+            menu_si_no=menu_si_no,
+            num_opciones=num_opciones,
+        )
+        _imprimir_linea_accion(prompt)
         try:
             ev = leer_tecla(en_pausa=en_pausa)
         except EOFError:
             raise SalirPrograma() from None
+        if ev.tipo == TipoTecla.LETRA and ev.valor == TECLA_AYUDA:
+            menu_ayuda_dinamico(en_partida=en_partida)
+            refrescar_pantalla_activa()
+            continue
+        if (
+            not en_pausa
+            and ev.tipo == TipoTecla.LETRA
+            and ev.valor == TECLA_FEEDBACK
+            and feedback_rapido_disponible()
+        ):
+            invocar_feedback_rapido()
+            continue
         try:
             res = _procesar_tecla(
                 ev,
@@ -204,9 +588,7 @@ def esperar_tecla_menu(
                 en_partida=en_partida,
                 menu_si_no=menu_si_no,
             )
-        except KeyboardInterrupt:
-            if en_pausa:
-                raise
+        except AbrirPausa:
             _gestionar_pausa(en_partida=en_partida)
             if not en_partida:
                 refrescar_pantalla_activa()
@@ -248,6 +630,7 @@ def elegir_indice_menu(
         en_partida=en_partida,
         en_pausa=en_pausa,
         es_menu_principal=es_menu_principal,
+        num_opciones=num_opciones,
         validar=_validar,
     )
     if ev.tipo == TipoTecla.ENTER:
@@ -285,3 +668,58 @@ def elegir_letra_menu(
     if ev.tipo == TipoTecla.ENTER:
         return defecto
     return ev.valor
+
+
+def esperar_enter(
+    mensaje: str = "Pulsa Enter para continuar",
+    *,
+    permitir_atras: bool = False,
+) -> None:
+    """Espera Enter (tecla a tecla), con indicador de foco."""
+
+    def _validar(ev: _EventoTecla) -> bool:
+        return ev.tipo == TipoTecla.ENTER
+
+    esperar_tecla_menu(
+        mensaje,
+        defecto="Enter",
+        permitir_atras=permitir_atras,
+        tipo_entrada="enter_solo",
+        validar=_validar,
+    )
+
+
+def esperar_enter_en_foco(
+    *,
+    mensaje: str = "Haz clic aquí y pulsa Enter para continuar",
+    reimprimir: Callable[[], None] | None = None,
+) -> None:
+    """Tutorial: la linea >> es el unico punto de interaccion; solo Enter continua."""
+    from .navegacion import SalirPrograma, _gestionar_pausa, limpiar_consola, menu_ayuda_dinamico
+
+    while True:
+        establecer_contexto_entrada(
+            ContextoEntrada(tipo="tutorial", defecto="Enter")
+        )
+        if reimprimir:
+            limpiar_consola()
+            reimprimir()
+        _imprimir_linea_accion(mensaje, con_dos_puntos=False)
+        try:
+            ev = leer_tecla()
+        except EOFError:
+            raise SalirPrograma() from None
+
+        if ev.tipo == TipoTecla.LETRA and ev.valor == TECLA_AYUDA:
+            menu_ayuda_dinamico(en_partida=False)
+            continue
+        if ev.tipo == TipoTecla.ESCAPE:
+            try:
+                _gestionar_pausa(en_partida=False)
+            except SalirPrograma:
+                raise
+            continue
+        if ev.tipo == TipoTecla.ENTER:
+            print()
+            return
+        continue

@@ -17,7 +17,7 @@ from .consola import (
     pedir_opcion,
     pedir_texto,
 )
-from .entrada_menu import elegir_indice_menu
+from .entrada_menu import elegir_indice_menu, esperar_enter
 from .informe_examen import RegistroRespuesta, publicar_informe_partida
 from .modelos import BancoPreguntas, ETIQUETA_BANCO, Pregunta
 from .motor_partida import (
@@ -204,17 +204,17 @@ def jugar_modo_libre(
         print(f"Jugador: {d['nombre']}")
         print(f"Reglas: {reglas.describe()}")
         if modo_infinito:
-            print("Modo infinito (Ctrl+C = pausa).")
+            print("Modo infinito.")
             print("Al terminar la sesion se guarda informe .txt en Juego/informes/.")
         else:
             print(f"Preguntas previstas: {total_objetivo}")
-            print("Ctrl+C = pausa · Sin limpiar entre preguntas.")
+            print("Sin limpiar entre preguntas.")
             print("Al terminar se guarda un informe .txt en Juego/informes/.")
 
     limpiar_consola()
     _pantalla_partida()
     if not modo_infinito:
-        input("\nPulsa Enter para comenzar...")
+        esperar_enter("\nPulsa Enter para comenzar")
 
     establecer_contexto(
         ContextoPantalla(
@@ -222,7 +222,7 @@ def jugar_modo_libre(
             lineas=[
                 f"Jugador: {d['nombre']}",
                 f"Reglas: {reglas.describe()}",
-                "Ctrl+C = pausa (1 = continuar y reimprimir)",
+                "Pulsa H para ver controles.",
             ],
         )
     )
@@ -283,12 +283,13 @@ def jugar_modo_libre(
                     f"Dificultad global: {global_actual}/{max_global}"
                 )
 
-            mostrar_pregunta(
+            registrar_contexto_pregunta(
                 p,
+                estado,
                 indice=estado.respondidas + 1,
                 total=total_objetivo,
                 extra_meta=extra,
-                linea_estado=linea_estado(estado, progreso),
+                progreso=linea_estado(estado, progreso),
             )
 
             try:

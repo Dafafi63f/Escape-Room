@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Navegación en menús (atrás/adelante) y menú de pausa (Ctrl+C)."""
+"""Navegación en menús (atrás/adelante) y menú de pausa (Esc)."""
 
 from __future__ import annotations
 
@@ -28,6 +28,10 @@ class SalirPrograma(Exception):
     """Cerrar el programa por completo."""
 
 
+class CancelarFeedbackRapido(Exception):
+    """Sale del feedback rapido (tecla F) sin ir al menu principal."""
+
+
 @dataclass
 class ContextoPantalla:
     """Pantalla actual: se reimprime tras continuar desde pausa."""
@@ -38,11 +42,62 @@ class ContextoPantalla:
 
 
 _contexto_pantalla: ContextoPantalla | None = None
+_callback_feedback_rapido: Callable[[], None] | None = None
+_feedback_rapido_activo: bool = False
 
 
 def establecer_contexto(ctx: ContextoPantalla | None) -> None:
     global _contexto_pantalla
     _contexto_pantalla = ctx
+
+
+def obtener_contexto_pantalla() -> ContextoPantalla | None:
+    return _contexto_pantalla
+
+
+def registrar_atajo_feedback(callback: Callable[[], None] | None) -> None:
+    """Registra la accion de la tecla F (feedback rapido desde cualquier pantalla)."""
+    global _callback_feedback_rapido
+    _callback_feedback_rapido = callback
+
+
+def feedback_rapido_disponible() -> bool:
+    return _callback_feedback_rapido is not None and not _feedback_rapido_activo
+
+
+def invocar_feedback_rapido() -> None:
+    """Abre el asistente de feedback sin limpiar la terminal (si esta registrado)."""
+    global _feedback_rapido_activo
+    if not feedback_rapido_disponible() or _callback_feedback_rapido is None:
+        return
+    _feedback_rapido_activo = True
+    ctx_previo = _contexto_pantalla
+    try:
+        _callback_feedback_rapido()
+    finally:
+        _feedback_rapido_activo = False
+        establecer_contexto(ctx_previo)
+        if ctx_previo is not None:
+            continuar_pantalla_sin_limpiar()
+
+
+def continuar_pantalla_sin_limpiar() -> None:
+    """Reimprime la pantalla actual debajo del historial (sin borrar la terminal)."""
+    ctx = _contexto_pantalla
+    if ctx is None:
+        return
+    print("\n" + "=" * 60)
+    print(">> Vuelves a donde estabas")
+    print("=" * 60)
+    if ctx.reimprimir:
+        try:
+            ctx.reimprimir()
+        except Exception:
+            print("(No se pudo reimprimir el detalle de la pantalla.)")
+    elif ctx.titulo:
+        print(f"\n>> {ctx.titulo}")
+        for linea in ctx.lineas:
+            print(linea)
 
 
 def limpiar_consola() -> None:
@@ -112,14 +167,36 @@ def reimprimir_contexto() -> None:
     print("=" * 60)
 
 
-def hint_navegacion(*, permitir_atras: bool, en_partida: bool = False) -> str:
-    from .entrada_menu import hint_controles_menu
+def _dibujar_menu_ayuda() -> None:
+    from .entrada_menu import lineas_ayuda_dinamica
 
-    return hint_controles_menu(
-        defecto="confirmar",
-        permitir_atras=permitir_atras,
-        en_partida=en_partida,
-    )
+    print("\n=== AYUDA — CONTROLES ACTUALES ===")
+    for linea in lineas_ayuda_dinamica(desde_menu_ayuda=True):
+        if not linea:
+            print()
+        elif linea.startswith("  "):
+            print(linea)
+        else:
+            print(f"  {linea}")
+
+
+def menu_ayuda_dinamico(*, en_partida: bool = False) -> None:
+    """Muestra controles del momento actual. Solo Supr o Esc tienen efecto."""
+    from .entrada_menu import TECLA_PAUSA, TipoTecla, _imprimir_linea_accion, leer_tecla
+
+    while True:
+        limpiar_consola()
+        _dibujar_menu_ayuda()
+        _imprimir_linea_accion(f"Supr cerrar, {TECLA_PAUSA} pausa", con_dos_puntos=False)
+        try:
+            ev = leer_tecla()
+        except EOFError:
+            raise SalirPrograma() from None
+        if ev.tipo == TipoTecla.SUPR:
+            return
+        if ev.tipo == TipoTecla.ESCAPE:
+            _gestionar_pausa(en_partida=en_partida)
+            continue
 
 
 def _dibujar_menu_pausa(*, en_partida: bool) -> None:
@@ -173,7 +250,7 @@ def _reimprimir_solo_titulo() -> None:
 
 
 def _gestionar_pausa(*, en_partida: bool) -> None:
-    """Primer Ctrl+C abre pausa; Ctrl+C en pausa o opcion 3 = salir del juego."""
+    """Primer Esc abre pausa; segundo Esc en pausa o opcion 3 = salir del juego."""
     accion = menu_pausa(en_partida=en_partida)
     if accion == AccionPausa.CONTINUAR:
         if en_partida:
@@ -194,15 +271,32 @@ def leer_linea(
     en_partida: bool = False,
     mayusculas: bool = False,
 ) -> str:
-    """Lee una línea; Ctrl+C abre pausa; 'A' retrocede si está permitido."""
-    sufijo = hint_navegacion(permitir_atras=permitir_atras, en_partida=en_partida)
-    prompt = f"{mensaje.rstrip()}{sufijo}: "
+    """Lee una linea; en Windows tecla a tecla (Esc = atras o pausa segun contexto)."""
+    if sys.platform == "win32":
+        from .entrada_menu import leer_linea_teclado
+
+        return leer_linea_teclado(
+            mensaje,
+            permitir_atras=permitir_atras,
+            en_partida=en_partida,
+            mayusculas=mayusculas,
+        )
+
+    from .entrada_menu import ContextoEntrada, _formatear_prompt, establecer_contexto_entrada
+
+    establecer_contexto_entrada(
+        ContextoEntrada(
+            tipo="texto",
+            defecto="confirmar",
+            permitir_atras=permitir_atras,
+            en_partida=en_partida,
+        )
+    )
+    prompt = _formatear_prompt(mensaje)
     while True:
+        print()
         try:
             texto = _input_seguro(prompt).strip()
-        except KeyboardInterrupt:
-            _gestionar_pausa(en_partida=en_partida)
-            continue
         except SalirPrograma:
             raise
         return texto.upper() if mayusculas else texto
@@ -211,14 +305,22 @@ def leer_linea(
 class AsistentePasos:
     """
     Asistente lineal con pasos adelante y atras (Supr = paso anterior).
-    El primer paso no puede ir mas atras -> IrMenuPrincipal.
+    El primer paso no puede ir mas atras -> excepcion configurada (p. ej. IrMenuPrincipal).
     """
 
-    def __init__(self, titulo: str) -> None:
+    def __init__(
+        self,
+        titulo: str,
+        *,
+        excepcion_paso1_atras: type[Exception] = IrMenuPrincipal,
+        mensaje_paso1_atras: str = "<- Menu principal",
+    ) -> None:
         self.titulo = titulo
         self.datos: dict = {}
         self._indice = 0
         self._pasos: list[tuple[str, Callable[["AsistentePasos"], None]]] = []
+        self._excepcion_paso1_atras = excepcion_paso1_atras
+        self._mensaje_paso1_atras = mensaje_paso1_atras
 
     def _reimprimir_paso(self) -> None:
         if self._indice >= len(self._pasos):
@@ -236,7 +338,8 @@ class AsistentePasos:
             ContextoPantalla(
                 titulo=f"{self.titulo} — paso {self._indice + 1}/{total}: {nombre}",
                 lineas=[
-                    "Enter = defecto · numeros = opcion · Supr = atras · Ctrl+C = pausa",
+                    "Menus: numeros o Enter · Supr = atras (paso 1 = menu principal)",
+                    "Texto: Supr/Retroceso borra · Esc = atras (o pausa) · Ctrl+C = cerrar",
                 ],
                 reimprimir=self._reimprimir_paso,
             )
@@ -256,8 +359,8 @@ class AsistentePasos:
                     self._indice -= 1
                     print("<- Paso anterior")
                     continue
-                print("<- Menu principal")
-                raise IrMenuPrincipal() from None
+                print(self._mensaje_paso1_atras)
+                raise self._excepcion_paso1_atras() from None
             except (IrMenuPrincipal, SalirPrograma):
                 raise
             except Exception as exc:

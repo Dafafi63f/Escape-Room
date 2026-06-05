@@ -241,11 +241,6 @@ def validar_reglas(reglas: ReglasPartida, contexto: ContextoPartida) -> ReglasPa
         return preset_historia_reto()
     if contexto == ContextoPartida.LIBRE_INFINITO:
         return preset_libre_arcade()
-    if contexto == ContextoPartida.LIBRE_UNA_PREGUNTA:
-        return politica_libre_una_pregunta().reglas
-    if contexto == ContextoPartida.LIBRE_BLOQUE_CORTO:
-        return politica_libre_bloque_corto().reglas
-    # LIBRE_BLOQUE_NORMAL: coherencia mínima
     if contexto == ContextoPartida.LIBRE_BLOQUE_CORTO:
         if reglas.sistema_puntuacion != SistemaPuntuacion.ARCADE or not reglas.tiene_vidas():
             return politica_libre_bloque_corto().reglas

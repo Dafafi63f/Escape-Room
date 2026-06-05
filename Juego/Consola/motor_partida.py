@@ -126,7 +126,7 @@ def registrar_contexto_pregunta(
             titulo=f"Partida — {etiqueta} {indice}/{total_txt}",
             lineas=[
                 f"Reglas: {estado.reglas.describe()}",
-                "Ctrl+C = pausa (1 = continuar y reimprimir)",
+                "Pulsa H para ver controles.",
             ],
             reimprimir=_reimprimir,
         )

@@ -9,7 +9,7 @@ Este Trabajo de Fin de Grado plantea el diseño e implementacion de un sistema d
 - analisis de calidad del dataset,
 - y evolucion hacia modelos pedagogicos mas realistas (multiasignatura y prerequisitos).
 
-El punto de partida actual es un banco de 480 preguntas en formato CSV y un juego en Python con **modo libre** implementado (`Juego/juego_cuestionario.py`). Los modos **historia** (progresión narrativa) y **feedback** (retroalimentación pedagógica) están **en desarrollo**. Las filas del CSV siguen un **orden canónico** (listado de materias, bloques 5+5 Teoría/Cálculo, escalón de dificultad y ciclo de respuestas correctas; ver sección **14**). El inventario de ficheros de datos y scripts queda descrito en la **seccion 14**.
+El punto de partida actual es un banco de 480 preguntas en formato CSV y un juego en Python con **modo libre**, **modo historia** (examen balanceado) y **modo feedback** (avisos al creador) implementados en consola (`Juego/juego_cuestionario.py`). La capa gráfica escape room / novela queda como evolución futura. Las filas del CSV siguen un **orden canónico** (listado de materias, bloques 5+5 Teoría/Cálculo, escalón de dificultad y ciclo de respuestas correctas; ver sección **14**). El inventario de ficheros de datos y scripts queda descrito en la **seccion 14**.
 
 ## 2. Estado actual del sistema
 
@@ -79,7 +79,7 @@ Este enfoque reduce carga, mejora calidad experta y acorta tiempos de iteracion.
 1. Definir criterios de etiquetado para `Materias_relacionadas` y `Prerequisitos`.
 2. Adaptar scripts de validacion y estadisticas para soportar etiquetas multiples.
 3. Mantener compatibilidad temporal para leer datasets antiguos con columna `Tema` (los scripts en `Files/` la normalizan a `Materia` al cargar o guardar; ver `utils_dataset_csv.py`).
-4. Implementar **modo historia** y **modo feedback** en el cliente de juego (hoy solo está el **modo libre**); en paralelo, preparar selección por `Materias_relacionadas` / prerrequisitos cuando existan en el CSV.
+4. ~~Implementar **modo historia** y **modo feedback** en el cliente de juego~~ **Hecho (consola):** los tres modos del menú (libre, historia, feedback al creador) están operativos; en paralelo, preparar selección por `Materias_relacionadas` / prerrequisitos cuando existan en el CSV.
 5. ~~Revision por bloques del banco~~ **Hecho (480/480)**; opcional: pulido de distractores según `Data/auditoria_distractores.md` y ampliar pool en materias con pocas plantillas extra.
 6. **Futuro:** unicidad semántica completa (ver §11.3 «Tareas pendientes»): 3 pares en CSV, ~13 intra-materia en plantillas, catálogo internet por materia, etc.
 
@@ -252,7 +252,7 @@ flowchart LR
 
 ## 11. Seccion tecnica del script del juego en Python
 
-El lanzador `Juego/juego_cuestionario.py` arranca el menú; la lógica está en el paquete **`Juego/Consola/`** (import `Consola`). El **modo libre** está implementado; **historia** (examen balanceado con histórico de qualificacions) y **feedback** comparten la misma capa de datos (`Data/Preguntas.csv`, `listado_materias.csv`, plantillas e histórico CSV).
+El lanzador `Juego/juego_cuestionario.py` arranca el menú; la lógica está en el paquete **`Juego/Consola/`** (import `Consola`). Los modos **libre**, **historia** (examen balanceado con histórico de qualificacions) y **feedback** (avisos al creador, menú o tecla **F**) comparten la misma capa de datos (`Data/Preguntas.csv`, `listado_materias.csv`, plantillas e histórico CSV).
 
 El diseño separa rutas, carga de datos, reglas de partida, modos e informes de examen (sin ranking global: sustituido por informes `.txt` en `Juego/Informes/`).
 
@@ -262,7 +262,7 @@ El diseño separa rutas, carga de datos, reglas de partida, modos e informes de 
 |------|--------|--------|
 | Libre | **Implementado** | `Consola/modo_libre.py` — banco dataset o plantillas (beta), filtros, informes |
 | Historia | **Implementado** (v1) | `Consola/modo_historia.py` + `generador_examen_historia.py` — examen balanceado |
-| Feedback | **En desarrollo** | `Consola/modo_feedback.py` — explicación tras cada respuesta |
+| Feedback | **Implementado** (v1) | `Consola/modo_feedback.py` + `envio_feedback.py` — avisos al creador (menú o tecla **F**), copia en `Juego/Feedback/`, SMTP opcional vía `Data/creador_privado.json` |
 
 ### 11.1 Entrada de datos y resolucion de rutas
 
@@ -272,6 +272,8 @@ El script detecta automaticamente la ruta base del proyecto para funcionar tanto
 - `Data/listado_materias.csv` para enriquecer cada pregunta con metadatos academicos.
 - `Data/plantillas.json`, `Data/Historic_qualificacions_MatCAD_completo.csv` segun modo.
 - `Juego/Informes/` para informes de examen cerrado (`.txt`, gitignored salvo `.gitkeep`).
+- `Juego/Feedback/` para copias locales del modo feedback (gitignored salvo `.gitkeep`).
+- `Data/creador_privado.json` para datos personales y secretos del creador (plantilla en `Consola/config_creador.py`).
 
 La funcion de carga valida que cada pregunta tenga enunciado, cuatro opciones completas y respuesta correcta en el conjunto `{A, B, C, D}`.
 
@@ -341,6 +343,8 @@ La partida termina al agotar vidas o al completar el numero objetivo de pregunta
 
 En partidas con correccion al final, `Consola/informe_examen.py` escribe un `.txt` en `Juego/Informes/` (o `Informes/` junto al `.exe` empaquetado), con ID de sesion y detalle de respuestas. No hay fichero de ranking global.
 
+El **modo feedback** guarda avisos en `Juego/Feedback/` y puede enviarlos por SMTP si `feedback_smtp` está configurado en `Data/creador_privado.json`. La tecla **F** abre el mismo asistente sin limpiar la terminal (contexto visible para redactar el mensaje). Controles generales: **H** (ayuda), **Esc** (pausa), **Supr** (atrás en menús). Limpieza de `__pycache__` y `.txt` temporales: `borrar_temporales.py` en la raíz del TFG.
+
 ### 11.7 Valor para el TFG
 
 Desde la perspectiva del TFG, este script actua como banco de pruebas funcional para:
@@ -391,7 +395,7 @@ Evaluar el correcto funcionamiento del videojuego y su valor como herramienta de
 
 3. Descripción del videojuego y alcance
 
-El proyecto consistirá en el desarrollo de un videojuego tipo escape room con elementos de novela gráfica. El jugador avanzará a través de diferentes escenas o “salas”, cada una asociada a una temática concreta del grado. Esa experiencia corresponde al **modo historia** (en desarrollo). Hoy el repositorio ofrece un **modo libre** operativo (cuestionario con filtros y ranking) y planifica además un **modo feedback** (explicaciones tras cada respuesta).
+El proyecto consistirá en el desarrollo de un videojuego tipo escape room con elementos de novela gráfica. El jugador avanzará a través de diferentes escenas o “salas”, cada una asociada a una temática concreta del grado. Esa experiencia corresponde al **modo historia** (implementado en consola como examen balanceado; la capa gráfica escape room queda como evolución futura). Hoy el repositorio ofrece además un **modo libre** operativo (cuestionario con filtros e informes) y un **modo feedback** (avisos al creador del juego, con acceso por menú o tecla **F**).
 
 Para avanzar en la historia, el jugador deberá resolver puzles matemáticos y computacionales, tales como:
 
@@ -502,7 +506,7 @@ Scripts antiguos de balanceo y deduplicación (`balancear_*.py`, `balanceo_compl
 
 | Script | Función |
 |--------|---------|
-| `mantenimiento.py` | **CLI principal:** `validar`, `revision`, `dataset`, `auditar-*`, `plantillas`, `duplicados`, `criterios`, `pycache`. |
+| `mantenimiento.py` | **CLI principal:** `validar`, `revision`, `dataset`, `auditar-*`, `plantillas`, `duplicados`, `criterios`, `temporales` (alias `pycache`). |
 | `balance.py` | Alias → `mantenimiento.py` (solo `validar` operativo; resto mensaje de banco cerrado). |
 | `duplicados.py` + `duplicados_lib.py` | Dedup y revisión (`revisar`, `plantillas`, …). |
 | `plantillas_sync.py` | `inyectar`, `limpiar`, `repuesto`, `pipeline` sobre `plantillas.json`. |
@@ -513,7 +517,7 @@ Scripts antiguos de balanceo y deduplicación (`balancear_*.py`, `balanceo_compl
 | `clasificar_pregunta.py` | Clasificación por contenido (lectura). |
 | `exportar_criterios_clasificacion_materia.py` | Regenera `criterios_clasificacion_materia.csv`. |
 | `estadisticas_historic_qualificacions.py` | Estadísticas del histórico de qualificacions. |
-| *(raíz)* `borrar_pycache.py` | Limpieza de `__pycache__` en todo el proyecto (autónomo; ver también `utils_dataset_csv.borrar_pycache_en_proyecto` en scripts). |
+| *(raíz)* `borrar_temporales.py` | Limpieza de `__pycache__` y `.txt` temporales en todo el proyecto (autónomo; ver también `utils_dataset_csv.borrar_pycache_en_proyecto` en scripts). |
 
 #### Bibliotecas compartidas (`Files/` — no ejecutar como CLI salvo las de arriba)
 
@@ -567,7 +571,7 @@ Scripts unificados que **ya no existen** en la raíz de `Files/` (nombres antigu
 | `duplicados revisar` / `plantillas` | Ver `duplicados.py` |
 | `dedup_reemplazar_plantillas.py --inplace` | Purga sintéticas, dedup, inyecta catálogo internet; luego `equilibrar_pool_extra_juego.py --inplace` |
 
-**Otros:** `python borrar_pycache.py` [--dry-run] (raíz del TFG) · `python Files/Scripts/clasificar_pregunta.py` (sin `--inplace`).
+**Otros:** `python borrar_temporales.py` [--dry-run] [--solo-pycache] [--solo-txt] (raíz del TFG) · `python Files/Scripts/clasificar_pregunta.py` (sin `--inplace`).
 
 **Flujo habitual:** (1) `validar` → (2) `plantillas pipeline` → (3) `criterios` → (4) `auditar-distractores`.
 
@@ -577,16 +581,17 @@ Scripts unificados que **ya no existen** en la raíz de `Files/` (nombres antigu
 
 ### 14.5 Juego y empaquetado (`Juego/`)
 
-Documentacion: `Juego/README.md`, `Juego/Consola/README.md`, `Juego/Informes/README.md`, `Juego/Tests/README.md`.
+Documentacion: `Juego/README.md`, `Juego/Consola/README.md`, `Juego/Informes/README.md`, `Juego/Feedback/README.md`, `Juego/Tests/README.md`.
 
 | Elemento | Descripcion |
 |----------|-------------|
 | `juego_cuestionario.py` | Lanzador del menu (modos libre, historia, feedback). |
-| `Consola/` | Paquete del juego (datos, modos, reglas, informes, rutas). |
-| `Informes/` | Informes `.txt` generados al jugar (local; `.gitignore`). |
+| `Consola/` | Paquete del juego (datos, modos, reglas, informes, feedback, rutas). |
+| `Informes/` | Informes `.txt` de partidas (local; `.gitignore`). |
+| `Feedback/` | Copias `.txt` de avisos al creador (local; `.gitignore`). |
 | `Tests/` | Pruebas unitarias (`python -m unittest discover -s Juego/Tests`). |
 | `build_exe_onefile.ps1` | Genera `juego_cuestionario.exe` (PyInstaller, empaqueta `Data/`). |
-| `build/`, `juego_cuestionario.spec`, `*.exe` | Artefactos locales de build; `build/` y `.exe` ignorados en git; el `.spec` se regenera y puede borrarse. |
+| `build/`, `juego_cuestionario.spec`, `juego_cuestionario.exe` | Artefactos locales de build; `build/` y `.spec` se borran al terminar el script; solo el `.exe` queda ignorado en git. |
 
 ### 14.6 Coherencia con el modelo de datos del TFG
 

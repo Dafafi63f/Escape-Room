@@ -1,17 +1,15 @@
-﻿# --- Sesión y salida local ---
-*.txt
+﻿# --- Generado al jugar (informes y feedback) ---
 Juego/Informes/*
 !Juego/Informes/.gitkeep
+!Juego/Informes/README.md
+Juego/Feedback/*
+!Juego/Feedback/.gitkeep
+!Juego/Feedback/README.md
 
-# --- Build del .exe (generar con Juego/build_exe_onefile.ps1) ---
-Juego/build/
-Juego/*.spec
-*.exe
+# --- Local del creador (secretos y .exe; no versionar) ---
+Data/creador_privado.json
+Juego/juego_cuestionario.exe
 
-# --- Python ---
+# --- Temporales (limpiar con borrar_temporales.py) ---
 __pycache__/
-*.py[cod]
-*$py.class
-.venv/
-venv/
-.env
+*.txt

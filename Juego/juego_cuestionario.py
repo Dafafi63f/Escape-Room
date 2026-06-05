@@ -19,8 +19,9 @@ if str(_JUEGO) not in sys.path:
     sys.path.insert(0, str(_JUEGO))
 
 from Consola.consola import pedir_opcion
+from Consola.entrada_menu import esperar_enter_en_foco
 from Consola.datos import cargar_materias, cargar_preguntas, elegir_banco_preguntas
-from Consola.modo_feedback import jugar_modo_feedback
+from Consola.modo_feedback import ejecutar_feedback_rapido, jugar_modo_feedback
 from Consola.modo_historia import jugar_modo_historia
 from Consola.modo_libre import jugar_modo_libre
 from Consola.navegacion import (
@@ -30,6 +31,7 @@ from Consola.navegacion import (
     VolverAtras,
     establecer_contexto,
     mostrar_transicion,
+    registrar_atajo_feedback,
 )
 from Consola.rutas import PATH_MATERIAS, PATH_PREGUNTAS, resolver_plantillas
 
@@ -38,11 +40,42 @@ from Consola.modelos import BancoPreguntas, Pregunta  # noqa: F401
 from Consola.rutas import resolver_dataset  # noqa: F401
 
 
+def _mostrar_tutorial_inicio() -> None:
+    print("\n=== CUESTIONARIO MATCAD ===")
+    print("\n  Tutorial - donde hacer clic")
+    print()
+    print("  Este juego no usa comandos de texto: cada accion es una tecla.")
+    print()
+    print("  Para que el teclado responda, haz clic dentro de esta ventana")
+    print("  (la terminal del juego). Sin ese clic, las teclas no se registran.")
+    print()
+    print("  Cuando veas >> al inicio de una linea, haz clic ahi")
+    print("  y usa el teclado como indique esa linea.")
+    print()
+    print("  Pulsa H en cualquier momento para ver los controles del momento.")
+    print("  Pulsa F en cualquier momento para enviar feedback (sin borrar la pantalla).")
+
+
+def _contexto_tutorial_inicio() -> ContextoPantalla:
+    return ContextoPantalla(
+        titulo="Tutorial - foco del teclado",
+        lineas=["Haz clic en la linea que empieza por >> y pulsa Enter."],
+        reimprimir=_mostrar_tutorial_inicio,
+    )
+
+
+def _tutorial_inicio() -> None:
+    """Pantalla inicial: tutorial de clic. Solo Enter en >> continua."""
+    ctx = _contexto_tutorial_inicio()
+    mostrar_transicion(_mostrar_tutorial_inicio, contexto=ctx)
+    esperar_enter_en_foco(reimprimir=_mostrar_tutorial_inicio)
+
+
 def _mostrar_menu_principal() -> None:
     print("\n=== CUESTIONARIO MATCAD ===")
     print("  1) Modo libre — partida abierta, filtros e informes")
     print("  2) Modo historia — examen balanceado (histórico de qualificacions)")
-    print("  3) Modo feedback — explicación tras cada respuesta (en desarrollo)")
+    print("  3) Modo feedback — enviar aviso al creador (bug, sugerencia, etc.)")
     print("  4) Salir")
 
 
@@ -151,17 +184,21 @@ def main() -> None:
         print(str(e))
         return
 
+    registrar_atajo_feedback(ejecutar_feedback_rapido)
     try:
+        _tutorial_inicio()
         _bucle_juego(materias_meta, path_plantillas)
     except SalirPrograma:
         pass
     except KeyboardInterrupt:
-        print("\n\nInterrupción. ¡Hasta pronto!")
+        print("\n\nInterrupción.")
     except EOFError:
-        print("\n\nEntrada cerrada. ¡Hasta pronto!")
+        print("\n\nEntrada cerrada.")
     except Exception as exc:
         print(f"\n\nError inesperado: {exc}")
         print("El juego se ha cerrado de forma segura.")
+    finally:
+        registrar_atajo_feedback(None)
 
     print("¡Hasta pronto!")
 
