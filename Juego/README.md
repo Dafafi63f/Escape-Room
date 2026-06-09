@@ -23,11 +23,13 @@ Requisito: Python 3.10+, solo biblioteca estándar. Datos en [`../Data/README.md
 
 ### Modos
 
-| Modo | Descripción |
-|------|-------------|
-| **Libre** | Partida configurable, filtros, informes al cerrar |
-| **Historia** | Examen balanceado según histórico de qualificacions |
-| **Feedback** | Asistente para enviar bug, sugerencia u otro aviso al creador |
+| Modo | Estado | Descripción |
+|------|--------|-------------|
+| **Libre** | Implementado | Partida configurable, filtros por curso/semestre/grupo/nivel, informes al cerrar |
+| **Historia** | Implementado (v1) | Examen balanceado según histórico de qualificacions |
+| **Feedback** | Implementado (v1) | Asistente para enviar bug, sugerencia u otro aviso al creador |
+
+Detalle de bancos de preguntas, puntuación, dificultad progresiva y arquitectura: [`Consola/README.md`](Consola/README.md).
 
 ### Controles (resumen)
 

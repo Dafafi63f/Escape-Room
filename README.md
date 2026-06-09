@@ -1,4 +1,31 @@
-# Cuestionario MATCAD
+# Cuestionario MATCAD — TFG
+
+**Título provisional:** Diseño y desarrollo de un videojuego educativo basado en contenidos del grado en Matemática Computacional y Análisis de Datos.
+
+**Alumno:** Daniel Fageda Figueredo · **NIU:** 1601846 · **Tutor:** Víctor Navas Portella
+
+Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en consola (modos libre, historia y feedback) y herramientas de mantenimiento del dataset. La capa gráfica escape room / novela queda como evolución futura.
+
+- **Memoria académica (borrador):** [`Memoria_TFG.md`](Memoria_TFG.md)
+- **Repositorio:** https://github.com/Dafafi63f/Escape-Room.git
+
+```bash
+git clone https://github.com/Dafafi63f/Escape-Room.git
+```
+
+No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
+
+## Documentación del proyecto
+
+| Tema | Dónde |
+|------|-------|
+| Esquema del banco, materias, diagramas curriculares | [`Data/README.md`](Data/README.md) |
+| Juego, modos, controles, `.exe` | [`Juego/README.md`](Juego/README.md) |
+| Lógica interna (bancos, puntuación, filtros) | [`Juego/Consola/README.md`](Juego/Consola/README.md) |
+| Scripts de mantenimiento y balanceo | [`Files/README.md`](Files/README.md) → [`Files/Scripts/README.md`](Files/Scripts/README.md) |
+| Scripts legado de regeneración CSV | [`Files/Archivo/README.md`](Files/Archivo/README.md) |
+| Pruebas unitarias | [`Juego/Tests/README.md`](Juego/Tests/README.md) |
+| Trazabilidad revisión manual | [`Data/revision_manual.md`](Data/revision_manual.md) |
 
 ## Estructura
 
@@ -8,8 +35,6 @@
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
 | [`borrar_temporales.py`](borrar_temporales.py) | Limpia `__pycache__` y `.txt` temporales en todo el proyecto |
-
-Cada carpeta principal tiene su `README.md` con más detalle.
 
 ## Jugar
 
