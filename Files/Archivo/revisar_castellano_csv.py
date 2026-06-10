@@ -6,14 +6,6 @@ No sustituye contenido de materia ya fijado por ``fix_final_materias.py``.
 Evitar parches por Id en bloques revisados (31–130) salvo ortografía menor.
 """
 
-import sys
-from pathlib import Path
-
-_SCRIPTS = Path(__file__).resolve().parent.parent / "Scripts"
-if str(_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(_SCRIPTS))
-
-
 from __future__ import annotations
 
 import sys

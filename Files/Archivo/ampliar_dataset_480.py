@@ -11,14 +11,6 @@ Uso:
   python Files/ampliar_dataset_480.py --sin-abcd   # no permutar ciclo A-D
 """
 
-import sys
-from pathlib import Path
-
-_SCRIPTS = Path(__file__).resolve().parent.parent / "Scripts"
-if str(_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(_SCRIPTS))
-
-
 from __future__ import annotations
 
 import sys

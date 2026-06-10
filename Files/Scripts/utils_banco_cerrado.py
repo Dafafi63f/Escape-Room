@@ -81,7 +81,7 @@ def rechazar_mutacion_dataset(origen: str, *, force: bool = False) -> None:
         f"  Origen: {origen}\n"
         f"  El banco tiene {TOTAL_PREGUNTAS} preguntas revisadas en Data/Preguntas.csv.\n"
         f"  Scripts seguros: mantenimiento.py validar | plantillas | auditar-*.\n"
-        f"  Ver Memoria_TFG.md §14.4.\n"
+        f"  Ver Files/Scripts/README.md.\n"
         f"  Override de emergencia: {_ENV_OVERRIDE}=1\n"
     )
     print(msg, file=sys.stderr)
@@ -97,5 +97,5 @@ def mensaje_comando_balance_bloqueado(comando: str) -> str:
     return (
         f"El comando 'balance.py {comando}' está deshabilitado (banco cerrado).\n"
         f"Usa: python Files/Scripts/mantenimiento.py validar [--detalle]\n"
-        f"Mantenimiento de plantillas: ver Memoria_TFG.md §14.4"
+        f"Mantenimiento de plantillas: ver Files/Scripts/README.md"
     )

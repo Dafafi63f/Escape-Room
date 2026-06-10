@@ -32,7 +32,7 @@ python Files/Scripts/mantenimiento.py temporales --dry-run
 | `validar` [--detalle] | Balance y orden canónico (solo lectura) |
 | `revision` / `revision --estadisticas` | Revisión del CSV |
 | `dataset` [--variedad] | Validación extendida |
-| `auditar-distractores` | Genera `Data/auditoria_distractores.md` |
+| `auditar-distractores` [--json RUTA] [--solo-dataset] | Auditoría de opciones A–D (salida en consola; sin fichero `.md` generado) |
 | `auditar-plantillas` | Cobertura de `plantillas.json` |
 | `plantillas pipeline` | limpiar → inyectar → repuesto → dedup |
 | `criterios` | Actualiza `criterios_clasificacion_materia.csv` |
@@ -49,7 +49,7 @@ Ver la cabecera de [`mantenimiento.py`](mantenimiento.py) para la lista completa
 |--------|-----|
 | `cli_examen_historia.py` | Previsualizar plan de examen en consola |
 | `clasificar_pregunta.py` | Clasificar una pregunta concreta (sin `--inplace` en banco cerrado) |
-| `auditoria.py` | Auditorías del dataset y plantillas |
+| `auditoria.py` | Auditorías del dataset y plantillas (`distractores`, `plantillas`; consola y `--json`) |
 | `duplicados.py` + `duplicados_lib.py` | `revisar`, `plantillas`, `todo`, `exacto`, `enunciado` |
 | `plantillas_sync.py` | `inyectar`, `limpiar`, `repuesto`, `pipeline` sobre `plantillas.json` |
 | `equilibrar_pool_extra_juego.py` | Pool extra 24×40 para el juego (solo JSON) |

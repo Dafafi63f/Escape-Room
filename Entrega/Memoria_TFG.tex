@@ -1,0 +1,464 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage[spanish]{babel}
+\else
+  \usepackage{fontspec}
+  \usepackage{polyglossia}
+  \setmainlanguage{spanish}
+  \setmainfont{Latin Modern Roman}
+  \setsansfont{Latin Modern Sans}
+  \setmonofont{Latin Modern Mono}
+\fi
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue!60!black}
+\usepackage{verbatim}
+\usepackage{needspace}
+\usepackage{titlesec}
+\usepackage{setspace}
+\setlist{nosep}
+\setstretch{1.04}
+\setlength{\parskip}{0.45ex plus 0.1ex minus 0.1ex}
+\titlespacing*{\section}{0pt}{2ex plus 0.25ex minus 0.2ex}{0.9ex plus 0.15ex}
+\titlespacing*{\subsection}{0pt}{1.5ex plus 0.2ex minus 0.2ex}{0.65ex plus 0.12ex}
+\newcommand{\tfgrepo}{\url{https://github.com/Dafafi63f/Escape-Room.git}}
+\newcommand{\bloquetfg}[1]{\par\smallskip\noindent #1\par}
+\newcommand{\iniciotabla}{\par\medskip\renewcommand{\arraystretch}{1.12}}
+\newcommand{\fintabla}{\par\medskip}
+
+\title{Memoria TFG}
+\author{%
+  Daniel Fageda Figueredo \quad NIU: 1601846\\
+  Tutor: Víctor Navas Portella
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Título provisional:} Diseño y desarrollo de un videojuego educativo tipo escape room basado en contenidos del grado en Matemática Computacional y Análisis de Datos
+
+\smallskip
+\noindent El detalle técnico del repositorio (esquema del banco, scripts, arquitectura del juego) se documenta en los \texttt{README.md} del proyecto y se cita en los apéndices al final de esta memoria.
+
+\smallskip
+\noindent\textbf{Versión de entrega:} los PDF y este fichero LaTeX están en \texttt{Entrega/}. Regenerar PDF: \texttt{python Entrega/exportar\_informe\_pdf.py}.
+
+\section{Introducción}
+
+\subsection{Contexto}
+
+El grado en Matemática Computacional y Análisis de Datos (MatCAD) de la Universitat Autònoma de Barcelona articula un plan de estudios amplio en el que conviven contenidos de matemáticas, computación, estadística, optimización e inteligencia artificial. La evaluación continua y la autoevaluación son piezas habituales del aprendizaje universitario, pero los recursos disponibles para practicar de forma autónoma ---cuestionarios genéricos, listas de ejercicios descontextualizadas o plataformas que no reflejan la estructura del grado--- suelen ofrecer poca trazabilidad respecto al plan curricular.
+
+Paralelamente, la gamificación y los videojuegos educativos han ganado relevancia como complemento a la enseñanza formal: permiten practicar con retroalimentación inmediata, reducir la ansiedad ante la evaluación en algunos contextos y favorecer la motivación mediante mecánicas de juego (vidas, puntuación, progresión). Los escape rooms educativos y las novelas gráficas interactivas representan un subconjunto de los \textit{serious games} en el que la narrativa envuelve retos cognitivos; sin embargo, su desarrollo completo exige un esfuerzo considerable en diseño gráfico, guion y validación pedagógica.
+
+\subsection{Motivación}
+
+Este Trabajo de Fin de Grado surge de la necesidad de disponer de una herramienta de autoevaluación alineada con las asignaturas del grado, capaz de:
+\begin{itemize}
+  \item gestionar un banco de preguntas estructurado y auditable,
+  \item ofrecer una experiencia de juego que incentive la práctica repetida,
+  \item analizar la calidad del contenido (distractores, duplicados, coherencia curricular),
+  \item y sentar las bases para modelos pedagógicos más ricos (multiasignatura, prerrequisitos, narrativa).
+\end{itemize}
+
+La motivación principal es combinar programación, matemáticas y diseño interactivo en una aplicación práctica que consolide conocimientos del grado y que pueda ser extendida por el propio autor o por el profesorado.
+
+\subsection{Alcance del entregable}
+
+El documento de proyecto inicial planteaba un videojuego tipo escape room con interfaz gráfica. Durante el desarrollo se priorizó la \textbf{calidad y estructura del banco de preguntas} y un \textbf{prototipo jugable en consola}, decisión metodológica coherente con un enfoque incremental: primero validar el contenido y la lógica de evaluación; después añadir la capa narrativa y gráfica.
+
+\textbf{Estado actual:} cuestionario en consola con tres modos operativos (libre, historia, feedback), banco de \textbf{480 preguntas} revisadas manualmente, herramientas de mantenimiento del dataset y empaquetado opcional en ejecutable Windows. La capa gráfica escape room / novela queda como evolución futura.
+
+\section{Objetivos}
+
+\subsection{Objetivo general}
+
+Diseñar e implementar un videojuego educativo interactivo en el que la progresión del jugador dependa de la resolución de retos basados en contenidos del grado en Matemática Computacional y Análisis de Datos.
+
+\subsection{Objetivos específicos}
+
+{\small\setlength{\tabcolsep}{4pt}%
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{3.4cm}>{\raggedright\arraybackslash}p{7.1cm}>{\raggedright\arraybackslash}p{2.6cm}@{}}
+\toprule
+\textbf{\#} & \textbf{Objetivo} & \textbf{Indicador de logro} & \textbf{Estado} \\
+\midrule
+OE1 & Diseñar una narrativa interactiva como marco de los retos & Guion de escenas/salas vinculadas a materias del grado & Pendiente (futuro) \\
+OE2 & Crear distintos tipos de retos relacionados con las materias & Banco con preguntas de Teoría y Cálculo, tres niveles de dificultad, 40 materias & \textbf{Cumplido} \\
+OE3 & Implementar algoritmos que validen las respuestas del jugador & Motor de partida con corrección A--D, puntuación, vidas, informes & \textbf{Cumplido} \\
+OE4 & Desarrollar una interfaz gráfica sencilla e intuitiva & Interfaz gráfica de usuario (Pygame u otro motor) & Pendiente (futuro) \\
+OE5 & Evaluar el funcionamiento y el valor formativo del sistema & Banco validado, pruebas unitarias, revisión manual, modo feedback & \textbf{Parcialmente cumplido} \\
+\bottomrule
+\end{tabular}}
+
+\subsection{Objetivos derivados del desarrollo}
+
+Durante el proyecto surgieron objetivos técnicos no recogidos en el documento inicial pero necesarios para la calidad del entregable:
+\begin{itemize}
+  \item Definir un \textbf{esquema canónico} del banco (480 preguntas, balance por dificultad, tipo y respuesta correcta).
+  \item Enriquecer cada pregunta con \textbf{metadatos curriculares} (curso, semestre, grupo temático, nivel).
+  \item Construir un \textbf{pipeline de mantenimiento} (validación, auditoría de distractores, deduplicación).
+  \item Implementar un \textbf{modo historia} que genere exámenes balanceados según el histórico de qualificacions del grado.
+\end{itemize}
+
+\section{Marco teórico y estado del arte}
+
+\subsection{Aprendizaje activo y evaluación formativa}
+
+El aprendizaje universitario de calidad se asocia a estrategias que sitúan al estudiante en el centro del proceso: resolver problemas, recibir retroalimentación y reflexionar sobre los errores (Biggs y Tang, 2011). La \textbf{evaluación formativa} no tiene como única finalidad calificar, sino orientar el aprendizaje mediante información sobre el desempeño y sobre cómo mejorarlo (Nicol y Macfarlane-Dick, 2006).
+
+Los cuestionarios de opción múltiple, cuando están bien diseñados, permiten cubrir un espectro amplio de contenidos con corrección automática. Su efectividad depende de la calidad del ítem: enunciados claros, distractores plausibles y alineación con los resultados de aprendizaje (Haladyna et al., 2002). Un banco estructurado facilita la revisión sistemática y la reutilización por parte del profesorado.
+
+\subsection{Gamificación y aprendizaje basado en juegos}
+
+La \textbf{gamificación} introduce elementos de diseño de juegos en contextos no lúdicos (puntos, niveles, retos) para aumentar la participación (Deterding et al., 2011). No debe confundirse con un juego completo: la gamificación puede aplicarse a un cuestionario sin narrativa gráfica, como ocurre en este TFG con vidas, puntuación diferenciada por dificultad y progresión de complejidad.
+
+El \textbf{aprendizaje basado en juegos digitales} (\textit{game-based learning}) apuesta por experiencias más inmersivas. Prensky (2001) subraya que los nativos digitales responden favorablemente a entornos interactivos con reglas claras y retroalimentación inmediata. Gee (2003) analiza cómo los buenos videojuegos enseñan mediante tutoriales integrados, dificultad creciente y sentido de competencia.
+
+En el ámbito de la educación superior en STEM, los juegos serios han mostrado potencial para reforzar conceptos abstractos, aunque la evidencia exige estudios concretos por dominio y nivel (Michael y Chen, 2005; Kiili, 2005).
+
+\subsection{Serious games, escape rooms y narrativa}
+
+Los \textbf{serious games} son aplicaciones diseñadas con un propósito formativo principal, no meramente recreativo (Michael y Chen, 2005). Los \textbf{escape rooms educativos} trasladan la mecánica de salas y puzles encadenados al aula: fomentan el trabajo en equipo, el razonamiento bajo presión temporal y la aplicación de conocimientos en contexto (Veldkamp et al., 2020). Las \textbf{novelas gráficas interactivas} aportan narrativa ramificada con menor carga de desarrollo 3D que un motor de juego completo.
+
+El estado del arte muestra que la narrativa incrementa la motivación cuando está alineada con los objetivos de aprendizaje; si no lo está, puede distraer (Habgood y Ainsworth, 2011). Por ello, este TFG separa explícitamente la capa de contenido evaluable (banco + motor de juego) de la capa narrativa aún no implementada.
+
+\subsection{Bancos de preguntas y sistemas de tutoría inteligente}
+
+En ingeniería y ciencias de la computación es habitual disponer de bancos de ejercicios para práctica autónoma. Plataformas como Moodle integran cuestionarios con categorías y estadísticas de uso. Los sistemas adaptativos avanzados modelan el conocimiento del alumno y seleccionan ítems según prerrequisitos (Brusilovsky y Peylo, 2003).
+
+Este proyecto no implementa un modelo de usuario adaptativo completo, pero anticipa esa línea con la propuesta de campos \texttt{Materias\_relacionadas} y \texttt{Prerequisitos} en el esquema de datos, y con el modo historia que pondera materias según el histórico de qualificacions del grado.
+
+\subsection{Trabajos relacionados y posicionamiento}
+
+Existen aplicaciones comerciales y académicas de cuestionarios (Kahoot, Quizlet, AulaWeb, etc.), pero pocas están \textbf{específicamente modeladas sobre el plan de estudios completo de un grado concreto} con metadatos curriculares explícitos y código abierto mantenible por el autor.
+
+La contribución distintiva de este TFG respecto a un cuestionario genérico es triple:
+\begin{enumerate}
+  \item \textbf{Alineación curricular:} 40 materias del grado MatCAD con estructura 4×2×5 y 10 grupos temáticos.
+  \item \textbf{Trazabilidad de calidad:} revisión manual documentada, auditoría de distractores, detección de duplicados semánticos.
+  \item \textbf{Arquitectura extensible:} separación datos / motor de juego / modos, preparada para narrativa gráfica futura.
+\end{enumerate}
+
+\section{Hipótesis de trabajo}
+
+A partir del marco teórico y del diseño del sistema, se formulan las siguientes hipótesis:
+
+\textbf{H1.} Un banco de preguntas estructurado según el plan curricular del grado (materia, dificultad, tipo Teoría/Cálculo) y enriquecido con metadatos académicos (curso, semestre, grupo, nivel) \textbf{permite una autoevaluación segmentada} más útil que un cuestionario homogéneo sin esa estructura.
+
+\textbf{H2.} La incorporación de mecánicas de juego (vidas, puntuación variable, dificultad progresiva) en un cuestionario de consola \textbf{aumenta la motivación para practicar} respecto a un listado estático de preguntas, sin requerir inicialmente una interfaz gráfica compleja.
+
+\textbf{H3.} Un pipeline automatizado de validación y auditoría del banco \textbf{detecta inconsistencias} (desequilibrios, distractores débiles, duplicados) que una revisión ad hoc no cubriría de forma sistemática.
+
+\textbf{H4.} El uso del histórico de qualificacions del grado para balancear exámenes en el modo historia \textbf{aproxima la selección de contenidos} a la estructura real de evaluación del plan de estudios.
+
+\begin{quote}
+\textbf{Nota metodológica:} H1 y H3 se apoyan en el diseño del banco y en los informes de auditoría generados. H2 y H4 requerirían un estudio con usuarios (cuestionario de usabilidad, comparación pre/post) que queda fuera del alcance de esta primera versión pero se señala como validación empírica futura.
+\end{quote}
+
+\section{Metodología}
+
+\subsection{Enfoque general}
+
+El desarrollo siguió una \textbf{metodología incremental} en cuatro fases, alineada con el documento de proyecto:
+\begin{enumerate}
+  \item \textbf{Análisis y diseño:} definición de materias, esquema del banco, metadatos y modos de juego.
+  \item \textbf{Implementación:} dataset, scripts de mantenimiento, motor de partida en consola.
+  \item \textbf{Pruebas:} validación estructural, pruebas unitarias, revisión manual del contenido.
+  \item \textbf{Evaluación:} análisis del resultado, identificación de limitaciones y líneas futuras.
+\end{enumerate}
+
+El control de versiones con Git permitió iterar sobre el banco y el código de forma trazable. El repositorio público facilita la reproducibilidad del trabajo.
+
+\subsection{Diseño del banco de preguntas}
+
+\bloquetfg{\textbf{Población de ítems:} 40 materias del grado MatCAD × 12 preguntas = \textbf{480 ítems}.}
+
+\bloquetfg{\textbf{Esquema por materia:} 2FT 2MT 2DT 2FC 2MC 2DC (6 de Teoría + 6 de Cálculo, escalón Fácil → Media → Difícil en cada mitad).}
+
+\bloquetfg{\textbf{Reparto global:}}
+\iniciotabla
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Dimensión} & \textbf{Distribución} \\
+\midrule
+Dificultad & 160 Fácil / 160 Media / 160 Difícil \\
+Tipo & 240 Teoría / 240 Cálculo \\
+Respuesta correcta & 120 por letra A, B, C y D \\
+\bottomrule
+\end{tabular}
+\fintabla
+
+\bloquetfg{\textbf{Metadatos curriculares} en \texttt{listado\_materias.csv}: \texttt{Grupo}, \texttt{Nivel}, \texttt{Curso}, \texttt{Semestre}, \texttt{Tematica} (10 grupos temáticos globales).}
+
+\bloquetfg{\textbf{Revisión de contenido:} revisión manual por bloques de Ids (1--480), con registro en \texttt{Data/revision\_manual.md}. Criterios: redacción genérica, coherencia con el nivel de la materia, distractores plausibles, ausencia de referencias a temarios internos de asignatura.}
+
+\bloquetfg{\textbf{Validación automatizada:} comando \texttt{mantenimiento.py validar} comprueba balance, orden canónico e integridad de columnas. Auditoría de distractores y detección de duplicados semánticos mediante scripts dedicados.}
+
+\bloquetfg{Detalle técnico: \texttt{Data/README.md}.}
+
+\subsection{Diseño e implementación del software}
+
+\textbf{Stack tecnológico:}
+\begin{itemize}
+  \item Lenguaje: Python 3.10+ (biblioteca estándar en el juego; sin dependencias externas obligatorias).
+  \item Persistencia: CSV y JSON para datos; informes y feedback en \texttt{.txt} locales.
+  \item Empaquetado opcional: PyInstaller (Windows), script \texttt{build\_exe\_onefile.ps1}.
+\end{itemize}
+
+\textbf{Arquitectura en capas:}
+\begin{verbatim}
+Lanzador (juego_cuestionario.py)
+    -> Modos (libre / historia / feedback)
+        -> Motor de partida (reglas, puntuación, vidas)
+            -> Capa de datos (CSV, metadatos, plantillas)
+\end{verbatim}
+
+\bloquetfg{\textbf{Modos implementados:}}
+\iniciotabla
+\begin{tabular}{@{}lp{9cm}@{}}
+\toprule
+\textbf{Modo} & \textbf{Función pedagógica} \\
+\midrule
+\textbf{Libre} & Autoevaluación abierta con filtros por curso, semestre, temática, grupo, nivel, materia y dificultad \\
+\textbf{Historia} & Simulación de examen balanceado según histórico de qualificacions del grado \\
+\textbf{Feedback} & Canal de mejora continua (bugs, sugerencias) hacia el creador \\
+\bottomrule
+\end{tabular}
+\fintabla
+
+\bloquetfg{\textbf{Mecánicas de juego:}} dificultad global progresiva (sube cada tres preguntas), puntuación +10/+20/+30 según dificultad, penalización por error, 3 vidas por partida, informe al cerrar en modo examen.
+
+Detalle técnico: \texttt{Juego/Consola/README.md}.
+
+\subsection{Validación y aseguramiento de la calidad}
+
+\iniciotabla
+\begin{tabular}{@{}lp{8cm}@{}}
+\toprule
+\textbf{Actividad} & \textbf{Herramienta / método} \\
+\midrule
+Balance estructural del CSV & \texttt{mantenimiento.py validar} \\
+Revisión manual del contenido & Bloques documentados en \texttt{revision\_manual.md} \\
+Auditoría de distractores & \texttt{mantenimiento.py auditar-distractores} (consola; \texttt{--json} opcional) \\
+Duplicados semánticos & \texttt{duplicados.py revisar} \\
+Pruebas de regresión del juego & \texttt{python -m unittest discover -s Juego/Tests -v} \\
+Revisión con profesorado & Identificación de solapamiento temático y prerrequisitos (véase sección 8) \\
+\bottomrule
+\end{tabular}
+\fintabla
+
+El banco de producción (\texttt{Preguntas.csv}) se declaró \textbf{cerrado} en junio de 2026; las escrituras en el CSV requieren \texttt{TFG\_PERMITIR\_CSV=1} para evitar modificaciones accidentales.
+
+\subsection{Criterios de éxito}
+
+Se consideró exitoso el entregable si:
+\begin{enumerate}
+  \item El banco cumplía el esquema 480 ítems con balance verificado.
+  \item Los tres modos de juego eran ejecutables sin errores en el flujo principal.
+  \item Existía documentación reproducible (README, memoria, scripts de mantenimiento).
+  \item El contenido había pasado revisión manual completa.
+\end{enumerate}
+
+\section{Resultados}
+
+\subsection{Banco de preguntas}
+
+Se obtuvo un banco cerrado de \textbf{480 preguntas} con las siguientes propiedades verificadas:
+\begin{itemize}
+  \item \textbf{40 materias} alineadas con el listado del grado.
+  \item \textbf{12 preguntas por materia} siguiendo el patrón 2FT 2MT 2DT 2FC 2MC 2DC.
+  \item \textbf{Revisión manual 480/480} completada en cinco tramos temporales.
+  \item \textbf{Auditorías de calidad} ejecutadas (\texttt{mantenimiento.py auditar-distractores}, \texttt{duplicados.py revisar}): detección de pares similares pendientes de sustitución (3 en CSV modo seguro, $\sim$13 intra-materia en plantillas beta).
+\end{itemize}
+
+El banco distingue \textbf{modo seguro} (solo dataset revisado) y \textbf{modo beta} (pool ampliado con plantillas no revisadas, hasta 1440 ítems jugables), dejando clara la trazabilidad para evaluación formal del TFG.
+
+\subsection{Aplicación de juego}
+
+Se entregó un cuestionario en consola funcional:
+
+\begin{tabular}{@{}lp{8cm}@{}}
+\toprule
+\textbf{Componente} & \textbf{Resultado} \\
+\midrule
+Lanzador & \texttt{Juego/juego\_cuestionario.py} \\
+Paquete de lógica & \texttt{Juego/Consola/} (18 módulos) \\
+Modo libre & Filtros multidimensionales, informes \texttt{.txt} \\
+Modo historia & Generador de examen según \texttt{Historic\_qualificacions\_MatCAD\_completo.csv} \\
+Modo feedback & Guardado local + envío SMTP opcional \\
+Ejecutable & Build opcional con PyInstaller \\
+Pruebas & Suite en \texttt{Juego/Tests/} (informes, entrada, feedback, configuración) \\
+\bottomrule
+\end{tabular}
+
+\subsection{Organización curricular modelada}
+
+Las 40 materias se distribuyen en:
+\begin{itemize}
+  \item \textbf{4 cursos} × \textbf{2 semestres} × \textbf{5 materias}.
+  \item \textbf{10 grupos temáticos} (álgebra, cálculo, sistemas, programación, algoritmia, métodos numéricos, probabilidad y datos, bases de datos, IA, modelización física).
+\end{itemize}
+
+Cada pregunta se enriquece al cargar con \texttt{curso}, \texttt{semestre}, \texttt{grupo}, \texttt{nivel} y \texttt{tematica}, lo que habilita filtros de partida alineados con la etapa formativa del estudiante.
+
+Diagramas: \texttt{Data/README.md}.
+
+\subsection{Herramientas de mantenimiento}
+
+Se desarrolló un conjunto de scripts en \texttt{Files/Scripts/} con punto de entrada unificado (\texttt{mantenimiento.py}): validación, revisión, pipeline de plantillas, auditorías (salida en consola), deduplicación y estadísticas del histórico de qualificacions. Los scripts de regeneración masiva del CSV se aislaron en \texttt{Files/Archivo/} con protección de banco cerrado. Catálogo de comandos: \texttt{Files/Scripts/README.md}.
+
+\subsection{Síntesis cuantitativa}
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Métrica} & \textbf{Valor} \\
+\midrule
+Preguntas en banco de producción & 480 \\
+Materias cubiertas & 40 \\
+Módulos Python del juego (Consola) & 18 \\
+Modos de juego operativos & 3 \\
+Pruebas unitarias & 4 módulos de test \\
+Grupos temáticos modelados & 10 \\
+\bottomrule
+\end{tabular}
+
+\section{Discusión}
+
+\subsection{Cumplimiento de los objetivos}
+
+El \textbf{objetivo general} se cumple de forma parcial: existe un juego educativo interactivo basado en contenidos del grado, pero la progresión narrativa tipo escape room no está implementada. La progresión actual es ludificada (vidas, puntos, dificultad creciente) y curricular (filtros por etapa del grado).
+
+Los \textbf{objetivos específicos} OE2, OE3 y OE5 están cubiertos en su versión de consola. OE1 y OE4 (narrativa gráfica e interfaz visual) quedan explícitamente como trabajo futuro. Esta decisión es defendible: el prototipo valida el núcleo evaluable sin el coste de desarrollo gráfico, en línea con el principio de prototipado incremental en ingeniería del software.
+
+\subsection{Validez del banco de preguntas}
+
+La \textbf{validez de contenido} se abordó mediante revisión manual exhaustiva y criterios de redacción acordados. La \textbf{validez estructural} se garantiza con reglas de balance automatizadas. Quedan abiertas:
+\begin{itemize}
+  \item la \textbf{validez semántica} fina (algunos pares de ítems muy similares),
+  \item y la \textbf{validez predictiva} (relación entre desempeño en el juego y desempeño académico real), no medida en este TFG.
+\end{itemize}
+
+La revisión con profesorado puso de manifiesto limitaciones del modelo de una sola etiqueta \texttt{Materia}:
+\begin{enumerate}
+  \item \textbf{Solapamiento temático:} preguntas que encajan en varias asignaturas (p.\ ej.\ inferencia en Probabilidad y en Modelización e Inferencia).
+  \item \textbf{Prerrequisitos:} preguntas de cursos avanzados que asumen conceptos de materias previas (p.\ ej.\ optimización y cálculo multivariable).
+\end{enumerate}
+
+Estas observaciones motivan la propuesta de campos \texttt{Materias\_relacionadas} y \texttt{Prerequisitos} en futuras versiones del esquema.
+
+\subsection{Utilidad para autoevaluación y apoyo docente}
+
+El sistema permite al estudiante:
+\begin{itemize}
+  \item practicar por \textbf{semestre o temática}, acorde a su momento del grado;
+  \item simular un \textbf{examen balanceado} (modo historia);
+  \item recibir \textbf{informe detallado} al finalizar una partida en modo examen.
+\end{itemize}
+
+Para el profesorado, el banco estructurado y los scripts de auditoría facilitan revisión por materia y detección de ítems problemáticos. El modo feedback cierra un ciclo de mejora continua.
+
+La interfaz en consola limita la accesibilidad para usuarios no familiarizados con terminal; el tutorial de foco de teclado al inicio mitiga parte de esa barrera, pero una GUI sería deseable para despliegue masivo.
+
+\subsection{Relación con las hipótesis}
+
+\begin{tabular}{@{}lp{9cm}@{}}
+\toprule
+\textbf{Hipótesis} & \textbf{Valoración} \\
+\midrule
+\textbf{H1} & Apoyada por diseño: filtros curriculares operativos; falta estudio comparativo con usuarios \\
+\textbf{H2} & Plausible por diseño; no contrastada empíricamente en este TFG \\
+\textbf{H3} & Apoyada: auditorías detectan desequilibrios y distractores débiles de forma reproducible \\
+\textbf{H4} & Apoyada por implementación del modo historia; no validada con cohorte de estudiantes \\
+\bottomrule
+\end{tabular}
+
+\subsection{Limitaciones del estudio}
+
+\begin{enumerate}
+  \item \textbf{Sin estudio de usuarios:} no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes.
+  \item \textbf{Interfaz en consola:} reduce el atractivo visual respecto al escape room planteado inicialmente.
+  \item \textbf{Modelo de datos simplificado:} una materia por pregunta; sin prerrequisitos explícitos aún.
+  \item \textbf{Idioma del banco:} preguntas en castellano/catalán según materia; coherencia terminológica revisada pero mejorable.
+  \item \textbf{Modo beta:} pool ampliado con plantillas no revisadas; debe distinguirse del banco de producción en cualquier evaluación formal.
+\end{enumerate}
+
+\subsection{Trabajo futuro}
+
+\begin{itemize}
+  \item Implementar \texttt{Materias\_relacionadas} y \texttt{Prerequisitos} en el CSV y en los filtros del juego.
+  \item Desarrollar la capa gráfica escape room / novela gráfica del documento de proyecto.
+  \item Realizar un \textbf{piloto con estudiantes} del grado (cuestionario SUS, entrevistas, comparación de rendimiento).
+  \item Sustituir los pares de ítems semánticamente similares detectados por la auditoría.
+  \item Explorar integración con plataformas institucionales (Moodle, AulaWeb).
+\end{itemize}
+
+\section{Conclusiones}
+
+Este Trabajo de Fin de Grado ha diseñado e implementado un \textbf{sistema de cuestionarios académicos} alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos, integrando:
+\begin{itemize}
+  \item un \textbf{banco de 480 preguntas} estructurado, balanceado y revisado manualmente;
+  \item un \textbf{juego en consola} con tres modos (libre, historia, feedback) que gamifica la autoevaluación;
+  \item un \textbf{conjunto de herramientas} de validación y mantenimiento del dataset;
+  \item y una \textbf{arquitectura extensible} preparada para narrativa gráfica y modelos pedagógicos más ricos.
+\end{itemize}
+
+La principal contribución académica es pasar de un cuestionario genérico a una herramienta con \textbf{criterio didáctico explícito}: trazabilidad curricular, calidad auditable del banco y mecánicas de juego orientadas a la práctica repetida. El desvío respecto al título inicial (escape room gráfico) se compensa con un entregable técnicamente sólido y documentado, que constituye la base sobre la que construir la experiencia narrativa.
+
+En el plano personal, el proyecto ha consolidado competencias de programación en Python, diseño de datos, ingeniería de software incremental y reflexión pedagógica sobre la evaluación en grados STEM interdisciplinares.
+
+Las líneas futuras más inmediatas son la validación con usuarios reales, el enriquecimiento del modelo de datos con multiasignatura y prerrequisitos, y el desarrollo de la interfaz gráfica prevista en el documento de proyecto.
+
+\section{Bibliografía}
+
+Biggs, J., y Tang, C. (2011). \textit{Teaching for Quality Learning at University} (4.ª ed.). Open University Press.
+
+Brusilovsky, P., y Peylo, C. (2003). Adaptive and intelligent web-based educational systems. \textit{International Journal of Artificial Intelligence in Education}, \textit{13}(2--4), 159--172.
+
+Deterding, S., Dixon, D., Khaled, R., y Nacke, L. (2011). From game design elements to gamefulness: Defining ``gamification''. En \textit{Proceedings of the 15th International Academic MindTrek Conference} (pp. 9--15). ACM. \url{https://doi.org/10.1145/2181037.2181040}
+
+Gee, J. P. (2003). \textit{What Video Games Have to Teach Us About Learning and Literacy}. Palgrave Macmillan.
+
+Habgood, M. P. J., y Ainsworth, S. E. (2011). Motivating children to learn effectively: Exploring the use of intrinsic and extrinsic motivation in educational games. \textit{British Journal of Educational Technology}, \textit{42}(2), 183--200. \url{https://doi.org/10.1111/j.1467-8535.2009.01034.x}
+
+Haladyna, T. M., Downing, S. M., y Rodriguez, M. C. (2002). A review of multiple-choice item-writing guidelines for classroom assessment. \textit{Applied Measurement in Education}, \textit{15}(3), 309--333. \url{https://doi.org/10.1207/S15324818AME1503_5}
+
+Kiili, K. (2005). Digital game-based learning: Towards an experiential gaming model. \textit{The Internet and Higher Education}, \textit{8}(1), 13--24. \url{https://doi.org/10.1016/j.iheduc.2004.12.001}
+
+Michael, D. R., y Chen, S. L. (2005). \textit{Serious Games: Games That Educate, Train, and Inform}. Thomson Course Technology.
+
+Nicol, D. J., y Macfarlane-Dick, D. (2006). Formative assessment and self-regulated learning: A model and seven principles of good feedback practice. \textit{Studies in Higher Education}, \textit{31}(2), 199--218. \url{https://doi.org/10.1080/03075070600572090}
+
+Prensky, M. (2001). \textit{Digital Game-Based Learning}. McGraw-Hill.
+
+Veldkamp, A., van de Grint, L., Knippels, M. C. P. J., y van Joolingen, W. R. (2020). Escape education: A systematic review on escape rooms in education. \textit{Educational Research Review}, \textit{31}, 100364. \url{https://doi.org/10.1016/j.edurev.2020.100364}
+
+\section{Apéndices — documentación técnica del repositorio}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabularx}{\textwidth}{@{}c>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{4.2cm}@{}}
+\toprule
+\textbf{Apéndice} & \textbf{Contenido} & \textbf{Enlace} \\
+\midrule
+A & Esquema del banco, revisión manual, diagramas curriculares & \texttt{Data/README.md} \\
+B & Arquitectura del juego, modos, puntuación, bancos beta & \texttt{Juego/Consola/README.md} \\
+C & Scripts de mantenimiento, balanceo, auditorías & \texttt{Files/Scripts/README.md} \\
+D & Scripts legado de regeneración CSV & \texttt{Files/Archivo/README.md} \\
+E & Pruebas unitarias & \texttt{Juego/Tests/README.md} \\
+F & Repositorio y guía rápida & \texttt{README.md} \\
+G & Memoria en LaTeX, PDFs y exportación & \texttt{Entrega/README.md} \\
+\bottomrule
+\end{tabularx}
+
+\medskip
+\noindent\textbf{Repositorio:} \tfgrepo
+
+\end{document}

@@ -7,19 +7,11 @@ Uso:
   python Files/Scripts/balance.py validar [--detalle] [--estricto]
 
 Los comandos de regeneración (conservador, agresivo, ajustar, reordenar, …)
-están deshabilitados desde 2026-06-03. Ver Memoria_TFG.md §14.4.
+están deshabilitados desde 2026-06-03. Ver Files/Scripts/README.md.
 
 Clasificación por contenido (solo lectura):
   python Files/clasificar_pregunta.py --dataset --solo-incoherentes
 """
-
-import sys
-from pathlib import Path
-
-_SCRIPTS = Path(__file__).resolve().parent.parent / "Scripts"
-if str(_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(_SCRIPTS))
-
 
 from __future__ import annotations
 
@@ -34,11 +26,6 @@ if str(_FILES) not in sys.path:
     sys.path.insert(0, str(_FILES))
 
 import argparse
-import sys
-from pathlib import Path
-
-FILES = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(FILES))
 
 from utils_banco_cerrado import mensaje_comando_balance_bloqueado
 from utils_dataset_csv import borrar_pycache_en_proyecto
@@ -69,7 +56,7 @@ def cmd_bloqueado(comando: str) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Validación del dataset Preguntas.csv (banco cerrado, 480 preguntas).",
-        epilog="Mantenimiento: Memoria_TFG.md §14.4",
+        epilog="Mantenimiento: Files/Scripts/README.md",
     )
     sub = parser.add_subparsers(dest="comando", required=True)
 

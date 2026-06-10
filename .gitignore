@@ -13,3 +13,12 @@ Juego/juego_cuestionario.exe
 # --- Temporales (limpiar con borrar_temporales.py) ---
 __pycache__/
 *.txt
+
+# --- Compilación LaTeX (Entrega/exportar_informe_pdf.py --solo-limpiar) ---
+Entrega/*.aux
+Entrega/*.log
+Entrega/*.out
+Entrega/*.toc
+Entrega/*.fls
+Entrega/*.fdb_latexmk
+Entrega/*.synctex.gz

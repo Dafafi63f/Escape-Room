@@ -14,7 +14,7 @@ import csv
 import json
 import re
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent.parent
@@ -24,8 +24,6 @@ from utils_texto import normalizar_basico, normalizar_pregunta
 
 PATH_CSV = BASE / "Data" / "Preguntas.csv"
 PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
-PATH_REPORT = BASE / "Data" / "auditoria_distractores.md"
-
 LETRAS = ("A", "B", "C", "D")
 
 _PLACEHOLDER = re.compile(
@@ -224,45 +222,6 @@ def agrupar(incidencias: list[dict]) -> Counter:
     return Counter(x["tipo"] for x in incidencias)
 
 
-def escribir_reporte(
-    inc_ds: list[dict],
-    inc_pl: list[dict],
-    path: Path,
-) -> None:
-    lines = [
-        "# Auditoría de distractores",
-        "",
-        f"- **Dataset** (`Preguntas.csv`): {len(inc_ds)} incidencias",
-        f"- **Plantillas** (expandidas): {len(inc_pl)} incidencias",
-        "",
-        "## Resumen por tipo (dataset)",
-        "",
-    ]
-    for tipo, n in agrupar(inc_ds).most_common():
-        lines.append(f"- `{tipo}`: {n}")
-    lines.extend(["", "## Resumen por tipo (plantillas)", ""])
-    for tipo, n in agrupar(inc_pl).most_common():
-        lines.append(f"- `{tipo}`: {n}")
-
-    def bloque(titulo: str, items: list[dict], lim: int = 80) -> None:
-        lines.extend(["", f"## {titulo}", ""])
-        por_tipo: dict[str, list[dict]] = defaultdict(list)
-        for x in items:
-            por_tipo[x["tipo"]].append(x)
-        for tipo in sorted(por_tipo.keys()):
-            lines.append(f"### {tipo}")
-            for x in por_tipo[tipo][:lim]:
-                lines.append(f"- **{x['id']}**: {x['detalle']}")
-            rest = len(por_tipo[tipo]) - lim
-            if rest > 0:
-                lines.append(f"- … +{rest} más")
-            lines.append("")
-
-    bloque("Detalle dataset", inc_ds)
-    bloque("Detalle plantillas (muestra)", inc_pl, lim=40)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-
 def auditar_plantillas_global() -> int:
     from collections import defaultdict as dd
 
@@ -438,9 +397,6 @@ def main_distractores(*, json_path: str = "", solo_dataset: bool = False) -> int
         print(f"Instancias: {n_pl} | Incidencias: {len(inc_pl)}")
         for tipo, n in agrupar(inc_pl).most_common(12):
             print(f"  {tipo}: {n}")
-
-    escribir_reporte(inc_ds, inc_pl, PATH_REPORT)
-    print(f"\nInforme: {PATH_REPORT}")
 
     if json_path:
         out = {"dataset": inc_ds, "plantillas": inc_pl}

@@ -6,6 +6,8 @@
 
 El detalle técnico del repositorio (esquema del banco, scripts, arquitectura del juego) se documenta en los [`README.md`](README.md) del proyecto y se cita en los apéndices al final de esta memoria.
 
+**Versión de entrega:** los PDF y la fuente LaTeX maquetada están en [`Entrega/`](Entrega/README.md). Para regenerarlos: `python Entrega/exportar_informe_pdf.py`.
+
 ---
 
 ## 1. Introducción
@@ -188,7 +190,7 @@ Detalle técnico: [`Juego/Consola/README.md`](Juego/Consola/README.md).
 |-----------|---------------------|
 | Balance estructural del CSV | `mantenimiento.py validar` |
 | Revisión manual del contenido | Bloques documentados en `revision_manual.md` |
-| Auditoría de distractores | `mantenimiento.py auditar-distractores` |
+| Auditoría de distractores | `mantenimiento.py auditar-distractores` (consola; `--json` opcional) |
 | Duplicados semánticos | `duplicados.py revisar` |
 | Pruebas de regresión del juego | `python -m unittest discover -s Juego/Tests -v` |
 | Revisión con profesorado | Identificación de solapamiento temático y prerrequisitos (véase sección 8) |
@@ -215,7 +217,7 @@ Se obtuvo un banco cerrado de **480 preguntas** con las siguientes propiedades v
 - **40 materias** alineadas con el listado del grado.
 - **12 preguntas por materia** siguiendo el patrón 2FT 2MT 2DT 2FC 2MC 2DC.
 - **Revisión manual 480/480** completada en cinco tramos temporales.
-- **Informes de calidad** generados: `auditoria_distractores.md`, detección de pares similares pendientes de sustitución (3 en CSV modo seguro, ~13 intra-materia en plantillas beta).
+- **Auditorías de calidad** ejecutadas (`mantenimiento.py auditar-distractores`, `duplicados.py revisar`): detección de pares similares pendientes de sustitución (3 en CSV modo seguro, ~13 intra-materia en plantillas beta).
 
 El banco distingue **modo seguro** (solo dataset revisado) y **modo beta** (pool ampliado con plantillas no revisadas, hasta 1440 ítems jugables), dejando clara la trazabilidad para evaluación formal del TFG.
 
@@ -246,7 +248,7 @@ Diagramas: [`Data/README.md`](Data/README.md).
 
 ### 6.4 Herramientas de mantenimiento
 
-Se desarrolló un conjunto de scripts en `Files/Scripts/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías, deduplicación y estadísticas del histórico de qualificacions. Los scripts de regeneración masiva del CSV se aislaron en `Files/Archivo/` con protección de banco cerrado.
+Se desarrolló un conjunto de scripts en `Files/Scripts/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida en consola), deduplicación y estadísticas del histórico de qualificacions. Los scripts de regeneración masiva del CSV se aislaron en `Files/Archivo/` con protección de banco cerrado. Catálogo de comandos: [`Files/Scripts/README.md`](Files/Scripts/README.md).
 
 ### 6.5 Síntesis cuantitativa
 
@@ -375,5 +377,6 @@ Veldkamp, A., van de Grint, L., Knippels, M. C. P. J., y van Joolingen, W. R. (2
 | D | Scripts legado de regeneración CSV | [`Files/Archivo/README.md`](Files/Archivo/README.md) |
 | E | Pruebas unitarias | [`Juego/Tests/README.md`](Juego/Tests/README.md) |
 | F | Repositorio y guía rápida | [`README.md`](README.md) |
+| G | Memoria en LaTeX, PDFs y exportación | [`Entrega/README.md`](Entrega/README.md) |
 
 **Repositorio:** https://github.com/Dafafi63f/Escape-Room.git

@@ -8,7 +8,7 @@ Uso seguro:
   python Files/Scripts/duplicados.py plantillas
 
 Bloqueado (modifica Preguntas.csv): todo --inplace, enunciado --inplace, exacto.
-Ver Memoria_TFG.md §14.4
+Ver Files/Scripts/README.md y Memoria_TFG.md §5.4
 """
 
 from __future__ import annotations

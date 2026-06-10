@@ -1,6 +1,6 @@
 # Revisión manual del banco de preguntas
 
-> Documento **interno** de mantenimiento. El juego usa solo `Data/Preguntas.csv` (redacción **genérica**). **Modos libre, historia y feedback** implementados en consola (ver `Memoria_TFG.md` §11.0).
+> Documento **interno** de mantenimiento. El juego usa solo `Data/Preguntas.csv` (redacción **genérica**). **Modos libre, historia y feedback** implementados en consola (ver `Memoria_TFG.md` §6.2).
 
 Trazabilidad de la revisión manual de `Data/Preguntas.csv`. Actualizar este único fichero al cerrar cada tramo.
 
@@ -8,7 +8,7 @@ Trazabilidad de la revisión manual de `Data/Preguntas.csv`. Actualizar este ún
 **Progreso:** **480 / 480 (100 %)** — banco **12 preguntas/materia** (40 materias), redacción genérica para el juego  
 **Aprobación usuario:** ids **1–480** — **cerrado** (contenido validado por bloques; ver tablas por tramo)  
 **Validación habitual:** `python -c "import sys; sys.path.insert(0,'Files'); from balance_lib import ejecutar_validar; ejecutar_validar(detalle=False)"` — avisos menores de orden canónico en algunas materias (no bloquean el juego)  
-**Mantenimiento 2026-06-03:** `python Files/mantenimiento.py plantillas pipeline` → `criterios` → `auditar-distractores` (comandos: `Memoria_TFG.md` §14.4)
+**Mantenimiento 2026-06-03:** `python Files/Scripts/mantenimiento.py plantillas pipeline` → `criterios` → `auditar-distractores` (comandos: [`Files/Scripts/README.md`](../Files/Scripts/README.md), `Memoria_TFG.md` §5.4)
 
 | Ids | Estado | Materias (listado `Data/listado_materias.csv`) |
 |-----|--------|------------------------------------------------|
@@ -235,7 +235,7 @@ Cálculo: mínimos cuadráticos, holguras, Hessiano \(2I\), complementariedad KK
 
 ### Estado cerrado para uso (2026-06)
 
-**Datos listos:** `Preguntas.csv` (480/480 revisadas), `plantillas.json` (480 filas reflejadas como `dataset_480`, pool extra 24×40, sin duplicados exactos globales), `listado_materias.csv`. Juego modo libre: banco 1 = **MODO SEGURO**; bancos 2–3 = beta. Comprobación: `python Files/mantenimiento.py auditar-plantillas`, `python Files/duplicados.py revisar`.
+**Datos listos:** `Preguntas.csv` (480/480 revisadas), `plantillas.json` (480 filas reflejadas como `dataset_480`, pool extra 24×40, sin duplicados exactos globales), `listado_materias.csv`. Juego modo libre: banco 1 = **MODO SEGURO**; bancos 2–3 = beta. Comprobación: `python Files/Scripts/mantenimiento.py auditar-plantillas`, `python Files/Scripts/mantenimiento.py duplicados revisar`.
 
 ### Calidad / unicidad semántica (futuro — no bloquea el TFG actual)
 
@@ -685,7 +685,7 @@ Cálculo: mínimos cuadráticos, holguras, Hessiano \(2I\), complementariedad KK
 ## Cierre banco 480/480 (2026-06-03)
 
 - **Juego:** partida en **modo libre** (`Juego/juego_cuestionario.py`): banco **1 = dataset revisado (MODO FINAL)**; bancos **2–3 = plantillas (MODO BETA)**. **Historia** y **feedback** (menú o tecla **F**) operativos en consola.
-- **Artefactos sincronizados:** `plantillas.json`, `criterios_clasificacion_materia.csv`, `auditoria_distractores.md`/`.json`, `plantillas_repuesto_catalogo.py`, `Memoria_TFG.md` §5.1 y §14.4.
+- **Artefactos sincronizados:** `plantillas.json`, `criterios_clasificacion_materia.csv`, `plantillas_repuesto_catalogo.py`, `Memoria_TFG.md` §5.1 y §6.1; PDF en `Entrega/`.
 - **Opcional futuro:** id **83** (vanishing gradient en Càlcul DV) podría moverse a Xarxes Neuronals; pulido distractores según auditoría.
 
 ---
@@ -697,8 +697,8 @@ Cálculo: mínimos cuadráticos, holguras, Hessiano \(2I\), complementariedad KK
 - Tras `exportar_criterios_clasificacion_materia.py`, revisar desambiguación en criterios.
 - `plantillas.json` puede tener entradas históricas `"(variante)"`; limpieza puntual si molesta.
 - **Plantillas repuesto:** subtemas que **no** aparecen en las 12 preguntas del CSV → `uso: repuesto` en `plantillas.json` (antes `reserva` en Visualització 3D). Catálogo editable: `Files/plantillas_repuesto_catalogo.py`. Sincronizar tras revisar una materia: `python Files/sincronizar_plantillas_repuesto.py --inplace` (o `--dry-run`). El pool de regeneración (`dataset_pipeline`, `crear_borrar_preguntas`) usa `general` + `repuesto`.
-- **Distractores (A–D):** `python Files/auditar_distractores.py` → informe `Data/auditoria_distractores.md`. Revisa opciones vacías/duplicadas, «Ninguna de las anteriores», filtración de la correcta y desbalance de longitud.
-- **Scripts:** `Memoria_TFG.md` §14.4 — comandos seguros vs `Files/Archivo/`. El CSV está protegido por `utils_banco_cerrado.py` (override: `TFG_PERMITIR_CSV=1`).
+- **Distractores (A–D):** `python Files/Scripts/mantenimiento.py auditar-distractores` (salida en consola; `--json` opcional). Revisa opciones vacías/duplicadas, «Ninguna de las anteriores», filtración de la correcta y desbalance de longitud.
+- **Scripts:** [`Files/Scripts/README.md`](../Files/Scripts/README.md) — comandos seguros vs `Files/Archivo/`. El CSV está protegido por `utils_banco_cerrado.py` (override: `TFG_PERMITIR_CSV=1`).
 - **Mantenimiento plantillas** (banco cerrado): `limpiar_plantillas.py` → `inyectar_dataset_en_plantillas.py` → `sincronizar_plantillas_repuesto.py`. **No** `balance.py conservador` ni regeneradores.
 
 ---

@@ -4,7 +4,7 @@
 LEGACY — deshabilitado (banco cerrado 2026-06-03).
 
 Regeneraba y reclasificaba todo el CSV. No ejecutar.
-Ver Memoria_TFG.md §14.4
+Ver Files/Scripts/README.md
 """
 
 import sys

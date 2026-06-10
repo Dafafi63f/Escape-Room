@@ -136,7 +136,7 @@ def cmd_balance_legacy(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Mantenimiento del TFG (dataset cerrado).",
-        epilog="Ver Memoria_TFG.md §14.4",
+        epilog="Ver Files/Scripts/README.md y Memoria_TFG.md §5.4",
     )
     sub = parser.add_subparsers(dest="comando", required=True)
 
@@ -153,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
     p_ds.add_argument("--variedad", action="store_true")
     p_ds.set_defaults(func=cmd_dataset)
 
-    p_ad = sub.add_parser("auditar-distractores", help="Informe Data/auditoria_distractores.md")
+    p_ad = sub.add_parser("auditar-distractores", help="Auditoría de distractores (salida en consola)")
     p_ad.add_argument("--json", type=str, default="")
     p_ad.add_argument("--solo-dataset", action="store_true")
     p_ad.set_defaults(func=cmd_auditar_distractores)

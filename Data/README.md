@@ -11,7 +11,6 @@ Ficheros que usa el juego y las herramientas de mantenimiento.
 | `Historic_qualificacions_MatCAD_completo.csv` | Histórico de qualificacions — **modo historia** |
 | `Històric_qualificacions_MatCAD.xlsx` | Fuente original del histórico; el juego usa el **CSV** |
 | `revision_manual.md` | Trazabilidad de la revisión manual del banco por bloques de Ids |
-| `auditoria_distractores.md` / `.json` | Informe de calidad de opciones A–D (generado por `auditoria.py`) |
 | `creador_privado.json` | Datos personales y secretos del creador (local, no se versiona) |
 
 El juego resuelve rutas con [`Juego/Consola/rutas.py`](../Juego/Consola/rutas.py): busca una carpeta `Data/` en la raíz del proyecto, en el directorio de trabajo o junto al `.exe` (PyInstaller extrae `Data/` dentro del bundle).
@@ -37,6 +36,8 @@ Banco cerrado (**480** preguntas = **40 materias × 12**), separador `;`, UTF-8.
 Los metadatos curriculares (`curso`, `semestre`, `grupo`, `nivel`, `tematica`) **no** van en el CSV de preguntas; se obtienen de `listado_materias.csv` al cargar o al guardar con `utils_dataset_csv.guardar_filas_csv`.
 
 Validación: `python Files/Scripts/mantenimiento.py validar`
+
+Auditoría de distractores (consola; `--json` opcional): `python Files/Scripts/mantenimiento.py auditar-distractores`
 
 Regeneración histórica del CSV: solo scripts en `Files/Archivo/` con `TFG_PERMITIR_CSV=1`.
 

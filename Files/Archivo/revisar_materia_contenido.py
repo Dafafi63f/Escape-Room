@@ -7,16 +7,8 @@ Con --inplace: borra filas incoherentes y genera preguntas nuevas desde plantill
 (con metadatos coherentes), sin cambiar solo etiquetas sobre el mismo texto.
 
 Ver también: clasificar_pregunta.py --dataset --solo-incoherentes;
-  aplicar_clasificacion_optima.py --inplace (flujo recomendado del banco, Memoria §14.4).
+  aplicar_clasificacion_optima.py --inplace (flujo recomendado del banco; ver Files/Scripts/README.md).
 """
-
-import sys
-from pathlib import Path
-
-_SCRIPTS = Path(__file__).resolve().parent.parent / "Scripts"
-if str(_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(_SCRIPTS))
-
 
 from __future__ import annotations
 

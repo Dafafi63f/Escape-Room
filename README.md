@@ -7,6 +7,7 @@
 Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en consola (modos libre, historia y feedback) y herramientas de mantenimiento del dataset. La capa gráfica escape room / novela queda como evolución futura.
 
 - **Memoria académica (borrador):** [`Memoria_TFG.md`](Memoria_TFG.md)
+- **Memoria para entrega (PDF y LaTeX):** [`Entrega/`](Entrega/README.md)
 - **Repositorio:** https://github.com/Dafafi63f/Escape-Room.git
 
 ```bash
@@ -26,6 +27,7 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | Scripts legado de regeneración CSV | [`Files/Archivo/README.md`](Files/Archivo/README.md) |
 | Pruebas unitarias | [`Juego/Tests/README.md`](Juego/Tests/README.md) |
 | Trazabilidad revisión manual | [`Data/revision_manual.md`](Data/revision_manual.md) |
+| Exportación PDF de la memoria | [`Entrega/README.md`](Entrega/README.md) |
 
 ## Estructura
 
@@ -34,7 +36,19 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | [`Juego/`](Juego/README.md) | Lanzador, paquete [`Consola/`](Juego/Consola/README.md), build opcional del `.exe` |
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
+| [`Entrega/`](Entrega/README.md) | Memoria en LaTeX, PDFs y script de exportación |
+| [`Memoria_TFG.md`](Memoria_TFG.md) | Borrador Markdown de la memoria (raíz) |
 | [`borrar_temporales.py`](borrar_temporales.py) | Limpia `__pycache__` y `.txt` temporales en todo el proyecto |
+
+## Memoria TFG — exportar PDF
+
+El borrador editable está en [`Memoria_TFG.md`](Memoria_TFG.md). Los PDF de entrega y la fuente LaTeX maquetada están en [`Entrega/`](Entrega/README.md):
+
+```bash
+python Entrega/exportar_informe_pdf.py
+```
+
+Genera `Entrega/Memoria_TFG_markdown.pdf` (desde Markdown) y `Entrega/Memoria_TFG_latex.pdf` (desde `Entrega/Memoria_TFG.tex`). Requisitos: MiKTeX o TeX Live (`xelatex`) para LaTeX; `pip install markdown xhtml2pdf` para el PDF desde Markdown. Detalle en [`Entrega/README.md`](Entrega/README.md).
 
 ## Jugar
 
