@@ -14,7 +14,12 @@ Juego/juego_cuestionario.exe
 __pycache__/
 *.txt
 
-# --- Compilación LaTeX (Entrega/exportar_informe_pdf.py --solo-limpiar) ---
+# --- Revisión del tutor (PDF con comentarios; local) ---
+Revision/*
+!Revision/.gitkeep
+!Revision/*.md
+
+# --- Compilación LaTeX (si compilas Memoria_TFG.tex a mano) ---
 Entrega/*.aux
 Entrega/*.log
 Entrega/*.out

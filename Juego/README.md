@@ -21,6 +21,8 @@ python Juego/juego_cuestionario.py
 
 Requisito: Python 3.10+, solo biblioteca estándar. Datos en [`../Data/README.md`](../Data/README.md).
 
+Al arrancar, el lanzador muestra un **tutorial breve** de foco de teclado (hay que hacer clic en la línea `>>` de la terminal para que las teclas respondan). Detalle en [`Consola/entrada_menu.py`](Consola/entrada_menu.py).
+
 ### Modos
 
 | Modo | Estado | Descripción |

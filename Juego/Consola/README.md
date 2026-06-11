@@ -153,4 +153,4 @@ juego_cuestionario.py
     → envio_feedback, config_creador (feedback)
 ```
 
-No hace falta ejecutar nada dentro de esta carpeta; el punto de entrada es `../juego_cuestionario.py`.
+No hace falta ejecutar nada dentro de esta carpeta; el punto de entrada es `../juego_cuestionario.py`. Al arrancar, el lanzador muestra un tutorial breve de foco de teclado (línea `>>`); ver `entrada_menu.py`.

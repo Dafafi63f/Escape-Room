@@ -39,6 +39,15 @@ python Files/Scripts/mantenimiento.py temporales --dry-run
 | `duplicados revisar` / `plantillas` | Ver `duplicados.py` |
 | `temporales` | Limpieza de `__pycache__` bajo `Files/` |
 
+## Simulación de evaluación al azar
+
+```bash
+python Files/Scripts/simulacion_evaluacion_azar.py
+python Files/Scripts/simulacion_evaluacion_azar.py --iteraciones 50000 --preguntas 20
+```
+
+Monte Carlo: respuestas A–D aleatorias sobre el banco cerrado; valida que el azar produce baja nota y agota vidas. Documentado en la memoria (§5.7).
+
 Ver la cabecera de [`mantenimiento.py`](mantenimiento.py) para la lista completa. `pycache` es un alias de `temporales --solo-pycache`.
 
 `balance.py` solo delega `validar`; el resto de comandos de balanceo antiguos están en `Archivo/`.

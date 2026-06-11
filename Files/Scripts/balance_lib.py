@@ -376,7 +376,7 @@ def ejecutar_validar(detalle: bool = False, estricto: bool = False) -> int:
     for m in msgs:
         print(f"  - {m}")
     print(
-        "\nSugerencia: revisar avisos en Data/revision_manual.md; "
+        "\nSugerencia: revisar avisos en Revision/revision_manual_banco.md; "
         "validar con python Files/Scripts/balance.py validar. "
         "No regenerar el banco (cerrado 2026-06-03)."
     )

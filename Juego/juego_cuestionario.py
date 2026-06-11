@@ -3,7 +3,12 @@
 """
 Punto de entrada del cuestionario MATCAD en consola.
 
-La implementación está en Juego/Consola/; este archivo solo arranca el menú.
+Orquesta el flujo de alto nivel (sin lógica de partida):
+  1. Carga datos (materias, plantillas).
+  2. Tutorial de foco de teclado (clic en >> + Enter).
+  3. Bucle: menú principal → modo libre / historia / feedback → volver o salir.
+
+La implementación está en Juego/Consola/.
 
 Uso:
   python Juego/juego_cuestionario.py
@@ -34,10 +39,6 @@ from Consola.navegacion import (
     registrar_atajo_feedback,
 )
 from Consola.rutas import PATH_MATERIAS, PATH_PREGUNTAS, resolver_plantillas
-
-from Consola.datos import cargar_orden_materias  # noqa: F401
-from Consola.modelos import BancoPreguntas, Pregunta  # noqa: F401
-from Consola.rutas import resolver_dataset  # noqa: F401
 
 
 def _mostrar_tutorial_inicio() -> None:

@@ -10,7 +10,6 @@ Ficheros que usa el juego y las herramientas de mantenimiento.
 | `criterios_clasificacion_materia.csv` | Palabras clave por materia (`utils_puntuacion_materia.py`) |
 | `Historic_qualificacions_MatCAD_completo.csv` | Histórico de qualificacions — **modo historia** |
 | `Històric_qualificacions_MatCAD.xlsx` | Fuente original del histórico; el juego usa el **CSV** |
-| `revision_manual.md` | Trazabilidad de la revisión manual del banco por bloques de Ids |
 | `creador_privado.json` | Datos personales y secretos del creador (local, no se versiona) |
 
 El juego resuelve rutas con [`Juego/Consola/rutas.py`](../Juego/Consola/rutas.py): busca una carpeta `Data/` en la raíz del proyecto, en el directorio de trabajo o junto al `.exe` (PyInstaller extrae `Data/` dentro del bundle).
@@ -49,19 +48,9 @@ Definidos en [`Files/Scripts/objetivos_balanceo.py`](../Files/Scripts/objetivos_
 - 12 preguntas por materia (2FT 2MT 2DT 2FC 2MC 2DC)
 - Clasificación semántica orientativa: `utils_clasificacion_pregunta.clasificar_pregunta(...)` contrasta Materia + Tipo + Dificultad inferidos del texto con las columnas del CSV.
 
-## Estado de la revisión manual
+## Revisión manual del banco
 
-**Progreso: 480 / 480** — banco cerrado por el autor (redacción genérica, sin referencias a temario de asignatura).
-
-| Tramo | Ids | Materias (resumen) | Registro |
-|-------|-----|-------------------|----------|
-| Hecho | 1–30 | Àlgebra, Càlcul I, Fonaments | `revision_manual.md` |
-| Hecho | 31–130 | Iniciació … Modelització i Inferència (13 materias) | `revision_manual.md` |
-| Hecho | 131–200 | Tècniques … Optimització (7 materias) | `revision_manual.md` |
-| Hecho | 201–240 | Visualització 3D … Optimització (cierre bloque 20 materias) | `revision_manual.md` |
-| Hecho | 241–480 | Aprenentatge Computacional … Visió per Computador (20 materias) | `revision_manual.md` |
-
-Mantenimiento de artefactos tras cambios: ver cabecera de `revision_manual.md` (`plantillas pipeline`, auditoría de distractores, etc.).
+**Progreso: 480 / 480** — banco cerrado (redacción genérica). El detalle tramo a tramo (Ids 1–480) y el estado global del TFG están en [`Revision/`](../Revision/README.md) (`revision_manual_banco.md`, [`ESTADO.md`](../Revision/ESTADO.md)).
 
 ## Evolución futura del modelo de datos
 

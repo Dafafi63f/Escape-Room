@@ -1,12 +1,20 @@
-# Memoria TFG
+# Diseño y desarrollo de un juego interactivo educativo basado en contenidos del grado en Matemática Computacional y Análisis de Datos
 
 **Alumno:** Daniel Fageda Figueredo · **NIU:** 1601846 · **Tutor:** Víctor Navas Portella
 
-**Título provisional:** Diseño y desarrollo de un videojuego educativo tipo escape room basado en contenidos del grado en Matemática Computacional y Análisis de Datos
+> *Nota sobre el título:* el documento de proyecto inicial planteaba un escape room con interfaz gráfica. El **entregable de este TFG** es el prototipo en consola (banco + tres modos de juego) descrito en esta memoria; la capa gráfica y narrativa queda como evolución futura del mismo proyecto.
 
 El detalle técnico del repositorio (esquema del banco, scripts, arquitectura del juego) se documenta en los [`README.md`](README.md) del proyecto y se cita en los apéndices al final de esta memoria.
 
-**Versión de entrega:** los PDF y la fuente LaTeX maquetada están en [`Entrega/`](Entrega/README.md). Para regenerarlos: `python Entrega/exportar_informe_pdf.py`.
+**Versión de entrega:** dos Word en [`Entrega/`](Entrega/README.md) (`Memoria_TFG_markdown.docx`, `Memoria_TFG_latex.docx`). Regenerar: `python Entrega/exportar_memoria.py`. El PDF lo exportas desde Word tras editar.
+
+---
+
+## Resumen
+
+Se presenta el diseño e implementación de un cuestionario educativo alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos (MatCAD). El entregable incluye un banco cerrado de **480 preguntas** con metadatos curriculares, un juego en consola con tres modos (libre, historia y feedback) y herramientas de validación del dataset. El documento de proyecto inicial planteaba un escape room con interfaz gráfica; se adoptó un enfoque incremental que prioriza el contenido evaluable y el motor de juego antes de la capa narrativa visual. Los resultados muestran un sistema funcional, documentado y extensible; la validación con usuarios y la interfaz gráfica quedan como trabajo futuro.
+
+**Palabras clave:** cuestionario educativo, gamificación, banco de preguntas, autoevaluación, MatCAD, serious games.
 
 ---
 
@@ -14,26 +22,70 @@ El detalle técnico del repositorio (esquema del banco, scripts, arquitectura de
 
 ### 1.1 Contexto
 
-El grado en Matemática Computacional y Análisis de Datos (MatCAD) de la Universitat Autònoma de Barcelona articula un plan de estudios amplio en el que conviven contenidos de matemáticas, computación, estadística, optimización e inteligencia artificial. La evaluación continua y la autoevaluación son piezas habituales del aprendizaje universitario, pero los recursos disponibles para practicar de forma autónoma —cuestionarios genéricos, listas de ejercicios descontextualizadas o plataformas que no reflejan la estructura del grado— suelen ofrecer poca trazabilidad respecto al plan curricular.
+El grado en Matemática Computacional y Análisis de Datos (MatCAD) de la Universitat Autònoma de Barcelona articula un plan de estudios amplio en el que conviven contenidos de matemáticas, computación, estadística, optimización e inteligencia artificial. La evaluación continua y la autoevaluación son piezas habituales del aprendizaje universitario. Muchas herramientas genéricas de práctica (listas de ejercicios, plataformas de preguntas sin metadatos curriculares) **no etiquetan** el contenido según curso, semestre o asignatura del grado; ello dificulta practicar de forma segmentada alineada con el plan de estudios, sin que ello implique que los recursos institucionales del grado sean inadecuados.
 
-Paralelamente, la gamificación y los videojuegos educativos han ganado relevancia como complemento a la enseñanza formal: permiten practicar con retroalimentación inmediata, reducir la ansiedad ante la evaluación en algunos contextos y favorecer la motivación mediante mecánicas de juego (vidas, puntuación, progresión). Los escape rooms educativos y las novelas gráficas interactivas representan un subconjunto de los *serious games* en el que la narrativa envuelve retos cognitivos; sin embargo, su desarrollo completo exige un esfuerzo considerable en diseño gráfico, guion y validación pedagógica.
+Paralelamente, la gamificación y los *serious games* (Michael y Chen, 2005) han ganado relevancia como complemento a la enseñanza formal: permiten practicar con retroalimentación inmediata y pueden favorecer la motivación mediante mecánicas de juego (vidas, puntuación, progresión), según evidencia en contextos educativos digitales (Kiili, 2005; Habgood y Ainsworth, 2011). Los escape rooms educativos y las novelas gráficas interactivas representan un subconjunto de los *serious games* en el que la **narrativa** —secuencia de escenas o salas que contextualizan los retos— envuelve desafíos cognitivos; sin embargo, su desarrollo completo exige un esfuerzo considerable en diseño gráfico, guion y validación pedagógica.
 
 ### 1.2 Motivación
 
 Este Trabajo de Fin de Grado surge de la necesidad de disponer de una herramienta de autoevaluación alineada con las asignaturas del grado, capaz de:
 
-- gestionar un banco de preguntas estructurado y auditable,
+- gestionar un banco de preguntas **estructurado y auditable** (por el autor y el profesorado, mediante reglas automatizadas, revisión manual documentada y scripts de mantenimiento reproducibles),
 - ofrecer una experiencia de juego que incentive la práctica repetida,
 - analizar la calidad del contenido (distractores, duplicados, coherencia curricular),
-- y sentar las bases para modelos pedagógicos más ricos (multiasignatura, prerrequisitos, narrativa).
+- y sentar las bases para modelos pedagógicos más ricos.
+
+En este contexto se entiende por:
+
+- **Gamificación:** uso de elementos de diseño de juego (puntos, vidas, retos, progresión) en un contexto formativo no recreativo (Deterding et al., 2011). En este TFG la gamificación se aplica al cuestionario en consola sin interfaz gráfica.
+- **Banco de preguntas auditable:** conjunto de ítems cuya calidad y estructura pueden revisarse de forma sistemática y reproducible —por el autor y el profesorado— mediante reglas automatizadas (`mantenimiento.py validar`), revisión manual documentada (`Revision/revision_manual_banco.md`) y scripts de auditoría.
+- **Distractores plausibles:** opciones incorrectas (A–D) que un estudiante podría elegir por error conceptual creíble, no por descarte obvio (Haladyna et al., 2002); la revisión manual y la auditoría de distractores comprueban este criterio.
+- **Narrativa (capa pendiente):** secuencia ficcional de escenas o salas que contextualiza los retos (escape room, novela gráfica); en el entregable actual el núcleo evaluable funciona sin esa capa.
+- **Multiasignatura:** una misma pregunta puede relacionarse con más de una materia del grado (p. ej. inferencia estadística compartida entre asignaturas).
+- **Prerrequisitos:** conocimientos de materias previas que una pregunta da por asumidos (p. ej. cálculo multivariable antes de optimización).
 
 La motivación principal es combinar programación, matemáticas y diseño interactivo en una aplicación práctica que consolide conocimientos del grado y que pueda ser extendida por el propio autor o por el profesorado.
 
 ### 1.3 Alcance del entregable
 
-El documento de proyecto inicial planteaba un videojuego tipo escape room con interfaz gráfica. Durante el desarrollo se priorizó la **calidad y estructura del banco de preguntas** y un **prototipo jugable en consola**, decisión metodológica coherente con un enfoque incremental: primero validar el contenido y la lógica de evaluación; después añadir la capa narrativa y gráfica.
+El documento de proyecto inicial planteaba un juego interactivo tipo escape room con interfaz gráfica. Durante el desarrollo se priorizó la **calidad y estructura del banco de preguntas** y un **prototipo jugable en consola**, decisión metodológica coherente con un enfoque incremental: primero validar el contenido y la lógica de evaluación; después añadir la capa narrativa y gráfica.
 
-**Estado actual:** cuestionario en consola con tres modos operativos (libre, historia, feedback), banco de **480 preguntas** revisadas manualmente, herramientas de mantenimiento del dataset y empaquetado opcional en ejecutable Windows. La capa gráfica escape room / novela queda como evolución futura.
+### 1.4 Objetivos derivados del desarrollo
+
+Durante el proyecto surgieron objetivos técnicos no recogidos en el documento inicial pero necesarios para la calidad del entregable:
+
+- Definir un **esquema canónico** del banco (480 preguntas, balance por dificultad, tipo y respuesta correcta).
+- Enriquecer cada pregunta con **metadatos curriculares** (curso, semestre, grupo temático, nivel).
+- Construir un **pipeline de mantenimiento** (validación, auditoría de distractores, deduplicación).
+- Implementar un **modo historia** que genere exámenes balanceados según el histórico de calificaciones del grado (fichero `Historic_qualificacions_MatCAD_completo.csv`).
+
+### 1.5 Marco teórico y estado del arte
+
+#### 1.5.1 Aprendizaje activo y evaluación formativa
+
+El aprendizaje universitario de calidad se asocia a estrategias que sitúan al estudiante en el centro del proceso: resolver problemas, recibir retroalimentación y reflexionar sobre los errores (Biggs, Tang y Kennedy, 2022). La **evaluación formativa** no tiene como única finalidad calificar, sino orientar el aprendizaje mediante información sobre el desempeño y sobre cómo mejorarlo (Nicol y Macfarlane-Dick, 2006).
+
+Los cuestionarios de opción múltiple, cuando están bien diseñados, permiten cubrir un espectro amplio de contenidos con corrección automática. Su efectividad depende de la calidad del ítem: enunciados claros, distractores plausibles y alineación con los resultados de aprendizaje (Haladyna et al., 2002).
+
+#### 1.5.2 Gamificación y aprendizaje basado en juegos
+
+El **aprendizaje basado en juegos digitales** (*game-based learning*) apuesta por experiencias interactivas con reglas claras y retroalimentación inmediata (Prensky, 2003; Gee, 2003). En educación superior **STEM** (ciencia, tecnología, ingeniería y matemáticas), los *serious games* (Michael y Chen, 2005) han mostrado potencial para reforzar conceptos abstractos, con evidencia dependiente del dominio (Kiili, 2005).
+
+#### 1.5.3 Serious games, escape rooms y narrativa
+
+Los *serious games* persiguen un propósito formativo principal (Michael y Chen, 2005). Los escape rooms educativos y las novelas gráficas aportan **narrativa** envolvente (Veldkamp et al., 2020); si no está alineada con los objetivos de aprendizaje, puede distraer (Habgood y Ainsworth, 2011). Este TFG separa la capa evaluable (banco + motor) de la narrativa gráfica pendiente.
+
+#### 1.5.4 Bancos de preguntas y tutoría inteligente
+
+Plataformas como Moodle integran cuestionarios con categorías; los sistemas adaptativos seleccionan ítems según prerrequisitos (Brusilovsky y Peylo, 2003). Este proyecto anticipa esa línea con metadatos curriculares y el modo historia ponderado por calificaciones históricas.
+
+#### 1.5.5 Posicionamiento
+
+Pocas herramientas modelan el **plan completo de un grado** con metadatos curriculares explícitos y código mantenible. La contribución distintiva es triple: alineación curricular (40 materias, 4×2×5), trazabilidad de calidad del banco y arquitectura extensible.
+
+#### 1.5.6 Ítems, distractores fuertes y débiles
+
+En un ítem A–D, las tres opciones incorrectas son **distractores**. Un **distractor fuerte** es plausible para quien no domina el concepto; un **distractor débil** delata el ítem (opciones genéricas, longitudes desiguales, etc.). La auditoría automatizada detecta patrones débiles; la revisión manual valora la plausibilidad pedagógica.
 
 ---
 
@@ -41,88 +93,41 @@ El documento de proyecto inicial planteaba un videojuego tipo escape room con in
 
 ### 2.1 Objetivo general
 
-Diseñar e implementar un videojuego educativo interactivo en el que la progresión del jugador dependa de la resolución de retos basados en contenidos del grado en Matemática Computacional y Análisis de Datos.
+Diseñar e implementar un juego interactivo educativo en el que la progresión del jugador dependa de la resolución de retos basados en contenidos del grado en Matemática Computacional y Análisis de Datos.
 
 ### 2.2 Objetivos específicos
 
-| # | Objetivo | Indicador de logro | Estado |
-|---|----------|-------------------|--------|
-| OE1 | Diseñar una narrativa interactiva como marco de los retos | Guion de escenas/salas vinculadas a materias del grado | Pendiente (futuro) |
-| OE2 | Crear distintos tipos de retos relacionados con las materias | Banco con preguntas de Teoría y Cálculo, tres niveles de dificultad, 40 materias | **Cumplido** |
-| OE3 | Implementar algoritmos que validen las respuestas del jugador | Motor de partida con corrección A–D, puntuación, vidas, informes | **Cumplido** |
-| OE4 | Desarrollar una interfaz gráfica sencilla e intuitiva | Interfaz gráfica de usuario (Pygame u otro motor) | Pendiente (futuro) |
-| OE5 | Evaluar el funcionamiento y el valor formativo del sistema | Banco validado, pruebas unitarias, revisión manual, modo feedback | **Parcialmente cumplido** |
+| # | Objetivo | Indicador de logro |
+|---|----------|-------------------|
+| OE1 | Diseñar una narrativa interactiva como marco de los retos | Guion de escenas/salas vinculadas a materias del grado |
+| OE2 | Crear distintos tipos de retos relacionados con las materias | Banco con preguntas de Teoría y Cálculo, tres niveles de dificultad, 40 materias |
+| OE3 | Implementar algoritmos que validen las respuestas del jugador | Motor de partida con corrección A–D, puntuación, vidas, informes |
+| OE4 | Desarrollar una interfaz gráfica sencilla e intuitiva | Interfaz gráfica de usuario (Pygame u otro motor) |
+| OE5 | Evaluar el funcionamiento y el valor formativo del sistema | Banco validado, pruebas unitarias, revisión manual, modo feedback |
 
-### 2.3 Objetivos derivados del desarrollo
-
-Durante el proyecto surgieron objetivos técnicos no recogidos en el documento inicial pero necesarios para la calidad del entregable:
-
-- Definir un **esquema canónico** del banco (480 preguntas, balance por dificultad, tipo y respuesta correcta).
-- Enriquecer cada pregunta con **metadatos curriculares** (curso, semestre, grupo temático, nivel).
-- Construir un **pipeline de mantenimiento** (validación, auditoría de distractores, deduplicación).
-- Implementar un **modo historia** que genere exámenes balanceados según el histórico de qualificacions del grado.
+El grado de cumplimiento de cada objetivo se discute en la sección 6.
 
 ---
 
-## 3. Marco teórico y estado del arte
-
-### 3.1 Aprendizaje activo y evaluación formativa
-
-El aprendizaje universitario de calidad se asocia a estrategias que sitúan al estudiante en el centro del proceso: resolver problemas, recibir retroalimentación y reflexionar sobre los errores (Biggs y Tang, 2011). La **evaluación formativa** no tiene como única finalidad calificar, sino orientar el aprendizaje mediante información sobre el desempeño y sobre cómo mejorarlo (Nicol y Macfarlane-Dick, 2006).
-
-Los cuestionarios de opción múltiple, cuando están bien diseñados, permiten cubrir un espectro amplio de contenidos con corrección automática. Su efectividad depende de la calidad del ítem: enunciados claros, distractores plausibles y alineación con los resultados de aprendizaje (Haladyna et al., 2002). Un banco estructurado facilita la revisión sistemática y la reutilización por parte del profesorado.
-
-### 3.2 Gamificación y aprendizaje basado en juegos
-
-La **gamificación** introduce elementos de diseño de juegos en contextos no lúdicos (puntos, niveles, retos) para aumentar la participación (Deterding et al., 2011). No debe confundirse con un juego completo: la gamificación puede aplicarse a un cuestionario sin narrativa gráfica, como ocurre en este TFG con vidas, puntuación diferenciada por dificultad y progresión de complejidad.
-
-El **aprendizaje basado en juegos digitales** (*game-based learning*) apuesta por experiencias más inmersivas. Prensky (2001) subraya que los nativos digitales responden favorablemente a entornos interactivos con reglas claras y retroalimentación inmediata. Gee (2003) analiza cómo los buenos videojuegos enseñan mediante tutoriales integrados, dificultad creciente y sentido de competencia.
-
-En el ámbito de la educación superior en STEM, los juegos serios han mostrado potencial para reforzar conceptos abstractos, aunque la evidencia exige estudios concretos por dominio y nivel (Michael y Chen, 2005; Kiili, 2005).
-
-### 3.3 Serious games, escape rooms y narrativa
-
-Los **serious games** son aplicaciones diseñadas con un propósito formativo principal, no meramente recreativo (Michael y Chen, 2005). Los **escape rooms educativos** trasladan la mecánica de salas y puzles encadenados al aula: fomentan el trabajo en equipo, el razonamiento bajo presión temporal y la aplicación de conocimientos en contexto (Veldkamp et al., 2020). Las **novelas gráficas interactivas** aportan narrativa ramificada con menor carga de desarrollo 3D que un motor de juego completo.
-
-El estado del arte muestra que la narrativa incrementa la motivación cuando está alineada con los objetivos de aprendizaje; si no lo está, puede distraer (Habgood y Ainsworth, 2011). Por ello, este TFG separa explícitamente la capa de contenido evaluable (banco + motor de juego) de la capa narrativa aún no implementada.
-
-### 3.4 Bancos de preguntas y sistemas de tutoría inteligente
-
-En ingeniería y ciencias de la computación es habitual disponer de bancos de ejercicios para práctica autónoma. Plataformas como Moodle integran cuestionarios con categorías y estadísticas de uso. Los sistemas adaptativos avanzados modelan el conocimiento del alumno y seleccionan ítems según prerrequisitos (Brusilovsky y Peylo, 2003).
-
-Este proyecto no implementa un modelo de usuario adaptativo completo, pero anticipa esa línea con la propuesta de campos `Materias_relacionadas` y `Prerequisitos` en el esquema de datos, y con el modo historia que pondera materias según el histórico de qualificacions del grado.
-
-### 3.5 Trabajos relacionados y posicionamiento
-
-Existen aplicaciones comerciales y académicas de cuestionarios (Kahoot, Quizlet, AulaWeb, etc.), pero pocas están **específicamente modeladas sobre el plan de estudios completo de un grado concreto** con metadatos curriculares explícitos y código abierto mantenible por el autor.
-
-La contribución distintiva de este TFG respecto a un cuestionario genérico es triple:
-
-1. **Alineación curricular:** 40 materias del grado MatCAD con estructura 4×2×5 y 10 grupos temáticos.
-2. **Trazabilidad de calidad:** revisión manual documentada, auditoría de distractores, detección de duplicados semánticos.
-3. **Arquitectura extensible:** separación datos / motor de juego / modos, preparada para narrativa gráfica futura.
-
----
-
-## 4. Hipótesis de trabajo
+## 3. Hipótesis de trabajo
 
 A partir del marco teórico y del diseño del sistema, se formulan las siguientes hipótesis:
 
-**H1.** Un banco de preguntas estructurado según el plan curricular del grado (materia, dificultad, tipo Teoría/Cálculo) y enriquecido con metadatos académicos (curso, semestre, grupo, nivel) **permite una autoevaluación segmentada** más útil que un cuestionario homogéneo sin esa estructura.
+Las hipótesis se formulan de modo **contrastable** con datos del propio sistema (auditorías, histórico, simulación):
 
-**H2.** La incorporación de mecánicas de juego (vidas, puntuación variable, dificultad progresiva) en un cuestionario de consola **aumenta la motivación para practicar** respecto a un listado estático de preguntas, sin requerir inicialmente una interfaz gráfica compleja.
+**H1.** Un banco estructurado según el plan curricular (materia, dificultad, tipo, metadatos curso/semestre/grupo/nivel) **permite autoevaluación segmentada** verificable mediante los filtros implementados en el modo libre.
 
-**H3.** Un pipeline automatizado de validación y auditoría del banco **detecta inconsistencias** (desequilibrios, distractores débiles, duplicados) que una revisión ad hoc no cubriría de forma sistemática.
+**H2.** Un pipeline automatizado de validación y auditoría **detecta inconsistencias** (desequilibrios, distractores débiles, duplicados) de forma reproducible, con conteos cuantificables en cada ejecución.
 
-**H4.** El uso del histórico de qualificacions del grado para balancear exámenes en el modo historia **aproxima la selección de contenidos** a la estructura real de evaluación del plan de estudios.
+**H3.** El histórico de calificaciones del grado permite **ponderar materias** en el modo historia de forma coherente con estadísticas agregadas (media, tasa de suspensos, índice de dificultad por asignatura).
 
-> **Nota metodológica:** H1 y H3 se apoyan en el diseño del banco y en los informes de auditoría generados. H2 y H4 requerirían un estudio con usuarios (cuestionario de usabilidad, comparación pre/post) que queda fuera del alcance de esta primera versión pero se señala como validación empírica futura.
+> **Nota metodológica:** **H1** y **H2** se contrastan con informes de auditoría y validación estructural. **H3** se apoya en el análisis de 8818 registros del CSV histórico (véase §5.6). La hipótesis sobre **motivación** (gamificación vs. listado estático) no se incluye por falta de indicadores de usuario en este TFG; se traslada a trabajo futuro (§6.6 y §7).
 
 ---
 
-## 5. Metodología
+## 4. Metodología
 
-### 5.1 Enfoque general
+### 4.1 Enfoque general
 
 El desarrollo siguió una **metodología incremental** en cuatro fases, alineada con el documento de proyecto:
 
@@ -133,11 +138,11 @@ El desarrollo siguió una **metodología incremental** en cuatro fases, alineada
 
 El control de versiones con Git permitió iterar sobre el banco y el código de forma trazable. El repositorio público facilita la reproducibilidad del trabajo.
 
-### 5.2 Diseño del banco de preguntas
+### 4.2 Diseño del banco de preguntas
 
 **Población de ítems:** 40 materias del grado MatCAD × 12 preguntas = **480 ítems**.
 
-**Esquema por materia:** 2FT 2MT 2DT 2FC 2MC 2DC (6 de Teoría + 6 de Cálculo, escalón Fácil → Media → Difícil en cada mitad).
+**Esquema por materia:** notación `2FT 2MT 2DT 2FC 2MC 2DC`, donde la letra indica **T**eoría o **C**álculo y la inicial **F**ácil, **M**edia o **D**ifícil (p. ej. `2FT` = dos preguntas de Teoría Fácil). En total: 6 de Teoría + 6 de Cálculo, con escalón Fácil → Media → Difícil en cada mitad.
 
 **Reparto global:**
 
@@ -149,13 +154,13 @@ El control de versiones con Git permitió iterar sobre el banco y el código de 
 
 **Metadatos curriculares** en `listado_materias.csv`: `Grupo`, `Nivel`, `Curso`, `Semestre`, `Tematica` (10 grupos temáticos globales).
 
-**Revisión de contenido:** revisión manual por bloques de Ids (1–480), con registro en `Data/revision_manual.md`. Criterios: redacción genérica, coherencia con el nivel de la materia, distractores plausibles, ausencia de referencias a temarios internos de asignatura.
+**Revisión de contenido:** revisión manual por bloques de Ids (1–480), con registro en `Revision/revision_manual_banco.md`. Criterios: redacción genérica, coherencia con el nivel de la materia, distractores plausibles, ausencia de referencias a temarios internos de asignatura.
 
 **Validación automatizada:** comando `mantenimiento.py validar` comprueba balance, orden canónico e integridad de columnas. Auditoría de distractores y detección de duplicados semánticos mediante scripts dedicados.
 
 Detalle técnico: [`Data/README.md`](Data/README.md).
 
-### 5.3 Diseño e implementación del software
+### 4.3 Diseño e implementación del software
 
 **Stack tecnológico:**
 
@@ -172,6 +177,15 @@ Lanzador (juego_cuestionario.py)
             → Capa de datos (CSV, metadatos, plantillas)
 ```
 
+| Capa | Módulos principales | Función |
+|------|---------------------|---------|
+| Lanzador | `juego_cuestionario.py` | Menú, tutorial de teclado, bucle de modos |
+| Modos | `modo_libre.py`<br>`modo_historia.py`<br>`modo_feedback.py` | Flujos pedagógicos distintos |
+| Motor | `motor_partida.py`<br>`reglas_partida.py`<br>`politica_reglas.py` | Preguntas, vidas, puntuación, informes |
+| Datos | `datos.py`<br>`modelos.py`<br>`rutas.py` | Carga CSV/JSON, metadatos, rutas |
+| Interacción | `consola.py`<br>`entrada_menu.py`<br>`navegacion.py` | Teclas, menús, pausa, ayuda |
+| Historia | `generador_examen_historia.py` | Ponderación según histórico de calificaciones |
+
 **Modos implementados:**
 
 | Modo | Función pedagógica |
@@ -180,24 +194,33 @@ Lanzador (juego_cuestionario.py)
 | **Historia** | Simulación de examen balanceado según histórico de qualificacions del grado |
 | **Feedback** | Canal de mejora continua (bugs, sugerencias) hacia el creador |
 
-**Mecánicas de juego:** dificultad global progresiva (sube cada tres preguntas), puntuación +10/+20/+30 según dificultad, penalización por error, 3 vidas por partida, informe al cerrar en modo examen.
+**Evaluación del jugador (motor de partida):** el sistema corrige cada respuesta comparando la letra elegida (A–D) con el campo `Correcta` del ítem (`motor_partida.py`). Según el preset de reglas:
 
-Detalle técnico: [`Juego/Consola/README.md`](Juego/Consola/README.md).
+| Mecanismo | Comportamiento |
+|-----------|----------------|
+| **Corrección inmediata** | En modo arcade/repaso: acierto → mensaje y, si aplica, suma de puntos; fallo → resta de vida y/o penalización de puntos, opcionalmente muestra la solución. |
+| **Corrección al final** | En modo examen (historia): no hay feedback durante el bloque; al cerrar se genera informe con nota y detalle pregunta a pregunta. |
+| **Puntuación arcade** | +10 / +20 / +30 por acierto (Fácil / Media / Difícil); penalización en fallo: al menos 5 puntos o la mitad del valor base. |
+| **Nota / porcentaje** | `nota = 10 × aciertos / total` o porcentaje equivalente cuando el preset usa sistema NOTA o PORCENTAJE. |
+| **Vidas** | Por defecto 3; cada error resta una vida; la partida termina al llegar a 0 (antes de completar el objetivo de preguntas). |
+| **Dificultad progresiva** | En modo libre arcade: la dificultad global del pool sube cada tres preguntas respondidas. |
+| **Tiempo** | Opcional por pregunta o total; si se agota, la respuesta cuenta como fallo. |
 
-### 5.4 Validación y aseguramiento de la calidad
+### 4.4 Validación y aseguramiento de la calidad
 
 | Actividad | Herramienta / método |
 |-----------|---------------------|
 | Balance estructural del CSV | `mantenimiento.py validar` |
-| Revisión manual del contenido | Bloques documentados en `revision_manual.md` |
+| Revisión manual del contenido | Bloques documentados en `Revision/revision_manual_banco.md` |
 | Auditoría de distractores | `mantenimiento.py auditar-distractores` (consola; `--json` opcional) |
 | Duplicados semánticos | `duplicados.py revisar` |
 | Pruebas de regresión del juego | `python -m unittest discover -s Juego/Tests -v` |
-| Revisión con profesorado | Identificación de solapamiento temático y prerrequisitos (véase sección 8) |
+| Revisión con profesorado | Identificación de solapamiento temático y prerrequisitos (véase sección 7) |
+| Simulación Monte Carlo (respuestas al azar) | `simulacion_evaluacion_azar.py` (véase §5.7) |
 
 El banco de producción (`Preguntas.csv`) se declaró **cerrado** en junio de 2026; las escrituras en el CSV requieren `TFG_PERMITIR_CSV=1` para evitar modificaciones accidentales.
 
-### 5.5 Criterios de éxito
+### 4.5 Criterios de éxito
 
 Se consideró exitoso el entregable si:
 
@@ -208,9 +231,9 @@ Se consideró exitoso el entregable si:
 
 ---
 
-## 6. Resultados
+## 5. Resultados
 
-### 6.1 Banco de preguntas
+### 5.1 Banco de preguntas
 
 Se obtuvo un banco cerrado de **480 preguntas** con las siguientes propiedades verificadas:
 
@@ -221,13 +244,15 @@ Se obtuvo un banco cerrado de **480 preguntas** con las siguientes propiedades v
 
 El banco distingue **modo seguro** (solo dataset revisado) y **modo beta** (pool ampliado con plantillas no revisadas, hasta 1440 ítems jugables), dejando clara la trazabilidad para evaluación formal del TFG.
 
-### 6.2 Aplicación de juego
+### 5.2 Aplicación de juego
+
+**Estado del entregable:** cuestionario en consola con tres modos operativos (libre, historia, feedback), banco de **480 preguntas** revisadas manualmente, herramientas de mantenimiento del dataset y empaquetado opcional en ejecutable Windows. La capa gráfica escape room / novela queda como evolución futura. **No se ha utilizado Pygame ni otro motor gráfico** en esta versión; la interfaz es exclusivamente textual en terminal.
 
 Se entregó un cuestionario en consola funcional:
 
 | Componente | Resultado |
 |------------|-----------|
-| Lanzador | `Juego/juego_cuestionario.py` |
+| Lanzador | `Juego/juego_cuestionario.py` (tutorial de foco de teclado al inicio) |
 | Paquete de lógica | `Juego/Consola/` (18 módulos) |
 | Modo libre | Filtros multidimensionales, informes `.txt` |
 | Modo historia | Generador de examen según `Historic_qualificacions_MatCAD_completo.csv` |
@@ -235,22 +260,45 @@ Se entregó un cuestionario en consola funcional:
 | Ejecutable | Build opcional con PyInstaller |
 | Pruebas | Suite en `Juego/Tests/` (informes, entrada, feedback, configuración) |
 
-### 6.3 Organización curricular modelada
+### 5.3 Organización curricular modelada
 
-Las 40 materias se distribuyen en:
+Las 40 materias se distribuyen en **4 cursos × 2 semestres × 5 materias** (tabla 1). Los metadatos provienen de `listado_materias.csv`.
 
-- **4 cursos** × **2 semestres** × **5 materias**.
-- **10 grupos temáticos** (álgebra, cálculo, sistemas, programación, algoritmia, métodos numéricos, probabilidad y datos, bases de datos, IA, modelización física).
+**Tabla 1.** Materias por curso y semestre (5 por celda → 40 en total).
+
+| Curso | Semestre 1 | Semestre 2 |
+|-------|------------|------------|
+| 1 | 5 | 5 |
+| 2 | 5 | 5 |
+| 3 | 5 | 5 |
+| 4 | 5 | 5 |
+
+Transversalmente, las materias se agrupan en **10 grupos temáticos** (tabla 2). El grupo no coincide con el curso: varias materias del mismo bloque temático se imparten en etapas distintas del grado.
+
+**Tabla 2.** Grupos temáticos y número de materias.
+
+| Grupo | Materias | Temática (resumen) |
+|-------|----------|-------------------|
+| G1 | 2 | Álgebra y geometría / visualización |
+| G2 | 5 | Cálculo y ecuaciones |
+| G3 | 4 | Sistemas y seguridad computacional |
+| G4 | 2 | Programación de software |
+| G5 | 4 | Algoritmia y teoría de juegos |
+| G6 | 4 | Métodos numéricos y optimización |
+| G7 | 8 | Probabilidad y ciencia de datos |
+| G8 | 3 | Bases de datos |
+| G9 | 4 | Inteligencia artificial y aprendizaje automático |
+| G10 | 4 | Modelización física e información |
 
 Cada pregunta se enriquece al cargar con `curso`, `semestre`, `grupo`, `nivel` y `tematica`, lo que habilita filtros de partida alineados con la etapa formativa del estudiante.
 
-Diagramas: [`Data/README.md`](Data/README.md).
+Diagrama detallado (40 materias con posición curricular): [`Data/README.md`](Data/README.md#jerarquía-curricular-40-materias).
 
-### 6.4 Herramientas de mantenimiento
+### 5.4 Herramientas de mantenimiento
 
 Se desarrolló un conjunto de scripts en `Files/Scripts/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida en consola), deduplicación y estadísticas del histórico de qualificacions. Los scripts de regeneración masiva del CSV se aislaron en `Files/Archivo/` con protección de banco cerrado. Catálogo de comandos: [`Files/Scripts/README.md`](Files/Scripts/README.md).
 
-### 6.5 Síntesis cuantitativa
+### 5.5 Síntesis cuantitativa
 
 | Métrica | Valor |
 |---------|-------|
@@ -261,17 +309,59 @@ Se desarrolló un conjunto de scripts en `Files/Scripts/` con punto de entrada u
 | Pruebas unitarias | 4 módulos de test |
 | Grupos temáticos modelados | 10 |
 
+### 5.6 Validación analítica del modo historia (H3)
+
+La hipótesis H3 se contrasta con el histórico institucional `Historic_qualificacions_MatCAD_completo.csv` (**8818** registros de calificaciones), del que se derivan estadísticas agregadas por asignatura para las **40** materias del listado del grado.
+
+**Procedimiento** (implementado en `generador_examen_historia.py`):
+
+1. Por cada materia: media numérica, tasa de suspensos (nota &lt; 5) e **índice de dificultad** \(0..1\) combinando ambos indicadores.
+2. El generador de exámenes asigna **pesos** a las materias según el perfil elegido (p. ej. perfil *refuerzo* incrementa el peso de materias con índice alto).
+3. Por materia seleccionada, se rellenan *slots* canónicos Teoría/Cálculo × Fácil/Media/Difícil con preguntas del banco cerrado.
+
+**Ejemplo de materias con mayor índice de dificultad** en el histórico agregado (muestra ilustrativa):
+
+| Materia | Índice | Media | Tasa suspensos | Registros |
+|---------|--------|-------|----------------|-----------|
+| Càlcul en Diverses Variables | 0,026 | 5,66 | 22,9 % | 341 |
+| Probabilitat | 0,021 | 5,65 | 21,6 % | 343 |
+| Anàlisi Complexa i de Fourier | 0,008 | 5,55 | 16,3 % | 258 |
+
+Estos valores orientan la ponderación del modo historia; un piloto con estudiantes permitiría contrastar si los exámenes generados se perciben alineados con la exigencia real del grado.
+
+### 5.7 Simulación Monte Carlo de la evaluación (respuestas al azar)
+
+Para validar que el motor de corrección penaliza el azar como cabría esperar en un examen tipo test, se implementó `Files/Scripts/simulacion_evaluacion_azar.py`: en cada iteración se elige una respuesta uniforme A–D por pregunta (probabilidad teórica de acierto 25 %). Se ejecutaron **50 000** partidas simuladas de **20** preguntas sobre el banco cerrado (semilla 42).
+
+| Escenario | Métrica | Resultado |
+|-----------|---------|-----------|
+| Modo examen (sin vidas) | Fracción media de aciertos | **24,98 %** (≈ 25 % teórico) |
+| Modo examen | Nota media /10 | **2,5** |
+| Modo arcade (3 vidas) | Partidas que agotan vidas antes de 20 preguntas | **100 %** |
+| Modo arcade | Preguntas respondidas de media | **4,0** / 20 |
+| Modo arcade | Puntos medios | **−10,0** |
+
+El azar produce suspensión sistemática y, con vidas limitadas, impide completar bloques largos sin conocimiento real. Comando: `python Files/Scripts/simulacion_evaluacion_azar.py`.
+
 ---
 
-## 7. Discusión
+## 6. Discusión
 
-### 7.1 Cumplimiento de los objetivos
+### 6.1 Cumplimiento de los objetivos
 
 El **objetivo general** se cumple de forma parcial: existe un juego educativo interactivo basado en contenidos del grado, pero la progresión narrativa tipo escape room no está implementada. La progresión actual es ludificada (vidas, puntos, dificultad creciente) y curricular (filtros por etapa del grado).
 
+| # | Objetivo | Estado | Comentario |
+|---|----------|--------|------------|
+| OE1 | Narrativa interactiva | Pendiente (futuro) | Sin guion de escenas/salas implementado |
+| OE2 | Retos por materias | **Cumplido** | Banco 480 ítems, Teoría/Cálculo, tres dificultades |
+| OE3 | Validación de respuestas | **Cumplido** | Motor A–D, puntuación, vidas, informes |
+| OE4 | Interfaz gráfica | Pendiente (futuro) | Solo consola; Pygame no utilizado |
+| OE5 | Valor formativo | **Parcialmente cumplido** | Banco validado y tests; sin estudio con usuarios |
+
 Los **objetivos específicos** OE2, OE3 y OE5 están cubiertos en su versión de consola. OE1 y OE4 (narrativa gráfica e interfaz visual) quedan explícitamente como trabajo futuro. Esta decisión es defendible: el prototipo valida el núcleo evaluable sin el coste de desarrollo gráfico, en línea con el principio de prototipado incremental en ingeniería del software.
 
-### 7.2 Validez del banco de preguntas
+### 6.2 Validez del banco de preguntas
 
 La **validez de contenido** se abordó mediante revisión manual exhaustiva y criterios de redacción acordados. La **validez estructural** se garantiza con reglas de balance automatizadas. Quedan abiertas:
 
@@ -285,7 +375,7 @@ La revisión con profesorado puso de manifiesto limitaciones del modelo de una s
 
 Estas observaciones motivan la propuesta de campos `Materias_relacionadas` y `Prerequisitos` en futuras versiones del esquema.
 
-### 7.3 Utilidad para autoevaluación y apoyo docente
+### 6.3 Utilidad para autoevaluación y apoyo docente
 
 El sistema permite al estudiante:
 
@@ -297,16 +387,15 @@ Para el profesorado, el banco estructurado y los scripts de auditoría facilitan
 
 La interfaz en consola limita la accesibilidad para usuarios no familiarizados con terminal; el tutorial de foco de teclado al inicio mitiga parte de esa barrera, pero una GUI sería deseable para despliegue masivo.
 
-### 7.4 Relación con las hipótesis
+### 6.4 Relación con las hipótesis
 
 | Hipótesis | Valoración |
 |-----------|------------|
-| **H1** | Apoyada por diseño: filtros curriculares operativos; falta estudio comparativo con usuarios |
-| **H2** | Plausible por diseño; no contrastada empíricamente en este TFG |
-| **H3** | Apoyada: auditorías detectan desequilibrios y distractores débiles de forma reproducible |
-| **H4** | Apoyada por implementación del modo historia; no validada con cohorte de estudiantes |
+| **H1** | Apoyada: filtros curriculares operativos en modo libre |
+| **H2** | Apoyada: auditorías y validación con conteos reproducibles |
+| **H3** | Apoyada: modo historia + histórico (8818 registros); véase §5.6 |
 
-### 7.5 Limitaciones del estudio
+### 6.5 Limitaciones del estudio
 
 1. **Sin estudio de usuarios:** no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes.
 2. **Interfaz en consola:** reduce el atractivo visual respecto al escape room planteado inicialmente.
@@ -314,17 +403,17 @@ La interfaz en consola limita la accesibilidad para usuarios no familiarizados c
 4. **Idioma del banco:** preguntas en castellano/catalán según materia; coherencia terminológica revisada pero mejorable.
 5. **Modo beta:** pool ampliado con plantillas no revisadas; debe distinguirse del banco de producción en cualquier evaluación formal.
 
-### 7.6 Trabajo futuro
+### 6.6 Trabajo futuro
 
 - Implementar `Materias_relacionadas` y `Prerequisitos` en el CSV y en los filtros del juego.
 - Desarrollar la capa gráfica escape room / novela gráfica del documento de proyecto.
-- Realizar un **piloto con estudiantes** del grado (cuestionario SUS, entrevistas, comparación de rendimiento).
+- **Motivación y gamificación:** contrastar si las mecánicas de juego aumentan la práctica respecto a un listado estático —requiere piloto con usuarios (n ≈ 15–20, cuestionario SUS, tiempo de práctica, preferencia declarada)—; no formulado como hipótesis contrastada en este TFG por ausencia de datos de usuario.
 - Sustituir los pares de ítems semánticamente similares detectados por la auditoría.
 - Explorar integración con plataformas institucionales (Moodle, AulaWeb).
 
 ---
 
-## 8. Conclusiones
+## 7. Conclusiones
 
 Este Trabajo de Fin de Grado ha diseñado e implementado un **sistema de cuestionarios académicos** alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos, integrando:
 
@@ -337,19 +426,21 @@ La principal contribución académica es pasar de un cuestionario genérico a un
 
 En el plano personal, el proyecto ha consolidado competencias de programación en Python, diseño de datos, ingeniería de software incremental y reflexión pedagógica sobre la evaluación en grados STEM interdisciplinares.
 
-Las líneas futuras más inmediatas son la validación con usuarios reales, el enriquecimiento del modelo de datos con multiasignatura y prerrequisitos, y el desarrollo de la interfaz gráfica prevista en el documento de proyecto.
+Las líneas futuras más inmediatas son la validación con usuarios reales (incluida la motivación frente a un listado estático), el enriquecimiento del modelo de datos con multiasignatura y prerrequisitos, y el desarrollo de la interfaz gráfica prevista en el documento de proyecto.
+
+La simulación Monte Carlo (§5.7) aporta una primera validación cuantitativa del motor de evaluación: el azar no permite aprobar ni completar partidas largas con vidas limitadas.
 
 ---
 
-## 9. Bibliografía
+## 8. Bibliografía
 
-Biggs, J., y Tang, C. (2011). *Teaching for Quality Learning at University* (4.ª ed.). Open University Press.
+Biggs, J., Tang, C., y Kennedy, G. (2022). *Teaching for Quality Learning at University* (5.ª ed.). McGraw-Hill Education (UK).
 
 Brusilovsky, P., y Peylo, C. (2003). Adaptive and intelligent web-based educational systems. *International Journal of Artificial Intelligence in Education*, *13*(2–4), 159–172.
 
 Deterding, S., Dixon, D., Khaled, R., y Nacke, L. (2011). From game design elements to gamefulness: Defining "gamification". En *Proceedings of the 15th International Academic MindTrek Conference* (pp. 9–15). ACM. https://doi.org/10.1145/2181037.2181040
 
-Gee, J. P. (2003). *What Video Games Have to Teach Us About Learning and Literacy*. Palgrave Macmillan.
+Gee, J. P. (2003). What video games have to teach us about learning and literacy. *Computers in Entertainment*, *1*(1), 20. https://doi.org/10.1145/950566.950595
 
 Habgood, M. P. J., y Ainsworth, S. E. (2011). Motivating children to learn effectively: Exploring the use of intrinsic and extrinsic motivation in educational games. *British Journal of Educational Technology*, *42*(2), 183–200. https://doi.org/10.1111/j.1467-8535.2009.01034.x
 
@@ -361,7 +452,7 @@ Michael, D. R., y Chen, S. L. (2005). *Serious Games: Games That Educate, Train,
 
 Nicol, D. J., y Macfarlane-Dick, D. (2006). Formative assessment and self-regulated learning: A model and seven principles of good feedback practice. *Studies in Higher Education*, *31*(2), 199–218. https://doi.org/10.1080/03075070600572090
 
-Prensky, M. (2001). *Digital Game-Based Learning*. McGraw-Hill.
+Prensky, M. (2003). Digital game-based learning. *Computers in Entertainment*, *1*(1), 21. https://doi.org/10.1145/950566.950596
 
 Veldkamp, A., van de Grint, L., Knippels, M. C. P. J., y van Joolingen, W. R. (2020). Escape education: A systematic review on escape rooms in education. *Educational Research Review*, *31*, 100364. https://doi.org/10.1016/j.edurev.2020.100364
 
@@ -371,12 +462,13 @@ Veldkamp, A., van de Grint, L., Knippels, M. C. P. J., y van Joolingen, W. R. (2
 
 | Apéndice | Contenido | Enlace |
 |----------|-----------|--------|
-| A | Esquema del banco, revisión manual, diagramas curriculares | [`Data/README.md`](Data/README.md) |
+| A | Esquema del banco y diagramas curriculares | [`Data/README.md`](Data/README.md) |
+| H | Estado del proyecto y trazabilidad revisión manual (Ids 1–480) | [`Revision/ESTADO.md`](Revision/ESTADO.md), [`revision_manual_banco.md`](Revision/revision_manual_banco.md) |
 | B | Arquitectura del juego, modos, puntuación, bancos beta | [`Juego/Consola/README.md`](Juego/Consola/README.md) |
 | C | Scripts de mantenimiento, balanceo, auditorías | [`Files/Scripts/README.md`](Files/Scripts/README.md) |
 | D | Scripts legado de regeneración CSV | [`Files/Archivo/README.md`](Files/Archivo/README.md) |
 | E | Pruebas unitarias | [`Juego/Tests/README.md`](Juego/Tests/README.md) |
 | F | Repositorio y guía rápida | [`README.md`](README.md) |
-| G | Memoria en LaTeX, PDFs y exportación | [`Entrega/README.md`](Entrega/README.md) |
+| G | LaTeX, Word y exportación | [`Entrega/README.md`](Entrega/README.md) |
 
 **Repositorio:** https://github.com/Dafafi63f/Escape-Room.git

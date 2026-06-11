@@ -1,14 +1,14 @@
 # Revisión manual del banco de preguntas
 
-> Documento **interno** de mantenimiento. El juego usa solo `Data/Preguntas.csv` (redacción **genérica**). **Modos libre, historia y feedback** implementados en consola (ver `Memoria_TFG.md` §6.2).
+> Trazabilidad **por Ids** del banco `Data/Preguntas.csv` (redacción genérica). Estado global del TFG: [`ESTADO.md`](ESTADO.md). No duplicar el resumen aquí: actualizar [`ESTADO.md`](ESTADO.md) al cerrar cada bloque.
 
-Trazabilidad de la revisión manual de `Data/Preguntas.csv`. Actualizar este único fichero al cerrar cada tramo.
+Trazabilidad de la revisión manual del banco. Actualizar este fichero (detalle) y [`ESTADO.md`](ESTADO.md) (resumen) al cerrar cada tramo.
 
 **Última actualización:** 2026-06-03  
 **Progreso:** **480 / 480 (100 %)** — banco **12 preguntas/materia** (40 materias), redacción genérica para el juego  
 **Aprobación usuario:** ids **1–480** — **cerrado** (contenido validado por bloques; ver tablas por tramo)  
 **Validación habitual:** `python -c "import sys; sys.path.insert(0,'Files'); from balance_lib import ejecutar_validar; ejecutar_validar(detalle=False)"` — avisos menores de orden canónico en algunas materias (no bloquean el juego)  
-**Mantenimiento 2026-06-03:** `python Files/Scripts/mantenimiento.py plantillas pipeline` → `criterios` → `auditar-distractores` (comandos: [`Files/Scripts/README.md`](../Files/Scripts/README.md), `Memoria_TFG.md` §5.4)
+**Mantenimiento 2026-06-03:** `python Files/Scripts/mantenimiento.py plantillas pipeline` → `criterios` → `auditar-distractores` (comandos: [`Files/Scripts/README.md`](../Files/Scripts/README.md))
 
 | Ids | Estado | Materias (listado `Data/listado_materias.csv`) |
 |-----|--------|------------------------------------------------|
@@ -685,7 +685,7 @@ Cálculo: mínimos cuadráticos, holguras, Hessiano \(2I\), complementariedad KK
 ## Cierre banco 480/480 (2026-06-03)
 
 - **Juego:** partida en **modo libre** (`Juego/juego_cuestionario.py`): banco **1 = dataset revisado (MODO FINAL)**; bancos **2–3 = plantillas (MODO BETA)**. **Historia** y **feedback** (menú o tecla **F**) operativos en consola.
-- **Artefactos sincronizados:** `plantillas.json`, `criterios_clasificacion_materia.csv`, `plantillas_repuesto_catalogo.py`, `Memoria_TFG.md` §5.1 y §6.1; PDF en `Entrega/`.
+- **Artefactos sincronizados:** `plantillas.json`, `criterios_clasificacion_materia.csv`, `plantillas_repuesto_catalogo.py`, `Memoria_TFG.md` §5.1 y §6.1; Word en `Entrega/`.
 - **Opcional futuro:** id **83** (vanishing gradient en Càlcul DV) podría moverse a Xarxes Neuronals; pulido distractores según auditoría.
 
 ---
@@ -738,5 +738,5 @@ python -c "import sys;sys.path.insert(0,'Files');from balance_lib import ejecuta
 
 1. Revisar sección **Pendientes** arriba.
 2. Tras cambios, validar con `ejecutar_validar`.
-3. Actualizar **este** `revision_manual.md` (tabla de progreso + bloque nuevo).
+3. Actualizar **`revision_manual_banco.md`** (detalle) y [`ESTADO.md`](ESTADO.md) (resumen + bitácora).
 4. Si aplica: `fix_final_materias.py` + `sync_plantillas_materias.py --inyectar`.
