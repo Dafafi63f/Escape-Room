@@ -6,9 +6,8 @@
 
 El detalle técnico del repositorio (esquema del banco, scripts, arquitectura del juego) se documenta en los [`README.md`](README.md) del proyecto y se cita en los apéndices al final de esta memoria.
 
-**Versión de entrega:** dos Word en [`Entrega/`](Entrega/README.md) (`Memoria_TFG_markdown.docx`, `Memoria_TFG_latex.docx`). Regenerar: `python Entrega/exportar_memoria.py`. El PDF lo exportas desde Word tras editar.
+**Versión de entrega:** dos Word en [`Entrega/Memoria/`](Entrega/README.md) (`Memoria_TFG_markdown.docx`, `Memoria_TFG_latex.docx`). Figuras en [`Entrega/Figuras/`](Entrega/Figuras/README.md). Regenerar figuras: `python Entrega/generar_figuras_memoria.py`. Regenerar Word: `python Entrega/exportar_memoria.py`. El PDF lo exportas desde Word tras editar.
 
----
 
 ## Resumen
 
@@ -16,7 +15,6 @@ Se presenta el diseño e implementación de un cuestionario educativo alineado c
 
 **Palabras clave:** cuestionario educativo, gamificación, banco de preguntas, autoevaluación, MatCAD, serious games.
 
----
 
 ## 1. Introducción
 
@@ -28,21 +26,9 @@ Paralelamente, la gamificación y los *serious games* (Michael y Chen, 2005) han
 
 ### 1.2 Motivación
 
-Este Trabajo de Fin de Grado surge de la necesidad de disponer de una herramienta de autoevaluación alineada con las asignaturas del grado, capaz de:
+Este Trabajo de Fin de Grado surge de la necesidad de disponer de una herramienta de autoevaluación alineada con las asignaturas del grado. El sistema debe gestionar un banco de preguntas **estructurado y auditable** —mediante reglas automatizadas, revisión manual documentada y scripts de mantenimiento reproducibles—, ofrecer una experiencia de juego que incentive la práctica repetida, permitir analizar la calidad del contenido (distractores, duplicados, coherencia curricular) y sentar las bases para modelos pedagógicos más ricos.
 
-- gestionar un banco de preguntas **estructurado y auditable** (por el autor y el profesorado, mediante reglas automatizadas, revisión manual documentada y scripts de mantenimiento reproducibles),
-- ofrecer una experiencia de juego que incentive la práctica repetida,
-- analizar la calidad del contenido (distractores, duplicados, coherencia curricular),
-- y sentar las bases para modelos pedagógicos más ricos.
-
-En este contexto se entiende por:
-
-- **Gamificación:** uso de elementos de diseño de juego (puntos, vidas, retos, progresión) en un contexto formativo no recreativo (Deterding et al., 2011). En este TFG la gamificación se aplica al cuestionario en consola sin interfaz gráfica.
-- **Banco de preguntas auditable:** conjunto de ítems cuya calidad y estructura pueden revisarse de forma sistemática y reproducible —por el autor y el profesorado— mediante reglas automatizadas (`mantenimiento.py validar`), revisión manual documentada (`Revision/revision_manual_banco.md`) y scripts de auditoría.
-- **Distractores plausibles:** opciones incorrectas (A–D) que un estudiante podría elegir por error conceptual creíble, no por descarte obvio (Haladyna et al., 2002); la revisión manual y la auditoría de distractores comprueban este criterio.
-- **Narrativa (capa pendiente):** secuencia ficcional de escenas o salas que contextualiza los retos (escape room, novela gráfica); en el entregable actual el núcleo evaluable funciona sin esa capa.
-- **Multiasignatura:** una misma pregunta puede relacionarse con más de una materia del grado (p. ej. inferencia estadística compartida entre asignaturas).
-- **Prerrequisitos:** conocimientos de materias previas que una pregunta da por asumidos (p. ej. cálculo multivariable antes de optimización).
+En este contexto, **gamificación** designa el uso de elementos de diseño de juego (puntos, vidas, retos, progresión) en un contexto formativo no recreativo (Deterding et al., 2011); en este TFG se aplica al cuestionario en consola sin interfaz gráfica. Un **banco de preguntas auditable** es un conjunto de ítems cuya calidad y estructura pueden revisarse de forma sistemática mediante `mantenimiento.py validar`, la revisión manual (`Revision/revision_manual_banco.md`) y scripts de auditoría. Los **distractores plausibles** son opciones incorrectas creíbles para quien no domina el concepto (Haladyna et al., 2002). La **narrativa** (capa pendiente) sería la secuencia ficcional de escenas que contextualiza los retos; el entregable actual funciona sin ella. Por **multiasignatura** y **prerrequisitos** se entiende el solapamiento entre materias y los conocimientos previos que un ítem da por asumidos.
 
 La motivación principal es combinar programación, matemáticas y diseño interactivo en una aplicación práctica que consolide conocimientos del grado y que pueda ser extendida por el propio autor o por el profesorado.
 
@@ -52,12 +38,7 @@ El documento de proyecto inicial planteaba un juego interactivo tipo escape room
 
 ### 1.4 Objetivos derivados del desarrollo
 
-Durante el proyecto surgieron objetivos técnicos no recogidos en el documento inicial pero necesarios para la calidad del entregable:
-
-- Definir un **esquema canónico** del banco (480 preguntas, balance por dificultad, tipo y respuesta correcta).
-- Enriquecer cada pregunta con **metadatos curriculares** (curso, semestre, grupo temático, nivel).
-- Construir un **pipeline de mantenimiento** (validación, auditoría de distractores, deduplicación).
-- Implementar un **modo historia** que genere exámenes balanceados según el histórico de calificaciones del grado (fichero `Historic_qualificacions_MatCAD_completo.csv`).
+Durante el proyecto surgieron objetivos técnicos no recogidos en el documento inicial pero necesarios para la calidad del entregable: definir un **esquema canónico** del banco (480 preguntas, balance por dificultad, tipo y respuesta correcta), enriquecer cada pregunta con **metadatos curriculares** (curso, semestre, grupo temático, nivel), construir un **pipeline de mantenimiento** (validación, auditoría de distractores, deduplicación) e implementar un **modo historia** que genere exámenes balanceados según el histórico de calificaciones del grado (`Historic_qualificacions_MatCAD_completo.csv`).
 
 ### 1.5 Marco teórico y estado del arte
 
@@ -87,7 +68,6 @@ Pocas herramientas modelan el **plan completo de un grado** con metadatos curric
 
 En un ítem A–D, las tres opciones incorrectas son **distractores**. Un **distractor fuerte** es plausible para quien no domina el concepto; un **distractor débil** delata el ítem (opciones genéricas, longitudes desiguales, etc.). La auditoría automatizada detecta patrones débiles; la revisión manual valora la plausibilidad pedagógica.
 
----
 
 ## 2. Objetivos
 
@@ -107,13 +87,10 @@ Diseñar e implementar un juego interactivo educativo en el que la progresión d
 
 El grado de cumplimiento de cada objetivo se discute en la sección 6.
 
----
 
 ## 3. Hipótesis de trabajo
 
-A partir del marco teórico y del diseño del sistema, se formulan las siguientes hipótesis:
-
-Las hipótesis se formulan de modo **contrastable** con datos del propio sistema (auditorías, histórico, simulación):
+A partir del marco teórico y del diseño del sistema, se formulan las siguientes hipótesis de modo **contrastable** con datos del propio sistema (auditorías, histórico, simulación):
 
 **H1.** Un banco estructurado según el plan curricular (materia, dificultad, tipo, metadatos curso/semestre/grupo/nivel) **permite autoevaluación segmentada** verificable mediante los filtros implementados en el modo libre.
 
@@ -123,7 +100,6 @@ Las hipótesis se formulan de modo **contrastable** con datos del propio sistema
 
 > **Nota metodológica:** **H1** y **H2** se contrastan con informes de auditoría y validación estructural. **H3** se apoya en el análisis de 8818 registros del CSV histórico (véase §5.6). La hipótesis sobre **motivación** (gamificación vs. listado estático) no se incluye por falta de indicadores de usuario en este TFG; se traslada a trabajo futuro (§6.6 y §7).
 
----
 
 ## 4. Metodología
 
@@ -168,14 +144,11 @@ Detalle técnico: [`Data/README.md`](Data/README.md).
 - Persistencia: CSV y JSON para datos; informes y feedback en `.txt` locales.
 - Empaquetado opcional: PyInstaller (Windows), script `build_exe_onefile.ps1`.
 
-**Arquitectura en capas:**
+La arquitectura del software se organiza en capas desacopladas (figura 1): el lanzador orquesta los modos de juego; cada modo delega en el motor de partida la corrección, la puntuación y los informes; la capa de datos abstrae el acceso al banco cerrado y a los metadatos curriculares. Los scripts de mantenimiento operan sobre los mismos ficheros sin formar parte del ejecutable del juego.
 
-```
-Lanzador (juego_cuestionario.py)
-    → Modos (libre / historia / feedback)
-        → Motor de partida (reglas, puntuación, vidas)
-            → Capa de datos (CSV, metadatos, plantillas)
-```
+![Arquitectura en capas del cuestionario MATCAD](Entrega/Figuras/arquitectura_sistema.png)
+
+*Figura 1. Arquitectura en capas del sistema (módulos principales y flujo de dependencias).*
 
 | Capa | Módulos principales | Función |
 |------|---------------------|---------|
@@ -229,7 +202,6 @@ Se consideró exitoso el entregable si:
 3. Existía documentación reproducible (README, memoria, scripts de mantenimiento).
 4. El contenido había pasado revisión manual completa.
 
----
 
 ## 5. Resultados
 
@@ -313,13 +285,13 @@ Se desarrolló un conjunto de scripts en `Files/Scripts/` con punto de entrada u
 
 La hipótesis H3 se contrasta con el histórico institucional `Historic_qualificacions_MatCAD_completo.csv` (**8818** registros de calificaciones), del que se derivan estadísticas agregadas por asignatura para las **40** materias del listado del grado.
 
-**Procedimiento** (implementado en `generador_examen_historia.py`):
+El procedimiento, implementado en `generador_examen_historia.py`, sigue el flujo de la figura 2. En primer lugar, por cada materia se calculan la media numérica, la tasa de suspensos (nota &lt; 5) y un **índice de dificultad** en el intervalo \([0,1]\) que combina ambos indicadores. A continuación, el generador asigna **pesos** a las materias según el perfil elegido —por ejemplo, el perfil *refuerzo* incrementa el peso de las materias con índice alto—. Finalmente, por cada materia seleccionada se rellenan los *slots* canónicos Teoría/Cálculo × Fácil/Media/Difícil con preguntas del banco cerrado.
 
-1. Por cada materia: media numérica, tasa de suspensos (nota &lt; 5) e **índice de dificultad** \(0..1\) combinando ambos indicadores.
-2. El generador de exámenes asigna **pesos** a las materias según el perfil elegido (p. ej. perfil *refuerzo* incrementa el peso de materias con índice alto).
-3. Por materia seleccionada, se rellenan *slots* canónicos Teoría/Cálculo × Fácil/Media/Difícil con preguntas del banco cerrado.
+![Flujo del modo historia](Entrega/Figuras/flujo_modo_historia.png)
 
-**Ejemplo de materias con mayor índice de dificultad** en el histórico agregado (muestra ilustrativa):
+*Figura 2. Pipeline del generador de examen balanceado (modo historia).*
+
+La tabla siguiente recoge una muestra ilustrativa de materias con mayor índice de dificultad en el histórico agregado:
 
 | Materia | Índice | Media | Tasa suspensos | Registros |
 |---------|--------|-------|----------------|-----------|
@@ -331,7 +303,31 @@ Estos valores orientan la ponderación del modo historia; un piloto con estudian
 
 ### 5.7 Simulación Monte Carlo de la evaluación (respuestas al azar)
 
-Para validar que el motor de corrección penaliza el azar como cabría esperar en un examen tipo test, se implementó `Files/Scripts/simulacion_evaluacion_azar.py`: en cada iteración se elige una respuesta uniforme A–D por pregunta (probabilidad teórica de acierto 25 %). Se ejecutaron **50 000** partidas simuladas de **20** preguntas sobre el banco cerrado (semilla 42).
+Para validar que el motor de corrección penaliza el azar como cabría esperar en un examen tipo test, se implementó `Files/Scripts/simulacion_evaluacion_azar.py` y se formalizó el experimento en términos probabilísticos. En cada ítem, la respuesta del jugador que contesta al azar se modela como una variable de Bernoulli \(X_i \sim \mathrm{Bernoulli}(p)\) con \(p = 1/4\), al elegir uniformemente entre las cuatro opciones A–D. El número de aciertos en un bloque de \(n = 20\) preguntas es entonces
+
+\[
+Y = \sum_{i=1}^{n} X_i \sim \mathrm{Binomial}(n,\, p),
+\]
+
+con valor esperado \(\mathbb{E}[Y] = np = 5\) y varianza \(\mathrm{Var}(Y) = np(1-p) = 3{,}75\). La nota del motor, definida como \(\mathrm{nota} = 10\,Y/n\), verifica \(\mathbb{E}[\mathrm{nota}] = 2{,}5\), coherente con el umbral de suspensión universitario.
+
+El estimador Monte Carlo de la fracción de aciertos tras \(N\) réplicas independientes,
+
+\[
+\hat{p}_N = \frac{1}{N}\sum_{k=1}^{N}\frac{Y^{(k)}}{n},
+\]
+
+es insesgado (\(\mathbb{E}[\hat{p}_N] = p\)) y su error estándar decrece como \(\mathcal{O}(1/\sqrt{N})\). Con \(N = 50\,000\) y semilla 42, la simulación arroja una fracción media de **24,98 %**, próxima al valor teórico (figura 4). La figura 3 contrasta el histograma empírico de notas con la masa de probabilidad binomial; la coincidencia visual confirma que la implementación reproduce el modelo probabilístico.
+
+![Distribución simulada de notas y aciertos](Entrega/Figuras/monte_carlo_histograma_notas.png)
+
+*Figura 3. Histograma de la simulación (50 000 réplicas) frente a la distribución binomial teórica.*
+
+![Convergencia del estimador Monte Carlo](Entrega/Figuras/monte_carlo_convergencia.png)
+
+*Figura 4. Convergencia de \(\hat{p}_N\) hacia \(p = 1/4\) al aumentar el número de réplicas.*
+
+En el **modo arcade** con tres vidas, cada fallo consume una vida y la probabilidad de error por pregunta es \(q = 3/4\). El número de preguntas respondidas hasta agotar las vidas coincide, en ausencia de límite superior, con el número de ensayos hasta observar \(r = 3\) fallos en ensayos de Bernoulli con probabilidad de «éxito» \(q\); dicha variable sigue una ley binomial negativa con valor esperado \(\mathbb{E}[T] = r/q = 4\), lo que explica la media empírica de **4,0** preguntas por partida. La probabilidad de completar las 20 preguntas sin perder las tres vidas es \(\mathbb{P}(Y_{20} \geq 18) = \sum_{j=18}^{20}\binom{20}{j}(1/4)^j(3/4)^{20-j}\), prácticamente nula; de ahí que el **100 %** de partidas simuladas agoten vidas antes del objetivo.
 
 | Escenario | Métrica | Resultado |
 |-----------|---------|-----------|
@@ -341,9 +337,8 @@ Para validar que el motor de corrección penaliza el azar como cabría esperar e
 | Modo arcade | Preguntas respondidas de media | **4,0** / 20 |
 | Modo arcade | Puntos medios | **−10,0** |
 
-El azar produce suspensión sistemática y, con vidas limitadas, impide completar bloques largos sin conocimiento real. Comando: `python Files/Scripts/simulacion_evaluacion_azar.py`.
+En conjunto, el experimento demuestra que el azar produce suspensión sistemática y que, con vidas limitadas, impide completar bloques largos sin conocimiento real. Las figuras se regeneran con `python Entrega/generar_figuras_memoria.py`; la simulación numérica, con `python Files/Scripts/simulacion_evaluacion_azar.py`.
 
----
 
 ## 6. Discusión
 
@@ -377,11 +372,7 @@ Estas observaciones motivan la propuesta de campos `Materias_relacionadas` y `Pr
 
 ### 6.3 Utilidad para autoevaluación y apoyo docente
 
-El sistema permite al estudiante:
-
-- practicar por **semestre o temática**, acorde a su momento del grado;
-- simular un **examen balanceado** (modo historia);
-- recibir **informe detallado** al finalizar una partida en modo examen.
+El sistema permite al estudiante practicar por **semestre o temática** acorde a su momento del grado, simular un **examen balanceado** mediante el modo historia y recibir un **informe detallado** al finalizar una partida en modo examen.
 
 Para el profesorado, el banco estructurado y los scripts de auditoría facilitan revisión por materia y detección de ítems problemáticos. El modo feedback cierra un ciclo de mejora continua.
 
@@ -389,29 +380,16 @@ La interfaz en consola limita la accesibilidad para usuarios no familiarizados c
 
 ### 6.4 Relación con las hipótesis
 
-| Hipótesis | Valoración |
-|-----------|------------|
-| **H1** | Apoyada: filtros curriculares operativos en modo libre |
-| **H2** | Apoyada: auditorías y validación con conteos reproducibles |
-| **H3** | Apoyada: modo historia + histórico (8818 registros); véase §5.6 |
+La hipótesis **H1** queda apoyada por la operatividad de los filtros curriculares en el modo libre, que permiten segmentar la práctica por curso, semestre y materia. **H2** se sustenta en las auditorías y en la validación estructural, cuyos conteos son reproducibles en cada ejecución de los scripts de mantenimiento. **H3** encuentra respaldo en el modo historia y en el análisis del histórico institucional (8818 registros), desarrollado en la sección 5.6. La simulación Monte Carlo de la sección 5.7 complementa estas hipótesis al verificar cuantitativamente que el motor de evaluación no concede aprobación al azar.
 
 ### 6.5 Limitaciones del estudio
 
-1. **Sin estudio de usuarios:** no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes.
-2. **Interfaz en consola:** reduce el atractivo visual respecto al escape room planteado inicialmente.
-3. **Modelo de datos simplificado:** una materia por pregunta; sin prerrequisitos explícitos aún.
-4. **Idioma del banco:** preguntas en castellano/catalán según materia; coherencia terminológica revisada pero mejorable.
-5. **Modo beta:** pool ampliado con plantillas no revisadas; debe distinguirse del banco de producción en cualquier evaluación formal.
+El estudio no incluye **evaluación con usuarios**: no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes. La **interfaz en consola** reduce el atractivo visual respecto al escape room planteado inicialmente. El **modelo de datos** asigna una sola materia por pregunta y aún no modela prerrequisitos explícitos. El **idioma del banco** mezcla castellano y catalán según la asignatura, con coherencia terminológica revisada pero mejorable. Por último, el **modo beta** amplía el pool con plantillas no revisadas y debe distinguirse del banco de producción en cualquier evaluación formal.
 
 ### 6.6 Trabajo futuro
 
-- Implementar `Materias_relacionadas` y `Prerequisitos` en el CSV y en los filtros del juego.
-- Desarrollar la capa gráfica escape room / novela gráfica del documento de proyecto.
-- **Motivación y gamificación:** contrastar si las mecánicas de juego aumentan la práctica respecto a un listado estático —requiere piloto con usuarios (n ≈ 15–20, cuestionario SUS, tiempo de práctica, preferencia declarada)—; no formulado como hipótesis contrastada en este TFG por ausencia de datos de usuario.
-- Sustituir los pares de ítems semánticamente similares detectados por la auditoría.
-- Explorar integración con plataformas institucionales (Moodle, AulaWeb).
+Entre las líneas futuras inmediatas figuran la implementación de `Materias_relacionadas` y `Prerequisitos` en el CSV y en los filtros del juego, el desarrollo de la capa gráfica escape room o novela gráfica, y la sustitución de pares de ítems semánticamente similares detectados por la auditoría. Conviene además contrastar si las mecánicas de juego aumentan la práctica respecto a un listado estático —mediante un piloto con usuarios (n ≈ 15–20, cuestionario SUS, tiempo de práctica)—, línea no formulada como hipótesis contrastada en este TFG por ausencia de datos. La integración con plataformas institucionales (Moodle, AulaWeb) completaría el despliegue en el grado.
 
----
 
 ## 7. Conclusiones
 
@@ -430,7 +408,6 @@ Las líneas futuras más inmediatas son la validación con usuarios reales (incl
 
 La simulación Monte Carlo (§5.7) aporta una primera validación cuantitativa del motor de evaluación: el azar no permite aprobar ni completar partidas largas con vidas limitadas.
 
----
 
 ## 8. Bibliografía
 
@@ -456,7 +433,6 @@ Prensky, M. (2003). Digital game-based learning. *Computers in Entertainment*, *
 
 Veldkamp, A., van de Grint, L., Knippels, M. C. P. J., y van Joolingen, W. R. (2020). Escape education: A systematic review on escape rooms in education. *Educational Research Review*, *31*, 100364. https://doi.org/10.1016/j.edurev.2020.100364
 
----
 
 ## Apéndices — documentación técnica del repositorio
 

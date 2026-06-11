@@ -685,7 +685,7 @@ Cálculo: mínimos cuadráticos, holguras, Hessiano \(2I\), complementariedad KK
 ## Cierre banco 480/480 (2026-06-03)
 
 - **Juego:** partida en **modo libre** (`Juego/juego_cuestionario.py`): banco **1 = dataset revisado (MODO FINAL)**; bancos **2–3 = plantillas (MODO BETA)**. **Historia** y **feedback** (menú o tecla **F**) operativos en consola.
-- **Artefactos sincronizados:** `plantillas.json`, `criterios_clasificacion_materia.csv`, `plantillas_repuesto_catalogo.py`, `Memoria_TFG.md` §5.1 y §6.1; Word en `Entrega/`.
+- **Artefactos sincronizados:** `plantillas.json`, `criterios_clasificacion_materia.csv`, `plantillas_repuesto_catalogo.py`, `Memoria_TFG.md` §5.1 y §6.1; Word en `Entrega/Memoria/`.
 - **Opcional futuro:** id **83** (vanishing gradient en Càlcul DV) podría moverse a Xarxes Neuronals; pulido distractores según auditoría.
 
 ---

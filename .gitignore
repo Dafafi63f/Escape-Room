@@ -19,11 +19,11 @@ Revision/*
 !Revision/.gitkeep
 !Revision/*.md
 
-# --- Compilación LaTeX (si compilas Memoria_TFG.tex a mano) ---
-Entrega/*.aux
-Entrega/*.log
-Entrega/*.out
-Entrega/*.toc
-Entrega/*.fls
-Entrega/*.fdb_latexmk
-Entrega/*.synctex.gz
+# --- Compilación LaTeX (si compilas Memoria/Memoria_TFG.tex a mano) ---
+Entrega/Memoria/*.aux
+Entrega/Memoria/*.log
+Entrega/Memoria/*.out
+Entrega/Memoria/*.toc
+Entrega/Memoria/*.fls
+Entrega/Memoria/*.fdb_latexmk
+Entrega/Memoria/*.synctex.gz

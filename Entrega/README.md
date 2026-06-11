@@ -1,15 +1,25 @@
-# Entrega — memoria TFG (Word y LaTeX)
+# Entrega — memoria TFG
 
-Ficheros de la memoria académica. El borrador Markdown está en la raíz: [`../Memoria_TFG.md`](../Memoria_TFG.md).
+Estructura:
 
-| Fichero | Descripción |
-|---------|-------------|
-| `Memoria_TFG_markdown.docx` | Word desde `Memoria_TFG.md` (editar y exportar PDF manualmente) |
-| `Memoria_TFG_latex.docx` | Word desde `Memoria_TFG.tex` (editar y exportar PDF manualmente) |
-| `Memoria_TFG.tex` | Fuente LaTeX maquetada |
-| `exportar_memoria.py` | Regenera los dos `.docx` |
+| Carpeta / fichero | Contenido |
+|-------------------|-----------|
+| [`Memoria/`](Memoria/README.md) | LaTeX, Word (×2) |
+| [`Figuras/`](Figuras/README.md) | Imágenes insertadas en la memoria |
+| `exportar_memoria.py` | Regenera los dos `.docx` en `Memoria/` |
+| `generar_figuras_memoria.py` | Regenera las figuras en `Figuras/` |
 
-`Memoria_TFG.md` y `Memoria_TFG.tex` se mantienen **a mano**; no hay conversión automática entre ellos.
+El borrador Markdown está en la raíz: [`../Memoria_TFG.md`](../Memoria_TFG.md).
+
+`Memoria_TFG.md` y `Memoria/Memoria_TFG.tex` se mantienen **a mano**; no hay conversión automática entre ellos.
+
+## Regenerar figuras
+
+```bash
+python Entrega/generar_figuras_memoria.py
+```
+
+Requisito: `matplotlib` (`pip install matplotlib`).
 
 ## Regenerar Word
 
@@ -21,7 +31,7 @@ python Entrega/exportar_memoria.py
 
 | Opción | Efecto |
 |--------|--------|
-| *(sin opciones)* | Ambos `.docx` |
+| *(sin opciones)* | Ambos `.docx` en `Memoria/` |
 | `--solo-markdown` | Solo `Memoria_TFG_markdown.docx` |
 | `--solo-latex` | Solo `Memoria_TFG_latex.docx` |
 

@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 """Genera las dos memorias en Word desde Markdown y LaTeX.
 
-Salida en ``Entrega/``; fuentes:
+Salida en ``Entrega/Memoria/``; fuentes:
 
   - ``Memoria_TFG_markdown.docx`` ← ``../Memoria_TFG.md``
-  - ``Memoria_TFG_latex.docx``    ← ``Memoria_TFG.tex``
+  - ``Memoria_TFG_latex.docx``    ← ``Memoria/Memoria_TFG.tex``
 
-Requisito: Pandoc (``winget install JohnMacFarlane.Pandoc``).
+Requisitos: Pandoc (``winget install JohnMacFarlane.Pandoc``). Figuras en
+``Entrega/Figuras/`` (regenerar antes si faltan:
+``python Entrega/generar_figuras_memoria.py``).
 
 El PDF de entrega lo exportas tú desde Word tras editar.
 
 Uso (desde la raíz del TFG):
 
+  python Entrega/generar_figuras_memoria.py   # opcional, si cambiaron datos o gráficos
   python Entrega/exportar_memoria.py
   python Entrega/exportar_memoria.py --solo-markdown
   python Entrega/exportar_memoria.py --solo-latex
@@ -32,10 +35,12 @@ if sys.platform == "win32":
 DIR = Path(__file__).resolve().parent
 ROOT = DIR.parent
 
+MEMORIA = DIR / "Memoria"
+FIGURAS = DIR / "Figuras"
 MD = ROOT / "Memoria_TFG.md"
-TEX = DIR / "Memoria_TFG.tex"
-DOCX_MD = DIR / "Memoria_TFG_markdown.docx"
-DOCX_LATEX = DIR / "Memoria_TFG_latex.docx"
+TEX = MEMORIA / "Memoria_TFG.tex"
+DOCX_MD = MEMORIA / "Memoria_TFG_markdown.docx"
+DOCX_LATEX = MEMORIA / "Memoria_TFG_latex.docx"
 
 
 def _rel(p: Path) -> Path | str:
@@ -95,6 +100,23 @@ def exportar_docx_latex(destino: Path = DOCX_LATEX) -> None:
     _pandoc(TEX, destino, formato_entrada="latex")
 
 
+def _avisar_si_faltan_figuras() -> None:
+    esperadas = (
+        "arquitectura_sistema.png",
+        "flujo_modo_historia.png",
+        "monte_carlo_histograma_notas.png",
+        "monte_carlo_convergencia.png",
+    )
+    faltan = [n for n in esperadas if not (FIGURAS / n).is_file()]
+    if faltan:
+        print(
+            "  Aviso: faltan figuras en Entrega/Figuras/: "
+            + ", ".join(faltan)
+            + "\n  Ejecuta: python Entrega/generar_figuras_memoria.py",
+            file=sys.stderr,
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Genera Memoria_TFG_markdown.docx y Memoria_TFG_latex.docx."
@@ -107,6 +129,8 @@ def main(argv: list[str] | None = None) -> int:
     hacer_md = not args.solo_latex
     hacer_tex = not args.solo_markdown
     errores = 0
+
+    _avisar_si_faltan_figuras()
 
     if hacer_md:
         print("Markdown → Word")

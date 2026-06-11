@@ -38,20 +38,21 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | [`Juego/`](Juego/README.md) | Lanzador, paquete [`Consola/`](Juego/Consola/README.md), build opcional del `.exe` |
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
-| [`Entrega/`](Entrega/README.md) | LaTeX, Word (×2) y `exportar_memoria.py` |
+| [`Entrega/`](Entrega/README.md) | `Memoria/` (LaTeX, Word), `Figuras/`, scripts de exportación |
 | [`Revision/`](Revision/ESTADO.md) | Estado del proyecto, feedback tutor; PDF anotados locales (gitignored) |
 | [`Memoria_TFG.md`](Memoria_TFG.md) | Borrador Markdown de la memoria (raíz) |
 | [`borrar_temporales.py`](borrar_temporales.py) | Limpia `__pycache__` y `.txt` temporales en todo el proyecto |
 
 ## Memoria — exportar Word
 
-El borrador editable está en [`Memoria_TFG.md`](Memoria_TFG.md). Ficheros de entrega en [`Entrega/`](Entrega/README.md):
+El borrador editable está en [`Memoria_TFG.md`](Memoria_TFG.md). Ficheros de entrega en [`Entrega/Memoria/`](Entrega/README.md); figuras en [`Entrega/Figuras/`](Entrega/Figuras/README.md):
 
 ```bash
+python Entrega/generar_figuras_memoria.py
 python Entrega/exportar_memoria.py
 ```
 
-Genera `Memoria_TFG_markdown.docx` y `Memoria_TFG_latex.docx` (Pandoc). El PDF de entrega lo exportas desde Word tras editar. Detalle en [`Entrega/README.md`](Entrega/README.md).
+Genera los `.docx` en `Entrega/Memoria/` (Pandoc). El PDF de entrega lo exportas desde Word tras editar. Detalle en [`Entrega/README.md`](Entrega/README.md).
 
 ## Jugar
 

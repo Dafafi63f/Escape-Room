@@ -8,11 +8,11 @@ Documento **vivo**: resume progreso, feedback del tutor y pendientes. Actualíza
 | Enlace | Uso |
 |--------|-----|
 | [`Memoria_TFG.md`](../Memoria_TFG.md) | Borrador académico (editar aquí primero) |
-| [`Entrega/`](../Entrega/README.md) | LaTeX + Word (×2); PDF manual desde Word |
+| [`Entrega/`](../Entrega/README.md) | `Memoria/` (LaTeX + Word ×2), `Figuras/`; PDF manual desde Word |
 | [`revision_manual_banco.md`](revision_manual_banco.md) | Detalle tramo a tramo del banco 480 ítems |
 | PDF anotado del tutor | `Revision/Memoria_TFG_latex_Comentarios_VNP.pdf` (local, gitignored) |
 
-Regenerar Word: `python Entrega/exportar_memoria.py`
+Regenerar figuras: `python Entrega/generar_figuras_memoria.py` · Word: `python Entrega/exportar_memoria.py`
 
 ---
 
@@ -38,9 +38,10 @@ Regenerar Word: `python Entrega/exportar_memoria.py`
 | Elemento | Estado | Ubicación |
 |----------|--------|-----------|
 | Memoria Markdown | Actualizada | `Memoria_TFG.md` |
-| Memoria LaTeX | Sincronizada con MD (manual) | `Entrega/Memoria_TFG.tex` |
-| Word desde Markdown | Regenerable | `Entrega/Memoria_TFG_markdown.docx` |
-| Word desde LaTeX | Regenerable | `Entrega/Memoria_TFG_latex.docx` |
+| Memoria LaTeX | Sincronizada con MD (manual) | `Entrega/Memoria/Memoria_TFG.tex` |
+| Word desde Markdown | Regenerable | `Entrega/Memoria/Memoria_TFG_markdown.docx` |
+| Word desde LaTeX | Regenerable | `Entrega/Memoria/Memoria_TFG_latex.docx` |
+| Figuras memoria | Regenerables | `Entrega/Figuras/` |
 | README raíz / carpetas | OK | `README.md`, `Juego/`, `Data/`, `Files/`, `Entrega/` |
 | Este estado | **Mantener al día** | `Revision/ESTADO.md` |
 
@@ -78,13 +79,13 @@ Leyenda: ✅ aplicado en memoria/código · 🔄 parcial · ⏳ pendiente
 
 | Comentario | Estado | Dónde se reflejó |
 |------------|--------|------------------|
-| Marco teórico dentro de la **Introducción** | ✅ | `Memoria_TFG.md` §1.5; `Memoria_TFG.tex` |
+| Marco teórico dentro de la **Introducción** | ✅ | `Memoria_TFG.md` §1.5; `Entrega/Memoria/Memoria_TFG.tex` |
 | Añadir **resumen / abstract** | ✅ | Resumen al inicio de memoria + abstract LaTeX |
 | Definir gamificación, narrativa, banco auditable, distractores | ✅ | §1.2 + §1.5.6 |
 | Objetivos: estado de cumplimiento en **Discusión**, no en §2 | ✅ | Tabla en §6.1 |
 | «Estado actual» en **Resultados**, no en intro | ✅ | §5.2 |
 | Título: **juego interactivo** (no videojuego) | ✅ | Portada MD/LaTeX con título académico + nota escape room |
-| Maquetación tabla arquitectura (LaTeX / Word) | ✅ | `Memoria_TFG.tex` §4.3: `tabularx`, módulos en líneas separadas |
+| Maquetación tabla arquitectura (LaTeX / Word) | ✅ | `Entrega/Memoria/Memoria_TFG.tex` §4.3: `tabularx`, módulos en líneas separadas |
 | Exportación Word (×2) para maquetación manual | ✅ | `exportar_memoria.py` → Markdown + LaTeX; PDF manual desde Word |
 | Explicar **evaluación del jugador** en el texto (no solo README) | ✅ | Tabla en §4.3 |
 | Hipótesis **contrastables**; motivación sin datos → futuro | ✅ | H1–H3; motivación en §6.6 |
@@ -128,6 +129,8 @@ Añade una fila al cerrar cada sesión de trabajo relevante.
 | 2026-06-11 | Memoria | Tabla arquitectura §4.3 corregida en LaTeX; apéndice H → `Revision/` |
 | 2026-06-11 | Entrega | Flujo Word: `exportar_memoria.py`; eliminados PDF automáticos y `exportar_informe_pdf.py` |
 | 2026-06-11 | Docs | README raíz/Entrega/Revision alineados con exportación Word + PDF manual |
+| 2026-06-11 | Entrega | `Memoria/` + `Figuras/`; `generar_figuras_memoria.py`; §5.7 matemático y 4 gráficos |
+| 2026-06-11 | Memoria | Prosa §1.2/§6; sin `---` en MD; figuras y Monte Carlo formalizado |
 
 ---
 
@@ -155,6 +158,7 @@ Añade una fila al cerrar cada sesión de trabajo relevante.
 python Files/Scripts/mantenimiento.py validar
 python Files/Scripts/simulacion_evaluacion_azar.py
 python -m unittest discover -s Juego/Tests -q
+python Entrega/generar_figuras_memoria.py
 python Entrega/exportar_memoria.py
 ```
 
