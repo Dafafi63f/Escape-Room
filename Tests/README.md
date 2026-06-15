@@ -26,7 +26,7 @@ Los subdirectorios llevan `__init__.py` para que `discover -s Tests` encuentre t
 GitHub Actions (`.github/workflows/tests.yml`):
 
 - **Pre-Commits** — hooks de formato y YAML
-- **Run Unit Tests** — `Tests/Juego/` y `Tests/Scripts/` (Python 3.10 y 3.12)
+- **Run Unit Tests** — `Tests/Juego/` y `Tests/Scripts/` (Python 3.14, ver `.python-version`)
 - **Run Integration Tests** — suite completa + `mantenimiento.py validar`
 - **Run MyPy** — tipado en `Juego/Consola/` y `Files/Scripts/`
 - **tests-summary** — agrega el resultado de los jobs anteriores
