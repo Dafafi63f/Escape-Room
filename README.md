@@ -108,9 +108,11 @@ GitHub Actions:
 |----------|------|
 | **Tests** | Pre-Commits, Unit Tests (3.10/3.12), Integration Tests, MyPy, tests-summary |
 | **PR-Agent** | Revisión automática de PR (requiere `OPENAI_KEY`) |
-| **SonarCloud** | Análisis de calidad (requiere `SONAR_TOKEN` y proyecto en SonarCloud) |
+| **SonarCloud** | Análisis de calidad (requiere proyecto en [SonarCloud](https://sonarcloud.io) y secreto `SONAR_TOKEN`) |
 
 Ficheros: `.github/workflows/tests.yml`, `pr_agent.yml`, `sonarcloud.yml`, `.pre-commit-config.yaml`, `mypy.ini`, `sonar-project.properties`.
+
+**SonarCloud (una vez):** inicia sesión en SonarCloud con GitHub → importa `Escape-Room` → copia `sonar.organization` y `sonar.projectKey` a `sonar-project.properties` si difieren → genera un token de organización → añádelo en GitHub como `SONAR_TOKEN`. Sin ese secreto, el job se omite y no bloquea la PR.
 
 ```bash
 pre-commit run --all-files
