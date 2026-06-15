@@ -102,7 +102,20 @@ Ver [`Tests/README.md`](Tests/README.md).
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`): suite `Tests/`, `mantenimiento.py validar` en Python 3.10 y 3.12.
+GitHub Actions:
+
+| Workflow | Jobs |
+|----------|------|
+| **Tests** | Pre-Commits, Unit Tests (3.10/3.12), Integration Tests, MyPy, tests-summary |
+| **PR-Agent** | Revisión automática de PR (requiere `OPENAI_KEY`) |
+| **SonarCloud** | Análisis de calidad (requiere `SONAR_TOKEN` y proyecto en SonarCloud) |
+
+Ficheros: `.github/workflows/tests.yml`, `pr_agent.yml`, `sonarcloud.yml`, `.pre-commit-config.yaml`, `mypy.ini`, `sonar-project.properties`.
+
+```bash
+pre-commit run --all-files
+mypy Juego/Consola Files/Scripts
+```
 
 ## Dependencias de desarrollo
 

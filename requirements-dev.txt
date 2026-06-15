@@ -4,3 +4,5 @@
 pandas>=2.0
 matplotlib>=3.7
 pyinstaller>=6.0
+mypy>=1.10
+pre-commit>=4.0

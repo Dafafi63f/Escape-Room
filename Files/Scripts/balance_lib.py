@@ -881,5 +881,3 @@ def ejecutar_corregir() -> int:
     for m in msgs:
         print(f"  - {m}")
     return 0 if ok else 1
-
-

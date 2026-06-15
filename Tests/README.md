@@ -23,7 +23,15 @@ Los subdirectorios llevan `__init__.py` para que `discover -s Tests` encuentre t
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`) ejecuta la suite completa y `mantenimiento.py validar` en Python 3.10 y 3.12.
+GitHub Actions (`.github/workflows/tests.yml`):
+
+- **Pre-Commits** — hooks de formato y YAML
+- **Run Unit Tests** — `Tests/Juego/` y `Tests/Scripts/` (Python 3.10 y 3.12)
+- **Run Integration Tests** — suite completa + `mantenimiento.py validar`
+- **Run MyPy** — tipado en `Juego/Consola/` y `Files/Scripts/`
+- **tests-summary** — agrega el resultado de los jobs anteriores
+
+También: **PR-Agent** (`OPENAI_KEY`) y **SonarCloud** (`SONAR_TOKEN`).
 
 ## Ficheros
 

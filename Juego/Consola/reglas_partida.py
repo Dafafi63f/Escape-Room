@@ -136,6 +136,3 @@ def formatear_resultado_puntuacion(
     if reglas.sistema_puntuacion == SistemaPuntuacion.PORCENTAJE:
         return f"Aciertos: {porcentaje_aciertos(aciertos, total)}%"
     return f"Aciertos: {aciertos}/{total}"
-
-
-

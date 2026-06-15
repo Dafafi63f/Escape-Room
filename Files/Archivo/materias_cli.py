@@ -306,4 +306,3 @@ if __name__ == "__main__":
 
     rechazar_script_deprecado("materias_cli.py")
     raise SystemExit(main())
-

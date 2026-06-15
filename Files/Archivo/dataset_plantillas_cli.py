@@ -316,4 +316,3 @@ if __name__ == "__main__":
 
     rechazar_script_deprecado("dataset_plantillas_cli.py")
     raise SystemExit(main())
-
