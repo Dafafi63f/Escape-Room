@@ -4,10 +4,10 @@
 
 Trazabilidad de la revisión manual del banco. Actualizar este fichero (detalle) y [`ESTADO.md`](ESTADO.md) (resumen) al cerrar cada tramo.
 
-**Última actualización:** 2026-06-03  
-**Progreso:** **480 / 480 (100 %)** — banco **12 preguntas/materia** (40 materias), redacción genérica para el juego  
-**Aprobación usuario:** ids **1–480** — **cerrado** (contenido validado por bloques; ver tablas por tramo)  
-**Validación habitual:** `python -c "import sys; sys.path.insert(0,'Files'); from balance_lib import ejecutar_validar; ejecutar_validar(detalle=False)"` — avisos menores de orden canónico en algunas materias (no bloquean el juego)  
+**Última actualización:** 2026-06-03
+**Progreso:** **480 / 480 (100 %)** — banco **12 preguntas/materia** (40 materias), redacción genérica para el juego
+**Aprobación usuario:** ids **1–480** — **cerrado** (contenido validado por bloques; ver tablas por tramo)
+**Validación habitual:** `python -c "import sys; sys.path.insert(0,'Files'); from balance_lib import ejecutar_validar; ejecutar_validar(detalle=False)"` — avisos menores de orden canónico en algunas materias (no bloquean el juego)
 **Mantenimiento 2026-06-03:** `python Files/Scripts/mantenimiento.py plantillas pipeline` → `criterios` → `auditar-distractores` (comandos: [`Files/Scripts/README.md`](../Files/Scripts/README.md))
 
 | Ids | Estado | Materias (listado `Data/listado_materias.csv`) |
@@ -66,7 +66,7 @@ Contenido validado por el autor del TFG para las **20 primeras materias** (12 pr
 
 ## Ids 1–30
 
-Bloques: `1..10` Àlgebra Lineal · `11..20` Càlcul en una Variable · `21..30` Fonaments de Computadors.  
+Bloques: `1..10` Àlgebra Lineal · `11..20` Càlcul en una Variable · `21..30` Fonaments de Computadors.
 Estructura: `5 Teoría + 5 Cálculo` por materia.
 
 ### 1–10 (Àlgebra Lineal)
@@ -107,17 +107,17 @@ Estructura: `5 Teoría + 5 Cálculo` por materia.
 
 ### 37–48 (Iniciació a la Programació)
 
-**Teoría:** FT `while`, `if` · MT `for`, listas · DT **scope local en funciones**, **efectos secundarios** en funciones.  
+**Teoría:** FT `while`, `if` · MT `for`, listas · DT **scope local en funciones**, **efectos secundarios** en funciones.
 **Cálculo:** `type([])`, `bool`, `range`, `len`, `%`, `//`. **OK** (2026-06-02).
 
 ### 49–60 (Programari de Sistema)
 
-Teoría: shell, stdout, pipe, contexto proceso, `git commit`, compilador. Cálculo: `cd ..`, `touch`, `ls -a`, `ls \| wc -l`, `gcc -o`, redirección `>`.  
+Teoría: shell, stdout, pipe, contexto proceso, `git commit`, compilador. Cálculo: `cd ..`, `touch`, `ls -a`, `ls \| wc -l`, `gcc -o`, redirección `>`.
 Sin Python (solo en Iniciació/POO). **OK** (2026-06-02).
 
 ### 61–72 (Algorítmia i Combinatòria en Grafs)
 
-Teoría: heurística, árbol, **A\*** (h admisible), **MDP**, euleriano, matching bipartito.  
+Teoría: heurística, árbol, **A\*** (h admisible), **MDP**, euleriano, matching bipartito.
 Cálculo: spanning trees \(K_3\), aristas \(K_4\), componentes, **f=g+h**, **Dijkstra**. **OK** (2026-06-02).
 
 ### 61–70 (Càlcul en Diverses Variables)
@@ -126,13 +126,13 @@ Diferenciabilidad, gradiente, coordenadas, integrales dobles, jacobiano. **OK**
 
 ### 71–80 (Càlcul Numèric)
 
-Teoría: trapecio, redondeo, truncamiento, Newton-Raphson, **Romberg**.  
+Teoría: trapecio, redondeo, truncamiento, Newton-Raphson, **Romberg**.
 Cálculo (76–80): error relativo 0,1; Newton \(x_1=1{,}5\); bisección \(n=10\) (mitad < 0,001); Simpson \(1/3\); trapecio \(O(h^2)\). **OK**
 
 ### 81–90 (Probabilitat)
 
-Teoría: \(E(X)\), independencia, condicional, unión, probabilidad total.  
-Cálculo: varianza constante, binomial, Poisson, moneda, única Bayes (90 → 0,18).  
+Teoría: \(E(X)\), independencia, condicional, unión, probabilidad total.
+Cálculo: varianza constante, binomial, Poisson, moneda, única Bayes (90 → 0,18).
 **OK**
 
 ### 109–120 (Programació Orientada als Objectes)
@@ -146,8 +146,8 @@ Sin decoherencia cuántica (112 corregido). Solo Python en cálculo. **OK** (202
 
 ### 101–110 (Bases de Dades Relacionals)
 
-Teoría: `GROUP BY`, FK, `HAVING`, `DELETE`, normalización (105; antes 2PL).  
-Cálculo: claves compuestas, producto cartesiano, candidatas, `COUNT(*)`.  
+Teoría: `GROUP BY`, FK, `HAVING`, `DELETE`, normalización (105; antes 2PL).
+Cálculo: claves compuestas, producto cartesiano, candidatas, `COUNT(*)`.
 **OK** — opcional: id 104 `DELETE` en Difícil (contenido fácil)
 
 ### 111–120 (EDO)
@@ -188,7 +188,7 @@ Resto: Runge-Kutta (1 intro), Euler (1 cálculo numérico), Picard-Lindelöf, au
 
 ### 157–168 (Tècniques de Disseny d'Algoritmes)
 
-Teoría: algoritmo, LIFO/pila, subestructura óptima, memoización top-down, subproblemas superpuestos (DP), **greedy**.  
+Teoría: algoritmo, LIFO/pila, subestructura óptima, memoización top-down, subproblemas superpuestos (DP), **greedy**.
 Cálculo: quicksort, búsqueda binaria, merge sort, comparaciones binaria (1024→10), \(O(2^n)\) Fib recursivo, búsqueda lineal. Sin duplicar 161/162. **OK** (2026-06-02).
 
 ### 169–180 (Visualització 3D)

@@ -2,7 +2,7 @@
 
 Documento **vivo**: resume progreso, feedback del tutor y pendientes. Actualízalo al cerrar cada bloque de trabajo (memoria, código, datos, scripts).
 
-**Última actualización:** 2026-06-15  
+**Última actualización:** 2026-06-15
 **Alumno:** Daniel Fageda Figueredo · **Tutor:** Víctor Navas Portella
 
 | Enlace | Uso |
