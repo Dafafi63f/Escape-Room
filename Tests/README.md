@@ -23,7 +23,7 @@ Los subdirectorios llevan `__init__.py` para que `discover -s Tests` encuentre t
 
 ## CI
 
-GitHub Actions (`.github/workflows/tests.yml`):
+GitHub Actions (`.github/workflows/tests.yml`): en PRs se ejecuta con `pull_request`; en `main`, tras el merge, con `push`.
 
 - **Pre-Commits** — hooks de formato y YAML
 - **Run Unit Tests** — `Tests/Juego/` y `Tests/Scripts/` (Python 3.14, ver `.python-version`)
