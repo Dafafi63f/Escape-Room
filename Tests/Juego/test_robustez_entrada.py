@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """Pruebas de entradas adversas (troll / vacías / EOF) sin romper el juego."""
 
+# pyright: reportMissingImports=false
+
 from __future__ import annotations
 
 import sys
@@ -25,9 +27,8 @@ from Consola.entrada_menu import (
     _EventoTecla,
     elegir_indice_menu,
 )
-from Consola.motor_partida import ResultadoRespuesta, preguntar_con_reglas
+from Consola.motor_partida import EstadoPartida, ResultadoRespuesta, preguntar_con_reglas
 from Consola.modelos import Pregunta
-from Consola.motor_partida import EstadoPartida
 from Consola.reglas_partida import preset_libre_arcade
 from Consola.navegacion import (
     AccionPausa,
@@ -85,12 +86,19 @@ class TestEntradaConsola(unittest.TestCase):
     def test_tecla_invalida_ignorada(self, _mock) -> None:
         self.assertEqual(pedir_opcion("m", ["1", "2"]), "2")
 
-    @patch("Consola.entrada_menu._leer_tecla_texto_windows", side_effect=EOFError)
-    def test_eof_en_leer_linea_sale_programa(self, _mock) -> None:
+    def test_eof_en_leer_linea_sale_programa(self) -> None:
         from Consola.navegacion import leer_linea
 
         with self.assertRaises(SalirPrograma):
-            leer_linea("x: ")
+            with patch("Consola.navegacion._input_seguro", side_effect=SalirPrograma):
+                with patch.object(sys, "platform", "linux"):
+                    leer_linea("x: ")
+        with self.assertRaises(SalirPrograma):
+            with patch(
+                "Consola.entrada_menu._leer_tecla_texto_windows", side_effect=EOFError
+            ):
+                with patch.object(sys, "platform", "win32"):
+                    leer_linea("x: ")
 
     @patch("Consola.navegacion.invocar_feedback_rapido")
     @patch("Consola.navegacion.feedback_rapido_disponible", return_value=True)
@@ -111,7 +119,7 @@ class TestEntradaConsola(unittest.TestCase):
             self.assertEqual(pedir_texto("Nombre: ", default="Anonimo"), "Anonimo")
 
     def test_pedir_entero_rango_invertido_se_normaliza(self) -> None:
-        with patch("Consola.entrada_menu.leer_linea_teclado", return_value=""):
+        with patch("Consola.consola.leer_linea", return_value=""):
             v = pedir_entero_en_rango("n", 5, 2, 99)
         self.assertEqual(v, 5)
 
