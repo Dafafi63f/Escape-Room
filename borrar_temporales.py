@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Borra artefactos temporales del proyecto: ``__pycache__`` y ficheros ``.txt`` de informes/feedback.
+"""Borra artefactos temporales del proyecto: ``__pycache__``, cachés de herramientas y ``.txt`` de informes/feedback.
 
 Los ``.txt`` solo se buscan en ``Juego/Informes/`` y ``Juego/Feedback/`` (no en todo el repo).
 Recorre todo el TFG para ``__pycache__`` (salvo ``.venv``, ``build``, ``.git``, etc.).
+En la raíz del TFG también borra ``.mypy_cache``, ``.ruff_cache``, ``.pytest_cache`` y ``.scannerwork``.
 
 Uso (desde la raíz del TFG):
   python borrar_temporales.py
@@ -40,18 +41,27 @@ _OMITIR_PARTES = frozenset({
     "node_modules",
 })
 
+_CARPETAS_CACHE_RAIZ = (
+    ".mypy_cache",
+    ".ruff_cache",
+    ".pytest_cache",
+    ".scannerwork",
+)
+
 
 @dataclass
 class ResumenLimpieza:
     pycache_borradas: int = 0
     pycache_errores: int = 0
+    cache_herramientas_borradas: int = 0
+    cache_herramientas_errores: int = 0
     txt_borrados: int = 0
     txt_errores: int = 0
     bytes_txt: int = 0
 
     @property
     def errores_totales(self) -> int:
-        return self.pycache_errores + self.txt_errores
+        return self.pycache_errores + self.cache_herramientas_errores + self.txt_errores
 
 
 def _dentro_de_omitidos(ruta: Path, raiz: Path) -> bool:
@@ -76,6 +86,15 @@ def listar_pycache(base: Path | None = None) -> list[Path]:
         p
         for p in raiz.rglob("__pycache__")
         if p.is_dir() and not _dentro_de_omitidos(p, raiz)
+    )
+
+
+def listar_cache_herramientas(base: Path | None = None) -> list[Path]:
+    raiz = base or _BASE
+    return sorted(
+        raiz / nombre
+        for nombre in _CARPETAS_CACHE_RAIZ
+        if (raiz / nombre).is_dir()
     )
 
 
@@ -109,6 +128,13 @@ def borrar_temporales(
             except OSError:
                 resumen.pycache_errores += 1
 
+        for carpeta in listar_cache_herramientas(raiz):
+            try:
+                shutil.rmtree(carpeta)
+                resumen.cache_herramientas_borradas += 1
+            except OSError:
+                resumen.cache_herramientas_errores += 1
+
     if incluir_txt:
         for fichero in listar_txt_temporales(raiz):
             try:
@@ -124,6 +150,7 @@ def borrar_temporales(
 def _imprimir_listado(
     *,
     pycache: list[Path],
+    cache_herramientas: list[Path],
     txt: list[Path],
     incluir_pycache: bool,
     incluir_txt: bool,
@@ -134,6 +161,12 @@ def _imprimir_listado(
         hay_algo = True
         print(f"__pycache__: {len(pycache)} carpetas")
         for p in pycache:
+            print(f" - {p}")
+
+    if incluir_pycache and cache_herramientas:
+        hay_algo = True
+        print(f"cachés de herramientas: {len(cache_herramientas)} carpetas")
+        for p in cache_herramientas:
             print(f" - {p}")
 
     if incluir_txt and txt:
@@ -168,10 +201,12 @@ def main(argv: list[str] | None = None) -> int:
     incluir_txt = not args.solo_pycache
 
     pycache = listar_pycache(_BASE) if incluir_pycache else []
+    cache_herramientas = listar_cache_herramientas(_BASE) if incluir_pycache else []
     txt = listar_txt_temporales(_BASE) if incluir_txt else []
 
     if not _imprimir_listado(
         pycache=pycache,
+        cache_herramientas=cache_herramientas,
         txt=txt,
         incluir_pycache=incluir_pycache,
         incluir_txt=incluir_txt,
@@ -193,6 +228,10 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"  __pycache__: {resumen.pycache_borradas} borradas | "
             f"errores: {resumen.pycache_errores}"
+        )
+        print(
+            f"  cachés herramientas: {resumen.cache_herramientas_borradas} borradas | "
+            f"errores: {resumen.cache_herramientas_errores}"
         )
     if incluir_txt:
         print(

@@ -12,6 +12,10 @@ Juego/juego_cuestionario.exe
 
 # --- Temporales (limpiar con borrar_temporales.py) ---
 __pycache__/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.scannerwork/
 Juego/Informes/*.txt
 Juego/Feedback/*.txt
 
