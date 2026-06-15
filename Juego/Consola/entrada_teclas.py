@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import sys
 from enum import Enum
+from typing import Callable, cast
 
 TECLA_AYUDA = "H"
 TECLA_FEEDBACK = "F"
@@ -37,11 +38,16 @@ class EventoTecla:
         self.valor = valor
 
 
-def leer_tecla_windows(*, en_pausa: bool) -> EventoTecla:
+def _msvcrt_getch() -> bytes:
+    """``msvcrt.getch`` solo existe en Windows; tipado portable para MyPy en Linux."""
     import msvcrt
 
+    return cast(Callable[[], bytes], getattr(msvcrt, "getch"))()
+
+
+def leer_tecla_windows(*, en_pausa: bool) -> EventoTecla:
     _ = en_pausa  # reservado para variantes futuras de pausa
-    b = msvcrt.getch()
+    b = _msvcrt_getch()
     if b == b"\x03":
         raise KeyboardInterrupt
     if b == b"\x1b":
@@ -51,7 +57,7 @@ def leer_tecla_windows(*, en_pausa: bool) -> EventoTecla:
     if b in (b"\x7f", b"\x08"):
         return EventoTecla(TipoTecla.SUPR)
     if b in (b"\x00", b"\xe0"):
-        b2 = msvcrt.getch()
+        b2 = _msvcrt_getch()
         if b2 == b"S":
             return EventoTecla(TipoTecla.SUPR)
         return EventoTecla(TipoTecla.IGNORAR)
@@ -73,9 +79,7 @@ def leer_tecla_windows(*, en_pausa: bool) -> EventoTecla:
 
 def leer_tecla_texto_windows() -> EventoTecla:
     """Tecla a tecla para escribir texto (incluye espacios y símbolos)."""
-    import msvcrt
-
-    b = msvcrt.getch()
+    b = _msvcrt_getch()
     if b == b"\x03":
         raise KeyboardInterrupt
     if b == b"\x1b":
@@ -85,7 +89,7 @@ def leer_tecla_texto_windows() -> EventoTecla:
     if b in (b"\x08", b"\x7f"):
         return EventoTecla(TipoTecla.BORRAR)
     if b in (b"\x00", b"\xe0"):
-        b2 = msvcrt.getch()
+        b2 = _msvcrt_getch()
         if b2 in (b"S", b"s"):
             return EventoTecla(TipoTecla.SUPR)
         return EventoTecla(TipoTecla.IGNORAR)
