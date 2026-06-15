@@ -9,7 +9,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+_ROOT = Path(__file__).resolve().parents[2]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from Tests.support import ensure_juego_path
+
+ensure_juego_path()
 
 from Consola.consola import pedir_entero_en_rango, pedir_opcion
 from Consola.entrada_menu import (

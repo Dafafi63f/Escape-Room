@@ -18,11 +18,13 @@ Los tres modos comparten la capa de datos (`Data/Preguntas.csv`, `listado_materi
 
 | Módulo | Responsabilidad |
 |--------|-----------------|
-| `rutas.py` | Rutas a `Data/`, plantillas, informes y feedback (script, cwd, `.exe`) |
-| `datos.py` | Carga CSV/JSON, elección de banco |
+| `rutas.py` | Rutas a `Data/`, plantillas, informes y feedback (resolución lazy) |
+| `datos.py` | Carga CSV/JSON, elección de banco (`utils_plantillas_core`) |
+| `_scripts_path.py` | Bootstrap de `sys.path` hacia `Files/Scripts` |
 | `modelos.py` | `Pregunta`, `BancoPreguntas`, etiquetas |
 | `consola.py` | Menús, texto, opciones A–D |
-| `entrada_menu.py` | Teclas: Enter, H, F, Supr, Esc, dígitos, A–D |
+| `entrada_teclas.py` | Lectura tecla a tecla (`msvcrt` en Windows; fallback en otros SO) |
+| `entrada_menu.py` | Menús, contexto de ayuda, bucles de entrada |
 | `navegacion.py` | Contexto de pantalla, atrás, pausa, feedback rápido (F) |
 | `reglas_partida.py` | Presets de reglas (vidas, tiempo, puntuación) |
 | `politica_reglas.py` | Política por modo (libre / historia) |
@@ -109,7 +111,7 @@ En partidas con corrección al final, `informe_examen.py` escribe un `.txt` en `
 
 ## Controles de teclado
 
-Resumen de [`entrada_menu.py`](entrada_menu.py):
+Resumen de [`entrada_teclas.py`](entrada_teclas.py) (Windows) y [`entrada_menu.py`](entrada_menu.py):
 
 | Tecla | Uso general |
 |-------|-------------|
@@ -133,15 +135,11 @@ Dos accesos:
 
 Flujo: categoría → área → mensaje (multilínea) → nombre → contacto. Siempre se guarda copia en `Juego/Feedback/`. Con `feedback_smtp` en `Data/creador_privado.json`, se intenta envío por correo.
 
-## Tareas pendientes (calidad / unicidad semántica)
+## Calidad del banco (2026-06-15)
 
-No bloquean el uso actual; revisar con `python Files/Scripts/duplicados.py revisar`.
+`python Files/Scripts/duplicados.py revisar` → **0 pares similares** en CSV y plantillas intra-materia. `mantenimiento.py validar` → OK.
 
-1. **CSV (modo seguro):** sustituir **3 pares similares** (Ids 14↔21, 298↔322, 69↔72).
-2. **Plantillas (misma materia):** reducir **~13 pares similares** intra-materia.
-3. **Plantillas (entre materias):** ampliar `catalogo_internet_plantillas.py` por materia.
-4. **Limpieza opcional:** alinear entradas `repuesto` que dupliquen enunciado pero no opciones del CSV.
-5. **Modo beta:** valorar dedup semántica al cargar el banco extra.
+Mejoras futuras opcionales: ampliar catálogo de plantillas, repuestos LSTM/Sharpe, dedup al cargar banco beta. Ver [`Revision/revision_manual_banco.md`](../../Revision/revision_manual_banco.md).
 
 ## Dependencias entre capas
 
@@ -149,8 +147,8 @@ No bloquean el uso actual; revisar con `python Files/Scripts/duplicados.py revis
 juego_cuestionario.py
     → modos (libre / historia / feedback)
         → motor_partida, politica_reglas, datos
-            → consola, entrada_menu, navegacion, modelos, rutas
+            → consola, entrada_teclas, entrada_menu, navegacion, modelos, rutas
     → envio_feedback, config_creador (feedback)
 ```
 
-No hace falta ejecutar nada dentro de esta carpeta; el punto de entrada es `../juego_cuestionario.py`. Al arrancar, el lanzador muestra un tutorial breve de foco de teclado (línea `>>`); ver `entrada_menu.py`.
+No hace falta ejecutar nada dentro de esta carpeta; el punto de entrada es `../juego_cuestionario.py`. Al arrancar, el lanzador muestra un tutorial breve de foco de teclado (línea `>>`); ver `entrada_teclas.py` y `entrada_menu.py`.

@@ -105,21 +105,20 @@ def elegir_modo_juego() -> str:
 def _ejecutar_modo(
     modo: str,
     materias_meta: dict,
+    preguntas_dataset: list,
     path_plantillas,
 ) -> bool:
     if modo == "2":
-        preguntas = cargar_preguntas(PATH_PREGUNTAS, materias_meta)
-        if not preguntas:
+        if not preguntas_dataset:
             print("No hay preguntas en el dataset.")
             return False
-        return jugar_modo_historia(preguntas, materias_meta)
+        return jugar_modo_historia(preguntas_dataset, materias_meta)
 
     if modo == "3":
-        preguntas = cargar_preguntas(PATH_PREGUNTAS, materias_meta)
-        if not preguntas:
+        if not preguntas_dataset:
             print("No hay preguntas en el dataset.")
             return False
-        jugar_modo_feedback(preguntas, materias_meta)
+        jugar_modo_feedback(preguntas_dataset, materias_meta)
         return True
 
     try:
@@ -136,7 +135,11 @@ def _ejecutar_modo(
     return jugar_modo_libre(preguntas, banco)
 
 
-def _bucle_juego(materias_meta: dict, path_plantillas) -> None:
+def _bucle_juego(
+    materias_meta: dict,
+    preguntas_dataset: list,
+    path_plantillas,
+) -> None:
     while True:
         try:
             modo = elegir_modo_juego()
@@ -149,7 +152,9 @@ def _bucle_juego(materias_meta: dict, path_plantillas) -> None:
             return
 
         try:
-            flujo_completo = _ejecutar_modo(modo, materias_meta, path_plantillas)
+            flujo_completo = _ejecutar_modo(
+                modo, materias_meta, preguntas_dataset, path_plantillas
+            )
         except IrMenuPrincipal:
             _ir_menu_principal()
             continue
@@ -180,6 +185,7 @@ def _bucle_juego(materias_meta: dict, path_plantillas) -> None:
 def main() -> None:
     try:
         materias_meta = cargar_materias(PATH_MATERIAS)
+        preguntas_dataset = cargar_preguntas(PATH_PREGUNTAS, materias_meta)
         path_plantillas = resolver_plantillas()
     except FileNotFoundError as e:
         print(str(e))
@@ -188,7 +194,7 @@ def main() -> None:
     registrar_atajo_feedback(ejecutar_feedback_rapido)
     try:
         _tutorial_inicio()
-        _bucle_juego(materias_meta, path_plantillas)
+        _bucle_juego(materias_meta, preguntas_dataset, path_plantillas)
     except SalirPrograma:
         pass
     except KeyboardInterrupt:

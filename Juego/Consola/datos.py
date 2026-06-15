@@ -6,72 +6,20 @@ from __future__ import annotations
 
 import csv
 import json
-import re
 from pathlib import Path
 
+from . import _scripts_path  # noqa: F401 — registra Files/Scripts en sys.path
 from .modelos import BancoPreguntas, ETIQUETA_BANCO, Pregunta
-
-
-def _norm_clave(texto: str) -> str:
-    return (texto or "").strip().lower()
-
-
-def clave_contenido(materia: str, texto: str, opciones: dict[str, str], correcta: str) -> tuple:
-    return (
-        _norm_clave(materia),
-        _norm_clave(texto),
-        _norm_clave(opciones.get("A", "")),
-        _norm_clave(opciones.get("B", "")),
-        _norm_clave(opciones.get("C", "")),
-        _norm_clave(opciones.get("D", "")),
-        _norm_clave(correcta),
-    )
+from utils_plantillas_core import (  # noqa: E402
+    clave_contenido,
+    expandir_plantilla_instancias,
+    claves_desde_csv,
+    tiene_placeholders,
+)
 
 
 def claves_dataset(path_csv: Path) -> set[tuple]:
-    claves: set[tuple] = set()
-    with path_csv.open("r", encoding="utf-8", newline="") as f:
-        for row in csv.DictReader(f, delimiter=";"):
-            materia = (row.get("Materia") or row.get("Tema") or "").strip()
-            opciones = {L: (row.get(L) or "").strip() for L in ("A", "B", "C", "D")}
-            correcta = (row.get("Correcta") or "").strip().upper()
-            if not materia or not (row.get("Pregunta") or "").strip():
-                continue
-            claves.add(
-                clave_contenido(materia, row.get("Pregunta", ""), opciones, correcta)
-            )
-    return claves
-
-
-def _tiene_placeholders(texto: str) -> bool:
-    return bool(re.search(r"\{[^{}]+\}", texto or ""))
-
-
-def _expandir_plantilla(tema: str, t: dict) -> list[dict]:
-    base_opts = {L: (t.get(L) or "").strip() for L in ("A", "B", "C", "D")}
-    base = {
-        "materia": tema,
-        "pregunta": (t.get("pregunta") or "").strip(),
-        "opciones": dict(base_opts),
-        "correcta": (t.get("correcta") or "").strip().upper(),
-        "dificultad": (t.get("dificultad") or "Media").strip(),
-        "tipo": (t.get("tipo") or "Teoria").strip(),
-        "uso": (t.get("uso") or "").strip(),
-    }
-    variaciones = t.get("variaciones")
-    if not variaciones:
-        return [base]
-    instancias: list[dict] = []
-    for var in variaciones:
-        p = base["pregunta"]
-        opts = dict(base["opciones"])
-        for key, val in var.items():
-            ph = "{" + str(key) + "}"
-            p = p.replace(ph, str(val))
-            for L in ("A", "B", "C", "D"):
-                opts[L] = opts[L].replace(ph, str(val))
-        instancias.append({**base, "pregunta": p, "opciones": opts})
-    return instancias
+    return claves_desde_csv(path_csv)
 
 
 def _plantilla_a_pregunta(inst: dict, materias_meta: dict[str, dict[str, str]]) -> Pregunta | None:
@@ -83,7 +31,7 @@ def _plantilla_a_pregunta(inst: dict, materias_meta: dict[str, dict[str, str]]) 
     if not texto or not all(opciones.values()):
         return None
     bloque = texto + "".join(opciones.values())
-    if _tiene_placeholders(bloque):
+    if tiene_placeholders(bloque):
         return None
     materia = inst["materia"]
     mm = materias_meta.get(materia, {})
@@ -124,7 +72,7 @@ def cargar_preguntas_plantillas(
         if not tema:
             continue
         for t in items:
-            for inst in _expandir_plantilla(tema, t):
+            for inst in expandir_plantilla_instancias(tema, t):
                 k = clave_contenido(
                     inst["materia"],
                     inst["pregunta"],

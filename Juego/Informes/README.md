@@ -8,7 +8,7 @@ Aquí se guardan los informes de partida en modo examen cerrado (ficheros `.txt`
 
 **No se versionan** en git (`Juego/Informes/*` en `.gitignore`; solo `.gitkeep` queda en el repositorio).
 
-Para borrar informes y otros `.txt` temporales:
+Para borrar informes y otros `.txt` temporales del juego (solo esta carpeta y `Juego/Feedback/`):
 
 ```bash
 python borrar_temporales.py --solo-txt

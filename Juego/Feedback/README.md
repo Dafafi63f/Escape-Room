@@ -8,7 +8,7 @@ Copias locales de los mensajes enviados desde el **modo feedback** (menú princi
 
 **No se versionan** en git (`Juego/Feedback/*` en `.gitignore`; solo `.gitkeep` queda en el repositorio).
 
-Para borrar estas copias y otros `.txt` temporales:
+Para borrar estas copias y otros `.txt` temporales del juego (solo esta carpeta y `Juego/Informes/`):
 
 ```bash
 python borrar_temporales.py --solo-txt

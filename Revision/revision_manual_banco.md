@@ -235,22 +235,22 @@ Cálculo: mínimos cuadráticos, holguras, Hessiano \(2I\), complementariedad KK
 
 ### Estado cerrado para uso (2026-06)
 
-**Datos listos:** `Preguntas.csv` (480/480 revisadas), `plantillas.json` (480 filas reflejadas como `dataset_480`, pool extra 24×40, sin duplicados exactos globales), `listado_materias.csv`. Juego modo libre: banco 1 = **MODO SEGURO**; bancos 2–3 = beta. Comprobación: `python Files/Scripts/mantenimiento.py auditar-plantillas`, `python Files/Scripts/mantenimiento.py duplicados revisar`.
+**Datos listos:** `Preguntas.csv` (480/480 revisadas), `plantillas.json` (480 copias `dataset_480` + pool extra; **1289** entradas totales tras dedup 2026-06-15), `listado_materias.csv`. Juego modo libre: banco 1 = **MODO SEGURO**; bancos 2–3 = beta. Comprobación: `python Files/Scripts/mantenimiento.py validar`, `python Files/Scripts/duplicados.py revisar`.
 
-### Calidad / unicidad semántica (futuro — no bloquea el TFG actual)
+### Calidad / unicidad semántica
 
-1. **CSV:** 3 pares *similares* (no exactos): Id 14↔21, 298↔322, 69↔72 — `duplicados.py revisar`.
-2. **Plantillas:** ~13 pares similares **dentro** de la misma materia; ~129 **entre** materias (catálogo por temática + sufijo `[materia]`).
-3. **Catálogo:** ampliar `Files/catalogo_internet_plantillas.py` con preguntas propias por materia.
-4. **Repuesto:** opcional alinear/eliminar repuestos con enunciado parecido pero opciones distintas al CSV (LSTM, Sharpe, …).
-5. **Modo beta:** dedup semántica al cargar las 960 extra si se exige cero solapamiento entre materias.
+**Resuelto (2026-06-15):** `duplicados.py revisar` → **0 pares similares** en CSV y en plantillas intra-materia. Sustituciones en CSV: Id **21**, **25**, **72**, **125**, **298**, **322**; corrección previa Id **83** (Tipo). Plantillas: dedup semántica (`duplicados.py plantillas` + limpieza intra-tema y cruce CSV); pool **1289** entradas.
+
+**Futuro (no bloquea el TFG):**
+
+1. **Catálogo:** ampliar `Files/Scripts/catalogo_internet_plantillas.py` con preguntas propias por materia.
+2. **Repuesto:** opcional alinear/eliminar repuestos con enunciado parecido pero opciones distintas al CSV (LSTM, Sharpe, …).
+3. **Modo beta:** las **468** coincidencias dataset↔plantillas son copias `dataset_*` intencionadas; dedup al cargar si se exige cero solapamiento en bancos 2–3.
 
 ### Otros pendientes de contenido
 
-1. **Id 25** (Fonaments): reforzar dificultad o sustituir pregunta de CPU.
-2. **Id 104** (BDR): valorar `DELETE` en Difícil vs JOIN / integridad referencial.
-3. **Plantillas EDO:** comprobar plantilla «autovalores 2×2» en sección EDO (no en CSV 111–120).
-4. **Producto:** **modos historia y feedback** operativos en consola; evolución CSV (`Materias_relacionadas` / prerrequisitos) y capa gráfica pendientes. Bloques **289–480** documentados en secciones abajo.
+1. **Plantillas EDO:** comprobar plantilla «autovalores 2×2» en sección EDO (no en CSV 111–120).
+2. **Producto:** evolución CSV (`Materias_relacionadas` / prerrequisitos) y capa gráfica pendientes.
 
 ### 301–312 (Bases de Dades No Relacionals)
 

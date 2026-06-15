@@ -26,7 +26,7 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | Lógica interna (bancos, puntuación, filtros) | [`Juego/Consola/README.md`](Juego/Consola/README.md) |
 | Scripts de mantenimiento y balanceo | [`Files/README.md`](Files/README.md) → [`Files/Scripts/README.md`](Files/Scripts/README.md) |
 | Scripts legado de regeneración CSV | [`Files/Archivo/README.md`](Files/Archivo/README.md) |
-| Pruebas unitarias | [`Juego/Tests/README.md`](Juego/Tests/README.md) |
+| Pruebas unitarias | [`Tests/README.md`](Tests/README.md) |
 | Trazabilidad revisión manual del banco | [`Revision/revision_manual_banco.md`](Revision/revision_manual_banco.md) |
 | Estado, feedback tutor, pendientes | [`Revision/ESTADO.md`](Revision/ESTADO.md) |
 | Exportación Word de la memoria | [`Entrega/README.md`](Entrega/README.md) |
@@ -41,7 +41,9 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | [`Entrega/`](Entrega/README.md) | `Memoria/` (LaTeX, Word), `Figuras/`, scripts de exportación |
 | [`Revision/`](Revision/ESTADO.md) | Estado del proyecto, feedback tutor; PDF anotados locales (gitignored) |
 | [`Memoria_TFG.md`](Memoria_TFG.md) | Borrador Markdown de la memoria (raíz) |
-| [`borrar_temporales.py`](borrar_temporales.py) | Limpia `__pycache__` y `.txt` temporales en todo el proyecto |
+| [`Tests/`](Tests/README.md) | Pruebas unitarias (51 tests) y CI |
+| [`borrar_temporales.py`](borrar_temporales.py) | Limpia `__pycache__` y `.txt` de `Juego/Informes/` y `Juego/Feedback/` |
+| [`requirements-dev.txt`](requirements-dev.txt) | Dependencias de desarrollo (pandas, matplotlib, pyinstaller) |
 
 ## Memoria — exportar Word
 
@@ -86,10 +88,31 @@ Detalle: [`Juego/README.md`](Juego/README.md#ejecutable-opcional).
 ## Pruebas
 
 ```bash
-python -m unittest discover -s Juego/Tests -v
+python -m unittest discover -s Tests -v
 ```
 
-Ver [`Juego/Tests/README.md`](Juego/Tests/README.md).
+Solo juego o solo scripts:
+
+```bash
+python -m unittest discover -s Tests/Juego -v
+python -m unittest discover -s Tests/Scripts -v
+```
+
+Ver [`Tests/README.md`](Tests/README.md).
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`): suite `Tests/`, `mantenimiento.py validar` en Python 3.10 y 3.12.
+
+## Dependencias de desarrollo
+
+El juego en consola solo necesita Python 3.10+ (stdlib). Para scripts de mantenimiento, figuras de la memoria y build del `.exe`:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Pandoc (binario externo) para `Entrega/exportar_memoria.py`.
 
 ## Limpieza
 
@@ -100,4 +123,4 @@ python borrar_temporales.py --solo-pycache
 python borrar_temporales.py --solo-txt
 ```
 
-Recorre todo el proyecto y omite `build/`, `.venv/` y similares. Los `.txt` de `Juego/Informes/` y `Juego/Feedback/` entran en la limpieza.
+Recorre todo el proyecto para `__pycache__`. Los `.txt` solo en `Juego/Informes/` y `Juego/Feedback/`.

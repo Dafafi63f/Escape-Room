@@ -137,5 +137,29 @@ def resolver_config_creador_privado() -> Path | None:
         return None
 
 
-PATH_PREGUNTAS = resolver_dataset()
-PATH_MATERIAS = resolver_listado_materias()
+_path_preguntas: Path | None = None
+_path_materias: Path | None = None
+
+
+def path_preguntas() -> Path:
+    """Ruta a ``Preguntas.csv`` (resuelve en la primera llamada)."""
+    global _path_preguntas
+    if _path_preguntas is None:
+        _path_preguntas = resolver_dataset()
+    return _path_preguntas
+
+
+def path_materias() -> Path:
+    """Ruta a ``listado_materias.csv`` (resuelve en la primera llamada)."""
+    global _path_materias
+    if _path_materias is None:
+        _path_materias = resolver_listado_materias()
+    return _path_materias
+
+
+def __getattr__(name: str) -> Path:
+    if name == "PATH_PREGUNTAS":
+        return path_preguntas()
+    if name == "PATH_MATERIAS":
+        return path_materias()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

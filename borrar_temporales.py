@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Borra artefactos temporales del proyecto: ``__pycache__`` y ficheros ``.txt``.
+"""Borra artefactos temporales del proyecto: ``__pycache__`` y ficheros ``.txt`` de informes/feedback.
 
-Recorre todo el TFG (salvo ``.venv``, ``build``, ``.git``, etc.).
+Los ``.txt`` solo se buscan en ``Juego/Informes/`` y ``Juego/Feedback/`` (no en todo el repo).
+Recorre todo el TFG para ``__pycache__`` (salvo ``.venv``, ``build``, ``.git``, etc.).
 
 Uso (desde la raíz del TFG):
   python borrar_temporales.py
@@ -22,7 +23,13 @@ from pathlib import Path
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-BASE = Path(__file__).resolve().parent
+_BASE = Path(__file__).resolve().parent
+
+# Solo estos directorios contienen .txt generados al jugar (informes, feedback).
+_CARPETAS_TXT_TEMPORALES = (
+    _BASE / "Juego" / "Informes",
+    _BASE / "Juego" / "Feedback",
+)
 
 _OMITIR_PARTES = frozenset({
     ".venv",
@@ -64,7 +71,7 @@ def _formatear_tamano(bytes_total: int) -> str:
 
 
 def listar_pycache(base: Path | None = None) -> list[Path]:
-    raiz = base or BASE
+    raiz = base or _BASE
     return sorted(
         p
         for p in raiz.rglob("__pycache__")
@@ -73,12 +80,16 @@ def listar_pycache(base: Path | None = None) -> list[Path]:
 
 
 def listar_txt_temporales(base: Path | None = None) -> list[Path]:
-    raiz = base or BASE
-    return sorted(
-        p
-        for p in raiz.rglob("*.txt")
-        if p.is_file() and not _dentro_de_omitidos(p, raiz)
-    )
+    """Solo informes y feedback del juego; no toca otros ``.txt`` del repo."""
+    raiz = base or _BASE
+    encontrados: list[Path] = []
+    for carpeta in _CARPETAS_TXT_TEMPORALES:
+        if not carpeta.is_dir():
+            continue
+        for p in carpeta.glob("*.txt"):
+            if p.is_file() and not _dentro_de_omitidos(p, raiz):
+                encontrados.append(p)
+    return sorted(encontrados)
 
 
 def borrar_temporales(
@@ -87,7 +98,7 @@ def borrar_temporales(
     incluir_pycache: bool = True,
     incluir_txt: bool = True,
 ) -> ResumenLimpieza:
-    raiz = base or BASE
+    raiz = base or _BASE
     resumen = ResumenLimpieza()
 
     if incluir_pycache:
@@ -156,8 +167,8 @@ def main(argv: list[str] | None = None) -> int:
     incluir_pycache = not args.solo_txt
     incluir_txt = not args.solo_pycache
 
-    pycache = listar_pycache(BASE) if incluir_pycache else []
-    txt = listar_txt_temporales(BASE) if incluir_txt else []
+    pycache = listar_pycache(_BASE) if incluir_pycache else []
+    txt = listar_txt_temporales(_BASE) if incluir_txt else []
 
     if not _imprimir_listado(
         pycache=pycache,
@@ -173,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     resumen = borrar_temporales(
-        BASE,
+        _BASE,
         incluir_pycache=incluir_pycache,
         incluir_txt=incluir_txt,
     )

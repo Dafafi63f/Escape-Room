@@ -9,21 +9,14 @@ Validación y estadísticas de ``Data/Preguntas.csv`` (solo lectura).
 
 from __future__ import annotations
 
-from pathlib import Path
-
-BASE = Path(__file__).resolve().parent.parent.parent
-
+import argparse
+import re
 import sys
 from pathlib import Path
 
 _SCRIPTS = Path(__file__).resolve().parent
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
-
-import argparse
-import re
-import sys
-from pathlib import Path
 
 import pandas as pd
 

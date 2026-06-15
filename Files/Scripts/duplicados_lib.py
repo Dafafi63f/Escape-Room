@@ -30,6 +30,7 @@ from utils_deduplicacion import (
 )
 from utils_dataset_csv import fila_pregunta, guardar_filas_csv, materia_de_fila, ordenar_filas_por_tema_y_id, renumerar_ids
 from utils_texto import normalizar_basico
+from utils_plantillas_core import expandir_plantilla_csv_filas
 
 PATH_PREGUNTAS = BASE / "Data" / "Preguntas.csv"
 PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
@@ -44,45 +45,7 @@ def _safe_print(msg: str) -> None:
 
 
 def expandir_plantilla(template: dict) -> list[dict]:
-    preguntas = []
-    variaciones = template.get("variaciones")
-    if variaciones:
-        for var in variaciones:
-            p = template["pregunta"]
-            a, b, c, d = template["A"], template["B"], template["C"], template["D"]
-            for key, val in var.items():
-                ph = "{" + str(key) + "}"
-                p = p.replace(ph, str(val))
-                a = a.replace(ph, str(val))
-                b = b.replace(ph, str(val))
-                c = c.replace(ph, str(val))
-                d = d.replace(ph, str(val))
-            preguntas.append(
-                {
-                    "Pregunta": p,
-                    "A": a,
-                    "B": b,
-                    "C": c,
-                    "D": d,
-                    "Correcta": template["correcta"],
-                    "Dificultad": template.get("dificultad", "Media"),
-                    "Tipo": template.get("tipo", "Teoria"),
-                }
-            )
-    else:
-        preguntas.append(
-            {
-                "Pregunta": template["pregunta"],
-                "A": template["A"],
-                "B": template["B"],
-                "C": template["C"],
-                "D": template["D"],
-                "Correcta": template["correcta"],
-                "Dificultad": template.get("dificultad", "Media"),
-                "Tipo": template.get("tipo", "Teoria"),
-            }
-        )
-    return preguntas
+    return expandir_plantilla_csv_filas(template)
 
 
 def _bucket_key(fila: dict) -> str:

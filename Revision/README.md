@@ -1,5 +1,7 @@
 # Revisión — feedback del tutor y estado del proyecto
 
+Documentación de seguimiento del TFG. **Última revisión de banco:** 2026-06-15 (0 pares similares; pool plantillas 1289).
+
 | Fichero | Rol |
 |---------|-----|
 | **[`ESTADO.md`](ESTADO.md)** | **Documento principal:** progreso, feedback del tutor, pendientes, bitácora |

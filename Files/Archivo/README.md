@@ -1,4 +1,6 @@
-# Archivo — scripts legado del CSV
+# Archivo — scripts legado del CSV (solo consulta histórica)
+
+> **No usar en el día a día del TFG.** Este directorio conserva scripts de regeneración del banco cerrado (2026-06). Para validar o mantener datos actuales, usa siempre [`../Scripts/mantenimiento.py`](../Scripts/mantenimiento.py).
 
 Scripts antiguos de **regeneración y reequilibrio** del dataset (`Preguntas.csv`). El banco en producción es cerrado (480 preguntas); estos comandos están bloqueados salvo `TFG_PERMITIR_CSV=1`.
 

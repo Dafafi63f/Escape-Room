@@ -6,13 +6,13 @@ Ficheros que usa el juego y las herramientas de mantenimiento.
 |---------|-----|
 | `Preguntas.csv` | Banco principal (**480** preguntas cerradas en producción) |
 | `listado_materias.csv` | Metadatos de **40** materias (`Grupo`, `Nivel`, `Curso`, `Semestre`, `Tematica`, …) |
-| `plantillas.json` | Plantillas / pool extra (modos beta del juego) |
+| `plantillas.json` | Plantillas / pool extra (**1289** entradas; modos beta del juego) |
 | `criterios_clasificacion_materia.csv` | Palabras clave por materia (`utils_puntuacion_materia.py`) |
 | `Historic_qualificacions_MatCAD_completo.csv` | Histórico de qualificacions — **modo historia** |
 | `Històric_qualificacions_MatCAD.xlsx` | Fuente original del histórico; el juego usa el **CSV** |
 | `creador_privado.json` | Datos personales y secretos del creador (local, no se versiona) |
 
-El juego resuelve rutas con [`Juego/Consola/rutas.py`](../Juego/Consola/rutas.py): busca una carpeta `Data/` en la raíz del proyecto, en el directorio de trabajo o junto al `.exe` (PyInstaller extrae `Data/` dentro del bundle).
+El juego resuelve rutas con [`Juego/Consola/rutas.py`](../Juego/Consola/rutas.py) (resolución lazy en la primera llamada): busca una carpeta `Data/` en la raíz del proyecto, en el directorio de trabajo o junto al `.exe` (PyInstaller extrae `Data/` dentro del bundle).
 
 ## Esquema de `Preguntas.csv`
 
@@ -37,6 +37,8 @@ Los metadatos curriculares (`curso`, `semestre`, `grupo`, `nivel`, `tematica`) *
 Validación: `python Files/Scripts/mantenimiento.py validar`
 
 Auditoría de distractores (consola; `--json` opcional): `python Files/Scripts/mantenimiento.py auditar-distractores`
+
+Duplicados semánticos: `python Files/Scripts/duplicados.py revisar` → **0 pares similares** en CSV y plantillas intra-materia (2026-06-15).
 
 Regeneración histórica del CSV: solo scripts en `Files/Archivo/` con `TFG_PERMITIR_CSV=1`.
 

@@ -21,11 +21,8 @@ import argparse
 import json
 
 from catalogo_internet_plantillas import fusionar_con_repuesto  # noqa: E402
-from equilibrar_pool_extra_juego import (  # noqa: E402
-    PATH_PLANTILLAS,
-    clave_contenido,
-    claves_dataset_csv,
-)
+from equilibrar_pool_extra_juego import PATH_PLANTILLAS, claves_dataset_csv  # noqa: E402
+from utils_plantillas_core import clave_contenido  # noqa: E402
 from utils_dataset_csv import borrar_pycache_en_proyecto  # noqa: E402
 from utils_deduplicacion import deduplicar_plantillas_dict  # noqa: E402
 from utils_orden_temas import cargar_orden_temas  # noqa: E402

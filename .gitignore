@@ -12,7 +12,13 @@ Juego/juego_cuestionario.exe
 
 # --- Temporales (limpiar con borrar_temporales.py) ---
 __pycache__/
-*.txt
+Juego/Informes/*.txt
+Juego/Feedback/*.txt
+
+# --- Build PyInstaller (Juego/build_exe_onefile.ps1) ---
+Juego/build/
+Juego/dist/
+Juego/*.spec
 
 # --- Revisión del tutor (PDF con comentarios; local) ---
 Revision/*

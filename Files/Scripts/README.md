@@ -36,7 +36,7 @@ python Files/Scripts/mantenimiento.py temporales --dry-run
 | `auditar-plantillas` | Cobertura de `plantillas.json` |
 | `plantillas pipeline` | limpiar → inyectar → repuesto → dedup |
 | `criterios` | Actualiza `criterios_clasificacion_materia.csv` |
-| `duplicados revisar` / `plantillas` | Ver `duplicados.py` |
+| `duplicados revisar` / `plantillas` | Ver `duplicados.py` — **0 pares similares** en CSV y plantillas intra-materia (2026-06-15) |
 | `temporales` | Limpieza de `__pycache__` bajo `Files/` |
 
 ## Simulación de evaluación al azar
@@ -61,7 +61,7 @@ Ver la cabecera de [`mantenimiento.py`](mantenimiento.py) para la lista completa
 | `auditoria.py` | Auditorías del dataset y plantillas (`distractores`, `plantillas`; consola y `--json`) |
 | `duplicados.py` + `duplicados_lib.py` | `revisar`, `plantillas`, `todo`, `exacto`, `enunciado` |
 | `plantillas_sync.py` | `inyectar`, `limpiar`, `repuesto`, `pipeline` sobre `plantillas.json` |
-| `equilibrar_pool_extra_juego.py` | Pool extra 24×40 para el juego (solo JSON) |
+| `equilibrar_pool_extra_juego.py` | Pool extra 24×40 para el juego (solo JSON; pool actual **1289** tras dedup 2026-06-15) |
 | `dedup_reemplazar_plantillas.py --inplace` | Purga sintéticas + catálogo internet + dedup |
 | `validacion_dataset.py` | Revisión amplia del CSV |
 | `exportar_criterios_clasificacion_materia.py` | Regenera `criterios_clasificacion_materia.csv` |
@@ -88,10 +88,15 @@ Ver la cabecera de [`mantenimiento.py`](mantenimiento.py) para la lista completa
 | `utils_orden_temas.py`, `utils_texto.py` | Orden de materias y normalización |
 | `utils_deduplicacion.py` | Criterios de similitud |
 | `utils_plantillas_pool.py` | Pool plantillas y etiqueta `dataset_480` |
+| `utils_plantillas_core.py` | Claves de contenido y expansión de plantillas (compartido con `Juego/Consola/datos.py`) |
 | `utils_clasificacion_pregunta.py`, `utils_puntuacion_materia.py` | Clasificación semántica |
 | `plantillas_repuesto_catalogo.py`, `catalogo_internet_plantillas.py` | Catálogos de ampliación |
 
 No están pensados como API pública del juego; la lógica de partida vive en `Juego/Consola/`.
+
+## Pruebas
+
+Suite unificada en [`Tests/`](../../Tests/README.md) (51 tests). CI: `.github/workflows/ci.yml`.
 
 ## Scripts unificados (nombres antiguos)
 

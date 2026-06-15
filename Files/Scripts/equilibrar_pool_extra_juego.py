@@ -19,7 +19,6 @@ if str(_SCRIPTS) not in sys.path:
 
 import argparse
 import copy
-import csv
 import json
 import random
 import re
@@ -31,6 +30,12 @@ from plantillas_repuesto_catalogo import REPUESTO_CATALOGO  # noqa: E402
 from utils_dataset_csv import borrar_pycache_en_proyecto  # noqa: E402
 from utils_orden_temas import cargar_orden_temas  # noqa: E402
 from utils_plantillas_pool import es_uso_copia_dataset  # noqa: E402
+from utils_plantillas_core import (  # noqa: E402
+    clave_contenido,
+    claves_desde_csv,
+    expandir_plantilla_base,
+    tiene_placeholders,
+)
 
 _BASE = Path(__file__).resolve().parent.parent.parent
 PATH_PLANTILLAS = _BASE / "Data" / "plantillas.json"
@@ -51,63 +56,12 @@ _USO_PRIORITY = {
 }
 
 
-def _norm_clave(texto: str) -> str:
-    return (texto or "").strip().lower()
-
-
-def clave_contenido(materia: str, texto: str, opciones: dict[str, str], correcta: str) -> tuple:
-    return (
-        _norm_clave(materia),
-        _norm_clave(texto),
-        _norm_clave(opciones.get("A", "")),
-        _norm_clave(opciones.get("B", "")),
-        _norm_clave(opciones.get("C", "")),
-        _norm_clave(opciones.get("D", "")),
-        _norm_clave(correcta),
-    )
-
-
 def claves_dataset_csv() -> set[tuple]:
-    claves: set[tuple] = set()
-    with PATH_CSV.open(encoding="utf-8", newline="") as f:
-        for row in csv.DictReader(f, delimiter=";"):
-            materia = (row.get("Materia") or row.get("Tema") or "").strip()
-            opciones = {L: (row.get(L) or "").strip() for L in ("A", "B", "C", "D")}
-            correcta = (row.get("Correcta") or "").strip().upper()
-            if materia and (row.get("Pregunta") or "").strip():
-                claves.add(
-                    clave_contenido(materia, row.get("Pregunta", ""), opciones, correcta)
-                )
-    return claves
+    return claves_desde_csv(PATH_CSV)
 
 
-def _expandir_plantilla(t: dict) -> list[dict]:
-    letras = ("A", "B", "C", "D")
-    base_opts = {L: (t.get(L) or "").strip() for L in letras}
-    base = {
-        "pregunta": (t.get("pregunta") or "").strip(),
-        "opciones": dict(base_opts),
-        "correcta": (t.get("correcta") or "").strip().upper(),
-        "dificultad": (t.get("dificultad") or "Media").strip(),
-        "tipo": (t.get("tipo") or "Teoria").strip(),
-    }
-    vars_ = t.get("variaciones")
-    if not vars_:
-        return [base]
-    outs = []
-    for var in vars_:
-        p, opts = base["pregunta"], dict(base["opciones"])
-        for key, val in var.items():
-            ph = "{" + str(key) + "}"
-            p = p.replace(ph, str(val))
-            for L in letras:
-                opts[L] = opts[L].replace(ph, str(val))
-        outs.append({**base, "pregunta": p, "opciones": opts})
-    return outs
-
-
-def _tiene_placeholders(texto: str) -> bool:
-    return bool(re.search(r"\{[^{}]+\}", texto or ""))
+_expandir_plantilla = expandir_plantilla_base
+_tiene_placeholders = tiene_placeholders
 
 
 def extra_keys_de_plantilla(tema: str, t: dict, claves_ds: set[tuple]) -> set[tuple]:

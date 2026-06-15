@@ -156,7 +156,7 @@ La arquitectura del software se organiza en capas desacopladas (figura 1): el la
 | Modos | `modo_libre.py`<br>`modo_historia.py`<br>`modo_feedback.py` | Flujos pedagógicos distintos |
 | Motor | `motor_partida.py`<br>`reglas_partida.py`<br>`politica_reglas.py` | Preguntas, vidas, puntuación, informes |
 | Datos | `datos.py`<br>`modelos.py`<br>`rutas.py` | Carga CSV/JSON, metadatos, rutas |
-| Interacción | `consola.py`<br>`entrada_menu.py`<br>`navegacion.py` | Teclas, menús, pausa, ayuda |
+| Interacción | `consola.py`<br>`entrada_teclas.py`<br>`entrada_menu.py`<br>`navegacion.py` | Teclas (`msvcrt` en Windows), menús, pausa, ayuda |
 | Historia | `generador_examen_historia.py` | Ponderación según histórico de calificaciones |
 
 **Modos implementados:**
@@ -186,8 +186,9 @@ La arquitectura del software se organiza en capas desacopladas (figura 1): el la
 | Balance estructural del CSV | `mantenimiento.py validar` |
 | Revisión manual del contenido | Bloques documentados en `Revision/revision_manual_banco.md` |
 | Auditoría de distractores | `mantenimiento.py auditar-distractores` (consola; `--json` opcional) |
-| Duplicados semánticos | `duplicados.py revisar` |
-| Pruebas de regresión del juego | `python -m unittest discover -s Juego/Tests -v` |
+| Duplicados semánticos | `duplicados.py revisar` (0 pares similares en CSV y plantillas intra-materia, 2026-06-15) |
+| Pruebas de regresión | `python -m unittest discover -s Tests -v` (51 tests) |
+| Integración continua | GitHub Actions (`.github/workflows/ci.yml`) |
 | Revisión con profesorado | Identificación de solapamiento temático y prerrequisitos (véase sección 7) |
 | Simulación Monte Carlo (respuestas al azar) | `simulacion_evaluacion_azar.py` (véase §5.7) |
 
@@ -212,7 +213,7 @@ Se obtuvo un banco cerrado de **480 preguntas** con las siguientes propiedades v
 - **40 materias** alineadas con el listado del grado.
 - **12 preguntas por materia** siguiendo el patrón 2FT 2MT 2DT 2FC 2MC 2DC.
 - **Revisión manual 480/480** completada en cinco tramos temporales.
-- **Auditorías de calidad** ejecutadas (`mantenimiento.py auditar-distractores`, `duplicados.py revisar`): detección de pares similares pendientes de sustitución (3 en CSV modo seguro, ~13 intra-materia en plantillas beta).
+- **Auditorías de calidad** ejecutadas (`mantenimiento.py auditar-distractores`, `duplicados.py revisar`): **0 pares similares** en CSV y plantillas intra-materia tras sustituciones y deduplicación (junio 2026). Pool de plantillas beta: **1289** entradas.
 
 El banco distingue **modo seguro** (solo dataset revisado) y **modo beta** (pool ampliado con plantillas no revisadas, hasta 1440 ítems jugables), dejando clara la trazabilidad para evaluación formal del TFG.
 
@@ -225,12 +226,12 @@ Se entregó un cuestionario en consola funcional:
 | Componente | Resultado |
 |------------|-----------|
 | Lanzador | `Juego/juego_cuestionario.py` (tutorial de foco de teclado al inicio) |
-| Paquete de lógica | `Juego/Consola/` (18 módulos) |
+| Paquete de lógica | `Juego/Consola/` (19 módulos) |
 | Modo libre | Filtros multidimensionales, informes `.txt` |
 | Modo historia | Generador de examen según `Historic_qualificacions_MatCAD_completo.csv` |
 | Modo feedback | Guardado local + envío SMTP opcional |
 | Ejecutable | Build opcional con PyInstaller |
-| Pruebas | Suite en `Juego/Tests/` (informes, entrada, feedback, configuración) |
+| Pruebas | Suite en `Tests/` — **51 tests** (`Tests/Juego/`, `Tests/Scripts/`); CI en GitHub Actions |
 
 ### 5.3 Organización curricular modelada
 
@@ -268,7 +269,7 @@ Diagrama detallado (40 materias con posición curricular): [`Data/README.md`](Da
 
 ### 5.4 Herramientas de mantenimiento
 
-Se desarrolló un conjunto de scripts en `Files/Scripts/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida en consola), deduplicación y estadísticas del histórico de qualificacions. Los scripts de regeneración masiva del CSV se aislaron en `Files/Archivo/` con protección de banco cerrado. Catálogo de comandos: [`Files/Scripts/README.md`](Files/Scripts/README.md).
+Se desarrolló un conjunto de scripts en `Files/Scripts/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida en consola), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en `utils_plantillas_core.py`, compartida con `Juego/Consola/datos.py`. Los scripts de regeneración masiva del CSV se aislaron en `Files/Archivo/` con protección de banco cerrado. Suite de pruebas en `Tests/` (51 tests) con CI en GitHub Actions. Catálogo de comandos: [`Files/Scripts/README.md`](Files/Scripts/README.md).
 
 ### 5.5 Síntesis cuantitativa
 
@@ -352,16 +353,15 @@ El **objetivo general** se cumple de forma parcial: existe un juego educativo in
 | OE2 | Retos por materias | **Cumplido** | Banco 480 ítems, Teoría/Cálculo, tres dificultades |
 | OE3 | Validación de respuestas | **Cumplido** | Motor A–D, puntuación, vidas, informes |
 | OE4 | Interfaz gráfica | Pendiente (futuro) | Solo consola; Pygame no utilizado |
-| OE5 | Valor formativo | **Parcialmente cumplido** | Banco validado y tests; sin estudio con usuarios |
+| OE5 | Valor formativo | **Parcialmente cumplido** | Banco validado, 51 tests + CI; sin estudio con usuarios |
 
 Los **objetivos específicos** OE2, OE3 y OE5 están cubiertos en su versión de consola. OE1 y OE4 (narrativa gráfica e interfaz visual) quedan explícitamente como trabajo futuro. Esta decisión es defendible: el prototipo valida el núcleo evaluable sin el coste de desarrollo gráfico, en línea con el principio de prototipado incremental en ingeniería del software.
 
 ### 6.2 Validez del banco de preguntas
 
-La **validez de contenido** se abordó mediante revisión manual exhaustiva y criterios de redacción acordados. La **validez estructural** se garantiza con reglas de balance automatizadas. Quedan abiertas:
+La **validez de contenido** se abordó mediante revisión manual exhaustiva y criterios de redacción acordados. La **validez estructural** se garantiza con reglas de balance automatizadas. La **validez semántica** fina se reforzó en junio de 2026 (sustitución de pares similares en CSV y deduplicación del pool de plantillas; `duplicados.py revisar` → 0 pares similares). Queda abierta:
 
-- la **validez semántica** fina (algunos pares de ítems muy similares),
-- y la **validez predictiva** (relación entre desempeño en el juego y desempeño académico real), no medida en este TFG.
+- la **validez predictiva** (relación entre desempeño en el juego y desempeño académico real), no medida en este TFG.
 
 La revisión con profesorado puso de manifiesto limitaciones del modelo de una sola etiqueta `Materia`:
 
@@ -388,7 +388,7 @@ El estudio no incluye **evaluación con usuarios**: no se recogieron datos de us
 
 ### 6.6 Trabajo futuro
 
-Entre las líneas futuras inmediatas figuran la implementación de `Materias_relacionadas` y `Prerequisitos` en el CSV y en los filtros del juego, el desarrollo de la capa gráfica escape room o novela gráfica, y la sustitución de pares de ítems semánticamente similares detectados por la auditoría. Conviene además contrastar si las mecánicas de juego aumentan la práctica respecto a un listado estático —mediante un piloto con usuarios (n ≈ 15–20, cuestionario SUS, tiempo de práctica)—, línea no formulada como hipótesis contrastada en este TFG por ausencia de datos. La integración con plataformas institucionales (Moodle, AulaWeb) completaría el despliegue en el grado.
+Entre las líneas futuras inmediatas figuran la implementación de `Materias_relacionadas` y `Prerequisitos` en el CSV y en los filtros del juego, el desarrollo de la capa gráfica escape room o novela gráfica, y un piloto con usuarios (n ≈ 15–20, cuestionario SUS, tiempo de práctica) para contrastar si las mecánicas de juego aumentan la práctica respecto a un listado estático —línea no formulada como hipótesis contrastada en este TFG por ausencia de datos. La integración con plataformas institucionales (Moodle, AulaWeb) completaría el despliegue en el grado.
 
 
 ## 7. Conclusiones
@@ -443,7 +443,7 @@ Veldkamp, A., van de Grint, L., Knippels, M. C. P. J., y van Joolingen, W. R. (2
 | B | Arquitectura del juego, modos, puntuación, bancos beta | [`Juego/Consola/README.md`](Juego/Consola/README.md) |
 | C | Scripts de mantenimiento, balanceo, auditorías | [`Files/Scripts/README.md`](Files/Scripts/README.md) |
 | D | Scripts legado de regeneración CSV | [`Files/Archivo/README.md`](Files/Archivo/README.md) |
-| E | Pruebas unitarias | [`Juego/Tests/README.md`](Juego/Tests/README.md) |
+| E | Pruebas unitarias | [`Tests/README.md`](Tests/README.md) |
 | F | Repositorio y guía rápida | [`README.md`](README.md) |
 | G | LaTeX, Word y exportación | [`Entrega/README.md`](Entrega/README.md) |
 

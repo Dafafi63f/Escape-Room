@@ -19,11 +19,11 @@ Id;Materia;Dificultad;Tipo;Pregunta;A;B;C;D;Correcta
 18;Càlcul en una Variable;Dificil;Teoria;¿Qué expresa el teorema del valor medio para derivadas en [a,b]?;f es constante en [a,b];Existe c en (a,b) con f'(c)=(f(b)-f(a))/(b-a);f tiene máximo en c;f'(a)=f'(b);B
 19;Càlcul en una Variable;Facil;Calculo;¿Cuál es la integral de e^x dx?;xe^x;e^x/x;e^x;e^(x+1);C
 20;Càlcul en una Variable;Facil;Calculo;¿Cuánto es ∫₀¹ x² dx?;1/2;1;2/3;1/3;D
-21;Càlcul en una Variable;Media;Calculo;¿Cuál es el límite de (x^2-1)/(x-1) cuando x tiende a 1?;2;0;1;No existe;A
+21;Càlcul en una Variable;Media;Calculo;¿Cuál es la derivada de x·e^x respecto a x?;e^x(1+x);e^x;x·e^x;2e^x;A
 22;Càlcul en una Variable;Media;Calculo;¿Cuál es el radio de convergencia de la serie Σ_{n=0}^∞ x^n?;0;1;2;∞;B
 23;Càlcul en una Variable;Dificil;Calculo;Serie ∑1/n² converge a?;∞;1;π²/6;e;C
 24;Càlcul en una Variable;Dificil;Calculo;Para la serie ∑1/n², ¿a qué converge?;∞;1;e;π²/6;D
-25;Fonaments de Computadors;Facil;Teoria;¿Qué es el ancho de banda?;Capacidad de transmisión de datos;Velocidad;Latencia;Throughput;A
+25;Fonaments de Computadors;Facil;Teoria;¿Qué unidad del procesador ejecuta operaciones aritméticas y lógicas?;ALU;Unidad de control;Registro de instrucciones;Bus del sistema;A
 26;Fonaments de Computadors;Facil;Teoria;¿Qué es la latencia?;Ancho de banda;Tiempo de respuesta;Throughput;Capacidad;B
 27;Fonaments de Computadors;Media;Teoria;¿Qué es un sistema de archivos journaling?;Comprime archivos;Encripta;Registra cambios antes de aplicarlos;Replica;C
 28;Fonaments de Computadors;Media;Teoria;¿Qué ventaja principal ofrece la memoria virtual?;Elimina la caché;Duplica el reloj del procesador;Obliga a usar solo memoria secuencial;Permite más espacio de direcciones lógico que RAM física;D
@@ -70,7 +70,7 @@ Id;Materia;Dificultad;Tipo;Pregunta;A;B;C;D;Correcta
 69;Algorítmia i Combinatòria en Grafs. Mètodes Heurístics;Media;Calculo;Grafo acíclico con 10 vértices y 7 aristas. ¿Cuántas componentes conexas?;3;1;2;4;A
 70;Algorítmia i Combinatòria en Grafs. Mètodes Heurístics;Media;Calculo;En A*, si para un nodo n se tiene g(n)=5 y h(n)=2, ¿cuál es f(n)=g(n)+h(n)?;3;7;10;2;B
 71;Algorítmia i Combinatòria en Grafs. Mètodes Heurístics;Dificil;Calculo;¿Qué calcula el algoritmo de Dijkstra desde un vértice origen s (pesos no negativos)?;Un matching bipartito máximo;Distancias mínimas entre todos los pares de vértices;Las distancias mínimas desde s hasta cada vértice alcanzable;Un ciclo hamiltoniano;C
-72;Algorítmia i Combinatòria en Grafs. Mètodes Heurístics;Dificil;Calculo;Grafo acíclico con 10 vértices y 4 aristas. ¿Cuántas componentes conexas?;1;5;No está determinado;6;D
+72;Algorítmia i Combinatòria en Grafs. Mètodes Heurístics;Dificil;Calculo;Un grafo planar conexo tiene 9 vértices y 17 aristas. En V−E+F=2, ¿cuántas caras F?;5;6;8;10;D
 73;Càlcul en Diverses Variables;Facil;Teoria;¿Cuándo f es diferenciable en un punto?;Si existe plano tangente que aproxima bien;Si tiene derivadas parciales;Si es continua;Si tiene gradiente;A
 74;Càlcul en Diverses Variables;Facil;Teoria;¿Qué son las coordenadas cilíndricas?;Solo (x,y,z);(r,θ,z) con x=r cos θ, y=r sin θ;Coordenadas esféricas;Coordenadas polares 3D;B
 75;Càlcul en Diverses Variables;Media;Teoria;∂²f/∂x∂y = ∂²f/∂y∂x bajo qué condición?;Siempre;Nunca;f C²;f lineal;C
@@ -81,7 +81,7 @@ Id;Materia;Dificultad;Tipo;Pregunta;A;B;C;D;Correcta
 80;Càlcul en Diverses Variables;Facil;Calculo;Integral doble de 1 sobre [0,1]×[0,1]?;2;0;0.5;1;D
 81;Càlcul en Diverses Variables;Media;Calculo;¿Cuánto es ∫∫_D 1 dA si D es círculo radio 1?;π;1;2π;π/2;A
 82;Càlcul en Diverses Variables;Media;Calculo;Para x = r·cos(θ) e y = r·sin(θ), ¿cuál es el jacobiano |∂(x,y)/∂(r,θ)|?;r²;r;1;r/2;B
-83;Càlcul en Diverses Variables;Dificil;Teoria;¿Qué es el problema del vanishing gradient?;Gradientes muy pequeños en capas profundas;Exploding gradient;Overfitting;Underfitting;A
+83;Càlcul en Diverses Variables;Dificil;Calculo;¿Qué es el problema del vanishing gradient?;Gradientes muy pequeños en capas profundas;Exploding gradient;Overfitting;Underfitting;A
 84;Càlcul en Diverses Variables;Dificil;Calculo;∂/∂y de x²y³?;2xy³;x²y²;6xy;3x²y²;D
 85;Càlcul Numèric;Facil;Teoria;¿Qué es la regla del trapecio?;Aproximación de integral por trapecios;Método de Simpson;Monte Carlo;Cuadratura de Gauss;A
 86;Càlcul Numèric;Facil;Teoria;¿Qué es el error de redondeo?;Error de truncamiento;Error por precisión finita de coma flotante;Error de modelo;Error de medición;B
@@ -123,7 +123,7 @@ Id;Materia;Dificultad;Tipo;Pregunta;A;B;C;D;Correcta
 122;Bases de Dades Relacionals;Facil;Teoria;¿Qué es una clave foránea?;Clave primaria;Referencia a clave primaria de otra tabla;Índice único;Check constraint;B
 123;Bases de Dades Relacionals;Media;Teoria;¿Qué hace HAVING?;Filtra filas antes de agrupar;Ordena;Filtra grupos después de GROUP BY;Agrupa;C
 124;Bases de Dades Relacionals;Media;Teoria;En el modelo entidad–relación, ¿qué elemento conecta dos tipos de entidad?;Atributo compuesto;Clave ajena aislada sin entidades;Índice bitmap obligatorio;Tipo de relación;D
-125;Bases de Dades Relacionals;Dificil;Teoria;¿Qué hace la sentencia DELETE?;Eliminar filas de una tabla;Insertar;Consultar;Modificar;A
+125;Bases de Dades Relacionals;Dificil;Teoria;Al ejecutar DELETE sobre una fila referenciada por FK con ON DELETE RESTRICT, ¿qué ocurre?;Falla la operación si existen filas hijas;Se borran en cascada todas las hijas;La FK pasa a NULL;Se ignora la restricción;A
 126;Bases de Dades Relacionals;Dificil;Teoria;¿Qué objetivo principal persigue la normalización en el diseño relacional?;Acelerar siempre las consultas;Reducir redundancia y anomalías de actualización;Cifrar los datos almacenados;Replicar tablas en varios servidores;B
 127;Bases de Dades Relacionals;Facil;Calculo;¿Máximo de columnas en clave compuesta?;1;2;Todas las de la tabla;10;C
 128;Bases de Dades Relacionals;Facil;Calculo;3 tablas con 2, 3, 4 filas. Producto cartesiano?;9;6;12;24;D
@@ -296,7 +296,7 @@ Id;Materia;Dificultad;Tipo;Pregunta;A;B;C;D;Correcta
 295;Teoria de la Informació;Facil;Calculo;Si H(X,Y)=3 bits y H(Y)=1 bit, ¿cuántos bits tiene H(X|Y)?;4 bits;1 bit;2 bits;3 bits;C
 296;Teoria de la Informació;Facil;Calculo;Un mensaje ocupa 1000 bits y un 10% son redundancia de canal (paridad). ¿Bits de información útil aproximados?;1000;100;1100;900;D
 297;Teoria de la Informació;Media;Calculo;¿Cuándo alcanza máximo la entropía de una Bernoulli(p)?;p=0.5;p=0.1;p=0.9;p=1;A
-298;Teoria de la Informació;Media;Calculo;¿Cuántos bits de auto-información tiene un símbolo con p=1/8?;0,125;3 bits;1 bit;8 bits;B
+298;Teoria de la Informació;Media;Calculo;En codificación Huffman con probabilidades 0,5 / 0,25 / 0,25, ¿longitud media del código en bits?;1;1,5;2;3;B
 299;Teoria de la Informació;Dificil;Calculo;El segundo teorema de Shannon (canal con ruido) establece que:;La entropía de toda fuente es cero;La información mutua es siempre negativa;Por debajo de la capacidad C se puede transmitir con error arbitrariamente pequeño;Huffman elimina todo error de canal;C
 300;Teoria de la Informació;Dificil;Calculo;Con Huffman óptimo y probabilidades (1/2, 1/4, 1/4), ¿longitud media en bits/símbolo?;2;1;2,5;1,5;D
 301;Bases de Dades No Relacionals;Facil;Teoria;¿Qué es MongoDB?;Base de datos documental (documentos JSON/BSON);Base de datos de grafos Neo4j;Sistema relacional SQL;Motor Redis solo clave-valor;A
@@ -320,7 +320,7 @@ Id;Materia;Dificultad;Tipo;Pregunta;A;B;C;D;Correcta
 319;Informació Quàntica;Facil;Calculo;¿Cuántos estados de Bell?;2;8;4;1;C
 320;Informació Quàntica;Facil;Calculo;¿Qué establece el teorema de no-clonación?;Cualquier estado cuántico puede copiarse perfectamente;Solo aplica a qubits en estado |0⟩;Equivale a la codificación Huffman;No existe procedimiento universal que clone un estado desconocido;D
 321;Informació Quàntica;Media;Calculo;En un sistema de n qubits, ¿cuántas amplitudes complejas hay en la base computacional?;2^n;n;2n;n²;A
-322;Informació Quàntica;Media;Calculo;¿Cuántos parámetros reales independientes describen un estado puro de un qubit (sin fase global)?;1;2;3;4;B
+322;Informació Quàntica;Media;Calculo;Si |α|² = 0,25 en un qubit |ψ⟩ = α|0⟩ + β|1⟩, ¿cuánto vale |β|²?;0,25;0,75;0,5;1;B
 323;Informació Quàntica;Dificil;Calculo;¿Cuál es la dimensión del espacio de Hilbert de n qubits?;n;2n;n²;2^n;C
 324;Informació Quàntica;Dificil;Calculo;Tras aplicar la puerta H a |0⟩, ¿probabilidad de medir |1⟩?;0;1;1/4;1/2;D
 325;Modelització i Simulació;Facil;Teoria;En anàlisi dimensional, ¿qué exige la homogeneidad de una ecuación física?;Que todos los términos tengan las mismas dimensiones (M,L,T);Que las constantes sean adimensionales siempre;Que no aparezca el tiempo;Que la solución sea única;A

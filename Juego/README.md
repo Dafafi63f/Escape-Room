@@ -8,7 +8,7 @@ Todo lo necesario para **jugar** en terminal (y, opcionalmente, empaquetar un `.
 | [`Consola/`](Consola/README.md) | Paquete Python con la lógica del juego (`from Consola...`) |
 | [`Informes/`](Informes/README.md) | Informes `.txt` de partidas (local, gitignored) |
 | [`Feedback/`](Feedback/README.md) | Copias locales de avisos al creador (local, gitignored) |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias |
+| [`Tests/`](../Tests/README.md) | Pruebas unitarias (suite unificada en la raíz) |
 | [`build_exe_onefile.ps1`](build_exe_onefile.ps1) | Genera `juego_cuestionario.exe` con PyInstaller |
 
 ## Jugar
@@ -21,7 +21,7 @@ python Juego/juego_cuestionario.py
 
 Requisito: Python 3.10+, solo biblioteca estándar. Datos en [`../Data/README.md`](../Data/README.md).
 
-Al arrancar, el lanzador muestra un **tutorial breve** de foco de teclado (hay que hacer clic en la línea `>>` de la terminal para que las teclas respondan). Detalle en [`Consola/entrada_menu.py`](Consola/entrada_menu.py).
+Al arrancar, el lanzador muestra un **tutorial breve** de foco de teclado (hay que hacer clic en la línea `>>` de la terminal para que las teclas respondan). Detalle en [`Consola/entrada_teclas.py`](Consola/entrada_teclas.py) y [`Consola/entrada_menu.py`](Consola/entrada_menu.py).
 
 ### Modos
 
@@ -43,7 +43,16 @@ Detalle de bancos de preguntas, puntuación, dificultad progresiva y arquitectur
 | **Supr** | Atrás en menús; en texto, borrar caracteres |
 | **Ctrl+C** | Cerrar el programa |
 
-Detalle completo: [`Consola/entrada_menu.py`](Consola/entrada_menu.py) y [`Consola/README.md`](Consola/README.md).
+Detalle completo: [`Consola/entrada_teclas.py`](Consola/entrada_teclas.py), [`Consola/entrada_menu.py`](Consola/entrada_menu.py) y [`Consola/README.md`](Consola/README.md).
+
+### Portabilidad del teclado
+
+| Entorno | Comportamiento |
+|---------|----------------|
+| **Windows** (recomendado) | Tecla a tecla con `msvcrt`: H, F, Esc, Supr, dígitos y A–D responden al instante sin pulsar Enter |
+| **Linux / macOS** | Fallback por línea (`input()`): hay que escribir la opción y pulsar **Enter**; H/F/Esc no funcionan igual |
+
+El `.exe` y la terminal de Windows son el entorno previsto para jugar y para la defensa del TFG. En otros SO el juego arranca, pero la UX de menús es limitada. Implementación: [`Consola/entrada_teclas.py`](Consola/entrada_teclas.py).
 
 ## Ejecutable (opcional)
 
@@ -83,4 +92,4 @@ Desde la raíz del TFG:
 python borrar_temporales.py
 ```
 
-Borra `__pycache__` y `.txt` (informes, feedback, etc.) en todo el proyecto.
+Borra `__pycache__` en todo el proyecto y `.txt` solo en `Juego/Informes/` y `Juego/Feedback/`.

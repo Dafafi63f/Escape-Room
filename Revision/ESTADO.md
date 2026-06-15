@@ -2,7 +2,7 @@
 
 Documento **vivo**: resume progreso, feedback del tutor y pendientes. Actualízalo al cerrar cada bloque de trabajo (memoria, código, datos, scripts).
 
-**Última actualización:** 2026-06-11  
+**Última actualización:** 2026-06-15  
 **Alumno:** Daniel Fageda Figueredo · **Tutor:** Víctor Navas Portella
 
 | Enlace | Uso |
@@ -23,7 +23,8 @@ Regenerar figuras: `python Entrega/generar_figuras_memoria.py` · Word: `python 
 | **Memoria** | En revisión con tutor | Estructura académica (intro + hipótesis contrastables + resultados); Word desde MD/LaTeX regenerables; PDF de entrega manual |
 | **Banco de preguntas** | Cerrado | 480/480 revisadas; `Preguntas.csv` protegido (`TFG_PERMITIR_CSV=1` para escribir) |
 | **Juego (consola)** | Operativo | 3 modos: libre, historia, feedback; tutorial de teclado al inicio |
-| **Scripts mantenimiento** | Operativo | `Files/Scripts/mantenimiento.py`; simulación Monte Carlo añadida |
+| **Scripts mantenimiento** | Operativo | `Files/Scripts/mantenimiento.py`; `utils_plantillas_core.py` compartido con el juego |
+| **CI / pruebas** | Operativo | GitHub Actions; suite `Tests/` (51 tests) |
 | **Interfaz gráfica / narrativa** | No iniciado | Alcance futuro (OE1, OE4) |
 | **Piloto con usuarios** | No realizado | Trabajo futuro (motivación / SUS) |
 
@@ -42,7 +43,7 @@ Regenerar figuras: `python Entrega/generar_figuras_memoria.py` · Word: `python 
 | Word desde Markdown | Regenerable | `Entrega/Memoria/Memoria_TFG_markdown.docx` |
 | Word desde LaTeX | Regenerable | `Entrega/Memoria/Memoria_TFG_latex.docx` |
 | Figuras memoria | Regenerables | `Entrega/Figuras/` |
-| README raíz / carpetas | OK | `README.md`, `Juego/`, `Data/`, `Files/`, `Entrega/` |
+| README raíz / carpetas | OK | `README.md`, `Juego/`, `Data/`, `Files/`, `Tests/`, `Entrega/` |
 | Este estado | **Mantener al día** | `Revision/ESTADO.md` |
 
 ### 2.2 Código — juego
@@ -50,8 +51,9 @@ Regenerar figuras: `python Entrega/generar_figuras_memoria.py` · Word: `python 
 | Elemento | Estado | Notas |
 |----------|--------|-------|
 | Lanzador | OK | `Juego/juego_cuestionario.py` |
-| Paquete `Consola/` | OK | 18 módulos; modos libre / historia / feedback |
-| Tests unitarios | OK | `python -m unittest discover -s Juego/Tests -v` → 43 tests |
+| Paquete `Consola/` | OK | 19 módulos; `entrada_teclas.py` + `entrada_menu.py`; rutas lazy en `rutas.py` |
+| Tests unitarios | OK | `python -m unittest discover -s Tests -v` → 51 tests (`Tests/Juego/` + `Tests/Scripts/`) |
+| CI | OK | `.github/workflows/ci.yml` — Python 3.10 y 3.12 |
 | Build `.exe` | Opcional | `Juego/build_exe_onefile.ps1` |
 
 ### 2.3 Datos y mantenimiento (`Files/`)
@@ -60,11 +62,11 @@ Regenerar figuras: `python Entrega/generar_figuras_memoria.py` · Word: `python 
 |----------|--------|-------|
 | `Data/Preguntas.csv` | Cerrado 480 ítems | Ver [`revision_manual_banco.md`](revision_manual_banco.md) |
 | `listado_materias.csv` | OK | 40 materias, metadatos curriculares |
-| `plantillas.json` | OK | Pool beta (modos 2–3 del juego) |
+| `plantillas.json` | OK | Pool beta **1289** entradas (modos 2–3 del juego) |
 | Histórico calificaciones | OK | Modo historia |
 | `mantenimiento.py validar` | OK | Balance estructural |
 | `auditar-distractores` | OK | Salida consola |
-| `duplicados.py revisar` | OK | Pares similares documentados |
+| `duplicados.py revisar` | OK | **0 pares similares** en CSV y plantillas intra-materia (2026-06-15) |
 | `simulacion_evaluacion_azar.py` | **Nuevo** | Validación motor: azar ≈ 25 % aciertos, nota ≈ 2,5/10 |
 
 ---
@@ -110,7 +112,7 @@ Leyenda: ✅ aplicado en memoria/código · 🔄 parcial · ⏳ pendiente
 |------|-----------|-----------------|
 | Piloto con estudiantes (SUS, motivación) | Media | Diseño en §6.6; ejecutar si hay tiempo |
 | Capa gráfica / escape room | Baja (futuro) | Fuera del alcance actual |
-| Sustituir 3 pares similares en CSV + ~13 en plantillas | Media | `duplicados.py` + [`revision_manual_banco.md`](revision_manual_banco.md) |
+| Sustituir pares similares en CSV y plantillas | ✅ | Resuelto 2026-06-15 — ver [`revision_manual_banco.md`](revision_manual_banco.md) |
 | Revisión final Word → PDF (maquetación) | Alta antes de entregar | Editar `.docx`, exportar PDF y leer completo |
 
 ---
@@ -121,7 +123,9 @@ Añade una fila al cerrar cada sesión de trabajo relevante.
 
 | Fecha | Ámbito | Cambio |
 |-------|--------|--------|
-| 2026-06-11 | Memoria | Feedback tutor VNP: intro unificada, H1–H3, tablas curriculares, §5.6–5.7, título juego interactivo |
+| 2026-06-15 | Banco | 0 pares similares CSV/plantillas; sustituciones Ids 21,25,72,83,125,298,322; dedup plantillas (1289) |
+| 2026-06-15 | Código | `utils_plantillas_core.py`; rutas lazy; carga única CSV en `main()`; split `entrada_teclas.py` |
+| 2026-06-15 | Repo | Tests en `Tests/` (51); CI GitHub Actions; `borrar_temporales.py` acotado; `requirements-dev.txt` |
 | 2026-06-11 | Código | `simulacion_evaluacion_azar.py`; docstring/tutorial en `juego_cuestionario.py` |
 | 2026-06-11 | Repo | Carpeta `Revision/`; PDF comentarios gitignored; `ESTADO.md` creado |
 | 2026-06-11 | Repo | `revision_manual_banco.md` movido desde `Data/` a `Revision/` |
@@ -144,11 +148,13 @@ Añade una fila al cerrar cada sesión de trabajo relevante.
 - [ ] Confirmar con tutor si la estructura actual es aceptable antes de pulir redacción
 
 ### Banco / `Files/`
-- [ ] 3 pares similares en CSV (modo seguro) — ver `Juego/Consola/README.md` § tareas pendientes
-- [ ] ~13 pares intra-materia en plantillas beta
+- [x] 3 pares similares en CSV (modo seguro) — sustituidos 2026-06-15 (Ids 21, 72, 298, 322; + mejoras 25, 125, 83)
+- [x] Pares intra-materia en plantillas beta — 0 tras dedup 2026-06-15 (pool 1289)
 - [ ] Campos `Materias_relacionadas` / `Prerequisitos` (evolución esquema)
 
-### Juego
+### Juego / repo
+- [x] Refactor entrada teclado (`entrada_teclas.py`) y módulo compartido de plantillas
+- [x] Suite de tests unificada + CI
 - [ ] GUI / narrativa (OE1, OE4)
 - [ ] Piloto usabilidad con estudiantes del grado
 
@@ -157,7 +163,7 @@ Añade una fila al cerrar cada sesión de trabajo relevante.
 ```bash
 python Files/Scripts/mantenimiento.py validar
 python Files/Scripts/simulacion_evaluacion_azar.py
-python -m unittest discover -s Juego/Tests -q
+python -m unittest discover -s Tests -q
 python Entrega/generar_figuras_memoria.py
 python Entrega/exportar_memoria.py
 ```
