@@ -29,6 +29,6 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_consola.py`](../juego_c
 
 `Consola/datos.py` solo añade `elegir_banco_preguntas` (menú terminal). El gráfico elige banco en `Grafico/pantallas.py`.
 
-## Pruebas
+## Pruebas de paridad
 
-Los tests de paridad consola/gráfico viven en la rama `feature/juego-grafico-pygame`.
+Los tests en [`Tests/Juego/test_paridad_consola_grafico.py`](../../Tests/Juego/test_paridad_consola_grafico.py) comprueban que `juego_consola.py` y `juego_grafico.py` producen el mismo resultado de dominio para las mismas operaciones.

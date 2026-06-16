@@ -52,9 +52,10 @@ Regenerar figuras: `python Entrega/generar_figuras_memoria.py` · Word: `python 
 | Elemento | Estado | Notas |
 |----------|--------|-------|
 | Lanzador consola | OK | `Juego/juego_consola.py` |
+| Lanzador gráfico | En desarrollo | `Juego/juego_grafico.py` + `Juego/Grafico/` |
 | Paquete `Comun/` | OK | Dominio compartido (modelos, datos, reglas, motor, pool) |
 | Paquete `Consola/` | OK | UI terminal, modos, informes, feedback |
-| Tests unitarios | OK | `python -m unittest discover -s Tests -v` → 57 tests (`Tests/Juego/` + `Tests/Scripts/`) |
+| Tests unitarios | OK | `python -m unittest discover -s Tests -v` → 74 tests (`Tests/Juego/` + `Tests/Scripts/`) |
 | CI | OK | `.github/workflows/tests.yml` — Python 3.14 |
 | Build `.exe` | Opcional | `Juego/build_exe_onefile.ps1` |
 

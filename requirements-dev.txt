@@ -1,8 +1,0 @@
-# Dependencias de desarrollo y mantenimiento (el juego solo usa stdlib).
-# Instalar: pip install -r requirements-dev.txt
-
-pandas>=2.0
-matplotlib>=3.7
-pyinstaller>=6.0
-mypy>=1.10
-pre-commit>=4.0

@@ -1,0 +1,10 @@
+# Dependencias del proyecto (desarrollo, mantenimiento y versión gráfica).
+# El juego en consola solo usa stdlib; para pygame: pip install -r requirements.txt
+# En Python 3.14+ pygame-ce (API compatible; import: import pygame).
+
+pandas>=2.0
+matplotlib>=3.7
+pyinstaller>=6.0
+mypy>=1.10
+pre-commit>=4.0
+pygame-ce>=2.5

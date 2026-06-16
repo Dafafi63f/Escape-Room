@@ -30,7 +30,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Install dependencies
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements.txt
 
       - name: Tests Juego
         run: python -m unittest discover -s Tests/Juego -v
@@ -49,7 +49,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Install dependencies
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements.txt
 
       - name: Suite completa
         run: python -m unittest discover -s Tests -v
@@ -68,10 +68,10 @@ jobs:
           python-version-file: .python-version
 
       - name: Install dependencies
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements.txt
 
       - name: Run MyPy
-        run: mypy Juego/Comun Juego/Consola Files/Scripts
+        run: mypy Juego/Comun Juego/Consola Juego/Grafico Files/Scripts
 
   tests-summary:
     name: tests-summary

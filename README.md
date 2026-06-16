@@ -35,15 +35,15 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 
 | Carpeta / fichero | Rol |
 |------------------|-----|
-| [`Juego/`](Juego/README.md) | [`juego_consola.py`](Juego/juego_consola.py), [`Comun/`](Juego/Comun/README.md), [`Consola/`](Juego/Consola/README.md), build opcional del `.exe` |
+| [`Juego/`](Juego/README.md) | Lanzadores, [`Comun/`](Juego/Comun/README.md), [`Consola/`](Juego/Consola/README.md), [`Grafico/`](Juego/Grafico/README.md), build opcional del `.exe` |
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
 | [`Entrega/`](Entrega/README.md) | `Memoria/` (LaTeX, Word), `Figuras/`, scripts de exportación |
 | [`Revision/`](Revision/ESTADO.md) | Estado del proyecto, feedback tutor; PDF anotados locales (gitignored) |
 | [`Memoria_TFG.md`](Memoria_TFG.md) | Borrador Markdown de la memoria (raíz) |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias (57 tests) y CI |
+| [`Tests/`](Tests/README.md) | Pruebas unitarias (74 tests) y CI |
 | [`borrar_temporales.py`](borrar_temporales.py) | Limpia `__pycache__` y `.txt` de `Juego/Informes/` y `Juego/Feedback/` |
-| [`requirements-dev.txt`](requirements-dev.txt) | Dependencias de desarrollo (pandas, matplotlib, pyinstaller, mypy, pre-commit) |
+| [`requirements.txt`](requirements.txt) | Dependencias (pandas, matplotlib, pyinstaller, pygame-ce, mypy, pre-commit) |
 
 ## Memoria — exportar Word
 
@@ -58,11 +58,18 @@ Genera los `.docx` en `Entrega/Memoria/` (Pandoc). El PDF de entrega lo exportas
 
 ## Jugar
 
+Dos versiones en paralelo (ver [`Juego/README.md`](Juego/README.md)):
+
 ```bash
+# Terminal — completa, solo stdlib
 python Juego/juego_consola.py
+
+# Gráfico — pygame (en desarrollo)
+pip install -r requirements.txt
+python Juego/juego_grafico.py
 ```
 
-Versión gráfica en pygame: rama `feature/juego-grafico-pygame` (ver [`Juego/README.md`](Juego/README.md)).
+La consola sigue siendo la referencia funcional hasta que el gráfico alcance paridad; entonces se retirará la UI terminal.
 
 ### Datos
 

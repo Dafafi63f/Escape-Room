@@ -19,7 +19,7 @@ El borrador Markdown está en la raíz: [`../Memoria_TFG.md`](../Memoria_TFG.md)
 python Entrega/generar_figuras_memoria.py
 ```
 
-Requisito: `matplotlib` (`pip install -r requirements-dev.txt` o `pip install matplotlib`).
+Requisito: `matplotlib` (`pip install -r requirements.txt` o `pip install matplotlib`).
 
 ## Regenerar Word
 
