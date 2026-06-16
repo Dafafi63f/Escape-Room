@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Pool de preguntas del modo libre (filtros y selección aleatoria)."""
+
+from __future__ import annotations
+
+import random
+from collections import deque
+from collections.abc import MutableSequence
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from Comun.datos import (
+    cargar_banco_todo,
+    cargar_preguntas,
+    cargar_preguntas_plantillas,
+    claves_dataset,
+)
+from Comun.dificultad import complejidad_pregunta, dificultad_global_actual, max_complejidad_pool
+from Comun.modelos import BancoPreguntas, Pregunta
+
+__all__ = [
+    "EstadoSeleccionPool",
+    "cargar_pool_por_banco",
+    "crear_estado_seleccion",
+    "elegir_indice_siguiente",
+    "filtrar_pool",
+    "filtrar_pool_asistente",
+    "max_complejidad_pool",
+    "opciones_curso_semestre",
+    "opciones_tematica",
+    "opciones_tipo",
+]
+
+
+def filtrar_pool(
+    preguntas: list[Pregunta],
+    *,
+    tematicas: set[str] | None = None,
+    cursos_semestres: set[str] | None = None,
+    tipos: set[str] | None = None,
+) -> list[Pregunta]:
+    """Filtra por una o varias opciones en cada eje (conjunto vacío = sin filtro)."""
+    resultado = preguntas
+    if tematicas:
+        resultado = [p for p in resultado if p.tematica in tematicas]
+    if cursos_semestres:
+        resultado = [
+            p
+            for p in resultado
+            if f"{p.curso}-{p.semestre}" in cursos_semestres
+        ]
+    if tipos:
+        resultado = [p for p in resultado if p.tipo in tipos]
+    return resultado
+
+
+def filtrar_pool_asistente(
+    preguntas: list[Pregunta],
+    *,
+    tematica: str | None = None,
+    curso: str | None = None,
+    semestre: str | None = None,
+    tipo: str | None = None,
+) -> list[Pregunta]:
+    """Filtro de un solo valor por eje (asistente de consola)."""
+    return [
+        p
+        for p in preguntas
+        if (tematica is None or p.tematica == tematica)
+        and (curso is None or p.curso == curso)
+        and (semestre is None or p.semestre == semestre)
+        and (tipo is None or p.tipo == tipo)
+    ]
+
+
+def cargar_pool_por_banco(
+    banco: BancoPreguntas,
+    *,
+    preguntas_dataset: list[Pregunta],
+    path_preguntas_csv: Path,
+    path_plantillas_json: Path,
+    materias_meta: dict[str, dict[str, str]],
+) -> list[Pregunta]:
+    if banco == BancoPreguntas.DATASET:
+        return list(preguntas_dataset)
+    try:
+        if banco == BancoPreguntas.PLANTILLAS_TODO:
+            return cargar_banco_todo(
+                path_preguntas_csv,
+                path_plantillas_json,
+                materias_meta,
+            )
+        if banco == BancoPreguntas.PLANTILLAS_EXTRA:
+            claves = claves_dataset(path_preguntas_csv)
+            return cargar_preguntas_plantillas(
+                path_plantillas_json,
+                materias_meta,
+                solo_fuera_dataset=True,
+                claves_ds=claves,
+            )
+    except Exception as e:
+        print(f"[Juego] Fallo al cargar banco {banco}: {e}")
+        return list(preguntas_dataset)
+    return list(preguntas_dataset)
+
+
+def opciones_tematica(pool: list[Pregunta]) -> list[str]:
+    return sorted({p.tematica for p in pool if p.tematica})
+
+
+def opciones_curso_semestre(pool: list[Pregunta]) -> list[str]:
+    return sorted(
+        {f"{p.curso}-{p.semestre}" for p in pool if p.curso and p.semestre}
+    )
+
+
+def opciones_tipo(pool: list[Pregunta]) -> list[str]:
+    return sorted({p.tipo for p in pool if p.tipo})
+
+
+@dataclass
+class EstadoSeleccionPool:
+    usadas: set[int] = field(default_factory=set)
+    historial_reciente: MutableSequence[int] = field(default_factory=deque)
+
+
+def crear_estado_seleccion(tam_pool: int) -> EstadoSeleccionPool:
+    ventana = max(1, tam_pool // 4) if tam_pool else 1
+    return EstadoSeleccionPool(historial_reciente=deque(maxlen=ventana))
+
+
+def elegir_indice_siguiente(
+    pool: list[Pregunta],
+    estado: EstadoSeleccionPool,
+    *,
+    modo_infinito: bool,
+    dificultad_progresiva: bool,
+    global_inicial: int,
+    respondidas: int,
+) -> int | None:
+    if not pool:
+        return None
+    max_global = max_complejidad_pool(pool)
+    global_actual = max_global
+    if dificultad_progresiva:
+        global_actual = dificultad_global_actual(
+            respondidas=respondidas,
+            global_inicial=global_inicial,
+            max_global=max_global,
+        )
+    bloqueadas = set(estado.historial_reciente)
+    candidatas = [
+        idx
+        for idx, p in enumerate(pool)
+        if idx not in estado.usadas
+        and idx not in bloqueadas
+        and (not dificultad_progresiva or complejidad_pregunta(p) <= global_actual)
+    ]
+    if not candidatas:
+        if modo_infinito:
+            estado.usadas.clear()
+            candidatas = [
+                idx
+                for idx, p in enumerate(pool)
+                if idx not in bloqueadas
+                and (
+                    not dificultad_progresiva
+                    or complejidad_pregunta(p) <= global_actual
+                )
+            ]
+            if not candidatas:
+                candidatas = list(range(len(pool)))
+        else:
+            candidatas = [idx for idx in range(len(pool)) if idx not in estado.usadas]
+            if not candidatas:
+                return None
+    idx = random.choice(candidatas)
+    estado.usadas.add(idx)
+    estado.historial_reciente.append(idx)
+    return idx

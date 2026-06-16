@@ -8,6 +8,7 @@ Juego/Feedback/*
 
 # --- Local del creador (secretos y .exe; no versionar) ---
 Data/creador_privado.json
+Juego/juego_consola.exe
 Juego/juego_cuestionario.exe
 
 # --- Temporales (limpiar con borrar_temporales.py) ---

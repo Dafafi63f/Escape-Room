@@ -203,10 +203,9 @@ La arquitectura del software se organiza en capas desacopladas (figura~\ref{fig:
 \toprule
 \textbf{Capa} & \textbf{Módulos} & \textbf{Función} \\
 \midrule
-Lanzador & \texttt{juego\_cuestionario.py} & Menú, tutorial de teclado, bucle de modos \\
-Modos & \texttt{modo\_libre.py}\newline\texttt{modo\_historia.py}\newline\texttt{modo\_feedback.py} & Flujos pedagógicos distintos \\
-Motor & \texttt{motor\_partida.py}\newline\texttt{reglas\_partida.py}\newline\texttt{politica\_reglas.py} & Preguntas, vidas, puntuación, informes \\
-Datos & \texttt{datos.py}\newline\texttt{modelos.py}\newline\texttt{rutas.py} & Carga CSV/JSON, metadatos, rutas \\
+Lanzador & \texttt{juego\_consola.py} & Menú, tutorial de teclado, bucle de modos \\
+Dominio & \texttt{Juego/Comun/} (\texttt{motor\_nucleo.py}, \texttt{reglas\_partida.py}, \texttt{datos.py}, \ldots) & Reglas, puntuación, pool, rutas compartidas \\
+Modos & \texttt{modo\_libre.py}\newline\texttt{modo\_historia.py}\newline\texttt{modo\_feedback.py} & Flujos pedagógicos en terminal \\
 Interacción & \texttt{consola.py}\newline\texttt{entrada\_teclas.py}\newline\texttt{entrada\_menu.py}\newline\texttt{navegacion.py} & Teclas (\texttt{msvcrt} en Windows), menús, pausa, ayuda \\
 Historia & \texttt{generador\_examen\_historia.py} & Ponderación según histórico de calificaciones \\
 \bottomrule
@@ -252,8 +251,8 @@ Balance estructural del CSV & \texttt{mantenimiento.py validar} \\
 Revisión manual del contenido & Bloques documentados en \texttt{Revision/revision\_manual\_banco.md} \\
 Auditoría de distractores & \texttt{mantenimiento.py auditar-distractores} (consola; \texttt{--json} opcional) \\
 Duplicados semánticos & \texttt{duplicados.py revisar} (0 pares similares en CSV y plantillas intra-materia, 2026-06-15) \\
-Pruebas de regresión & \texttt{python -m unittest discover -s Tests -v} (51 tests) \\
-Integración continua & GitHub Actions (\texttt{.github/workflows/ci.yml}) \\
+Pruebas de regresión & \texttt{python -m unittest discover -s Tests -v} (57 tests) \\
+Integración continua & GitHub Actions (\texttt{.github/workflows/tests.yml}) \\
 Revisión con profesorado & Identificación de solapamiento temático y prerrequisitos (véase sección 8) \\
 Simulación Monte Carlo (respuestas al azar) & \texttt{simulacion\_evaluacion\_azar.py} (véase \S\,5.7) \\
 \bottomrule
@@ -288,7 +287,7 @@ El banco distingue \textbf{modo seguro} (solo dataset revisado) y \textbf{modo b
 
 \subsection{Aplicación de juego}
 
-\textbf{Estado del entregable:} cuestionario en consola con tres modos operativos (libre, historia, feedback), banco de \textbf{480 preguntas} revisadas manualmente, herramientas de mantenimiento del dataset y empaquetado opcional en ejecutable Windows. La capa gráfica escape room / novela queda como evolución futura. \textbf{No se ha utilizado Pygame ni otro motor gráfico} en esta versión; la interfaz es exclusivamente textual en terminal.
+\textbf{Estado del entregable:} cuestionario en consola con tres modos operativos (libre, historia, feedback), banco de \textbf{480 preguntas} revisadas manualmente, herramientas de mantenimiento del dataset y empaquetado opcional en ejecutable Windows. Una versión gráfica en pygame se desarrolla en rama aparte.
 
 Se entregó un cuestionario en consola funcional:
 
@@ -296,13 +295,13 @@ Se entregó un cuestionario en consola funcional:
 \toprule
 \textbf{Componente} & \textbf{Resultado} \\
 \midrule
-Lanzador & \texttt{Juego/juego\_cuestionario.py} (tutorial de foco de teclado al inicio) \\
-Paquete de lógica & \texttt{Juego/Consola/} (19 módulos) \\
+Lanzador consola & \texttt{Juego/juego\_consola.py} (tutorial de foco de teclado al inicio) \\
+Paquete de lógica & \texttt{Juego/Comun/} (dominio) + \texttt{Juego/Consola/} (UI terminal) \\
 Modo libre & Filtros multidimensionales, informes \texttt{.txt} \\
 Modo historia & Generador de examen según \texttt{Historic\_qualificacions\_MatCAD\_completo.csv} \\
 Modo feedback & Guardado local + envío SMTP opcional \\
 Ejecutable & Build opcional con PyInstaller \\
-Pruebas & Suite en \texttt{Tests/} --- \textbf{51 tests} (\texttt{Tests/Juego/}, \texttt{Tests/Scripts/}); CI en GitHub Actions \\
+Pruebas & Suite en \texttt{Tests/} --- \textbf{57 tests} (\texttt{Tests/Juego/}, \texttt{Tests/Scripts/}); CI en GitHub Actions \\
 \bottomrule
 \end{tabular}
 
@@ -354,7 +353,7 @@ Diagrama detallado (40 materias): \texttt{Data/README.md}.
 
 \subsection{Herramientas de mantenimiento}
 
-Se desarrolló un conjunto de scripts en \texttt{Files/Scripts/} con punto de entrada unificado (\texttt{mantenimiento.py}): validación, revisión, pipeline de plantillas, auditorías (salida en consola), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en \texttt{utils\_plantillas\_core.py}, compartida con \texttt{Juego/Consola/datos.py}. Los scripts de regeneración masiva del CSV se aislaron en \texttt{Files/Archivo/} con protección de banco cerrado. Suite de pruebas en \texttt{Tests/} (51 tests) con CI en GitHub Actions. Catálogo de comandos: \texttt{Files/Scripts/README.md}.
+Se desarrolló un conjunto de scripts en \texttt{Files/Scripts/} con punto de entrada unificado (\texttt{mantenimiento.py}): validación, revisión, pipeline de plantillas, auditorías (salida en consola), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en \texttt{utils\_plantillas\_core.py}, compartida con \texttt{Juego/Comun/datos.py}. Los scripts de regeneración masiva del CSV se aislaron en \texttt{Files/Archivo/} con protección de banco cerrado. Suite de pruebas en \texttt{Tests/} (57 tests) con CI en GitHub Actions. Catálogo de comandos: \texttt{Files/Scripts/README.md}.
 
 \subsection{Síntesis cuantitativa}
 
@@ -462,13 +461,13 @@ El \textbf{objetivo general} se cumple de forma parcial: existe un juego educati
 OE1 & Pendiente (futuro) & Sin guion de escenas/salas implementado \\
 OE2 & \textbf{Cumplido} & Banco 480 ítems, Teoría/Cálculo, tres dificultades \\
 OE3 & \textbf{Cumplido} & Motor A--D, puntuación, vidas, informes \\
-OE4 & Pendiente (futuro) & Solo consola; Pygame no utilizado \\
-OE5 & \textbf{Parcialmente cumplido} & Banco validado, 51 tests + CI; sin estudio con usuarios \\
+OE4 & Pendiente (rama feature) & Prototipo pygame en \texttt{feature/juego-grafico-pygame} \\
+OE5 & \textbf{Parcialmente cumplido} & Banco validado, 57 tests + CI; sin estudio con usuarios \\
 \bottomrule
 \end{tabular}
 \fintabla
 
-Los \textbf{objetivos específicos} OE2, OE3 y OE5 están cubiertos en su versión de consola. OE1 y OE4 (narrativa gráfica e interfaz visual) quedan explícitamente como trabajo futuro. Esta decisión es defendible: el prototipo valida el núcleo evaluable sin el coste de desarrollo gráfico, en línea con el principio de prototipado incremental en ingeniería del software.
+Los \textbf{objetivos específicos} OE2, OE3 y OE5 están cubiertos en su versión de consola. OE1 y OE4 (narrativa gráfica e interfaz visual) quedan como trabajo futuro; OE4 avanza en la rama \texttt{feature/juego-grafico-pygame}.
 
 \subsection{Validez del banco de preguntas}
 

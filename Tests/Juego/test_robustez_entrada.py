@@ -28,8 +28,8 @@ from Consola.entrada_menu import (
     elegir_indice_menu,
 )
 from Consola.motor_partida import EstadoPartida, ResultadoRespuesta, preguntar_con_reglas
-from Consola.modelos import Pregunta
-from Consola.reglas_partida import preset_libre_arcade
+from Comun.modelos import Pregunta
+from Comun.reglas_partida import preset_libre_arcade
 from Consola.navegacion import (
     AccionPausa,
     SalirPrograma,

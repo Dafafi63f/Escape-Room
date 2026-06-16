@@ -1,71 +1,38 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Motor común: preguntar, aplicar reglas (vidas/tiempo) y resumir resultados."""
+"""Motor de partida: núcleo en ``Comun`` y E/S de consola aquí."""
 
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+
+from Comun.modelos import Pregunta
+from Comun.motor_nucleo import (
+    EstadoPartida,
+    FeedbackRespuesta,
+    ResultadoRespuesta,
+    evaluar_respuesta,
+    linea_estado,
+    texto_solucion,
+)
+from Comun.reglas_partida import ReglasPartida, SistemaPuntuacion, formatear_resultado_puntuacion
 
 from .consola import pedir_opcion
 from .navegacion import ContextoPantalla, IrMenuPrincipal, SalirPrograma, establecer_contexto
-from .modelos import Pregunta
-from .reglas_partida import (
-    ReglasPartida,
-    SistemaPuntuacion,
-    calcular_puntos_arcade,
-    formatear_resultado_puntuacion,
-)
 
-
-@dataclass
-class EstadoPartida:
-    nombre: str
-    reglas: ReglasPartida
-    vidas_restantes: int | None
-    aciertos: int = 0
-    respondidas: int = 0
-    puntos_arcade: int = 0
-    fallos_por_materia: dict[str, int] = field(default_factory=dict)
-    inicio_total: float = field(default_factory=time.monotonic)
-
-    def tiempo_total_restante(self) -> int | None:
-        lim = self.reglas.tiempo_total_seg
-        if not lim:
-            return None
-        rest = int(lim - (time.monotonic() - self.inicio_total))
-        return max(0, rest)
-
-    def debe_continuar(self, total_previsto: int | None) -> bool:
-        if self.reglas.tiene_vidas() and (self.vidas_restantes or 0) <= 0:
-            return False
-        if total_previsto is not None and self.respondidas >= total_previsto:
-            return False
-        rest = self.tiempo_total_restante()
-        if rest is not None and rest <= 0:
-            return False
-        return True
-
-
-@dataclass
-class ResultadoRespuesta:
-    acierto: bool
-    respuesta: str = ""
-    tiempo_agotado: bool = False
-
-
-def linea_estado(estado: EstadoPartida, progreso: str) -> str:
-    partes = [progreso]
-    if estado.reglas.tiene_vidas():
-        partes.append(f"Vidas: {estado.vidas_restantes}")
-    rest = estado.tiempo_total_restante()
-    if rest is not None:
-        partes.append(f"Tiempo restante: {rest}s")
-    if estado.reglas.sistema_puntuacion == SistemaPuntuacion.ARCADE:
-        partes.append(f"Puntos: {estado.puntos_arcade}")
-    elif estado.reglas.mostrar_aciertos_en_curso and estado.respondidas > 0:
-        partes.append(f"Aciertos: {estado.aciertos}/{estado.respondidas}")
-    return " | ".join(partes)
+__all__ = [
+    "EstadoPartida",
+    "FeedbackRespuesta",
+    "ResultadoRespuesta",
+    "aplicar_respuesta",
+    "ejecutar_lista_fija",
+    "evaluar_respuesta",
+    "linea_estado",
+    "mostrar_pregunta",
+    "mostrar_resumen_partida",
+    "preguntar_con_reglas",
+    "registrar_contexto_pregunta",
+]
 
 
 def mostrar_pregunta(
@@ -105,7 +72,6 @@ def registrar_contexto_pregunta(
     extra_meta: str | None = None,
     progreso: str | None = None,
 ) -> None:
-    """Registra la pantalla de la pregunta actual para reimprimirla tras pausa."""
     linea = progreso or linea_estado(estado, f"{etiqueta} {indice}/{total or 'inf'}")
     kwargs = dict(
         p=p,
@@ -134,12 +100,24 @@ def registrar_contexto_pregunta(
     _reimprimir()
 
 
-def _mostrar_solucion(p: Pregunta) -> None:
-    if p.correcta in {"A", "B", "C", "D"}:
-        texto = p.opciones.get(p.correcta, "")
-        print(f"Correcta: {p.correcta}) {texto}")
+def aplicar_respuesta(
+    p: Pregunta,
+    estado: EstadoPartida,
+    resultado: ResultadoRespuesta,
+) -> None:
+    feedback = evaluar_respuesta(p, estado, resultado)
+    if feedback.mensaje == "Respuesta registrada.":
+        return
+    if feedback.mensaje.startswith("Correcto"):
+        print(f"[OK] {feedback.mensaje}")
+    elif feedback.mensaje.startswith("Incorrecto"):
+        print(f"[X] {feedback.mensaje}")
     else:
-        print("Correcta: (dato no disponible en esta pregunta)")
+        print(f"[!] {feedback.mensaje}")
+    if feedback.solucion:
+        print(feedback.solucion)
+    if feedback.sin_vidas:
+        print("\nTe has quedado sin vidas.")
 
 
 def preguntar_con_reglas(
@@ -175,55 +153,6 @@ def preguntar_con_reglas(
     )
 
 
-def aplicar_respuesta(
-    p: Pregunta,
-    estado: EstadoPartida,
-    resultado: ResultadoRespuesta,
-) -> None:
-    estado.respondidas += 1
-    reglas = estado.reglas
-
-    if reglas.correccion_al_final:
-        if resultado.tiempo_agotado or not resultado.acierto:
-            estado.fallos_por_materia[p.materia] = estado.fallos_por_materia.get(p.materia, 0) + 1
-        else:
-            estado.aciertos += 1
-        return
-
-    if resultado.tiempo_agotado:
-        print("[!] Tiempo agotado — cuenta como fallo")
-        if reglas.tiene_vidas():
-            estado.vidas_restantes = (estado.vidas_restantes or 0) - 1
-        estado.fallos_por_materia[p.materia] = estado.fallos_por_materia.get(p.materia, 0) + 1
-        if reglas.mostrar_solucion_tras_fallo:
-            _mostrar_solucion(p)
-        return
-
-    if resultado.acierto:
-        estado.aciertos += 1
-        if reglas.sistema_puntuacion == SistemaPuntuacion.ARCADE:
-            delta = calcular_puntos_arcade(p.dificultad, True)
-            estado.puntos_arcade += delta
-            print(f"[OK] Correcto (+{delta} puntos)")
-        else:
-            print("[OK] Correcto")
-    else:
-        if reglas.tiene_vidas():
-            estado.vidas_restantes = (estado.vidas_restantes or 0) - 1
-        estado.fallos_por_materia[p.materia] = estado.fallos_por_materia.get(p.materia, 0) + 1
-        if reglas.sistema_puntuacion == SistemaPuntuacion.ARCADE:
-            delta = calcular_puntos_arcade(p.dificultad, False)
-            estado.puntos_arcade += delta
-            msg = f"[X] Incorrecto ({delta} puntos)"
-        else:
-            msg = "[X] Incorrecto"
-        print(msg)
-        if reglas.mostrar_solucion_tras_fallo:
-            _mostrar_solucion(p)
-        if reglas.tiene_vidas() and (estado.vidas_restantes or 0) <= 0:
-            print("\nTe has quedado sin vidas.")
-
-
 def ejecutar_lista_fija(
     preguntas: list[Pregunta],
     *,
@@ -235,7 +164,6 @@ def ejecutar_lista_fija(
     meta_informe: dict | None = None,
     stats_historicas: dict | None = None,
 ) -> EstadoPartida:
-    """Recorre preguntas en orden (examen, historia). Sin limpiar consola entre preguntas."""
     from .informe_examen import RegistroRespuesta, publicar_informe_partida
 
     estado = EstadoPartida(

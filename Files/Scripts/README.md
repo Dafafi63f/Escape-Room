@@ -1,6 +1,6 @@
 # Scripts — mantenimiento del banco
 
-Herramientas de desarrollo del TFG. **No hacen falta para jugar**; el jugador solo necesita `Juego/juego_cuestionario.py` y `Data/`.
+Herramientas de desarrollo del TFG. **No hacen falta para jugar**; el jugador solo necesita `Juego/juego_consola.py` y `Data/`.
 
 ## Banco cerrado
 
@@ -88,7 +88,7 @@ Ver la cabecera de [`mantenimiento.py`](mantenimiento.py) para la lista completa
 | `utils_orden_temas.py`, `utils_texto.py` | Orden de materias y normalización |
 | `utils_deduplicacion.py` | Criterios de similitud |
 | `utils_plantillas_pool.py` | Pool plantillas y etiqueta `dataset_480` |
-| `utils_plantillas_core.py` | Claves de contenido y expansión de plantillas (compartido con `Juego/Consola/datos.py`) |
+| `utils_plantillas_core.py` | Claves de contenido y expansión de plantillas (compartido con `Juego/Comun/datos.py`) |
 | `utils_clasificacion_pregunta.py`, `utils_puntuacion_materia.py` | Clasificación semántica |
 | `plantillas_repuesto_catalogo.py`, `catalogo_internet_plantillas.py` | Catálogos de ampliación |
 
@@ -96,7 +96,7 @@ No están pensados como API pública del juego; la lógica de partida vive en `J
 
 ## Pruebas
 
-Suite unificada en [`Tests/`](../../Tests/README.md) (51 tests). CI: `.github/workflows/ci.yml`.
+Suite unificada en [`Tests/`](../../Tests/README.md) (57 tests). CI: `.github/workflows/tests.yml`.
 
 ## Scripts unificados (nombres antiguos)
 

@@ -21,9 +21,9 @@ from Consola.informe_examen import (
     formatear_informe_examen,
     generar_id_sesion,
 )
-from Consola.modelos import Pregunta
+from Comun.modelos import Pregunta
 from Consola.motor_partida import EstadoPartida, aplicar_respuesta, ResultadoRespuesta
-from Consola.reglas_partida import preset_historia_examen, preset_libre_arcade
+from Comun.reglas_partida import preset_historia_examen, preset_libre_arcade
 
 
 def _pregunta() -> Pregunta:

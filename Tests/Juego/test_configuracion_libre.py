@@ -15,42 +15,37 @@ from Tests.support import ensure_juego_path
 
 ensure_juego_path()
 
-from Consola.configuracion_reglas_libre import alcance_para_contexto
+from Comun.compatibilidad_reglas_libre import sanitizar_reglas_libre
 from Consola.politica_reglas import ContextoPartida, validar_reglas
-from Consola.reglas_partida import ReglasPartida, SistemaPuntuacion, preset_libre_repaso
+from Comun.reglas_partida import ReglasPartida, SistemaPuntuacion
 
 
 class TestConfiguracionLibre(unittest.TestCase):
-    def test_alcance_solo_donde_permitido(self) -> None:
-        self.assertIsNotNone(alcance_para_contexto(ContextoPartida.LIBRE_BLOQUE_NORMAL))
-        self.assertIsNotNone(alcance_para_contexto(ContextoPartida.LIBRE_BLOQUE_CORTO))
-        self.assertIsNone(alcance_para_contexto(ContextoPartida.LIBRE_INFINITO))
-        self.assertIsNone(alcance_para_contexto(ContextoPartida.HISTORIA_SIMULACRO))
-
-    def test_validar_nota_sin_vidas_mantiene_correccion_si_activa(self) -> None:
+    def test_arcade_sin_vidas_se_mantiene(self) -> None:
         reglas = ReglasPartida(
-            vidas=3,
-            sistema_puntuacion=SistemaPuntuacion.NOTA,
-            correccion_al_final=True,
+            vidas=None,
+            sistema_puntuacion=SistemaPuntuacion.ARCADE,
         )
-        out = validar_reglas(reglas, ContextoPartida.LIBRE_BLOQUE_NORMAL)
+        out = validar_reglas(reglas, ContextoPartida.LIBRE_BLOQUE_NORMAL, n_preguntas=10)
         self.assertIsNone(out.vidas)
-        self.assertTrue(out.correccion_al_final)
+        self.assertEqual(out.sistema_puntuacion, SistemaPuntuacion.ARCADE)
 
-    def test_bloque_corto_rechaza_nota(self) -> None:
+    def test_nota_sin_vidas_en_bloque_largo(self) -> None:
         reglas = ReglasPartida(
             vidas=None,
             sistema_puntuacion=SistemaPuntuacion.NOTA,
         )
-        out = validar_reglas(reglas, ContextoPartida.LIBRE_BLOQUE_CORTO)
-        self.assertEqual(out.sistema_puntuacion, SistemaPuntuacion.ARCADE)
-        self.assertTrue(out.tiene_vidas())
+        out = validar_reglas(reglas, ContextoPartida.LIBRE_BLOQUE_NORMAL, n_preguntas=10)
+        self.assertIsNone(out.vidas)
+        self.assertEqual(out.sistema_puntuacion, SistemaPuntuacion.NOTA)
 
-    def test_repaso_preset_sin_correccion_al_final(self) -> None:
-        out = validar_reglas(
-            preset_libre_repaso(),
-            ContextoPartida.LIBRE_BLOQUE_NORMAL,
+    def test_correccion_al_final_se_anula_en_libre(self) -> None:
+        reglas = ReglasPartida(
+            vidas=None,
+            sistema_puntuacion=SistemaPuntuacion.NOTA,
+            correccion_al_final=True,
         )
+        out = validar_reglas(reglas, ContextoPartida.LIBRE_BLOQUE_NORMAL, n_preguntas=10)
         self.assertFalse(out.correccion_al_final)
 
 

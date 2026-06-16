@@ -8,7 +8,7 @@ import json
 from copy import deepcopy
 from pathlib import Path
 
-from .rutas import PATH_PREGUNTAS, resolver_config_creador_privado
+from Comun.rutas import PATH_PREGUNTAS, resolver_config_creador_privado
 
 FICHERO_CREADOR_PRIVADO = "creador_privado.json"
 

@@ -11,7 +11,7 @@ from .envio_feedback import (
     describir_resultado_envio,
     enviar_feedback,
 )
-from .modelos import Pregunta
+from Comun.modelos import Pregunta
 from .navegacion import (
     AsistentePasos,
     CancelarFeedbackRapido,
@@ -21,7 +21,7 @@ from .navegacion import (
     mostrar_transicion,
 )
 from .config_creador import mensaje_crear_creador_privado
-from .rutas import resolver_config_creador_privado
+from Comun.rutas import resolver_config_creador_privado
 
 
 _CATEGORIAS: list[tuple[CategoriaFeedback, str]] = [

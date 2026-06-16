@@ -1,8 +1,10 @@
-# Consola — paquete del juego
+# Consola — motor del juego y UI terminal
 
-Implementación del cuestionario en terminal. Nombre del paquete: **`Consola`** (carpeta `Juego/Consola/`). Se importa con `Juego/` en el `sys.path` (véase [`juego_cuestionario.py`](../juego_cuestionario.py)).
+Paquete **`Consola`** (`Juego/Consola/`). Interfaz **terminal** y orquestación de modos en consola.
 
-Antes del refactor vivía como módulos sueltos o paquetes `matcad` / `Motor` / `Engine`; el código activo es solo este directorio.
+La lógica compartida con el gráfico está en [`Comun/`](../Comun/README.md). Este paquete conserva menús por teclado, navegación, informes, historia y feedback.
+
+Se importa con `Juego/` en el `sys.path` (véase [`juego_consola.py`](../juego_consola.py) o [`juego_grafico.py`](../juego_grafico.py)).
 
 ## Modos de juego
 
@@ -16,27 +18,28 @@ Los tres modos comparten la capa de datos (`Data/Preguntas.csv`, `listado_materi
 
 ## Módulos
 
-| Módulo | Responsabilidad |
-|--------|-----------------|
-| `rutas.py` | Rutas a `Data/`, plantillas, informes y feedback (resolución lazy) |
-| `datos.py` | Carga CSV/JSON, elección de banco (`utils_plantillas_core`) |
-| `_scripts_path.py` | Bootstrap de `sys.path` hacia `Files/Scripts` |
-| `modelos.py` | `Pregunta`, `BancoPreguntas`, etiquetas |
-| `consola.py` | Menús, texto, opciones A–D |
-| `entrada_teclas.py` | Lectura tecla a tecla (`msvcrt` en Windows; fallback en otros SO) |
-| `entrada_menu.py` | Menús, contexto de ayuda, bucles de entrada |
-| `navegacion.py` | Contexto de pantalla, atrás, pausa, feedback rápido (F) |
-| `reglas_partida.py` | Presets de reglas (vidas, tiempo, puntuación) |
-| `politica_reglas.py` | Política por modo (libre / historia) |
-| `configuracion_reglas_libre.py` | Reglas personalizadas en modo libre |
-| `motor_partida.py` | Bucle de preguntas y estado de partida |
-| `modo_libre.py` | Modo libre (filtros, informes) |
-| `modo_historia.py` | Modo historia (examen balanceado) |
-| `modo_feedback.py` | Modo feedback y asistente de avisos al creador |
-| `envio_feedback.py` | Guardado local `.txt` y envío SMTP |
-| `config_creador.py` | Plantilla de `Data/creador_privado.json` |
-| `generador_examen_historia.py` | Generación de exámenes según histórico |
-| `informe_examen.py` | Informes `.txt` al cerrar partida |
+| Módulo | Responsabilidad | ¿Sobrevive a migración gráfica? |
+|--------|-----------------|--------------------------------|
+| [`Comun/rutas.py`](../Comun/rutas.py) | Rutas a `Data/`, plantillas, informes, feedback y `Files/Scripts` en `sys.path` | Sí |
+| `datos.py` | Carga CSV/JSON (consola) y elección de banco en terminal | Parcial* |
+| [`Comun/modelos.py`](../Comun/modelos.py) | `Pregunta`, `BancoPreguntas`, etiquetas | Sí |
+| `consola.py` | Menús, texto, opciones A–D | No (solo terminal) |
+| `entrada_teclas.py` | Lectura tecla a tecla (`msvcrt` en Windows; fallback en otros SO) | No |
+| `entrada_menu.py` | Menús, contexto de ayuda, bucles de entrada | No |
+| `navegacion.py` | Contexto de pantalla, atrás, pausa, feedback rápido (F) | No |
+| [`Comun/reglas_partida.py`](../Comun/reglas_partida.py) | Presets de reglas (vidas, tiempo, puntuación) | Sí |
+| `politica_reglas.py` | Política por modo (libre / historia) | Sí |
+| `configuracion_reglas_libre.py` | Reglas personalizadas en modo libre | Sí |
+| `motor_partida.py` | Bucle de preguntas y estado de partida | Sí |
+| `modo_libre.py` | Orquestación modo libre (terminal hoy; lógica reutilizable) | Parcial* |
+| `modo_historia.py` | Modo historia (examen balanceado) | Parcial* |
+| `modo_feedback.py` | Modo feedback y asistente de avisos al creador | Parcial* |
+| `envio_feedback.py` | Guardado local `.txt` y envío SMTP | Sí |
+| `config_creador.py` | Plantilla de `Data/creador_privado.json` | Sí |
+| `generador_examen_historia.py` | Generación de exámenes según histórico | Sí |
+| `informe_examen.py` | Informes `.txt` al cerrar partida | Sí |
+
+\* Los `modo_*.py` mezclan flujo de UI terminal con lógica de partida; en la migración la UI pasará a `Grafico/` y el motor quedará en el paquete de dominio.
 
 ## Entrada de datos y rutas
 
@@ -144,11 +147,11 @@ Mejoras futuras opcionales: ampliar catálogo de plantillas, repuestos LSTM/Shar
 ## Dependencias entre capas
 
 ```
-juego_cuestionario.py
-    → modos (libre / historia / feedback)
-        → motor_partida, politica_reglas, datos
-            → consola, entrada_teclas, entrada_menu, navegacion, modelos, rutas
+juego_consola.py / juego_grafico.py
+    → Consola/ (modos terminal) o Grafico/ (UI pygame)
+        → Comun/ (motor_nucleo, reglas, datos, pool)
+            → consola, entrada_teclas, entrada_menu, navegacion (solo terminal)
     → envio_feedback, config_creador (feedback)
 ```
 
-No hace falta ejecutar nada dentro de esta carpeta; el punto de entrada es `../juego_cuestionario.py`. Al arrancar, el lanzador muestra un tutorial breve de foco de teclado (línea `>>`); ver `entrada_teclas.py` y `entrada_menu.py`.
+No hace falta ejecutar nada dentro de esta carpeta; el punto de entrada es `../juego_consola.py`. Al arrancar, el lanzador muestra un tutorial breve de foco de teclado (línea `>>`); ver `entrada_teclas.py` y `entrada_menu.py`.

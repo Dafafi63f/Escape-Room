@@ -1,31 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Punto de entrada del cuestionario MATCAD en consola.
-
-Orquesta el flujo de alto nivel (sin lógica de partida):
-  1. Carga datos (materias, plantillas).
-  2. Tutorial de foco de teclado (clic en >> + Enter).
-  3. Bucle: menú principal → modo libre / historia / feedback → volver o salir.
-
-La implementación está en Juego/Consola/.
-
-Uso:
-  python Juego/juego_cuestionario.py
-"""
+"""Orquestación principal del juego de consola."""
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
-_JUEGO = Path(__file__).resolve().parent
-if str(_JUEGO) not in sys.path:
-    sys.path.insert(0, str(_JUEGO))
-
 from Consola.consola import pedir_opcion
+from Comun.datos import cargar_materias, cargar_preguntas
+from Consola.datos import elegir_banco_preguntas
 from Consola.entrada_menu import esperar_enter_en_foco
-from Consola.datos import cargar_materias, cargar_preguntas, elegir_banco_preguntas
 from Consola.modo_feedback import ejecutar_feedback_rapido, jugar_modo_feedback
 from Consola.modo_historia import jugar_modo_historia
 from Consola.modo_libre import jugar_modo_libre
@@ -34,11 +18,10 @@ from Consola.navegacion import (
     IrMenuPrincipal,
     SalirPrograma,
     VolverAtras,
-    establecer_contexto,
     mostrar_transicion,
     registrar_atajo_feedback,
 )
-from Consola.rutas import PATH_MATERIAS, PATH_PREGUNTAS, resolver_plantillas
+from Comun.rutas import PATH_MATERIAS, PATH_PREGUNTAS, resolver_plantillas
 
 
 def _mostrar_tutorial_inicio() -> None:
@@ -65,7 +48,7 @@ def _contexto_tutorial_inicio() -> ContextoPantalla:
     )
 
 
-def _tutorial_inicio() -> None:
+def tutorial_inicio() -> None:
     """Pantalla inicial: tutorial de clic. Solo Enter en >> continua."""
     ctx = _contexto_tutorial_inicio()
     mostrar_transicion(_mostrar_tutorial_inicio, contexto=ctx)
@@ -92,7 +75,7 @@ def _ir_menu_principal() -> None:
     mostrar_transicion(_mostrar_menu_principal, contexto=_contexto_menu_principal())
 
 
-def elegir_modo_juego() -> str:
+def _elegir_modo_juego() -> str:
     _ir_menu_principal()
     return pedir_opcion(
         "Selecciona modo",
@@ -106,7 +89,7 @@ def _ejecutar_modo(
     modo: str,
     materias_meta: dict,
     preguntas_dataset: list,
-    path_plantillas,
+    path_plantillas: Path,
 ) -> bool:
     if modo == "2":
         if not preguntas_dataset:
@@ -135,14 +118,14 @@ def _ejecutar_modo(
     return jugar_modo_libre(preguntas, banco)
 
 
-def _bucle_juego(
+def bucle_juego(
     materias_meta: dict,
     preguntas_dataset: list,
-    path_plantillas,
+    path_plantillas: Path,
 ) -> None:
     while True:
         try:
-            modo = elegir_modo_juego()
+            modo = _elegir_modo_juego()
         except IrMenuPrincipal:
             continue
         except SalirPrograma:
@@ -182,7 +165,7 @@ def _bucle_juego(
         _ir_menu_principal()
 
 
-def main() -> None:
+def ejecutar() -> None:
     try:
         materias_meta = cargar_materias(PATH_MATERIAS)
         preguntas_dataset = cargar_preguntas(PATH_PREGUNTAS, materias_meta)
@@ -193,8 +176,8 @@ def main() -> None:
 
     registrar_atajo_feedback(ejecutar_feedback_rapido)
     try:
-        _tutorial_inicio()
-        _bucle_juego(materias_meta, preguntas_dataset, path_plantillas)
+        tutorial_inicio()
+        bucle_juego(materias_meta, preguntas_dataset, path_plantillas)
     except SalirPrograma:
         pass
     except KeyboardInterrupt:
@@ -208,7 +191,3 @@ def main() -> None:
         registrar_atajo_feedback(None)
 
     print("¡Hasta pronto!")
-
-
-if __name__ == "__main__":
-    main()

@@ -22,13 +22,14 @@ Regenerar figuras: `python Entrega/generar_figuras_memoria.py` · Word: `python 
 |------|--------|-------|
 | **Memoria** | En revisión con tutor | Estructura académica (intro + hipótesis contrastables + resultados); Word desde MD/LaTeX regenerables; PDF de entrega manual |
 | **Banco de preguntas** | Cerrado | 480/480 revisadas; `Preguntas.csv` protegido (`TFG_PERMITIR_CSV=1` para escribir) |
-| **Juego (consola)** | Operativo | 3 modos: libre, historia, feedback; tutorial de teclado al inicio |
+| **Juego (consola)** | Operativo | 3 modos: libre, historia, feedback; referencia funcional completa |
+| **Juego (gráfico)** | En desarrollo | Rama `feature/juego-grafico-pygame`; modo libre v1; coexistencia con terminal |
 | **Scripts mantenimiento** | Operativo | `Files/Scripts/mantenimiento.py`; `utils_plantillas_core.py` compartido con el juego |
-| **CI / pruebas** | Operativo | GitHub Actions; suite `Tests/` (51 tests) |
-| **Interfaz gráfica / narrativa** | No iniciado | Alcance futuro (OE1, OE4) |
+| **CI / pruebas** | Operativo | GitHub Actions; suite `Tests/` (74 tests) |
+| **Interfaz gráfica / narrativa** | En desarrollo | Pygame v1; migración futura: solo gráfico, borrar UI terminal |
 | **Piloto con usuarios** | No realizado | Trabajo futuro (motivación / SUS) |
 
-**Entregable actual:** juego interactivo en consola + banco 480 preguntas + herramientas de validación. No es aún escape room gráfico.
+**Entregable actual:** juego en consola (completo) + versión gráfica en desarrollo + banco 480 preguntas + herramientas de validación. Objetivo: paridad gráfica → retirar terminal.
 
 ---
 
@@ -50,10 +51,11 @@ Regenerar figuras: `python Entrega/generar_figuras_memoria.py` · Word: `python 
 
 | Elemento | Estado | Notas |
 |----------|--------|-------|
-| Lanzador | OK | `Juego/juego_cuestionario.py` |
-| Paquete `Consola/` | OK | 19 módulos; `entrada_teclas.py` + `entrada_menu.py`; rutas lazy en `rutas.py` |
-| Tests unitarios | OK | `python -m unittest discover -s Tests -v` → 51 tests (`Tests/Juego/` + `Tests/Scripts/`) |
-| CI | OK | `.github/workflows/ci.yml` — Python 3.10 y 3.12 |
+| Lanzador consola | OK | `Juego/juego_consola.py` |
+| Paquete `Comun/` | OK | Dominio compartido (modelos, datos, reglas, motor, pool) |
+| Paquete `Consola/` | OK | UI terminal, modos, informes, feedback |
+| Tests unitarios | OK | `python -m unittest discover -s Tests -v` → 57 tests (`Tests/Juego/` + `Tests/Scripts/`) |
+| CI | OK | `.github/workflows/tests.yml` — Python 3.14 |
 | Build `.exe` | Opcional | `Juego/build_exe_onefile.ps1` |
 
 ### 2.3 Datos y mantenimiento (`Files/`)
@@ -126,7 +128,7 @@ Añade una fila al cerrar cada sesión de trabajo relevante.
 | 2026-06-15 | Banco | 0 pares similares CSV/plantillas; sustituciones Ids 21,25,72,83,125,298,322; dedup plantillas (1289) |
 | 2026-06-15 | Código | `utils_plantillas_core.py`; rutas lazy; carga única CSV en `main()`; split `entrada_teclas.py` |
 | 2026-06-15 | Repo | Tests en `Tests/` (51); CI GitHub Actions; `borrar_temporales.py` acotado; `requirements-dev.txt` |
-| 2026-06-11 | Código | `simulacion_evaluacion_azar.py`; docstring/tutorial en `juego_cuestionario.py` |
+| 2026-06-11 | Código | `simulacion_evaluacion_azar.py`; docstring/tutorial en `juego_consola.py` |
 | 2026-06-11 | Repo | Carpeta `Revision/`; PDF comentarios gitignored; `ESTADO.md` creado |
 | 2026-06-11 | Repo | `revision_manual_banco.md` movido desde `Data/` a `Revision/` |
 | 2026-06-11 | Memoria | Título académico en portada MD/LaTeX (ya no «Memoria TFG» genérico) |

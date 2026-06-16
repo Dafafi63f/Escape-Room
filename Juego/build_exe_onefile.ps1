@@ -22,8 +22,8 @@ $specDir = $gameDir
 
 Write-Host "==> Limpiando build anterior..."
 if (Test-Path $buildDir) { Remove-Item $buildDir -Recurse -Force }
-if (Test-Path (Join-Path $gameDir "juego_cuestionario.exe")) {
-    Remove-Item (Join-Path $gameDir "juego_cuestionario.exe") -Force
+if (Test-Path (Join-Path $gameDir "juego_consola.exe")) {
+    Remove-Item (Join-Path $gameDir "juego_consola.exe") -Force
 }
 # Limpia dist heredado de builds anteriores.
 if (Test-Path (Join-Path $gameDir "dist")) {
@@ -60,12 +60,12 @@ if ($addDataArgs.Count -eq 0) {
 
 python -m PyInstaller `
   --onefile `
-  --name "juego_cuestionario" `
+  --name "juego_consola" `
   --workpath "$buildDir" `
   --distpath "$gameDir" `
   --specpath "$specDir" `
   @addDataArgs `
-  "$gameDir\juego_cuestionario.py"
+  "$gameDir\juego_consola.py"
 
 if ($LASTEXITCODE -ne 0) {
     throw "Fallo al generar el ejecutable."
@@ -73,7 +73,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "==> Limpiando artefactos de build (build/, .spec)..."
 if (Test-Path $buildDir) { Remove-Item $buildDir -Recurse -Force }
-$specFile = Join-Path $gameDir "juego_cuestionario.spec"
+$specFile = Join-Path $gameDir "juego_consola.spec"
 if (Test-Path $specFile) { Remove-Item $specFile -Force }
 if (Test-Path (Join-Path $gameDir "dist")) {
     Remove-Item (Join-Path $gameDir "dist") -Recurse -Force
@@ -81,6 +81,6 @@ if (Test-Path (Join-Path $gameDir "dist")) {
 
 Write-Host ""
 Write-Host "Listo. Ejecutable generado en:"
-Write-Host "  $gameDir\juego_cuestionario.exe"
+Write-Host "  $gameDir\juego_consola.exe"
 Write-Host ""
 Write-Host "Puedes compartir directamente ese .exe."

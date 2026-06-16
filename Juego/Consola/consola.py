@@ -8,7 +8,7 @@ from collections.abc import Callable
 from typing import Iterable
 
 from .entrada_menu import elegir_indice_menu, elegir_letra_menu
-from .modelos import Pregunta
+from Comun.modelos import Pregunta
 from .navegacion import (
     ContextoPantalla,
     IrMenuPrincipal,
@@ -263,31 +263,14 @@ def pedir_menu_numerado(
 
 
 def calcular_puntos(dificultad: str, acierto: bool) -> int:
-    from .reglas_partida import calcular_puntos_arcade
+    from Comun.reglas_partida import calcular_puntos_arcade
 
     return calcular_puntos_arcade(dificultad, acierto)
 
 
-def dificultad_base(dificultad: str) -> int:
-    return {"Facil": 1, "Media": 2, "Dificil": 3}.get(dificultad, 2)
-
-
-def nivel_materia(nivel: str) -> int:
-    try:
-        return max(1, int(nivel))
-    except (TypeError, ValueError):
-        return 1
-
-
-def complejidad_pregunta(pregunta: Pregunta) -> int:
-    return nivel_materia(pregunta.nivel) + dificultad_base(pregunta.dificultad) - 1
-
-
-def dificultad_global_actual(
-    respondidas: int,
-    global_inicial: int,
-    max_global: int,
-    cada_n: int = 40,
-) -> int:
-    subida = respondidas // max(1, cada_n)
-    return min(global_inicial + subida, max_global)
+from Comun.dificultad import (  # noqa: E402
+    complejidad_pregunta,
+    dificultad_base,
+    dificultad_global_actual,
+    nivel_materia,
+)

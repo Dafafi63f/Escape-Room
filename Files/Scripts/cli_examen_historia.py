@@ -28,7 +28,7 @@ if str(_SCRIPTS) not in sys.path:
 if str(_JUEGO) not in sys.path:
     sys.path.insert(0, str(_JUEGO))
 
-from Consola.datos import cargar_materias, cargar_orden_materias, cargar_preguntas  # noqa: E402
+from Comun.datos import cargar_materias, cargar_orden_materias, cargar_preguntas  # noqa: E402
 from Consola.generador_examen_historia import (  # noqa: E402
     PerfilPedagogico,
     cargar_estadisticas_historicas,
@@ -36,8 +36,8 @@ from Consola.generador_examen_historia import (  # noqa: E402
     generar_examen,
     resumen_estadisticas,
 )
-from Consola.modelos import BancoPreguntas  # noqa: E402
-from Consola.rutas import resolver_dataset, resolver_listado_materias  # noqa: E402
+from Comun.modelos import BancoPreguntas  # noqa: E402
+from Comun.rutas import resolver_dataset, resolver_listado_materias  # noqa: E402
 
 
 def _consola(texto: str) -> str:

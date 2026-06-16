@@ -14,7 +14,7 @@ from enum import Enum
 from pathlib import Path
 
 from .config_creador import mensaje_crear_creador_privado
-from .rutas import (
+from Comun.rutas import (
     resolver_config_creador_privado,
     resolver_dir_feedback,
     ruta_feedback_para_usuario,

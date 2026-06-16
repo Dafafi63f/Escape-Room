@@ -12,7 +12,7 @@ Ficheros que usa el juego y las herramientas de mantenimiento.
 | `Històric_qualificacions_MatCAD.xlsx` | Fuente original del histórico; el juego usa el **CSV** |
 | `creador_privado.json` | Datos personales y secretos del creador (local, no se versiona) |
 
-El juego resuelve rutas con [`Juego/Consola/rutas.py`](../Juego/Consola/rutas.py) (resolución lazy en la primera llamada): busca una carpeta `Data/` en la raíz del proyecto, en el directorio de trabajo o junto al `.exe` (PyInstaller extrae `Data/` dentro del bundle).
+El juego resuelve rutas con [`Juego/Comun/rutas.py`](../Juego/Comun/rutas.py) (resolución lazy en la primera llamada): busca una carpeta `Data/` en la raíz del proyecto, en el directorio de trabajo o junto al `.exe` (PyInstaller extrae `Data/` dentro del bundle).
 
 ## Esquema de `Preguntas.csv`
 

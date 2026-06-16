@@ -27,8 +27,8 @@ from simulacion_evaluacion_azar import (  # noqa: E402
     ejecutar_simulacion,
     simular_examen,
 )
-from Consola.datos import cargar_materias, cargar_preguntas  # noqa: E402
-from Consola.rutas import resolver_dataset, resolver_listado_materias  # noqa: E402
+from Comun.datos import cargar_materias, cargar_preguntas  # noqa: E402
+from Comun.rutas import resolver_dataset, resolver_listado_materias  # noqa: E402
 
 try:
     import matplotlib.pyplot as plt
@@ -63,9 +63,9 @@ def fig_arquitectura_sistema() -> Path:
     ax.axis("off")
 
     capas = [
-        (4.8, 5.0, "Lanzador", "juego_cuestionario.py\nmenú · tutorial · bucle"),
+        (4.8, 5.0, "Lanzadores", "juego_consola.py · juego_grafico.py"),
         (4.8, 3.85, "Modos de juego", "libre · historia · feedback"),
-        (4.8, 2.7, "Motor de partida", "reglas · vidas · puntuación · informes"),
+        (4.8, 2.7, "Motor de partida", "Comun/ — reglas · vidas · puntuación"),
         (4.8, 1.55, "Capa de datos", "Preguntas.csv · listado_materias.csv · plantillas.json"),
         (4.8, 0.35, "Mantenimiento", "validación · auditoría · Monte Carlo"),
     ]

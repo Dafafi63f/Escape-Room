@@ -71,7 +71,7 @@ jobs:
         run: pip install -r requirements-dev.txt
 
       - name: Run MyPy
-        run: mypy Juego/Consola Files/Scripts
+        run: mypy Juego/Comun Juego/Consola Files/Scripts
 
   tests-summary:
     name: tests-summary

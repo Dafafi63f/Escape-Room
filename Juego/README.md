@@ -1,22 +1,23 @@
-# Juego — consola MATCAD
+# Juego — cuestionario MATCAD
 
-Todo lo necesario para **jugar** en terminal (y, opcionalmente, empaquetar un `.exe`).
+Cuestionario en **terminal** con tres modos (libre, historia, feedback). La lógica de dominio vive en [`Comun/`](Comun/README.md); la UI y orquestación en [`Consola/`](Consola/README.md).
+
+Una versión gráfica en pygame se desarrolla en la rama `feature/juego-grafico-pygame`.
 
 | Elemento | Descripción |
 |----------|-------------|
-| [`juego_cuestionario.py`](juego_cuestionario.py) | Lanzador: menú principal y arranque de modos |
-| [`Consola/`](Consola/README.md) | Paquete Python con la lógica del juego (`from Consola...`) |
+| [`juego_consola.py`](juego_consola.py) | Lanzador: menú principal y arranque de modos |
+| [`Comun/`](Comun/README.md) | Dominio compartido (`from Comun...`) |
+| [`Consola/`](Consola/README.md) | UI terminal y orquestación de modos |
 | [`Informes/`](Informes/README.md) | Informes `.txt` de partidas (local, gitignored) |
 | [`Feedback/`](Feedback/README.md) | Copias locales de avisos al creador (local, gitignored) |
 | [`Tests/`](../Tests/README.md) | Pruebas unitarias (suite unificada en la raíz) |
-| [`build_exe_onefile.ps1`](build_exe_onefile.ps1) | Genera `juego_cuestionario.exe` con PyInstaller |
+| [`build_exe_onefile.ps1`](build_exe_onefile.ps1) | Genera `juego_consola.exe` con PyInstaller |
 
-## Jugar
-
-Desde la raíz del TFG:
+## Ejecutar
 
 ```bash
-python Juego/juego_cuestionario.py
+python Juego/juego_consola.py
 ```
 
 Requisito: Python 3.10+, solo biblioteca estándar. Datos en [`../Data/README.md`](../Data/README.md).
@@ -31,7 +32,7 @@ Al arrancar, el lanzador muestra un **tutorial breve** de foco de teclado (hay q
 | **Historia** | Implementado (v1) | Examen balanceado según histórico de qualificacions |
 | **Feedback** | Implementado (v1) | Asistente para enviar bug, sugerencia u otro aviso al creador |
 
-Detalle de bancos de preguntas, puntuación, dificultad progresiva y arquitectura: [`Consola/README.md`](Consola/README.md).
+Detalle de bancos de preguntas, puntuación, dificultad progresiva y arquitectura: [`Consola/README.md`](Consola/README.md) y [`Comun/README.md`](Comun/README.md).
 
 ### Controles (resumen)
 
@@ -73,15 +74,15 @@ cd Juego
 .\build_exe_onefile.ps1
 ```
 
-Genera `juego_cuestionario.exe` en esta carpeta. Incluye `Data/` del proyecto (preguntas, materias, plantillas, histórico CSV). Los informes se escriben en `Informes/` **junto al `.exe`** al ejecutarlo.
+Genera `juego_consola.exe` en esta carpeta. Incluye `Data/` del proyecto (preguntas, materias, plantillas, histórico CSV). Los informes se escriben en `Informes/` **junto al `.exe`** al ejecutarlo.
 
 ### Artefactos de build
 
-Tras un build correcto, `build_exe_onefile.ps1` **borra** `build/`, `juego_cuestionario.spec` y `dist/` si existen. Solo queda `juego_cuestionario.exe` en `Juego/`.
+Tras un build correcto, `build_exe_onefile.ps1` **borra** `build/`, `juego_consola.spec` y `dist/` si existen. Solo queda `juego_consola.exe` en `Juego/`.
 
 | Elemento | En git |
 |----------|--------|
-| `juego_cuestionario.exe` | Ignorado en `.gitignore` |
+| `juego_consola.exe` | Ignorado en `.gitignore` |
 | `build/`, `*.spec` | No se versionan; el script de build los elimina al terminar |
 
 ## Limpieza de temporales

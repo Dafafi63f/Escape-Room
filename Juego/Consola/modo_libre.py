@@ -5,12 +5,15 @@
 from __future__ import annotations
 
 import random
-from collections import deque
 
+from Comun.dificultad import dificultad_global_actual, max_complejidad_pool
+from Comun.pool_libre import (
+    crear_estado_seleccion,
+    elegir_indice_siguiente,
+    filtrar_pool_asistente,
+)
 from .consola import (
     _activar_menu_consola,
-    complejidad_pregunta,
-    dificultad_global_actual,
     elegir_filtro,
     elegir_filtro_obligatorio,
     pedir_entero_en_rango,
@@ -19,7 +22,7 @@ from .consola import (
 )
 from .entrada_menu import elegir_indice_menu, esperar_enter
 from .informe_examen import RegistroRespuesta, publicar_informe_partida
-from .modelos import BancoPreguntas, ETIQUETA_BANCO, Pregunta
+from Comun.modelos import BancoPreguntas, ETIQUETA_BANCO, Pregunta
 from .motor_partida import (
     EstadoPartida,
     aplicar_respuesta,
@@ -187,11 +190,9 @@ def jugar_modo_libre(
         random.shuffle(pool)
 
     total_objetivo = min(total, len(pool)) if not modo_infinito else None
-    max_global = max(complejidad_pregunta(p) for p in pool)
+    max_global = max_complejidad_pool(pool)
     global_inicial = d.get("global_inicial", 1)
-    ventana_no_repeticion = max(1, len(pool) // 4)
-    historial_reciente: deque[int] = deque(maxlen=ventana_no_repeticion)
-    usadas: set[int] = set()
+    seleccion = crear_estado_seleccion(len(pool))
 
     estado = EstadoPartida(
         nombre=d["nombre"],
@@ -231,43 +232,23 @@ def jugar_modo_libre(
 
     try:
         while estado.debe_continuar(total_objetivo):
-            respondidas = estado.respondidas
             global_actual = max_global
             if reglas.dificultad_progresiva:
                 global_actual = dificultad_global_actual(
-                    respondidas=respondidas,
+                    respondidas=estado.respondidas,
                     global_inicial=global_inicial,
                     max_global=max_global,
                 )
-            bloqueadas = set(historial_reciente)
-            candidatas = [
-                idx
-                for idx, p in enumerate(pool)
-                if idx not in usadas
-                and idx not in bloqueadas
-                and (not reglas.dificultad_progresiva or complejidad_pregunta(p) <= global_actual)
-            ]
-            if not candidatas:
-                if modo_infinito:
-                    usadas.clear()
-                    candidatas = [
-                        idx
-                        for idx, p in enumerate(pool)
-                        if idx not in bloqueadas
-                        and (
-                            not reglas.dificultad_progresiva
-                            or complejidad_pregunta(p) <= global_actual
-                        )
-                    ]
-                    if not candidatas:
-                        candidatas = list(range(len(pool)))
-                else:
-                    candidatas = [idx for idx in range(len(pool)) if idx not in usadas]
-                    if not candidatas:
-                        break
-            idx_elegida = random.choice(candidatas)
-            usadas.add(idx_elegida)
-            historial_reciente.append(idx_elegida)
+            idx_elegida = elegir_indice_siguiente(
+                pool,
+                seleccion,
+                modo_infinito=modo_infinito,
+                dificultad_progresiva=reglas.dificultad_progresiva,
+                global_inicial=global_inicial,
+                respondidas=estado.respondidas,
+            )
+            if idx_elegida is None:
+                break
             p = pool[idx_elegida]
 
             progreso = (
@@ -360,11 +341,10 @@ def jugar_modo_libre(
 
 
 def _construir_pool(preguntas: list[Pregunta], d: dict) -> list[Pregunta]:
-    return [
-        p
-        for p in preguntas
-        if (d.get("tematica") is None or p.tematica == d["tematica"])
-        and (d.get("curso") is None or p.curso == d["curso"])
-        and (d.get("semestre") is None or p.semestre == d["semestre"])
-        and (d.get("tipo_principal") is None or p.tipo == d["tipo_principal"])
-    ]
+    return filtrar_pool_asistente(
+        preguntas,
+        tematica=d.get("tematica"),
+        curso=d.get("curso"),
+        semestre=d.get("semestre"),
+        tipo=d.get("tipo_principal"),
+    )

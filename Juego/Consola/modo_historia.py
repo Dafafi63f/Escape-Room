@@ -20,7 +20,7 @@ from .generador_examen_historia import (
     generar_examen,
     resumen_estadisticas,
 )
-from .modelos import Pregunta
+from Comun.modelos import Pregunta
 from .motor_partida import ejecutar_lista_fija
 from .navegacion import (
     AsistentePasos,
@@ -31,7 +31,7 @@ from .navegacion import (
     mostrar_transicion,
 )
 from .politica_reglas import aplicar_politica, resolver_politica_historia
-from .rutas import PATH_MATERIAS
+from Comun.rutas import PATH_MATERIAS
 
 
 def _elegir_perfil_en_paso(asist: AsistentePasos) -> None:

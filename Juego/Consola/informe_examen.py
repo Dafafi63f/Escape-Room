@@ -9,15 +9,15 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from .modelos import Pregunta
+from Comun.modelos import Pregunta
 from .motor_partida import EstadoPartida
-from .reglas_partida import (
+from Comun.reglas_partida import (
     SistemaPuntuacion,
     formatear_resultado_puntuacion,
     nota_sobre_diez,
     porcentaje_aciertos,
 )
-from .rutas import resolver_dir_informes, ruta_informe_para_usuario
+from Comun.rutas import resolver_dir_informes, ruta_informe_para_usuario
 
 
 @dataclass

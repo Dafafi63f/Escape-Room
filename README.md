@@ -23,7 +23,7 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 |------|-------|
 | Esquema del banco, materias, diagramas curriculares | [`Data/README.md`](Data/README.md) |
 | Juego, modos, controles, `.exe` | [`Juego/README.md`](Juego/README.md) |
-| Lógica interna (bancos, puntuación, filtros) | [`Juego/Consola/README.md`](Juego/Consola/README.md) |
+| Lógica interna (bancos, puntuación, filtros) | [`Juego/Comun/README.md`](Juego/Comun/README.md) · UI terminal: [`Juego/Consola/README.md`](Juego/Consola/README.md) |
 | Scripts de mantenimiento y balanceo | [`Files/README.md`](Files/README.md) → [`Files/Scripts/README.md`](Files/Scripts/README.md) |
 | Scripts legado de regeneración CSV | [`Files/Archivo/README.md`](Files/Archivo/README.md) |
 | Pruebas unitarias | [`Tests/README.md`](Tests/README.md) |
@@ -35,15 +35,15 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 
 | Carpeta / fichero | Rol |
 |------------------|-----|
-| [`Juego/`](Juego/README.md) | Lanzador, paquete [`Consola/`](Juego/Consola/README.md), build opcional del `.exe` |
+| [`Juego/`](Juego/README.md) | [`juego_consola.py`](Juego/juego_consola.py), [`Comun/`](Juego/Comun/README.md), [`Consola/`](Juego/Consola/README.md), build opcional del `.exe` |
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
 | [`Entrega/`](Entrega/README.md) | `Memoria/` (LaTeX, Word), `Figuras/`, scripts de exportación |
 | [`Revision/`](Revision/ESTADO.md) | Estado del proyecto, feedback tutor; PDF anotados locales (gitignored) |
 | [`Memoria_TFG.md`](Memoria_TFG.md) | Borrador Markdown de la memoria (raíz) |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias (51 tests) y CI |
+| [`Tests/`](Tests/README.md) | Pruebas unitarias (57 tests) y CI |
 | [`borrar_temporales.py`](borrar_temporales.py) | Limpia `__pycache__` y `.txt` de `Juego/Informes/` y `Juego/Feedback/` |
-| [`requirements-dev.txt`](requirements-dev.txt) | Dependencias de desarrollo (pandas, matplotlib, pyinstaller) |
+| [`requirements-dev.txt`](requirements-dev.txt) | Dependencias de desarrollo (pandas, matplotlib, pyinstaller, mypy, pre-commit) |
 
 ## Memoria — exportar Word
 
@@ -58,13 +58,11 @@ Genera los `.docx` en `Entrega/Memoria/` (Pandoc). El PDF de entrega lo exportas
 
 ## Jugar
 
-Requisito: Python 3.10+ (solo biblioteca estándar).
-
 ```bash
-python Juego/juego_cuestionario.py
+python Juego/juego_consola.py
 ```
 
-Modos en el menú: **libre**, **historia** (examen balanceado) y **feedback** (avisos al creador). Controles en terminal: **H** (ayuda), **F** (feedback rápido sin borrar pantalla), **Esc** (pausa), **Supr** (atrás en menús). Detalle en [`Juego/Consola/README.md`](Juego/Consola/README.md).
+Versión gráfica en pygame: rama `feature/juego-grafico-pygame` (ver [`Juego/README.md`](Juego/README.md)).
 
 ### Datos
 
@@ -81,7 +79,7 @@ cd Juego
 .\build_exe_onefile.ps1
 ```
 
-Salida: `Juego/juego_cuestionario.exe` (ignorado en git). Al terminar, el script elimina `Juego/build/` y `juego_cuestionario.spec`.
+Salida: `Juego/juego_consola.exe` (ignorado en git). Al terminar, el script elimina `Juego/build/` y `juego_consola.spec`.
 
 Detalle: [`Juego/README.md`](Juego/README.md#ejecutable-opcional).
 
@@ -119,12 +117,12 @@ pre-commit run --all-files
 mypy Juego/Consola Files/Scripts
 ```
 
-## Dependencias de desarrollo
+## Dependencias
 
-El juego en consola solo necesita Python 3.10+ (stdlib). Para scripts de mantenimiento, figuras de la memoria y build del `.exe`:
+El juego en consola solo necesita Python 3.10+ (stdlib). Para scripts de mantenimiento, figuras de la memoria, build del `.exe` y la versión gráfica (pygame):
 
 ```bash
-pip install -r requirements-dev.txt
+pip install -r requirements.txt
 ```
 
 Pandoc (binario externo) para `Entrega/exportar_memoria.py`.

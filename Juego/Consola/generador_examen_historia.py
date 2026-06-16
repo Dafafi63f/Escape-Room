@@ -23,7 +23,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Callable
 
-from .rutas import resolver_historico_qualificacions
+from Comun.rutas import resolver_historico_qualificacions
 
 # Réplica mínima de objetivos_balanceo (el .exe no incluye Files/).
 SLOTS_CANONICOS_12: tuple[tuple[str, str], ...] = (

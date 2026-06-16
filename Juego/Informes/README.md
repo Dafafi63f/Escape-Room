@@ -4,7 +4,7 @@ Aquí se guardan los informes de partida en modo examen cerrado (ficheros `.txt`
 
 - Generados por [`Consola/informe_examen.py`](../Consola/informe_examen.py) al terminar una partida con corrección al final.
 - Con el script Python: ruta por defecto `Juego/Informes/`.
-- Con el **`.exe`**: carpeta `Informes/` en el mismo directorio que `juego_cuestionario.exe` (se crea sola).
+- Con el **`.exe`**: carpeta `Informes/` en el mismo directorio que `juego_consola.exe` (se crea sola).
 
 **No se versionan** en git (`Juego/Informes/*` en `.gitignore`; solo `.gitkeep` queda en el repositorio).
 
