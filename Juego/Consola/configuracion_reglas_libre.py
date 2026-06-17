@@ -132,12 +132,6 @@ def configurar_reglas_personalizado(
         sin_vidas=sin_vidas,
         sistema=sistema,
     )
-    mostrar_aciertos = False
-    if opts.permitir_aciertos_en_curso:
-        mostrar_aciertos = _pedir_si_no(
-            "¿Mostrar aciertos/fallos en la barra de progreso? (S/N): ",
-            defecto="S",
-        )
     dificultad_progresiva = False
     if opts.permitir_dificultad_progresiva:
         dificultad_progresiva = _pedir_si_no(
@@ -152,7 +146,6 @@ def configurar_reglas_personalizado(
         tiempo_por_pregunta_seg=tiempo_pregunta,
         tiempo_total_seg=tiempo_total,
         mostrar_solucion_tras_fallo=mostrar_solucion,
-        mostrar_aciertos_en_curso=mostrar_aciertos,
         dificultad_progresiva=dificultad_progresiva,
         modo_infinito=modo_infinito,
         n_preguntas=n_preguntas,

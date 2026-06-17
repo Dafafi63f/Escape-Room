@@ -8,8 +8,9 @@ from collections.abc import Callable
 
 import pygame
 
+from Comun.jugador import nombre_jugador_efectivo
 from Grafico.fuentes import FamiliaFuente, crear_fuente
-from Grafico.tema import COLOR_ACENTO, COLOR_PANEL, COLOR_TEXTO, COLOR_TITULO
+from Grafico.tema import ALTO, ANCHO, COLOR_ACENTO, COLOR_PANEL, COLOR_TEXTO, COLOR_TITULO
 from Grafico.texto import (
     medir_texto_mixto,
     preparar_texto_ui,
@@ -33,6 +34,218 @@ COLOR_MARCA_ON_TEXTO = (255, 255, 255)
 COLOR_MARCA_OFF_FONDO = (255, 255, 255)
 COLOR_MARCA_OFF_BORDE = (160, 175, 195)
 COLOR_MARCA_CASILLA_BORDE = (110, 130, 160)
+
+PADDING_BOTON_X = 14
+PADDING_BOTON_Y = 8
+MARGEN_INFERIOR_BOTONES = 20
+
+
+def alto_pila_botones(num_botones: int, alto_boton: int, gap: int) -> int:
+    if num_botones <= 0:
+        return 0
+    return num_botones * alto_boton + (num_botones - 1) * gap
+
+
+def clamp_y_apilado(
+    y_preferido: int,
+    *,
+    alto_boton: int,
+    num_botones: int,
+    gap: int,
+    alto_pantalla: int = ALTO,
+    margen_inferior: int = MARGEN_INFERIOR_BOTONES,
+) -> int:
+    """Limita la Y del primer botón para que la pila no se salga por abajo."""
+    y_max = alto_pantalla - margen_inferior - alto_pila_botones(
+        num_botones, alto_boton, gap
+    )
+    return min(y_preferido, y_max)
+
+
+def clamp_y_boton(
+    y_preferido: int,
+    alto_boton: int,
+    *,
+    alto_pantalla: int = ALTO,
+    margen_inferior: int = MARGEN_INFERIOR_BOTONES,
+) -> int:
+    return clamp_y_apilado(
+        y_preferido,
+        alto_boton=alto_boton,
+        num_botones=1,
+        gap=0,
+        alto_pantalla=alto_pantalla,
+        margen_inferior=margen_inferior,
+    )
+
+
+def posicionar_botones_apilados(
+    botones: list[Boton],
+    y_preferido: int,
+    *,
+    x_centro: int,
+    gap: int,
+    alto_pantalla: int = ALTO,
+    margen_inferior: int = MARGEN_INFERIOR_BOTONES,
+) -> None:
+    """Coloca botones en vertical, respetando el borde inferior de la pantalla."""
+    if not botones:
+        return
+    alto = botones[0].rect.height
+    ancho = botones[0].rect.width
+    y0 = clamp_y_apilado(
+        y_preferido,
+        alto_boton=alto,
+        num_botones=len(botones),
+        gap=gap,
+        alto_pantalla=alto_pantalla,
+        margen_inferior=margen_inferior,
+    )
+    x = x_centro - ancho // 2
+    for i, boton in enumerate(botones):
+        boton.rect.topleft = (x, y0 + i * (alto + gap))
+
+
+def posicionar_botones_fila(
+    botones: list[Boton],
+    y_preferido: int,
+    *,
+    x_centro: int,
+    gap: int,
+    alto_pantalla: int = ALTO,
+    margen_inferior: int = MARGEN_INFERIOR_BOTONES,
+) -> None:
+    """Coloca botones en horizontal (p. ej. Atrás | Siguiente)."""
+    if not botones:
+        return
+    alto = max(boton.rect.height for boton in botones)
+    anchos = [boton.rect.width for boton in botones]
+    total_w = sum(anchos) + gap * (len(botones) - 1)
+    y = clamp_y_boton(
+        y_preferido,
+        alto,
+        alto_pantalla=alto_pantalla,
+        margen_inferior=margen_inferior,
+    )
+    x = x_centro - total_w // 2
+    for boton, ancho in zip(botones, anchos, strict=True):
+        boton.rect.topleft = (x, y + (alto - boton.rect.height) // 2)
+        x += ancho + gap
+
+
+def posicionar_pila_inferior(
+    botones: list[Boton],
+    *,
+    x_centro: int,
+    gap: int,
+    alto_pantalla: int = ALTO,
+    margen_inferior: int = MARGEN_INFERIOR_BOTONES,
+) -> None:
+    """Ancla la pila al borde inferior (primer botón = el más bajo)."""
+    if not botones:
+        return
+    alto = botones[0].rect.height
+    ancho = botones[0].rect.width
+    alto_total = alto_pila_botones(len(botones), alto, gap)
+    y0 = alto_pantalla - margen_inferior - alto_total
+    x = x_centro - ancho // 2
+    for i, boton in enumerate(botones):
+        boton.rect.topleft = (x, y0 + i * (alto + gap))
+
+
+def medir_etiqueta_boton(
+    etiqueta: str,
+    fuente: pygame.font.Font,
+) -> tuple[int, int]:
+    texto = preparar_texto_ui(etiqueta)
+    tamano = fuente.get_height()
+    if texto_requiere_fuentes_mixtas(texto):
+        return medir_texto_mixto(texto, tamano)
+    return fuente.size(texto)
+
+
+def tamano_grupo_botones(
+    etiquetas: list[str],
+    fuente: pygame.font.Font,
+    *,
+    padding_x: int = PADDING_BOTON_X,
+    padding_y: int = PADDING_BOTON_Y,
+    ancho_min: int = 0,
+    alto_min: int = 0,
+) -> tuple[int, int]:
+    medidas = [medir_etiqueta_boton(etiqueta, fuente) for etiqueta in etiquetas]
+    ancho_texto = max(ancho for ancho, _ in medidas)
+    alto_texto = max(alto for _, alto in medidas)
+    return (
+        max(ancho_min, ancho_texto + 2 * padding_x),
+        max(alto_min, alto_texto + 2 * padding_y),
+    )
+
+
+def rect_boton_etiqueta(
+    etiqueta: str,
+    fuente: pygame.font.Font,
+    *,
+    y: int,
+    x_derecha: int | None = None,
+    x_centro: int | None = None,
+    padding_x: int = PADDING_BOTON_X,
+    padding_y: int = PADDING_BOTON_Y,
+    ancho: int | None = None,
+    alto: int | None = None,
+    ancho_min: int = 0,
+    alto_min: int = 0,
+) -> pygame.Rect:
+    w_texto, h_texto = medir_etiqueta_boton(etiqueta, fuente)
+    w = ancho if ancho is not None else max(ancho_min, w_texto + 2 * padding_x)
+    h = alto if alto is not None else max(alto_min, h_texto + 2 * padding_y)
+    if x_centro is not None:
+        rect = pygame.Rect(x_centro - w // 2, y, w, h)
+    elif x_derecha is not None:
+        rect = pygame.Rect(x_derecha - w, y, w, h)
+    else:
+        raise ValueError("Indica x_centro o x_derecha")
+    return rect
+
+
+def rects_botones_apilados(
+    etiquetas: list[str],
+    fuente: pygame.font.Font,
+    *,
+    x_centro: int,
+    y0: int,
+    gap: int = 12,
+    padding_x: int = PADDING_BOTON_X,
+    padding_y: int = PADDING_BOTON_Y,
+    ancho_min: int = 0,
+    alto_min: int = 0,
+    alto_pantalla: int | None = ALTO,
+    margen_inferior: int = MARGEN_INFERIOR_BOTONES,
+) -> list[pygame.Rect]:
+    ancho, alto = tamano_grupo_botones(
+        etiquetas,
+        fuente,
+        padding_x=padding_x,
+        padding_y=padding_y,
+        ancho_min=ancho_min,
+        alto_min=alto_min,
+    )
+    if alto_pantalla is not None:
+        y0 = clamp_y_apilado(
+            y0,
+            alto_boton=alto,
+            num_botones=len(etiquetas),
+            gap=gap,
+            alto_pantalla=alto_pantalla,
+            margen_inferior=margen_inferior,
+        )
+    x = x_centro - ancho // 2
+    rects: list[pygame.Rect] = []
+    y = y0
+    for _ in etiquetas:
+        rects.append(pygame.Rect(x, y, ancho, alto))
+        y += alto + gap
+    return rects
 
 
 def partir_texto(fuente: pygame.font.Font, texto: str, ancho_max: int) -> list[str]:
@@ -73,7 +286,9 @@ def dibujar_texto_multilinea(
     tamano = fuente.get_height()
     for linea in lineas:
         if texto_requiere_fuentes_mixtas(linea):
-            ancho_linea, alto_linea = medir_texto_mixto(linea, tamano)
+            ancho_linea, alto_linea = medir_texto_mixto(
+                linea, tamano, color_texto=color
+            )
             x = rect.centerx - ancho_linea // 2 if alineacion_centro else rect.x + 8
             renderizar_texto_mixto(pantalla, linea, (x, y), color, tamano)
             y += max(fuente.get_linesize(), alto_linea)
@@ -87,6 +302,14 @@ def dibujar_texto_multilinea(
             y += fuente.get_linesize()
         if y > rect.bottom - 8:
             break
+
+
+COLOR_TOOLTIP_FONDO = (22, 44, 82, 248)
+COLOR_TOOLTIP_BORDE = (140, 175, 230)
+COLOR_TOOLTIP_TEXTO = (248, 252, 255)
+MARGEN_TOOLTIP = 10
+ANCHO_MAX_TOOLTIP = 260
+GAP_TOOLTIP = 8
 
 
 def fila_rects_centrada(
@@ -162,6 +385,7 @@ class Boton:
         fondo_hover: tuple[int, int, int] | None = None,
         familia_etiqueta: FamiliaFuente = "texto",
         mostrar_texto: bool = True,
+        tooltip: str | None = None,
     ) -> None:
         self.etiqueta = etiqueta
         self.rect = rect
@@ -171,6 +395,7 @@ class Boton:
         self.fondo_hover = fondo_hover
         self.familia_etiqueta = familia_etiqueta
         self.mostrar_texto = mostrar_texto
+        self.tooltip = tooltip
         self.hover = False
         self.activo = True
 
@@ -361,6 +586,121 @@ class BotonOpcion(Boton):
         )
 
 
+def _posicion_panel_tooltip(
+    rect_ancla: pygame.Rect,
+    ancho_panel: int,
+    alto_panel: int,
+    *,
+    ancho_pantalla: int = ANCHO,
+    alto_pantalla: int = ALTO,
+) -> tuple[int, int]:
+    """Coloca el bocadillo según la zona de la pantalla (evita bloques enormes bajo iconos)."""
+    margen = 6
+    gap = GAP_TOOLTIP
+
+    # Iconos fijos arriba a la izquierda: al lado del botón.
+    if rect_ancla.centery < 72 and rect_ancla.centerx < ancho_pantalla // 2:
+        x = rect_ancla.right + gap
+        y = rect_ancla.centery - alto_panel // 2
+        if x + ancho_panel > ancho_pantalla - margen:
+            x = rect_ancla.left - gap - ancho_panel
+        y = max(margen, min(y, alto_pantalla - alto_panel - margen))
+        x = max(margen, min(x, ancho_pantalla - ancho_panel - margen))
+        return x, y
+
+    # Banda inferior (comodines, etc.): encima del botón.
+    if rect_ancla.top > alto_pantalla - 150:
+        x = rect_ancla.centerx - ancho_panel // 2
+        x = max(margen, min(x, ancho_pantalla - ancho_panel - margen))
+        y = rect_ancla.top - alto_panel - gap
+        if y < margen:
+            y = rect_ancla.bottom + gap
+        return x, y
+
+    # Resto: encima, alineado al borde izquierdo del botón.
+    x = rect_ancla.left
+    x = max(margen, min(x, ancho_pantalla - ancho_panel - margen))
+    y = rect_ancla.top - alto_panel - gap
+    if y < margen:
+        y = rect_ancla.bottom + gap
+    y = max(margen, min(y, alto_pantalla - alto_panel - margen))
+    return x, y
+
+
+def _dibujar_lineas_tooltip(
+    pantalla: pygame.Surface,
+    fuente: pygame.font.Font,
+    lineas: list[str],
+    panel: pygame.Rect,
+    color: tuple[int, int, int],
+) -> None:
+    y = panel.y + MARGEN_TOOLTIP
+    tamano = fuente.get_height()
+    for linea in lineas:
+        if texto_requiere_fuentes_mixtas(linea):
+            renderizar_texto_mixto(pantalla, linea, (panel.x + MARGEN_TOOLTIP, y), color, tamano)
+            y += max(fuente.get_linesize(), medir_texto_mixto(linea, tamano)[1])
+        else:
+            superficie = fuente.render(linea, True, color)
+            pantalla.blit(superficie, (panel.x + MARGEN_TOOLTIP, y))
+            y += fuente.get_linesize()
+
+
+def dibujar_tooltip(
+    pantalla: pygame.Surface,
+    fuente: pygame.font.Font,
+    rect_ancla: pygame.Rect,
+    texto: str,
+    *,
+    ancho_pantalla: int = ANCHO,
+    alto_pantalla: int = ALTO,
+) -> None:
+    """Bocadillo compacto al pasar el ratón (hover)."""
+    texto = preparar_texto_ui(texto.strip())
+    if not texto:
+        return
+    fuente_tip = crear_fuente(max(14, min(15, fuente.get_height())), familia="texto")
+    ancho_texto_max = ANCHO_MAX_TOOLTIP - 2 * MARGEN_TOOLTIP
+    lineas = partir_texto(fuente_tip, texto, ancho_texto_max)
+    alto_linea = fuente_tip.get_linesize()
+    alto_panel = 2 * MARGEN_TOOLTIP + len(lineas) * alto_linea
+    anchos = []
+    tamano = fuente_tip.get_height()
+    for linea in lineas:
+        if texto_requiere_fuentes_mixtas(linea):
+            anchos.append(medir_texto_mixto(linea, tamano)[0])
+        else:
+            anchos.append(fuente_tip.size(linea)[0])
+    ancho_panel = min(
+        ANCHO_MAX_TOOLTIP,
+        max(anchos, default=0) + 2 * MARGEN_TOOLTIP,
+    )
+    x, y = _posicion_panel_tooltip(
+        rect_ancla,
+        ancho_panel,
+        alto_panel,
+        ancho_pantalla=ancho_pantalla,
+        alto_pantalla=alto_pantalla,
+    )
+    panel = pygame.Rect(x, y, ancho_panel, alto_panel)
+    fondo = pygame.Surface((ancho_panel, alto_panel), pygame.SRCALPHA)
+    fondo.fill(COLOR_TOOLTIP_FONDO)
+    pantalla.blit(fondo, panel.topleft)
+    pygame.draw.rect(pantalla, COLOR_TOOLTIP_BORDE, panel, width=1, border_radius=8)
+    _dibujar_lineas_tooltip(pantalla, fuente_tip, lineas, panel, COLOR_TOOLTIP_TEXTO)
+
+
+def dibujar_tooltips_botones(
+    pantalla: pygame.Surface,
+    fuente: pygame.font.Font,
+    botones: list[Boton],
+) -> None:
+    for boton in botones:
+        if boton.activo and boton.hover and boton.tooltip:
+            dibujar_tooltip(pantalla, fuente, boton.rect, boton.tooltip)
+            return
+
+
 class CampoTexto:
     """Campo de texto: el teclado solo se usa aquí."""
 
@@ -397,8 +737,7 @@ class CampoTexto:
         return False
 
     def valor(self) -> str:
-        limpio = self.texto.strip()
-        return limpio or "Anónimo"
+        return nombre_jugador_efectivo(self.texto)
 
     def dibujar(self, pantalla: pygame.Surface, fuente: pygame.font.Font) -> None:
         fondo = COLOR_CAMPO_ACTIVO if self.activo else COLOR_CAMPO_FONDO

@@ -29,7 +29,7 @@ from balance_lib import ejecutar_reordenar, ejecutar_validar
 from utils_dataset_csv import fila_pregunta, guardar_filas_csv
 from utils_texto import normalizar_pregunta
 
-PATH = BASE / "Data" / "Preguntas.csv"
+PATH = BASE / "Data" / "CSV" / "Preguntas.csv"
 INI = "Iniciació a la Programació"
 POO = "Programació Orientada als Objectes"
 DEST = "Tècniques de Disseny d'Algoritmes"

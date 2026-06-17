@@ -280,6 +280,18 @@ class TestParidadConsolaGrafico(unittest.TestCase):
 
         self._comparar(_linea)
 
+    def test_nombre_jugador_defecto(self) -> None:
+        self._comparar(lambda b: b.nombre_jugador_defecto())
+
+    def test_catalogo_historia_ids(self) -> None:
+        self._comparar(lambda b: b.catalogo_historia_ids())
+
+    def test_reglas_historia_simulacro(self) -> None:
+        self._comparar(lambda b: b.reglas_historia_preset("simulacro_examen"))
+
+    def test_reglas_historia_resistencia(self) -> None:
+        self._comparar(lambda b: b.reglas_historia_preset("ranking_resistencia"))
+
 
 if __name__ == "__main__":
     unittest.main()

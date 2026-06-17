@@ -2,7 +2,7 @@
 
 Documento **vivo**: resume progreso, feedback del tutor y pendientes. Actualízalo al cerrar cada bloque de trabajo (memoria, código, datos, scripts).
 
-**Última actualización:** 2026-06-15
+**Última actualización:** 2026-06-17
 **Alumno:** Daniel Fageda Figueredo · **Tutor:** Víctor Navas Portella
 
 | Enlace | Uso |
@@ -22,14 +22,14 @@ Regenerar figuras: `python Entrega/generar_figuras_memoria.py` · Word: `python 
 |------|--------|-------|
 | **Memoria** | En revisión con tutor | Estructura académica (intro + hipótesis contrastables + resultados); Word desde MD/LaTeX regenerables; PDF de entrega manual |
 | **Banco de preguntas** | Cerrado | 480/480 revisadas; `Preguntas.csv` protegido (`TFG_PERMITIR_CSV=1` para escribir) |
-| **Juego (consola)** | Operativo | 3 modos: libre, historia, feedback; referencia funcional completa |
-| **Juego (gráfico)** | En desarrollo | Rama `feature/juego-grafico-pygame`; modo libre v1; coexistencia con terminal |
-| **Scripts mantenimiento** | Operativo | `Files/Scripts/mantenimiento.py`; `utils_plantillas_core.py` compartido con el juego |
-| **CI / pruebas** | Operativo | GitHub Actions; suite `Tests/` (74 tests) |
-| **Interfaz gráfica / narrativa** | En desarrollo | Pygame v1; migración futura: solo gráfico, borrar UI terminal |
+| **Juego (consola)** | Operativo | 4 modos: libre, historia, resistencia, feedback |
+| **Juego (gráfico)** | En desarrollo avanzado | Rama `feature/juego-grafico-pygame`; libre, historia y resistencia jugables; tooltips; coexistencia con terminal |
+| **Scripts mantenimiento** | Operativo | `Files/Scripts/mantenimiento.py`; `rutas_data.py`; `Data/CSV/` y `Data/JSON/` |
+| **CI / pruebas** | Operativo | GitHub Actions; suite `Tests/` (**177 tests**) |
+| **Interfaz gráfica / narrativa** | En desarrollo | Pygame con paridad creciente; migración futura: solo gráfico |
 | **Piloto con usuarios** | No realizado | Trabajo futuro (motivación / SUS) |
 
-**Entregable actual:** juego en consola (completo) + versión gráfica en desarrollo + banco 480 preguntas + herramientas de validación. Objetivo: paridad gráfica → retirar terminal.
+**Entregable actual:** juego consola + gráfico pygame (libre, historia, resistencia) + banco 480 preguntas + herramientas de validación. Objetivo: paridad gráfica completa → retirar terminal.
 
 ---
 
@@ -52,10 +52,10 @@ Regenerar figuras: `python Entrega/generar_figuras_memoria.py` · Word: `python 
 | Elemento | Estado | Notas |
 |----------|--------|-------|
 | Lanzador consola | OK | `Juego/juego_consola.py` |
-| Lanzador gráfico | En desarrollo | `Juego/juego_grafico.py` + `Juego/Grafico/` |
-| Paquete `Comun/` | OK | Dominio compartido (modelos, datos, reglas, motor, pool) |
-| Paquete `Consola/` | OK | UI terminal, modos, informes, feedback |
-| Tests unitarios | OK | `python -m unittest discover -s Tests -v` → 74 tests (`Tests/Juego/` + `Tests/Scripts/`) |
+| Lanzador gráfico | Avanzado | `Juego/juego_grafico.py` + `Juego/Grafico/` (pantallas modulares, tooltips, resistencia) |
+| Paquete `Comun/` | OK | Dominio compartido + historia/resistencia/ranking |
+| Paquete `Consola/` | OK | UI terminal, modos, informes, feedback, `motor_resistencia.py` |
+| Tests unitarios | OK | `python -m unittest discover -s Tests -v` → **177 tests** (`Tests/Juego/` 169 + `Tests/Scripts/` 8) |
 | CI | OK | `.github/workflows/tests.yml` — Python 3.14 |
 | Build `.exe` | Opcional | `Juego/build_exe_onefile.ps1` |
 
@@ -63,10 +63,13 @@ Regenerar figuras: `python Entrega/generar_figuras_memoria.py` · Word: `python 
 
 | Elemento | Estado | Notas |
 |----------|--------|-------|
-| `Data/Preguntas.csv` | Cerrado 480 ítems | Ver [`revision_manual_banco.md`](revision_manual_banco.md) |
-| `listado_materias.csv` | OK | 40 materias, metadatos curriculares |
-| `plantillas.json` | OK | Pool beta **1289** entradas (modos 2–3 del juego) |
-| Histórico calificaciones | OK | Modo historia |
+| `Data/CSV/Preguntas.csv` | Cerrado 480 ítems | Ver [`revision_manual_banco.md`](revision_manual_banco.md) |
+| `CSV/listado_materias.csv` | OK | 40 materias, metadatos curriculares |
+| `JSON/plantillas.json` | OK | Pool beta **1289** entradas (modos 2–3 del juego) |
+| `JSON/presets_historia.json` | OK | Catálogo modo historia |
+| `JSON/preguntas_resistencia.json` | OK | Pool exclusivo resistencia |
+| `JSON/ranking_resistencia.json` | Runtime | Ranking local resistencia (lectura/escritura) |
+| Histórico calificaciones | OK | `CSV/Historic_qualificacions_MatCAD_completo.csv` |
 | `mantenimiento.py validar` | OK | Balance estructural |
 | `auditar-distractores` | OK | Salida consola |
 | `duplicados.py revisar` | OK | **0 pares similares** en CSV y plantillas intra-materia (2026-06-15) |
@@ -107,7 +110,7 @@ Leyenda: ✅ aplicado en memoria/código · 🔄 parcial · ⏳ pendiente
 | Simulación automática respuestas al azar | ✅ | §5.7; `simulacion_evaluacion_azar.py` |
 | Más contenido matemático / estadístico | 🔄 | Simulación + índice dificultad; piloto usuarios ⏳ |
 | Diagramas arquitectura en metodología | ✅ | Tabla capas §4.3 |
-| Clarificar si Pygame se usó | ✅ | §5.2: no utilizado |
+| Clarificar si Pygame se usó | ✅ | §5.2: en desarrollo activo (rama gráfica) |
 
 ### 3.3 Pendiente de tutor / entrega
 
@@ -126,6 +129,10 @@ Añade una fila al cerrar cada sesión de trabajo relevante.
 
 | Fecha | Ámbito | Cambio |
 |-------|--------|--------|
+| 2026-06-17 | Gráfico | Modo historia y resistencia pygame; tooltips hover; wizard libre completo; títulos resumen con wrap |
+| 2026-06-17 | Comun | Resistencia (eventos, powerups, ranking), `textos_ui.py`, rutas `Data/CSV` y `Data/JSON` |
+| 2026-06-17 | Tests | Suite ampliada a **177** tests (gráfico, resistencia, tooltips, menús) |
+| 2026-06-17 | Docs | READMEs y `ESTADO.md` alineados con estructura actual |
 | 2026-06-15 | Banco | 0 pares similares CSV/plantillas; sustituciones Ids 21,25,72,83,125,298,322; dedup plantillas (1289) |
 | 2026-06-15 | Código | `utils_plantillas_core.py`; rutas lazy; carga única CSV en `main()`; split `entrada_teclas.py` |
 | 2026-06-15 | Repo | Tests en `Tests/` (51); CI GitHub Actions; `borrar_temporales.py` acotado; `requirements-dev.txt` |
@@ -158,7 +165,11 @@ Añade una fila al cerrar cada sesión de trabajo relevante.
 ### Juego / repo
 - [x] Refactor entrada teclado (`entrada_teclas.py`) y módulo compartido de plantillas
 - [x] Suite de tests unificada + CI
-- [ ] GUI / narrativa (OE1, OE4)
+- [x] Modo resistencia (consola + gráfico) con ranking local
+- [x] Interfaz gráfica: libre, historia, resistencia (pygame)
+- [x] Tooltips en menú pausa, navegación y selectores historia
+- [ ] Modo feedback gráfico completo (envío SMTP)
+- [ ] GUI / narrativa escape room (OE1, OE4)
 - [ ] Piloto usabilidad con estudiantes del grado
 
 ### Comprobaciones rápidas

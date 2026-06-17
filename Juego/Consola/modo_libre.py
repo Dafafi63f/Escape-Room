@@ -5,8 +5,15 @@
 from __future__ import annotations
 
 import random
+from dataclasses import replace
 
-from Comun.dificultad import dificultad_global_actual, max_complejidad_pool
+from Comun.dificultad import (
+    describe_niveles_seleccion,
+    max_complejidad_pool,
+    niveles_en_pool,
+    normalizar_niveles_seleccionados,
+    techo_complejidad_partida,
+)
 from Comun.pool_libre import (
     crear_estado_seleccion,
     elegir_indice_siguiente,
@@ -21,6 +28,8 @@ from .consola import (
     pedir_texto,
 )
 from .entrada_menu import elegir_indice_menu, esperar_enter
+from Comun.cierre_informe import meta_cierre_libre
+from Comun.jugador import NOMBRE_JUGADOR_DEFECTO
 from .informe_examen import RegistroRespuesta, publicar_informe_partida
 from Comun.modelos import BancoPreguntas, ETIQUETA_BANCO, Pregunta
 from .motor_partida import (
@@ -32,7 +41,7 @@ from .motor_partida import (
     registrar_contexto_pregunta,
 )
 
-from .navegacion import (
+from Consola.navegacion import (
     AsistentePasos,
     ContextoPantalla,
     IrMenuPrincipal,
@@ -42,7 +51,8 @@ from .navegacion import (
     limpiar_consola,
     mostrar_transicion,
 )
-from .politica_reglas import aplicar_politica, resolver_politica_libre
+from Consola.politica_reglas import aplicar_politica, resolver_politica_libre
+from Consola.textos_consola import banner, campo, con_emoji, titulo as titulo_ui
 
 
 def jugar_modo_libre(
@@ -52,16 +62,16 @@ def jugar_modo_libre(
     modo_txt, desc_banco = ETIQUETA_BANCO[banco]
 
     def _pantalla_intro() -> None:
-        print("\n=== MODO LIBRE ===")
-        print("Partida abierta con filtros.")
-        print(f"Banco activo: {modo_txt} — {desc_banco}")
+        print(f"\n{banner('MODO LIBRE')}")
+        print(con_emoji("Partida abierta con filtros.", "🎮"))
+        print(f"{campo('banco', 'Banco activo')}: {modo_txt} — {desc_banco}")
 
     mostrar_transicion(_pantalla_intro)
 
     def paso_nombre(asist: AsistentePasos) -> None:
         asist.datos["nombre"] = pedir_texto(
-            "Nombre de jugador: ",
-            default="Anonimo",
+            f"{campo('nombre', 'Nombre de jugador')}: ",
+            default=NOMBRE_JUGADOR_DEFECTO,
             permitir_atras=True,
         )
 
@@ -92,13 +102,13 @@ def jugar_modo_libre(
 
     def paso_filtros(asist: AsistentePasos) -> None:
         def _dibujar_filtros() -> None:
-            print("\nModo de filtro principal:")
-            print("  0) Todas (por defecto)")
-            print("  1) Por tematica")
-            print("  2) Por semestre")
-            print("  3) Por tipo")
+            print(f"\n{campo('filtro_principal', 'Modo de filtro principal')}:")
+            print(f"  0) {con_emoji('Todas (por defecto)', '🌐')}")
+            print(f"  1) {con_emoji('Por tematica', '📚')}")
+            print(f"  2) {con_emoji('Por semestre', '📅')}")
+            print(f"  3) {con_emoji('Por tipo', '🏷️')}")
 
-        _activar_menu_consola("Filtros de preguntas", _dibujar_filtros)
+        _activar_menu_consola(titulo_ui("Filtros de preguntas"), _dibujar_filtros)
         idx = elegir_indice_menu(
             3,
             defecto=0,
@@ -142,20 +152,33 @@ def jugar_modo_libre(
             )
 
     def paso_dificultad(asist: AsistentePasos) -> None:
-        reglas = asist.datos["reglas"]
-        if not reglas.dificultad_progresiva:
-            asist.datos["global_inicial"] = 1
-            return
         pool = _construir_pool(preguntas, asist.datos)
         if not pool:
             raise ValueError("sin_pool")
-        max_global = max(complejidad_pregunta(p) for p in pool)
-        asist.datos["global_inicial"] = pedir_entero_en_rango(
-            f"Dificultad global inicial [1-{max_global}] (Enter=1): ",
-            1,
-            max_global,
-            1,
-        )
+        disponibles = sorted(niveles_en_pool(pool))
+        if len(disponibles) <= 1:
+            asist.datos["niveles_complejidad"] = frozenset(disponibles)
+            return
+        print(f"Niveles con preguntas: {', '.join(str(n) for n in disponibles)}")
+        texto = input(
+            "Niveles a usar (ej. 1,3,6; Enter=todos): "
+        ).strip()
+        if not texto:
+            seleccion = frozenset(disponibles)
+        else:
+            try:
+                elegidos = {
+                    int(parte.strip())
+                    for parte in texto.split(",")
+                    if parte.strip()
+                }
+            except ValueError:
+                elegidos = set()
+            seleccion = normalizar_niveles_seleccionados(elegidos, pool)
+        asist.datos["niveles_complejidad"] = seleccion
+        reglas = asist.datos["reglas"]
+        if reglas.dificultad_progresiva and len(seleccion) < 2:
+            print("Aviso: la dificultad progresiva requiere al menos 2 niveles.")
 
     asistente = AsistentePasos("Configuración modo libre")
     try:
@@ -165,7 +188,7 @@ def jugar_modo_libre(
                 ("Tamaño de partida", paso_tamano),
                 ("Reglas", paso_reglas),
                 ("Filtros", paso_filtros),
-                ("Dificultad inicial", paso_dificultad),
+                ("Niveles de complejidad", paso_dificultad),
             ]
         )
     except IrMenuPrincipal:
@@ -191,7 +214,12 @@ def jugar_modo_libre(
 
     total_objetivo = min(total, len(pool)) if not modo_infinito else None
     max_global = max_complejidad_pool(pool)
-    global_inicial = d.get("global_inicial", 1)
+    niveles_complejidad = normalizar_niveles_seleccionados(
+        d.get("niveles_complejidad"),
+        pool,
+    )
+    if reglas.dificultad_progresiva and len(niveles_complejidad) < 2:
+        reglas = replace(reglas, dificultad_progresiva=False)
     seleccion = crear_estado_seleccion(len(pool))
 
     estado = EstadoPartida(
@@ -201,9 +229,9 @@ def jugar_modo_libre(
     )
 
     def _pantalla_partida() -> None:
-        print("\n=== PARTIDA (modo libre) ===")
-        print(f"Jugador: {d['nombre']}")
-        print(f"Reglas: {reglas.describe()}")
+        print(f"\n{banner('PARTIDA (modo libre)')}")
+        print(campo("jugador", f"Jugador: {d['nombre']}"))
+        print(f"{campo('opciones_juego', 'Reglas')}: {reglas.describe()}")
         if modo_infinito:
             print("Modo infinito.")
             print("Al terminar la sesion se guarda informe .txt en Juego/informes/.")
@@ -219,11 +247,11 @@ def jugar_modo_libre(
 
     establecer_contexto(
         ContextoPantalla(
-            titulo="Modo libre — partida en curso",
+            titulo=titulo_ui("Modo libre — partida en curso"),
             lineas=[
-                f"Jugador: {d['nombre']}",
-                f"Reglas: {reglas.describe()}",
-                "Pulsa H para ver controles.",
+                campo("jugador", f"Jugador: {d['nombre']}"),
+                f"{campo('opciones_juego', 'Reglas')}: {reglas.describe()}",
+                con_emoji("Pulsa H para ver controles.", "❓"),
             ],
         )
     )
@@ -232,19 +260,17 @@ def jugar_modo_libre(
 
     try:
         while estado.debe_continuar(total_objetivo):
-            global_actual = max_global
-            if reglas.dificultad_progresiva:
-                global_actual = dificultad_global_actual(
-                    respondidas=estado.respondidas,
-                    global_inicial=global_inicial,
-                    max_global=max_global,
-                )
+            techo = techo_complejidad_partida(
+                dificultad_progresiva=reglas.dificultad_progresiva,
+                respondidas=estado.respondidas,
+                niveles_seleccion=niveles_complejidad,
+            )
             idx_elegida = elegir_indice_siguiente(
                 pool,
                 seleccion,
                 modo_infinito=modo_infinito,
                 dificultad_progresiva=reglas.dificultad_progresiva,
-                global_inicial=global_inicial,
+                niveles_complejidad=niveles_complejidad,
                 respondidas=estado.respondidas,
             )
             if idx_elegida is None:
@@ -261,7 +287,13 @@ def jugar_modo_libre(
                 origen = "plantilla" if p.fuente == "plantilla" else "dataset"
                 extra = (
                     f"Tematica: {p.tematica or '-'} | Tipo: {p.tipo} | Origen: {origen} | "
-                    f"Dificultad global: {global_actual}/{max_global}"
+                    f"Nivel: {techo} ({describe_niveles_seleccion(niveles_complejidad)})"
+                )
+            elif niveles_complejidad != niveles_en_pool(pool):
+                origen = "plantilla" if p.fuente == "plantilla" else "dataset"
+                extra = (
+                    f"Tematica: {p.tematica or '-'} | Tipo: {p.tipo} | Origen: {origen} | "
+                    f"Nivel: {describe_niveles_seleccion(niveles_complejidad)}"
                 )
 
             registrar_contexto_pregunta(
@@ -306,11 +338,6 @@ def jugar_modo_libre(
                     "2": f"Curso {d.get('curso') or '-'} sem. {d.get('semestre') or '-'}",
                     "3": f"Tipo: {d.get('tipo_principal') or '-'}",
                 }
-                _etiqueta = (
-                    "Partida modo libre (infinito — sesion terminada)"
-                    if modo_infinito
-                    else "Partida modo libre (bloque finito)"
-                )
                 try:
                     publicar_informe_partida(
                         estado,
@@ -318,12 +345,12 @@ def jugar_modo_libre(
                         titulo="FIN DE PARTIDA (modo libre)",
                         total_previsto=total_objetivo or estado.respondidas,
                         nombre_jugador=d["nombre"],
-                        meta={
-                            "etiqueta_sesion": _etiqueta,
-                            "banco": f"{modo_txt} — {desc_banco}",
-                            "filtro": _filtros.get(d.get("modo_filtro", "0"), "?"),
-                            "n_preguntas": total_objetivo or estado.respondidas,
-                        },
+                        meta=meta_cierre_libre(
+                            banco=f"{modo_txt} — {desc_banco}",
+                            filtro=_filtros.get(d.get("modo_filtro", "0"), "?"),
+                            infinito=modo_infinito,
+                            n_preguntas=total_objetivo or estado.respondidas,
+                        ),
                         prefijo="partida_libre",
                     )
                 except Exception as exc:

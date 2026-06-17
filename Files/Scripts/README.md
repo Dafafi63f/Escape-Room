@@ -1,10 +1,12 @@
 # Scripts — mantenimiento del banco
 
-Herramientas de desarrollo del TFG. **No hacen falta para jugar**; el jugador solo necesita `Juego/juego_consola.py` y `Data/`.
+Herramientas de desarrollo del TFG. **No hacen falta para jugar**; el jugador solo necesita `Juego/juego_consola.py` o `Juego/juego_grafico.py` y `Data/`.
 
 ## Banco cerrado
 
-`Data/Preguntas.csv` está protegido desde 2026-06-03. `guardar_filas_csv()` y scripts en `Files/Archivo/` fallan salvo `TFG_PERMITIR_CSV=1`.
+`Data/CSV/Preguntas.csv` está protegido desde 2026-06-03. `guardar_filas_csv()` y scripts en `Files/Archivo/` fallan salvo `TFG_PERMITIR_CSV=1`.
+
+Rutas canónicas: [`rutas_data.py`](rutas_data.py) (`DATA_CSV`, `DATA_JSON`, alias con compatibilidad hacia `Data/` raíz).
 
 **Flujo habitual:**
 
@@ -35,7 +37,7 @@ python Files/Scripts/mantenimiento.py temporales --dry-run
 | `auditar-distractores` [--json RUTA] [--solo-dataset] | Auditoría de opciones A–D (salida en consola; sin fichero `.md` generado) |
 | `auditar-plantillas` | Cobertura de `plantillas.json` |
 | `plantillas pipeline` | limpiar → inyectar → repuesto → dedup |
-| `criterios` | Actualiza `criterios_clasificacion_materia.csv` |
+| `criterios` | Actualiza `CSV/criterios_clasificacion_materia.csv` |
 | `duplicados revisar` / `plantillas` | Ver `duplicados.py` — **0 pares similares** en CSV y plantillas intra-materia (2026-06-15) |
 | `temporales` | Limpieza de `__pycache__` bajo `Files/` |
 
@@ -60,12 +62,13 @@ Ver la cabecera de [`mantenimiento.py`](mantenimiento.py) para la lista completa
 | `clasificar_pregunta.py` | Clasificar una pregunta concreta (sin `--inplace` en banco cerrado) |
 | `auditoria.py` | Auditorías del dataset y plantillas (`distractores`, `plantillas`; consola y `--json`) |
 | `duplicados.py` + `duplicados_lib.py` | `revisar`, `plantillas`, `todo`, `exacto`, `enunciado` |
-| `plantillas_sync.py` | `inyectar`, `limpiar`, `repuesto`, `pipeline` sobre `plantillas.json` |
+| `plantillas_sync.py` | `inyectar`, `limpiar`, `repuesto`, `pipeline` sobre `JSON/plantillas.json` |
 | `equilibrar_pool_extra_juego.py` | Pool extra 24×40 para el juego (solo JSON; pool actual **1289** tras dedup 2026-06-15) |
 | `dedup_reemplazar_plantillas.py --inplace` | Purga sintéticas + catálogo internet + dedup |
 | `validacion_dataset.py` | Revisión amplia del CSV |
-| `exportar_criterios_clasificacion_materia.py` | Regenera `criterios_clasificacion_materia.csv` |
+| `exportar_criterios_clasificacion_materia.py` | Regenera `CSV/criterios_clasificacion_materia.csv` |
 | `estadisticas_historic_qualificacions.py` | Estadísticas del histórico de qualificacions |
+| `rutas_data.py` | Rutas `Data/CSV/` y `Data/JSON/` para scripts |
 
 ## Objetivos de balanceo (`objetivos_balanceo.py`)
 
@@ -96,7 +99,7 @@ No están pensados como API pública del juego; la lógica de partida vive en `J
 
 ## Pruebas
 
-Suite unificada en [`Tests/`](../../Tests/README.md) (57 tests). CI: `.github/workflows/tests.yml`.
+Suite unificada en [`Tests/`](../../Tests/README.md) (**177 tests**). CI: `.github/workflows/tests.yml`.
 
 ## Scripts unificados (nombres antiguos)
 

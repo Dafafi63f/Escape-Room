@@ -82,6 +82,10 @@ def familia_caracter(c: str) -> FamiliaFuente:
     return "texto"
 
 
+def _es_selector_variacion(c: str) -> bool:
+    return 0xFE00 <= ord(c) <= 0xFE0F
+
+
 def segmentar_por_familia(texto: str) -> list[tuple[str, FamiliaFuente]]:
     if not texto:
         return []
@@ -89,6 +93,9 @@ def segmentar_por_familia(texto: str) -> list[tuple[str, FamiliaFuente]]:
     actual = texto[0]
     familia_actual = familia_caracter(actual)
     for c in texto[1:]:
+        if _es_selector_variacion(c):
+            actual += c
+            continue
         fam = familia_caracter(c)
         if fam == familia_actual:
             actual += c
@@ -128,6 +135,7 @@ def medir_texto_mixto(
     tamano: int,
     *,
     bold: bool = False,
+    color_texto: tuple[int, int, int] | None = None,
 ) -> tuple[int, int]:
     texto = preparar_texto_ui(texto)
     ancho = 0
@@ -154,11 +162,104 @@ def renderizar_texto_mixto(
 ) -> pygame.Rect:
     texto = preparar_texto_ui(texto)
     x, y = pos
-    alto = 0
+    fragmentos: list[tuple[str, FamiliaFuente, int, int]] = []
+    alto_linea = 0
     for fragmento, familia in segmentar_por_familia(texto):
         fuente = _fuente_segmento(familia, tamano, bold=bold)
+        w, h = fuente.size(fragmento)
+        if w == 0:
+            continue
+        fragmentos.append((fragmento, familia, w, h))
+        alto_linea = max(alto_linea, h)
+    if alto_linea == 0:
+        return pygame.Rect(pos[0], pos[1], 0, 0)
+    x_cursor = x
+    for fragmento, familia, _w, h in fragmentos:
+        fuente = _fuente_segmento(familia, tamano, bold=bold)
         superficie = fuente.render(fragmento, True, color)
-        pantalla.blit(superficie, (x, y))
-        x += superficie.get_width()
-        alto = max(alto, superficie.get_height())
-    return pygame.Rect(pos[0], pos[1], x - pos[0], alto)
+        sw, sh = superficie.get_size()
+        dy = (alto_linea - sh) // 2
+        pantalla.blit(superficie, (x_cursor, y + dy))
+        x_cursor += sw
+    return pygame.Rect(pos[0], pos[1], x_cursor - pos[0], alto_linea)
+
+
+def _partir_lineas_centro(
+    texto: str,
+    tamano: int,
+    ancho_max: int,
+    *,
+    bold: bool = False,
+) -> list[str]:
+    palabras = texto.split()
+    if not palabras:
+        return [""]
+    fuente = _fuente_segmento("texto", tamano, bold=bold)
+    lineas: list[str] = []
+    actual = palabras[0]
+    for palabra in palabras[1:]:
+        prueba = f"{actual} {palabra}"
+        ancho = (
+            medir_texto_mixto(prueba, tamano, bold=bold)[0]
+            if texto_requiere_fuentes_mixtas(prueba)
+            else fuente.size(prueba)[0]
+        )
+        if ancho <= ancho_max:
+            actual = prueba
+        else:
+            lineas.append(actual)
+            actual = palabra
+    lineas.append(actual)
+    return lineas
+
+
+def dibujar_texto_centro(
+    pantalla: pygame.Surface,
+    texto: str,
+    centro: tuple[int, int],
+    tamano: int,
+    color: tuple[int, int, int],
+    *,
+    bold: bool = False,
+    ancho_max: int | None = None,
+) -> pygame.Rect:
+    """Texto centrado; usa fuente emoji/símbolos cuando hace falta."""
+    texto = preparar_texto_ui(texto)
+    if ancho_max is not None:
+        lineas = _partir_lineas_centro(texto, tamano, ancho_max, bold=bold)
+        if len(lineas) > 1:
+            fuente = _fuente_segmento("texto", tamano, bold=bold)
+            line_height = fuente.get_linesize()
+            total_alto = len(lineas) * line_height
+            y = centro[1] - total_alto // 2
+            union = pygame.Rect(centro[0], y, 0, total_alto)
+            for linea in lineas:
+                if texto_requiere_fuentes_mixtas(linea):
+                    ancho_linea, alto_linea = medir_texto_mixto(
+                        linea, tamano, bold=bold, color_texto=color
+                    )
+                    x = centro[0] - ancho_linea // 2
+                    rect = renderizar_texto_mixto(
+                        pantalla, linea, (x, y), color, tamano, bold=bold
+                    )
+                    y += max(line_height, alto_linea)
+                else:
+                    superficie = fuente.render(linea, True, color)
+                    rect = superficie.get_rect(centerx=centro[0], top=y)
+                    pantalla.blit(superficie, rect)
+                    y += line_height
+                union = union.union(rect)
+            union.centerx = centro[0]
+            return union
+    if texto_requiere_fuentes_mixtas(texto):
+        ancho, alto = medir_texto_mixto(texto, tamano, bold=bold, color_texto=color)
+        x = centro[0] - ancho // 2
+        y = centro[1] - alto // 2
+        rect = renderizar_texto_mixto(pantalla, texto, (x, y), color, tamano, bold=bold)
+        rect.center = centro
+        return rect
+    fuente = _fuente_segmento("texto", tamano, bold=bold)
+    superficie = fuente.render(texto, True, color)
+    rect = superficie.get_rect(center=centro)
+    pantalla.blit(superficie, rect)
+    return rect

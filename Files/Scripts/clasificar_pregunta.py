@@ -29,7 +29,7 @@ from utils_clasificacion_pregunta import (
 )
 from utils_dataset_csv import materia_de_fila
 
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
+from rutas_data import PATH_PREGUNTAS as PATH_CSV
 
 
 def _imprimir_clasificacion(cl, titulo: str = "") -> None:

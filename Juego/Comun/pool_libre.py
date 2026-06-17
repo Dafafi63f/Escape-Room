@@ -12,11 +12,16 @@ from pathlib import Path
 
 from Comun.datos import (
     cargar_banco_todo,
-    cargar_preguntas,
     cargar_preguntas_plantillas,
     claves_dataset,
 )
-from Comun.dificultad import complejidad_pregunta, dificultad_global_actual, max_complejidad_pool
+from Comun.dificultad import (
+    debe_filtrar_por_nivel,
+    max_complejidad_pool,
+    normalizar_niveles_seleccionados,
+    pregunta_permitida_por_nivel,
+    techo_complejidad_partida,
+)
 from Comun.modelos import BancoPreguntas, Pregunta
 
 __all__ = [
@@ -135,27 +140,37 @@ def elegir_indice_siguiente(
     estado: EstadoSeleccionPool,
     *,
     modo_infinito: bool,
-    dificultad_progresiva: bool,
-    global_inicial: int,
-    respondidas: int,
+    dificultad_progresiva: bool = False,
+    niveles_complejidad: frozenset[int] | set[int] | None = None,
+    respondidas: int = 0,
 ) -> int | None:
     if not pool:
         return None
-    max_global = max_complejidad_pool(pool)
-    global_actual = max_global
-    if dificultad_progresiva:
-        global_actual = dificultad_global_actual(
-            respondidas=respondidas,
-            global_inicial=global_inicial,
-            max_global=max_global,
+    niveles = normalizar_niveles_seleccionados(niveles_complejidad, pool)
+    techo = techo_complejidad_partida(
+        dificultad_progresiva=dificultad_progresiva,
+        respondidas=respondidas,
+        niveles_seleccion=niveles,
+    )
+    filtrar = debe_filtrar_por_nivel(pool, niveles, dificultad_progresiva)
+
+    def _permitida(p: Pregunta) -> bool:
+        if not filtrar:
+            return True
+        return pregunta_permitida_por_nivel(
+            p,
+            niveles_seleccion=niveles,
+            techo=techo,
+            dificultad_progresiva=dificultad_progresiva,
         )
+
     bloqueadas = set(estado.historial_reciente)
     candidatas = [
         idx
         for idx, p in enumerate(pool)
         if idx not in estado.usadas
         and idx not in bloqueadas
-        and (not dificultad_progresiva or complejidad_pregunta(p) <= global_actual)
+        and _permitida(p)
     ]
     if not candidatas:
         if modo_infinito:
@@ -164,13 +179,12 @@ def elegir_indice_siguiente(
                 idx
                 for idx, p in enumerate(pool)
                 if idx not in bloqueadas
-                and (
-                    not dificultad_progresiva
-                    or complejidad_pregunta(p) <= global_actual
-                )
+                and _permitida(p)
             ]
             if not candidatas:
-                candidatas = list(range(len(pool)))
+                return None
+        elif filtrar:
+            return None
         else:
             candidatas = [idx for idx in range(len(pool)) if idx not in estado.usadas]
             if not candidatas:

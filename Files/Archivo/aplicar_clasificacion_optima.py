@@ -50,7 +50,7 @@ from objetivos_balanceo import TARGET_TOTAL_PREGUNTAS
 from utils_clasificacion_pregunta import comparar_con_asignacion, metadatos_optimos
 from utils_dataset_csv import guardar_filas_csv, materia_de_fila
 
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
+PATH_CSV = BASE / "Data" / "CSV" / "Preguntas.csv"
 
 
 def _requiere_sustitucion(cmp) -> bool:

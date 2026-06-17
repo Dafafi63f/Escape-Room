@@ -25,12 +25,15 @@ if str(_JUEGO) not in sys.path:
 
 from Consola.app import bucle_juego, tutorial_inicio
 from Comun.datos import cargar_materias, cargar_preguntas
+from Comun.stdio_utf8 import configurar_stdio_utf8
 from Consola.modo_feedback import ejecutar_feedback_rapido
 from Consola.navegacion import SalirPrograma, registrar_atajo_feedback
+from Consola.textos_consola import con_emoji, usar_emojis
 from Comun.rutas import PATH_MATERIAS, PATH_PREGUNTAS, resolver_plantillas
 
 
 def main() -> None:
+    configurar_stdio_utf8()
     try:
         materias_meta = cargar_materias(PATH_MATERIAS)
         preguntas_dataset = cargar_preguntas(PATH_PREGUNTAS, materias_meta)
@@ -55,7 +58,7 @@ def main() -> None:
     finally:
         registrar_atajo_feedback(None)
 
-    print("¡Hasta pronto!")
+    print(con_emoji("¡Hasta pronto!", "👋") if usar_emojis() else "¡Hasta pronto!")
 
 
 if __name__ == "__main__":

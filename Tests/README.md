@@ -1,6 +1,6 @@
 # Tests — suite unificada
 
-Pruebas del juego (`Tests/Juego/`, 66 tests) y de los scripts de mantenimiento (`Tests/Scripts/`, 8 tests). **Total: 74 tests.**
+Pruebas del juego (`Tests/Juego/`, **181 tests**) y de los scripts de mantenimiento (`Tests/Scripts/`, **8 tests**). **Total: 189 tests.**
 
 ## Ejecutar
 
@@ -33,11 +33,36 @@ GitHub Actions (`.github/workflows/tests.yml`): en PRs se ejecuta con `pull_requ
 
 También: **PR-Agent** (`OPENAI_KEY`) y **SonarCloud** (`SONAR_TOKEN`).
 
-## Ficheros
+## Ficheros — `Tests/Juego/`
 
-| Carpeta | Enfoque |
-|---------|---------|
-| `Tests/Juego/` | Informes, entrada de consola, feedback, configuración libre, compatibilidad de reglas, paridad consola/gráfico |
-| `Tests/Scripts/` | `utils_plantillas_core`, validación del banco (`balance_lib`) |
+| Módulo | Enfoque |
+|--------|---------|
+| `test_compatibilidad_reglas_libre.py` | Combinaciones de reglas modo libre |
+| `test_configuracion_libre.py` | Wizard y presets libre |
+| `test_informe_examen.py` | Informes al cerrar partida |
+| `test_feedback.py` | Modo feedback consola |
+| `test_paridad_consola_grafico.py` | Mismo dominio en consola y gráfico |
+| `test_robustez_entrada.py` | Entrada de consola |
+| `test_app_pausa_grafico.py` | Pausa global en pygame |
+| `test_botones_menus_grafico.py` | Botones de menús gráficos |
+| `test_flujos_menus_grafico.py` | Navegación entre pantallas |
+| `test_barra_estado.py` | Barra superior en partida |
+| `test_textos_ui.py` | Etiquetas y emojis compartidos |
+| `test_tooltips_ui.py` | Textos de ayuda (hover) |
+| `test_hover_tooltips_grafico.py` | Hover valor central vs flechas, pausa, navegación |
+| `test_texto_grafico.py` | Wrap de títulos largos (`dibujar_texto_centro`) |
+| `test_presets_historia.py` | Catálogo modo historia |
+| `test_resistencia_historia.py` | Eventos y escalada resistencia |
+| `test_motor_resistencia_comun.py` | Turnos, racha, powerups |
+| `test_preguntas_exclusivas_resistencia.py` | Pool exclusivo resistencia |
+| `test_iconos_resistencia.py` | Emojis eventos/objetos |
+| `test_rango_complejidad_libre.py` | Dificultad progresiva libre |
+
+## Ficheros — `Tests/Scripts/`
+
+| Módulo | Enfoque |
+|--------|---------|
+| `test_balance_validar.py` | Validación del banco (`balance_lib`) |
+| `test_utils_plantillas_core.py` | Claves de contenido de plantillas |
 
 La suite anterior en `Juego/Tests/` se migró aquí en junio 2026.

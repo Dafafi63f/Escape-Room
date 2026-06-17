@@ -72,29 +72,16 @@ def linea_estado(
     progreso: str,
     *,
     segundos_pregunta_restantes: int | None = None,
+    vidas_max: int | None = None,
 ) -> str:
-    partes = [progreso]
-    if estado.reglas.tiene_vidas():
-        partes.append(f"Vidas: {estado.vidas_restantes}")
-    rest = estado.tiempo_total_restante()
-    if rest is not None:
-        partes.append(f"Tiempo restante: {rest}s")
-    if segundos_pregunta_restantes is not None:
-        partes.append(f"Pregunta: {segundos_pregunta_restantes}s")
-    sis = estado.reglas.sistema_puntuacion
-    if sis == SistemaPuntuacion.ARCADE:
-        partes.append(f"Puntos: {estado.puntos_arcade}")
-    elif estado.respondidas > 0:
-        if sis == SistemaPuntuacion.NOTA:
-            partes.append(
-                f"Nota: {nota_sobre_diez(estado.aciertos, estado.respondidas)}"
-            )
-        elif sis == SistemaPuntuacion.PORCENTAJE:
-            pct = porcentaje_aciertos(estado.aciertos, estado.respondidas)
-            partes.append(f"Aciertos: {pct}%")
-        elif estado.reglas.mostrar_aciertos_en_curso:
-            partes.append(f"Aciertos: {estado.aciertos}/{estado.respondidas}")
-    return " | ".join(partes)
+    from Comun.linea_estado_ui import linea_estado_con_iconos
+
+    return linea_estado_con_iconos(
+        estado,
+        progreso,
+        segundos_pregunta_restantes=segundos_pregunta_restantes,
+        vidas_max=vidas_max,
+    )
 
 
 def evaluar_respuesta(

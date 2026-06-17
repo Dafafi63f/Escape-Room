@@ -12,8 +12,7 @@ from collections import Counter
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent.parent
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
-PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
+from rutas_data import PATH_PREGUNTAS as PATH_CSV, PATH_PLANTILLAS
 
 from objetivos_balanceo import (  # noqa: E402
     MIN_PLANTILLAS_POR_MATERIA_FACTOR,

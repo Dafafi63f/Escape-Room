@@ -19,10 +19,10 @@ import csv
 import random
 from collections import defaultdict
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 from typing import Callable
 
+from Comun.perfiles_historia import PerfilPedagogico, describir_perfil
 from Comun.rutas import resolver_historico_qualificacions
 
 # Réplica mínima de objetivos_balanceo (el .exe no incluye Files/).
@@ -66,16 +66,6 @@ ALIASES_NOMBRE_HISTORICO: dict[str, str] = {
 COL_NOMBRE_ASIGNATURA = "Unnamed: 9"
 COL_NOTA = "Qualificació"
 UMBRAL_SUSPENS = 5.0
-
-
-class PerfilPedagogico(str, Enum):
-    """Perfiles v1 (datos agregados del histórico)."""
-
-    BALANCEADO = "balanceado"
-    REFUERZO = "refuerzo"
-    DESAFIO = "desafio"
-    POR_CURSO = "por_curso"
-    SIMULACRO = "simulacro"
 
 
 @dataclass(frozen=True)
@@ -234,6 +224,27 @@ def _elegir_pregunta_slot(
     return None
 
 
+def _filtrar_materias_candidatas(
+    materias_orden: list[str],
+    materias_meta: dict[str, dict[str, str]],
+    *,
+    curso_filtro: str | None,
+    semestre_filtro: str | None,
+    grupo_filtro: str | None,
+) -> list[str]:
+    candidatas: list[str] = []
+    for materia in materias_orden:
+        meta = materias_meta.get(materia, {})
+        if curso_filtro and (meta.get("curso") or "") != curso_filtro:
+            continue
+        if semestre_filtro and (meta.get("semestre") or "") != semestre_filtro:
+            continue
+        if grupo_filtro and (meta.get("grupo") or "") != str(grupo_filtro):
+            continue
+        candidatas.append(materia)
+    return candidatas
+
+
 def generar_examen(
     preguntas: list,
     *,
@@ -241,10 +252,15 @@ def generar_examen(
     materias_orden: list[str],
     materias_meta: dict[str, dict[str, str]],
     stats: dict[str, EstadisticaMateria] | None = None,
-    n_materias: int = 6,
+    n_materias: int = 5,
     slots: tuple[tuple[str, str], ...] | None = None,
     curso_filtro: str | None = None,
     semestre_filtro: str | None = None,
+    grupo_filtro: str | None = None,
+    materia_fija: str | None = None,
+    usar_todas_materias_ambito: bool = False,
+    seleccion_determinista: bool = False,
+    orden_por_historico: str | None = None,
     semilla: int | None = None,
     pregunta_key: Callable | None = None,
 ) -> PlanExamen:
@@ -259,30 +275,49 @@ def generar_examen(
 
     rng = random.Random(semilla)
 
-    candidatas = list(materias_orden)
-    if curso_filtro:
-        candidatas = [
-            m
-            for m in candidatas
-            if (materias_meta.get(m, {}).get("curso") or "") == curso_filtro
-            and (semestre_filtro is None or (materias_meta.get(m, {}).get("semestre") or "") == semestre_filtro)
-        ]
+    candidatas = _filtrar_materias_candidatas(
+        materias_orden,
+        materias_meta,
+        curso_filtro=curso_filtro,
+        semestre_filtro=semestre_filtro,
+        grupo_filtro=grupo_filtro,
+    )
     if not candidatas:
-        raise ValueError("No hay materias para el filtro de curso/semestre indicado.")
+        raise ValueError("No hay materias para los filtros indicados.")
+
+    if materia_fija:
+        candidatas = [m for m in candidatas if m == materia_fija]
+        if not candidatas:
+            raise ValueError(f"La materia {materia_fija!r} no está en el ámbito del examen.")
+
+    todas_en_ambito = usar_todas_materias_ambito or perfil == PerfilPedagogico.SIMULACRO
+    n_efectivo = len(candidatas) if todas_en_ambito else n_materias
 
     if perfil == PerfilPedagogico.SIMULACRO:
-        n_materias = len(candidatas)
         slots = (("Teoria", "Media"),)
+    elif materia_fija and n_efectivo == 1:
+        slots = SLOTS_CANONICOS_12
     elif slots is None:
-        total_preg = n_materias * 4
-        slots = slots_para_tamano(total_preg, n_materias)
+        total_preg = n_efectivo * 4
+        slots = slots_para_tamano(total_preg, n_efectivo)
 
     pesos = calcular_pesos_materia(candidatas, stats, perfil)
-    if perfil == PerfilPedagogico.SIMULACRO:
+    if todas_en_ambito:
         materias_sel = candidatas
+    elif seleccion_determinista:
+        materias_sel = candidatas[:n_efectivo]
     else:
-        materias_sel = elegir_materias_ponderadas(candidatas, pesos, n_materias, rng)
+        materias_sel = elegir_materias_ponderadas(candidatas, pesos, n_efectivo, rng)
         materias_sel.sort(key=lambda m: materias_orden.index(m) if m in materias_orden else 999)
+
+    if orden_por_historico in ("asc", "desc") and len(materias_sel) > 1:
+        reverse = orden_por_historico == "desc"
+
+        def _indice(m: str) -> float:
+            st = stats.get(m)
+            return st.indice_dificultad if st else 0.5
+
+        materias_sel.sort(key=_indice, reverse=reverse)
 
     pool_idx = _indice_pool(preguntas)
     seleccion: list = []
@@ -329,12 +364,3 @@ def resumen_estadisticas(
     return "\n".join(lineas)
 
 
-def describir_perfil(perfil: PerfilPedagogico) -> str:
-    textos = {
-        PerfilPedagogico.BALANCEADO: "Reparto equitativo; el histórico solo informa.",
-        PerfilPedagogico.REFUERZO: "Prioriza materias con más suspensos en el histórico.",
-        PerfilPedagogico.DESAFIO: "Prioriza materias con mejores medias históricas.",
-        PerfilPedagogico.POR_CURSO: "Solo materias de un curso; balance por slots.",
-        PerfilPedagogico.SIMULACRO: "Una pregunta por materia del ámbito (repaso global).",
-    }
-    return textos.get(perfil, perfil.value)

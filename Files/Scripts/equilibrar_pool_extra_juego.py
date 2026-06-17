@@ -37,9 +37,7 @@ from utils_plantillas_core import (  # noqa: E402
     tiene_placeholders,
 )
 
-_BASE = Path(__file__).resolve().parent.parent.parent
-PATH_PLANTILLAS = _BASE / "Data" / "plantillas.json"
-PATH_CSV = _BASE / "Data" / "Preguntas.csv"
+from rutas_data import PATH_PREGUNTAS as PATH_CSV, PATH_PLANTILLAS
 
 EXTRA_POR_MATERIA = 24  # 480 × 2
 _RE_ENTEROS = re.compile(r"\b(\d+)\b")

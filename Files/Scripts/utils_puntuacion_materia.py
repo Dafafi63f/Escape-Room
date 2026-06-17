@@ -16,8 +16,7 @@ from functools import lru_cache
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent.parent
-PATH_CRITERIOS = BASE / "Data" / "criterios_clasificacion_materia.csv"
-PATH_LISTADO = BASE / "Data" / "listado_materias.csv"
+from rutas_data import PATH_CRITERIOS_CLASIFICACION as PATH_CRITERIOS, PATH_LISTADO_MATERIAS as PATH_LISTADO
 SEP_KEYWORDS = " | "
 
 MATERIAS: dict[int, str] = {}

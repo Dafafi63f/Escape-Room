@@ -1,0 +1,188 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Textos de ayuda (hover) para botones del modo gráfico."""
+
+from __future__ import annotations
+
+from Comun.modelos import BancoPreguntas, ETIQUETA_BANCO
+
+# Filas con ◀ valor ▶ en libre paso 1 sin tooltip en la caja central (solo números u obvias).
+_OPCIONES_CICLO_SIN_TOOLTIP = frozenset({"vidas", "tiempo_pregunta", "tiempo_total"})
+
+TOOLTIP_TIEMPO_MODO: dict[str, str] = {
+    "ninguno": "Sin cronómetro en la partida.",
+    "pregunta": "Cada pregunta tiene su propio límite en segundos.",
+    "total": "Un único temporizador para toda la partida.",
+}
+
+TOOLTIP_SISTEMA: dict[str, str] = {
+    "arcade": "Puntos por acierto; bonificaciones por racha y tiempo.",
+    "nota": "Resultado en escala 0-10 según aciertos y penalizaciones.",
+    "porcentaje": "Porcentaje de aciertos sobre preguntas respondidas.",
+    "ninguno": "Sin puntuación numérica al final.",
+}
+
+TOOLTIP_N_PREGUNTAS_INFINITO = (
+    "Partida sin tope: continúa hasta que termines, pierdas las vidas o abandones."
+)
+
+TOOLTIP_PAUSA = "Menú de pausa: continuar, ir al título o salir del juego."
+
+TOOLTIP_PAUSA_CONTINUAR = "Cierra el menú de pausa y vuelve a la pantalla actual."
+TOOLTIP_PAUSA_CONTINUAR_PARTIDA = "Sigue jugando la partida en curso."
+TOOLTIP_PAUSA_TITULO = "Abandona el flujo actual y vuelve al menú principal."
+TOOLTIP_PAUSA_SALIR = "Cierra el programa por completo."
+
+TOOLTIP_ATRAS = "Vuelve al paso o pantalla anterior sin perder lo configurado."
+TOOLTIP_SIGUIENTE = "Avanza al siguiente paso de configuración."
+TOOLTIP_EMPEZAR = "Inicia la partida con la configuración actual."
+TOOLTIP_CONTINUAR = (
+    "Continúa con el preset seleccionado (configuración extra si el reto lo permite)."
+)
+
+TOOLTIP_FEEDBACK = "Modo feedback (próximamente): repaso con explicaciones."
+
+TOOLTIP_MENU_PRINCIPAL: dict[str, str] = {
+    "libre": (
+        "Partida personalizada: eliges banco, vidas, tiempo, filtros y número de preguntas."
+    ),
+    "historia": (
+        "Presets guiados: simulacros de examen, retos y modo resistencia con ranking."
+    ),
+    "feedback": (
+        "Repaso de errores con explicación (funcionalidad prevista; aún en construcción)."
+    ),
+    "salir": "Cierra el juego.",
+}
+
+TOOLTIP_DIFICULTAD_PROGRESIVA = (
+    "Las preguntas empiezan en el nivel más bajo marcado y suben de complejidad "
+    "a medida que avanzas en la partida."
+)
+
+TOOLTIP_FILTRO_PRINCIPAL: dict[str, str] = {
+    "todas": "Usa todo el banco elegido, sin restringir por temática, semestre ni tipo.",
+    "tematica": "Limita las preguntas a una o más temáticas del grado.",
+    "semestre": "Limita las preguntas a uno o más semestres del plan de estudios.",
+    "tipo": "Limita por tipo de pregunta (test, desarrollo, etc.).",
+}
+
+TOOLTIP_ABANDONAR_LIBRE = (
+    "Termina la partida. Si ya respondiste alguna pregunta, verás el resumen "
+    "y podrás guardar un informe .txt con lo jugado."
+)
+
+TOOLTIP_ABANDONAR_HISTORIA = (
+    "Termina el examen o reto. Si ya respondiste preguntas, se genera un informe "
+    "con la corrección de lo realizado hasta ahora."
+)
+
+TOOLTIP_ABANDONAR_RESISTENCIA = (
+    "Termina la partida y registra tu resultado en el ranking local "
+    "(preguntas alcanzadas). Si no has respondido ninguna, vuelves al menú."
+)
+
+TOOLTIP_GUARDAR_INFORME = (
+    "Guarda un archivo .txt en la carpeta Informes del juego con tus respuestas, "
+    "aciertos y corrección pregunta a pregunta."
+)
+
+TOOLTIP_VER_RANKING = (
+    "Tabla local de mejores partidas en modo resistencia, ordenada por "
+    "preguntas alcanzadas (no por racha de aciertos)."
+)
+
+# Valores de opciones «eleccion» en presets historia (clave op → valor → texto).
+_TOOLTIP_ELECCION_HISTORIA: dict[str, dict[str, str]] = {
+    "estrategia_materias": {
+        "debilidades": "Prioriza materias con peores resultados históricos en el grado.",
+        "fortalezas": "Prioriza materias con mejores medias históricas.",
+        "curricular": "Sigue el orden del plan de estudios, sin ponderar el histórico.",
+    },
+    "enfoque": {
+        "mixto": "Mezcla preguntas de teoría y de cálculo.",
+        "teoria": "Solo preguntas de tipo teoría.",
+        "calculo": "Solo preguntas de tipo cálculo.",
+    },
+}
+
+_TOOLTIP_OPCION_HISTORIA_ID: dict[str, str] = {
+    "curso": "Limita el ámbito del examen a un curso del grado (vacío = todo el grado).",
+    "semestre": "Acota a un semestre del curso elegido (vacío = curso completo).",
+    "grupo": "Filtra por grupo temático del plan (álgebra, cálculo, IA, etc.).",
+    "materia": "Concentra el reto en una sola asignatura.",
+    "n_materias": "Cuántas materias entran en el examen o sesión de refuerzo.",
+    "tiempo_total_min": "Minutos para todo el examen; 0 significa sin límite de tiempo.",
+}
+
+
+def tooltip_menu_principal(opcion_id: str) -> str | None:
+    return TOOLTIP_MENU_PRINCIPAL.get(opcion_id)
+
+
+def tooltip_filtro_principal(codigo: str) -> str | None:
+    return TOOLTIP_FILTRO_PRINCIPAL.get(codigo)
+
+
+def tooltips_menu_pausa(*, en_partida: bool) -> tuple[str, str, str]:
+    """Textos para Continuar / Pantalla título / Salir."""
+    return (
+        TOOLTIP_PAUSA_CONTINUAR_PARTIDA if en_partida else TOOLTIP_PAUSA_CONTINUAR,
+        TOOLTIP_PAUSA_TITULO,
+        TOOLTIP_PAUSA_SALIR,
+    )
+
+
+def tooltip_opcion_ciclo_historia(
+    op_id: str,
+    tipo: str,
+    clave: str,
+    *,
+    etiqueta_opcion: str = "",
+) -> str | None:
+    """Ayuda en la caja central ◀ valor ▶ del configurador de preset historia."""
+    if tipo == "eleccion":
+        por_op = _TOOLTIP_ELECCION_HISTORIA.get(op_id, {})
+        if clave in por_op:
+            return por_op[clave]
+        return etiqueta_opcion or None
+    if tipo == "curso":
+        if not clave:
+            return "Sin filtro de curso: el preset puede abarcar todo el grado."
+        return f"Limita el reto al curso {clave}."
+    if tipo == "semestre":
+        if not clave:
+            return "Sin filtro de semestre: se usa el curso completo elegido."
+        return f"Acota al semestre {clave} del curso."
+    if tipo == "grupo" and clave:
+        return _TOOLTIP_OPCION_HISTORIA_ID.get("grupo")
+    if tipo == "materia" and clave:
+        return f"Preguntas centradas en {clave}."
+    if tipo == "entero":
+        base = _TOOLTIP_OPCION_HISTORIA_ID.get(op_id)
+        if op_id == "tiempo_total_min" and clave in ("", "0"):
+            return "Sin límite de tiempo para completar el examen."
+        if base:
+            return base
+        return etiqueta_opcion or None
+    return _TOOLTIP_OPCION_HISTORIA_ID.get(op_id) or (etiqueta_opcion or None)
+
+
+def tooltip_opcion_ciclo_libre(op_id: str, clave: str) -> str | None:
+    """Ayuda en la caja central ◀ valor ▶ del paso 1 libre; None si es autoexplicativo."""
+    if op_id in _OPCIONES_CICLO_SIN_TOOLTIP:
+        return None
+    if op_id == "banco":
+        try:
+            return ETIQUETA_BANCO[BancoPreguntas(clave)][1]
+        except (ValueError, KeyError):
+            return None
+    if op_id == "n_preguntas":
+        if clave == "infinito":
+            return TOOLTIP_N_PREGUNTAS_INFINITO
+        return None
+    if op_id == "tiempo_modo":
+        return TOOLTIP_TIEMPO_MODO.get(clave)
+    if op_id == "sistema":
+        return TOOLTIP_SISTEMA.get(clave)
+    return None

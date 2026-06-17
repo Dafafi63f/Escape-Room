@@ -32,7 +32,7 @@ sys.path.insert(0, str(FILES))
 from utils_dataset_csv import guardar_filas_csv, materia_de_fila
 from utils_puntuacion_materia import MATERIAS, mejor_materia_por_texto, normalizar, puntuar_texto_completo
 
-PATH_CRIT = BASE / "Data" / "criterios_clasificacion_materia.csv"
+PATH_CRIT = BASE / "Data" / "CSV" / "criterios_clasificacion_materia.csv"
 
 ALIASES_GUIAS_ES: dict[str, list[str]] = {
     "Àlgebra Lineal": ["álgebra lineal"],
@@ -128,7 +128,7 @@ def _cmd_criterios_export(args: argparse.Namespace) -> int:
 
 
 def _cmd_dataset_reasignar(args: argparse.Namespace) -> int:
-    path_csv = BASE / "Data" / "Preguntas.csv"
+    path_csv = BASE / "Data" / "CSV" / "Preguntas.csv"
     with path_csv.open(encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f, delimiter=";")
         fieldnames = list(reader.fieldnames or [])
@@ -181,8 +181,8 @@ def _cmd_dataset_reasignar(args: argparse.Namespace) -> int:
 
 
 def _cmd_dataset_actualizar_materia_plantillas(args: argparse.Namespace) -> int:
-    path_csv = BASE / "Data" / "Preguntas.csv"
-    path_plantillas = BASE / "Data" / "plantillas.json"
+    path_csv = BASE / "Data" / "CSV" / "Preguntas.csv"
+    path_plantillas = BASE / "Data" / "JSON" / "plantillas.json"
     inplace = args.inplace and not args.dry_run
 
     with path_csv.open(encoding="utf-8", newline="") as f:

@@ -30,7 +30,7 @@ from pathlib import Path
 ARCHIVO = Path(__file__).resolve().parent
 FILES = ARCHIVO.parent
 BASE = FILES.parent
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
+PATH_CSV = BASE / "Data" / "CSV" / "Preguntas.csv"
 
 
 def _run(script_name: str, args: list[str]) -> int:
@@ -87,7 +87,7 @@ def _firma_flexible_fila(r: dict) -> tuple[str, str]:
 
 def _resolver_id_actual_desde_id_base(id_base: int) -> tuple[int | None, str]:
     try:
-        raw = subprocess.check_output(["git", "show", "HEAD:Data/Preguntas.csv"], cwd=BASE)
+        raw = subprocess.check_output(["git", "show", "HEAD:Data/CSV/Preguntas.csv"], cwd=BASE)
     except Exception:
         return id_base, "id_directo_sin_head"
 

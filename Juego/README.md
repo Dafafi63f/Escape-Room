@@ -5,7 +5,7 @@ Dos interfaces del mismo juego, **en paralelo** hasta que la versión gráfica s
 | Lanzador | Interfaz | Requisitos |
 |----------|----------|------------|
 | [`juego_consola.py`](juego_consola.py) | Terminal (completa) | Python 3.10+, solo stdlib |
-| [`juego_grafico.py`](juego_grafico.py) | Pygame (en desarrollo) | `pip install -r requirements.txt` |
+| [`juego_grafico.py`](juego_grafico.py) | Pygame (libre, historia, resistencia) | `pip install -r requirements.txt` |
 
 La lógica compartida (datos, reglas, motor de partida) vive en [`Comun/`](Comun/README.md). Cada interfaz añade su capa: [`Consola/`](Consola/README.md) (terminal) y [`Grafico/`](Grafico/README.md) (pygame).
 
@@ -54,9 +54,11 @@ Al arrancar, el lanzador muestra un **tutorial breve** de foco de teclado (hay q
 
 | Modo | Estado | Descripción |
 |------|--------|-------------|
-| **Libre** | Implementado | Partida configurable, filtros por curso/semestre/grupo/nivel, informes al cerrar |
-| **Libre (gráfico)** | v1 | Bloque 5/10/15, arcade, opciones clicables — [`Grafico/README.md`](Grafico/README.md) |
+| **Libre** | Implementado | Partida configurable, filtros, informes al cerrar |
+| **Libre (gráfico)** | Implementado | Wizard dos pasos, tooltips, arcade — [`Grafico/README.md`](Grafico/README.md) |
 | **Historia** | Implementado (v1) | Examen balanceado según histórico de qualificacions |
+| **Historia (gráfico)** | Implementado (v1) | Carrusel de presets — [`Grafico/README.md`](Grafico/README.md) |
+| **Resistencia** | Implementado (v1) | Partida infinita, eventos, objetos, ranking local |
 | **Feedback** | Implementado (v1) | Asistente para enviar bug, sugerencia u otro aviso al creador |
 
 Detalle de bancos de preguntas, puntuación, dificultad progresiva y arquitectura: [`Consola/README.md`](Consola/README.md).

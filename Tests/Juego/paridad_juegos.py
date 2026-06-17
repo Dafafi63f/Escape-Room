@@ -83,7 +83,6 @@ def tupla_opciones(opts: Any) -> tuple:
         opts.permitir_sin_vidas,
         opts.permitir_con_vidas,
         opts.permitir_dificultad_progresiva,
-        opts.permitir_aciertos_en_curso,
     )
 
 
@@ -126,6 +125,12 @@ class BackendJuego(Protocol):
         vidas: int | None = None,
         segundos_pregunta: int | None = None,
     ) -> str: ...
+
+    def nombre_jugador_defecto(self) -> str: ...
+
+    def catalogo_historia_ids(self) -> tuple[str, ...]: ...
+
+    def reglas_historia_preset(self, preset_id: str) -> tuple: ...
 
 
 class BackendConsola:
@@ -183,7 +188,6 @@ class BackendConsola:
             tiempo_por_pregunta_seg=cfg.tiempo_por_pregunta_seg,
             tiempo_total_seg=cfg.tiempo_total_seg,
             mostrar_solucion_tras_fallo=cfg.mostrar_solucion_tras_fallo,
-            mostrar_aciertos_en_curso=cfg.mostrar_aciertos_en_curso,
             dificultad_progresiva=cfg.dificultad_progresiva,
             modo_infinito=cfg.modo_infinito,
             n_preguntas=cfg.n_preguntas,
@@ -279,6 +283,34 @@ class BackendConsola:
             correcta="B",
         )
 
+    def nombre_jugador_defecto(self) -> str:
+        from Comun.jugador import nombre_jugador_efectivo
+
+        return nombre_jugador_efectivo("")
+
+    def catalogo_historia_ids(self) -> tuple[str, ...]:
+        from Comun.presets_historia import cargar_presets_historia
+        from Comun.rutas import resolver_presets_historia
+
+        presets = cargar_presets_historia(resolver_presets_historia())
+        return tuple(p.id for p in presets)
+
+    def reglas_historia_preset(self, preset_id: str) -> tuple:
+        from Comun.datos import cargar_materias, cargar_orden_materias
+        from Comun.presets_historia import aplicar_preset, cargar_presets_historia, config_defecto
+        from Comun.rutas import PATH_MATERIAS, resolver_presets_historia
+
+        materias_meta = cargar_materias(PATH_MATERIAS)
+        orden_materias = cargar_orden_materias(PATH_MATERIAS)
+        presets = cargar_presets_historia(resolver_presets_historia())
+        preset = next(p for p in presets if p.id == preset_id)
+        config = config_defecto(
+            preset,
+            materias_meta=materias_meta,
+            materias_orden=orden_materias,
+        )
+        return tupla_reglas(aplicar_preset(preset, config))
+
 
 class BackendGrafico:
     """Ruta ``juego_grafico.py`` → ``Comun`` + ``Grafico``."""
@@ -347,7 +379,6 @@ class BackendGrafico:
             tiempo_por_pregunta_seg=cfg.tiempo_por_pregunta_seg,
             tiempo_total_seg=cfg.tiempo_total_seg,
             mostrar_solucion_tras_fallo=cfg.mostrar_solucion_tras_fallo,
-            mostrar_aciertos_en_curso=cfg.mostrar_aciertos_en_curso,
             dificultad_progresiva=cfg.dificultad_progresiva,
             modo_infinito=cfg.modo_infinito,
             n_preguntas=cfg.n_preguntas,
@@ -436,6 +467,34 @@ class BackendGrafico:
             opciones={"A": "3", "B": "4", "C": "5", "D": "6"},
             correcta="B",
         )
+
+    def nombre_jugador_defecto(self) -> str:
+        from Comun.jugador import nombre_jugador_efectivo
+
+        return nombre_jugador_efectivo("")
+
+    def catalogo_historia_ids(self) -> tuple[str, ...]:
+        from Comun.presets_historia import cargar_presets_historia
+        from Comun.rutas import resolver_presets_historia
+
+        presets = cargar_presets_historia(resolver_presets_historia())
+        return tuple(p.id for p in presets)
+
+    def reglas_historia_preset(self, preset_id: str) -> tuple:
+        from Comun.datos import cargar_materias, cargar_orden_materias
+        from Comun.presets_historia import aplicar_preset, cargar_presets_historia, config_defecto
+        from Comun.rutas import PATH_MATERIAS, resolver_presets_historia
+
+        materias_meta = cargar_materias(PATH_MATERIAS)
+        orden_materias = cargar_orden_materias(PATH_MATERIAS)
+        presets = cargar_presets_historia(resolver_presets_historia())
+        preset = next(p for p in presets if p.id == preset_id)
+        config = config_defecto(
+            preset,
+            materias_meta=materias_meta,
+            materias_orden=orden_materias,
+        )
+        return tupla_reglas(aplicar_preset(preset, config))
 
 
 BACKENDS: tuple[str, ...] = ("consola", "grafico")

@@ -2,7 +2,7 @@
 
 > **No usar en el día a día del TFG.** Este directorio conserva scripts de regeneración del banco cerrado (2026-06). Para validar o mantener datos actuales, usa siempre [`../Scripts/mantenimiento.py`](../Scripts/mantenimiento.py).
 
-Scripts antiguos de **regeneración y reequilibrio** del dataset (`Preguntas.csv`). El banco en producción es cerrado (480 preguntas); estos comandos están bloqueados salvo `TFG_PERMITIR_CSV=1`.
+Scripts antiguos de **regeneración y reequilibrio** del dataset (`Data/CSV/Preguntas.csv`). El banco en producción es cerrado (480 preguntas); estos comandos están bloqueados salvo `TFG_PERMITIR_CSV=1`.
 
 Para el día a día del banco cerrado, usa [`../Scripts/mantenimiento.py`](../Scripts/mantenimiento.py) (`validar`, `revision`, `plantillas`, etc.).
 
@@ -12,7 +12,7 @@ Para el día a día del banco cerrado, usa [`../Scripts/mantenimiento.py`](../Sc
 TFG_PERMITIR_CSV=1
 ```
 
-Sin esta variable, las operaciones que escriben en `Data/Preguntas.csv` no deben ejecutarse en un banco ya validado. La comprobación está en `utils_banco_cerrado.py`.
+Sin esta variable, las operaciones que escriben en `Data/CSV/Preguntas.csv` no deben ejecutarse en un banco ya validado. La comprobación está en `utils_banco_cerrado.py`.
 
 ## Catálogo de scripts legado
 

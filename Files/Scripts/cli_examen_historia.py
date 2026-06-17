@@ -29,15 +29,16 @@ if str(_JUEGO) not in sys.path:
     sys.path.insert(0, str(_JUEGO))
 
 from Comun.datos import cargar_materias, cargar_orden_materias, cargar_preguntas  # noqa: E402
+from Comun.perfiles_historia import PerfilPedagogico, describir_perfil  # noqa: E402
+from Comun.config_historia import validar_config  # noqa: E402
+from Comun.presets_historia import argumentos_generador, cargar_presets_historia, config_defecto  # noqa: E402
 from Consola.generador_examen_historia import (  # noqa: E402
-    PerfilPedagogico,
     cargar_estadisticas_historicas,
-    describir_perfil,
     generar_examen,
     resumen_estadisticas,
 )
 from Comun.modelos import BancoPreguntas  # noqa: E402
-from Comun.rutas import resolver_dataset, resolver_listado_materias  # noqa: E402
+from Comun.rutas import resolver_dataset, resolver_listado_materias, resolver_presets_historia  # noqa: E402
 
 
 def _consola(texto: str) -> str:
@@ -57,13 +58,20 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument(
         "--perfil",
         choices=[x.value for x in PerfilPedagogico],
-        default=PerfilPedagogico.BALANCEADO.value,
+        default=None,
+        help="Perfil pedagógico (omitir si usas --preset)",
+    )
+    p.add_argument(
+        "--preset",
+        type=str,
+        default=None,
+        help="Id de preset en Data/presets_historia.json (sustituye --perfil y filtros manuales)",
     )
     p.add_argument(
         "--materias",
         type=int,
-        default=6,
-        help="Materias en el examen (2-20; ignorado en perfil simulacro)",
+        default=5,
+        help="Materias en el examen (1-20; ignorado en perfil simulacro)",
     )
     p.add_argument("--curso", type=str, default=None, help="Filtro curso (1-4) para por_curso")
     p.add_argument("--semestre", type=str, default=None, help="Filtro semestre opcional (con --curso)")
@@ -75,20 +83,53 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = p.parse_args(argv)
 
-    perfil = PerfilPedagogico(args.perfil)
-    if perfil == PerfilPedagogico.POR_CURSO and not args.curso:
-        print("El perfil por_curso requiere --curso (1-4).", file=sys.stderr)
-        return 2
-    if perfil != PerfilPedagogico.SIMULACRO and not (2 <= args.materias <= 20):
-        print("--materias debe estar entre 2 y 20.", file=sys.stderr)
-        return 2
-
     path_materias = resolver_listado_materias()
     path_csv = resolver_dataset()
     materias_meta = cargar_materias(path_materias)
     preguntas = cargar_preguntas(path_csv, materias_meta)
     orden_materias = cargar_orden_materias(path_materias)
     stats = cargar_estadisticas_historicas(materias_validas=set(materias_meta))
+
+    if args.preset:
+        presets = cargar_presets_historia(resolver_presets_historia())
+        preset = next((x for x in presets if x.id == args.preset), None)
+        if preset is None:
+            print(f"Preset desconocido: {args.preset!r}", file=sys.stderr)
+            return 2
+        cfg = validar_config(
+            preset.opciones,
+            config_defecto(preset, materias_meta=materias_meta, materias_orden=orden_materias),
+            materias_meta=materias_meta,
+        )
+        gen_kwargs = argumentos_generador(preset, cfg, materias_meta=materias_meta)
+        perfil = gen_kwargs["perfil"]
+        n_materias = gen_kwargs["n_materias"]
+        curso_filtro = gen_kwargs["curso_filtro"]
+        semestre_filtro = gen_kwargs["semestre_filtro"]
+        grupo_filtro = gen_kwargs["grupo_filtro"]
+        slots = gen_kwargs["slots"]
+        usar_todas = gen_kwargs["usar_todas_materias_ambito"]
+        seleccion_det = gen_kwargs["seleccion_determinista"]
+        materia_fija = gen_kwargs.get("materia_fija")
+        orden_historico = gen_kwargs.get("orden_por_historico")
+        titulo_perfil = f"{preset.nombre} ({preset.id})"
+    else:
+        perfil_val = args.perfil or PerfilPedagogico.BALANCEADO.value
+        perfil = PerfilPedagogico(perfil_val)
+        n_materias = args.materias
+        curso_filtro = args.curso
+        semestre_filtro = args.semestre
+        grupo_filtro = None
+        slots = None
+        usar_todas = False
+        titulo_perfil = f"{perfil.value} — {describir_perfil(perfil)}"
+
+    if perfil == PerfilPedagogico.POR_CURSO and not curso_filtro:
+        print("El perfil por_curso requiere --curso (1-4) o un preset con curso.", file=sys.stderr)
+        return 2
+    if not usar_todas and perfil != PerfilPedagogico.SIMULACRO and not (1 <= n_materias <= 20):
+        print("--materias debe estar entre 1 y 20.", file=sys.stderr)
+        return 2
 
     if args.resumen_historico:
         print(_consola(resumen_estadisticas(stats, orden_materias)))
@@ -101,16 +142,22 @@ def main(argv: list[str] | None = None) -> int:
             materias_orden=orden_materias,
             materias_meta=materias_meta,
             stats=stats,
-            n_materias=args.materias,
-            curso_filtro=args.curso,
-            semestre_filtro=args.semestre,
+            n_materias=n_materias,
+            curso_filtro=curso_filtro,
+            semestre_filtro=semestre_filtro,
+            grupo_filtro=grupo_filtro,
+            slots=slots,
+            usar_todas_materias_ambito=usar_todas,
+            seleccion_determinista=seleccion_det,
+            materia_fija=materia_fija,
+            orden_por_historico=orden_historico,
             semilla=args.semilla,
         )
     except ValueError as e:
         print(f"No se pudo generar el examen: {e}", file=sys.stderr)
         return 1
 
-    print(_consola(f"Perfil: {perfil.value} — {describir_perfil(perfil)}"))
+    print(_consola(f"Perfil: {titulo_perfil}"))
     print(f"Banco: {BancoPreguntas.DATASET.value} ({len(preguntas)} preguntas)")
     print(_consola(f"Materias ({len(plan.materias)}): {', '.join(plan.materias)}"))
     print(f"Slots por materia ({len(plan.slots_por_materia)}): {plan.slots_por_materia}")

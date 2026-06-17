@@ -19,7 +19,6 @@ class OpcionesReglasLibre:
     permitir_sin_vidas: bool
     permitir_con_vidas: bool
     permitir_dificultad_progresiva: bool
-    permitir_aciertos_en_curso: bool
     permitir_solucion_tras_fallo: bool = True
     permitir_tiempo_pregunta: bool = True
     permitir_tiempo_total: bool = True
@@ -87,13 +86,11 @@ def opciones_reglas_libre(
         sis == SistemaPuntuacion.ARCADE
         and (modo_infinito or n_preguntas > 1)
     )
-    aciertos = sis == SistemaPuntuacion.ARCADE
     return OpcionesReglasLibre(
         sistemas=sistemas,
         permitir_sin_vidas=True,
         permitir_con_vidas=sis == SistemaPuntuacion.ARCADE,
         permitir_dificultad_progresiva=progresiva,
-        permitir_aciertos_en_curso=aciertos,
     )
 
 
@@ -118,14 +115,13 @@ def sanitizar_reglas_libre(
     )
     vidas = None if sin else (reglas.vidas if reglas.vidas and reglas.vidas > 0 else 3)
     dif = reglas.dificultad_progresiva if opts.permitir_dificultad_progresiva else False
-    aciertos = reglas.mostrar_aciertos_en_curso if opts.permitir_aciertos_en_curso else False
     return ReglasPartida(
         vidas=vidas,
         tiempo_por_pregunta_seg=reglas.tiempo_por_pregunta_seg,
         tiempo_total_seg=reglas.tiempo_total_seg,
         sistema_puntuacion=sis,
         mostrar_solucion_tras_fallo=reglas.mostrar_solucion_tras_fallo,
-        mostrar_aciertos_en_curso=aciertos,
+        mostrar_aciertos_en_curso=False,
         correccion_al_final=False,
         dificultad_progresiva=dif,
     )

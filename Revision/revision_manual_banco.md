@@ -1,6 +1,6 @@
 # Revisión manual del banco de preguntas
 
-> Trazabilidad **por Ids** del banco `Data/Preguntas.csv` (redacción genérica). Estado global del TFG: [`ESTADO.md`](ESTADO.md). No duplicar el resumen aquí: actualizar [`ESTADO.md`](ESTADO.md) al cerrar cada bloque.
+> Trazabilidad **por Ids** del banco `Data/CSV/Preguntas.csv` (redacción genérica). Estado global del TFG: [`ESTADO.md`](ESTADO.md). No duplicar el resumen aquí: actualizar [`ESTADO.md`](ESTADO.md) al cerrar cada bloque.
 
 Trazabilidad de la revisión manual del banco. Actualizar este fichero (detalle) y [`ESTADO.md`](ESTADO.md) (resumen) al cerrar cada tramo.
 
@@ -727,8 +727,8 @@ python -c "import sys;sys.path.insert(0,'Files');from balance_lib import ejecuta
 
 ## Ficheros habituales al revisar
 
-- `Data/Preguntas.csv`
-- `Data/plantillas.json`
+- `Data/CSV/Preguntas.csv`
+- `Data/JSON/plantillas.json`
 - `Data/criterios_clasificacion_materia.csv`
 - `Files/fix_final_materias.py`
 

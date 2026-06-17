@@ -38,7 +38,7 @@ from utils_orden_temas import cargar_orden_temas
 from utils_clasificacion_pregunta import comparar_con_asignacion
 from utils_puntuacion_materia import MATERIA_TO_ID, MATERIAS, score_fila_para_materia
 
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
+from rutas_data import PATH_PREGUNTAS as PATH_CSV
 COLS = ["Id", "Materia", "Dificultad", "Tipo", "Pregunta", "A", "B", "C", "D", "Correcta"]
 LETRAS_ORDEN = ("A", "B", "C", "D")
 
@@ -823,7 +823,7 @@ PATCHES: dict[int, dict[str, str]] = {
 
 
 def cargar_git_rows() -> list[dict]:
-    raw = subprocess.check_output(["git", "show", "HEAD:Data/Preguntas.csv"], cwd=BASE)
+    raw = subprocess.check_output(["git", "show", "HEAD:Data/CSV/Preguntas.csv"], cwd=BASE)
     return list(csv.DictReader(io.StringIO(raw.decode("utf-8")), delimiter=";"))
 
 
@@ -847,7 +847,7 @@ def ejecutar_corregir() -> int:
     try:
         rows = cargar_git_rows()
     except subprocess.CalledProcessError:
-        print("Error: no se pudo leer HEAD:Data/Preguntas.csv desde git")
+        print("Error: no se pudo leer HEAD:Data/CSV/Preguntas.csv desde git")
         return 1
     if len(rows) != TARGET_TOTAL_PREGUNTAS:
         print(f"Se esperaban {TARGET_TOTAL_PREGUNTAS} filas en git, hay {len(rows)}")

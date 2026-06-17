@@ -37,8 +37,45 @@ def generar_id_sesion() -> str:
 
 def _slug_fragmento(texto: str, max_len: int = 20) -> str:
     limpio = "".join(c if c.isalnum() else "_" for c in (texto or "").strip())
+    while "__" in limpio:
+        limpio = limpio.replace("__", "_")
     limpio = limpio.strip("_") or "sin"
     return limpio[:max_len]
+
+
+def _tokens_prefijo(prefijo_slug: str) -> set[str]:
+    return {t for t in prefijo_slug.lower().split("_") if t}
+
+
+_ETIQUETA_TIPO_ARCHIVO: dict[str, str] = {
+    "libre_infinito": "infinito",
+    "libre_finito": "finito",
+    "resistencia": "resistencia",
+}
+
+
+def _fragmento_modo_archivo(modo: str, *, tokens_prefijo: set[str]) -> str | None:
+    slug = _slug_fragmento(modo, 12)
+    if not slug or slug == "sin":
+        return None
+    if slug.lower() in tokens_prefijo:
+        return None
+    return slug
+
+
+def _fragmento_tipo_archivo(tipo: str, *, tokens_prefijo: set[str]) -> str | None:
+    clave = (tipo or "").strip().lower()
+    if not clave:
+        return None
+    if clave in _ETIQUETA_TIPO_ARCHIVO:
+        return _ETIQUETA_TIPO_ARCHIVO[clave]
+    slug = _slug_fragmento(clave, 14)
+    if not slug or slug == "sin":
+        return None
+    partes_slug = {p for p in slug.lower().split("_") if p}
+    if partes_slug and partes_slug <= tokens_prefijo:
+        return None
+    return slug
 
 
 def construir_nombre_archivo_informe(
@@ -50,15 +87,30 @@ def construir_nombre_archivo_informe(
 ) -> str:
     """
     Nombre de archivo legible + único.
-    Incluye modo, perfil (si hay), jugador, fecha-hora y sufijo del id (anti-colisión).
+    Incluye prefijo, subtipo (si aporta), jugador, fecha-hora y sufijo del id.
     """
     meta = meta or {}
-    partes = [
-        _slug_fragmento(prefijo, 16),
-        _slug_fragmento(str(meta.get("modo", "")), 12),
-    ]
+    prefijo_slug = _slug_fragmento(prefijo, 20)
+    tokens_prefijo = _tokens_prefijo(prefijo_slug)
+    partes = [prefijo_slug]
+
+    modo = _fragmento_modo_archivo(str(meta.get("modo", "")), tokens_prefijo=tokens_prefijo)
+    if modo:
+        partes.append(modo)
+        tokens_prefijo |= _tokens_prefijo(modo)
+
     if meta.get("perfil"):
         partes.append(_slug_fragmento(str(meta["perfil"]), 14))
+    if meta.get("preset"):
+        partes.append(_slug_fragmento(str(meta["preset"]), 18))
+
+    tipo = _fragmento_tipo_archivo(
+        str(meta.get("tipo_actividad", "")),
+        tokens_prefijo=tokens_prefijo,
+    )
+    if tipo:
+        partes.append(tipo)
+
     partes.append(_slug_fragmento(nombre_jugador, 16))
     partes.append(datetime.now().strftime("%Y%m%d_%H%M%S"))
     partes.append(id_sesion.split("-")[-1])
@@ -129,6 +181,8 @@ def _lineas_cabecera_informe(
         lineas.append(f"Banco: {meta['banco']}")
     if meta.get("filtro"):
         lineas.append(f"Filtro: {meta['filtro']}")
+    if meta.get("abandonado"):
+        lineas.append("Estado: abandonada antes de completar el bloque")
     return lineas
 
 
@@ -243,12 +297,13 @@ def publicar_informe_partida(
     meta: dict | None = None,
     stats_historicas: dict | None = None,
     prefijo: str = "examen",
+    mostrar_en_consola: bool = True,
 ) -> Path | None:
-    """Guarda el .txt y muestra corrección en consola si el modo es examen cerrado."""
+    """Guarda el .txt y, si procede, muestra corrección en consola."""
     if not registros:
         return None
 
-    if estado.reglas.correccion_al_final:
+    if mostrar_en_consola and estado.reglas.correccion_al_final:
         mostrar_correccion_en_consola(registros)
 
     id_sesion = generar_id_sesion()
@@ -279,10 +334,12 @@ def publicar_informe_partida(
     try:
         ruta = guardar_informe_examen(texto, nombre_archivo=nombre_archivo)
     except OSError:
-        print("\nNo se pudo guardar el informe en disco (permisos o ruta).")
+        if mostrar_en_consola:
+            print("\nNo se pudo guardar el informe en disco (permisos o ruta).")
         return None
 
-    _imprimir_aviso_informe_guardado(ruta)
+    if mostrar_en_consola:
+        _imprimir_aviso_informe_guardado(ruta)
     return ruta
 
 
@@ -297,7 +354,7 @@ def _imprimir_aviso_informe_guardado(ruta: Path) -> None:
         f"Archivo: {rel}",
         f"(nombre unico por intento; ver ID de sesion dentro del .txt)",
         "Contenido: estadisticas, nota o puntos, correccion pregunta a pregunta.",
-        "(Historial personal en Juego/informes/ — un .txt por sesion)",
+        "(Historial personal en Juego/Informes/ — un .txt por actividad cerrada)",
     )
     for linea in lineas:
         try:

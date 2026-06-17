@@ -17,6 +17,10 @@ _CACHE: dict[tuple[FamiliaFuente, int, bool], pygame.font.Font] = {}
 _RUTAS_RESUELTAS: dict[FamiliaFuente, Path | None] = {}
 
 
+def invalidar_cache_fuentes() -> None:
+    """Vacía la caché tras ``pygame.quit()`` (p. ej. entre tests)."""
+    _CACHE.clear()
+
 def _windir() -> Path:
     return Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts"
 

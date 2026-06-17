@@ -34,7 +34,7 @@ def crear_fuentes() -> dict[str, pygame.font.Font]:
         "opcion": crear_fuente(20, familia="texto"),
         "pie": crear_fuente(18, familia="texto"),
         "pequena": crear_fuente(16, familia="texto"),
-        # Iconos de la barra fija: símbolos (⏸) y emojis (💬).
+        # Iconos de la barra fija: símbolos (⏯) y emojis (📣).
         "icono": crear_fuente(22, familia="simbolos"),
         "icono_emoji": crear_fuente(22, familia="emoji"),
     }

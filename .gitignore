@@ -8,6 +8,8 @@ Juego/Feedback/*
 
 # --- Local del creador (secretos y .exe; no versionar) ---
 Data/creador_privado.json
+Data/json/creador_privado.json
+Data/JSON/creador_privado.json
 Juego/juego_consola.exe
 Juego/juego_cuestionario.exe
 

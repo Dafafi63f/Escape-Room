@@ -11,6 +11,7 @@ from .envio_feedback import (
     describir_resultado_envio,
     enviar_feedback,
 )
+from Comun.jugador import NOMBRE_JUGADOR_DEFECTO
 from Comun.modelos import Pregunta
 from .navegacion import (
     AsistentePasos,
@@ -22,6 +23,7 @@ from .navegacion import (
 )
 from .config_creador import mensaje_crear_creador_privado
 from Comun.rutas import resolver_config_creador_privado
+from Consola.textos_consola import banner, campo, con_emoji
 
 
 _CATEGORIAS: list[tuple[CategoriaFeedback, str]] = [
@@ -48,11 +50,17 @@ def _tiene_config_externa() -> bool:
 
 def _imprimir_intro(*, acceso_rapido: bool) -> None:
     print("\n" + "=" * 60)
-    print("=== MODO FEEDBACK ===")
+    print(banner("MODO FEEDBACK"))
     if acceso_rapido:
-        print("  (La pantalla anterior sigue visible arriba para que puedas consultarla.)")
-    print("Envia un aviso al creador del juego (bug, sugerencia, etc.).")
-    print("Siempre se guarda una copia en Juego/Feedback/.")
+        print(con_emoji(
+            "(La pantalla anterior sigue visible arriba para que puedas consultarla.)",
+            "👁️",
+        ))
+    print(con_emoji(
+        "Envia un aviso al creador del juego (bug, sugerencia, etc.).",
+        "📣",
+    ))
+    print(con_emoji("Siempre se guarda una copia en Juego/Feedback/.", "💾"))
     if acceso_rapido:
         print("Supr en el paso 1 = cancelar y volver al juego.")
     else:
@@ -71,14 +79,14 @@ def _imprimir_intro(*, acceso_rapido: bool) -> None:
 def _pasos_feedback(asist: AsistentePasos) -> list[tuple[str, object]]:
     def paso_nombre(a: AsistentePasos) -> None:
         a.datos["jugador"] = pedir_texto(
-            "Tu nombre (opcional): ",
-            default="Anonimo",
+            f"{campo('nombre', 'Tu nombre (opcional)')}: ",
+            default=NOMBRE_JUGADOR_DEFECTO,
             permitir_atras=True,
         )
 
     def paso_categoria(a: AsistentePasos) -> None:
         idx = pedir_menu_numerado(
-            "Tipo de aviso:",
+            campo("tipo_partida", "Tipo de aviso"),
             [(c.value, desc) for c, desc in _CATEGORIAS],
             defecto=1,
             permitir_atras=True,
@@ -87,7 +95,7 @@ def _pasos_feedback(asist: AsistentePasos) -> list[tuple[str, object]]:
 
     def paso_area(a: AsistentePasos) -> None:
         idx = pedir_menu_numerado(
-            "Zona del juego relacionada:",
+            con_emoji("Zona del juego relacionada", "🎯"),
             _AREAS,
             defecto=6,
             permitir_atras=True,
@@ -111,8 +119,9 @@ def _pasos_feedback(asist: AsistentePasos) -> list[tuple[str, object]]:
 
     def paso_confirmar(a: AsistentePasos) -> None:
         cat = a.datos["categoria"]
-        print("\n--- Resumen del aviso ---")
-        print(f"  Jugador: {a.datos['jugador']}")
+        jug = a.datos["jugador"]
+        print(f"\n{con_emoji('--- Resumen del aviso ---', '📋')}")
+        print(f"  {campo('jugador', f'Jugador: {jug}')}")
         print(f"  Tipo: {cat.value}")
         print(f"  Area: {a.datos['area']}")
         print(f"  Contacto: {a.datos.get('contacto') or 'Sin contacto'}")

@@ -1,8 +1,9 @@
 # Informes — partidas en disco
 
-Aquí se guardan los informes de partida en modo examen cerrado (ficheros `.txt` con ID de sesión, respuestas y resumen).
+Aquí se guardan los informes de partida (ficheros `.txt` con ID de sesión, respuestas y resumen).
 
-- Generados por [`Consola/informe_examen.py`](../Consola/informe_examen.py) al terminar una partida con corrección al final.
+- **Consola:** [`Consola/informe_examen.py`](../Consola/informe_examen.py) al terminar una partida con corrección al final.
+- **Gráfico:** [`Grafico/informe_partida.py`](../Grafico/informe_partida.py) (botón «Guardar informe» en el resumen).
 - Con el script Python: ruta por defecto `Juego/Informes/`.
 - Con el **`.exe`**: carpeta `Informes/` en el mismo directorio que `juego_consola.exe` (se crea sola).
 

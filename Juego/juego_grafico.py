@@ -3,7 +3,7 @@
 """
 Punto de entrada del cuestionario MATCAD en pygame.
 
-Prototipo: menú principal y modo libre jugable (bloque corto arcade).
+Prototipo: menú principal, modo libre y modo historia (presets fijos).
 Controles: ratón para navegar; teclado solo para escribir texto cuando haga falta.
 
 Uso:
@@ -21,11 +21,13 @@ if str(_JUEGO) not in sys.path:
     sys.path.insert(0, str(_JUEGO))
 
 from Comun.datos import cargar_materias, cargar_preguntas
+from Comun.stdio_utf8 import configurar_stdio_utf8
 from Comun.rutas import PATH_MATERIAS, PATH_PREGUNTAS, resolver_plantillas
 from Grafico.app import AplicacionGrafica, DatosJuego
 
 
 def main() -> None:
+    configurar_stdio_utf8()
     try:
         import pygame  # noqa: F401 — comprobación temprana de dependencia
     except ImportError:

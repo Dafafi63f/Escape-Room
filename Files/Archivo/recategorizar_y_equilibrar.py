@@ -44,8 +44,8 @@ from utils_clasificacion_pregunta import prioridad_eliminacion
 from utils_dataset_csv import fila_pregunta, guardar_filas_csv
 from utils_puntuacion_materia import mejor_materia_por_texto
 
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
-PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
+PATH_CSV = BASE / "Data" / "CSV" / "Preguntas.csv"
+PATH_PLANTILLAS = BASE / "Data" / "JSON" / "plantillas.json"
 
 
 def _cargar_rows() -> tuple[list[str], list[dict]]:

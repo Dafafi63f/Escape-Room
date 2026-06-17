@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "records": [
+    {
+      "id": "5f40b71093f4",
+      "nombre": "Anonimo",
+      "racha": 8,
+      "puntos": 243,
+      "respondidas": 18,
+      "fecha_iso": "2026-06-17T19:38:03+00:00",
+      "preset_id": "ranking_resistencia"
+    }
+  ]
+}

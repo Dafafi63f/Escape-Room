@@ -4,7 +4,7 @@
 
 **Alumno:** Daniel Fageda Figueredo · **NIU:** 1601846 · **Tutor:** Víctor Navas Portella
 
-Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en consola (modos libre, historia y feedback) y herramientas de mantenimiento del dataset. La capa gráfica escape room / novela queda como evolución futura.
+Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en consola y en **pygame** (modos libre, historia, resistencia y feedback), y herramientas de mantenimiento del dataset. La capa narrativa escape room queda como evolución futura.
 
 - **Memoria académica (borrador):** [`Memoria_TFG.md`](Memoria_TFG.md)
 - **Memoria para entrega (Word y LaTeX):** [`Entrega/`](Entrega/README.md)
@@ -41,7 +41,7 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | [`Entrega/`](Entrega/README.md) | `Memoria/` (LaTeX, Word), `Figuras/`, scripts de exportación |
 | [`Revision/`](Revision/ESTADO.md) | Estado del proyecto, feedback tutor; PDF anotados locales (gitignored) |
 | [`Memoria_TFG.md`](Memoria_TFG.md) | Borrador Markdown de la memoria (raíz) |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias (74 tests) y CI |
+| [`Tests/`](Tests/README.md) | Pruebas unitarias (177 tests) y CI |
 | [`borrar_temporales.py`](borrar_temporales.py) | Limpia `__pycache__` y `.txt` de `Juego/Informes/` y `Juego/Feedback/` |
 | [`requirements.txt`](requirements.txt) | Dependencias (pandas, matplotlib, pyinstaller, pygame-ce, mypy, pre-commit) |
 
@@ -64,18 +64,18 @@ Dos versiones en paralelo (ver [`Juego/README.md`](Juego/README.md)):
 # Terminal — completa, solo stdlib
 python Juego/juego_consola.py
 
-# Gráfico — pygame (en desarrollo)
+# Gráfico — pygame (modo libre, historia, resistencia; feedback en desarrollo)
 pip install -r requirements.txt
 python Juego/juego_grafico.py
 ```
 
-La consola sigue siendo la referencia funcional hasta que el gráfico alcance paridad; entonces se retirará la UI terminal.
+La consola sigue siendo referencia para feedback SMTP y entornos sin pantalla; el gráfico es la interfaz principal en desarrollo activo.
 
 ### Datos
 
-Ver [`Data/README.md`](Data/README.md). Imprescindibles: `Preguntas.csv`, `listado_materias.csv`. Modo historia: `Historic_qualificacions_MatCAD_completo.csv`. Modo con plantillas: `plantillas.json`.
+Ver [`Data/README.md`](Data/README.md). Imprescindibles: `CSV/Preguntas.csv`, `CSV/listado_materias.csv`. Modo historia: `CSV/Historic_qualificacions_MatCAD_completo.csv`, `JSON/presets_historia.json`. Modo resistencia: `JSON/preguntas_resistencia.json`, `JSON/ranking_resistencia.json`. Modo con plantillas: `JSON/plantillas.json`.
 
-Configuración privada del creador (SMTP, GitHub, etc.): `Data/creador_privado.json` (local; plantilla en [`Juego/Consola/config_creador.py`](Juego/Consola/config_creador.py)).
+Configuración privada del creador (SMTP, GitHub, etc.): `Data/JSON/creador_privado.json` (local; plantilla en [`Juego/Consola/config_creador.py`](Juego/Consola/config_creador.py)).
 
 ## Ejecutable (opcional, local)
 

@@ -9,6 +9,18 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 
+from Consola.textos_consola import (
+    BTN_CONTINUAR,
+    BTN_CONTINUAR_PARTIDA,
+    BTN_PANTALLA_TITULO,
+    BTN_SALIR_PROGRAMA,
+    banner,
+    btn,
+    con_emoji,
+    nombre_paso,
+    titulo as titulo_ui,
+)
+
 
 class AccionPausa(str, Enum):
     CONTINUAR = "continuar"
@@ -170,7 +182,7 @@ def reimprimir_contexto() -> None:
 def _dibujar_menu_ayuda() -> None:
     from .entrada_menu import lineas_ayuda_dinamica
 
-    print("\n=== AYUDA — CONTROLES ACTUALES ===")
+    print(f"\n{banner('AYUDA — CONTROLES ACTUALES')}")
     for linea in lineas_ayuda_dinamica(desde_menu_ayuda=True):
         if not linea:
             print()
@@ -200,13 +212,13 @@ def menu_ayuda_dinamico(*, en_partida: bool = False) -> None:
 
 
 def _dibujar_menu_pausa(*, en_partida: bool) -> None:
-    print("\n=== PAUSA ===")
+    print(f"\n{banner('PAUSA')}")
     if en_partida:
-        print("  1) Continuar la partida")
+        print(f"  1) {btn(BTN_CONTINUAR_PARTIDA)}")
     else:
-        print("  1) Continuar")
-    print("  2) Pantalla de titulo (solo cabecera, sin reimprimir menu/pregunta)")
-    print("  3) Salir del programa")
+        print(f"  1) {btn(BTN_CONTINUAR)}")
+    print(f"  2) {btn(BTN_PANTALLA_TITULO)}")
+    print(f"  3) {btn(BTN_SALIR_PROGRAMA)}")
 
 
 def menu_pausa(*, en_partida: bool = False) -> AccionPausa:
@@ -216,7 +228,7 @@ def menu_pausa(*, en_partida: bool = False) -> AccionPausa:
     _dibujar_menu_pausa(en_partida=en_partida)
     establecer_contexto(
         ContextoPantalla(
-            titulo="Pausa",
+            titulo=titulo_ui("PAUSA"),
             reimprimir=lambda: _dibujar_menu_pausa(en_partida=en_partida),
         )
     )
@@ -237,18 +249,6 @@ def menu_pausa(*, en_partida: bool = False) -> AccionPausa:
     raise SalirPrograma()
 
 
-def _reimprimir_solo_titulo() -> None:
-    """Cabecera del contexto actual, sin volver a ejecutar reimprimir()."""
-    ctx = _contexto_pantalla
-    if ctx is None:
-        return
-    print("\n" + "=" * 60)
-    print(f">> {ctx.titulo}")
-    for linea in ctx.lineas:
-        print(linea)
-    print("=" * 60)
-
-
 def _gestionar_pausa(*, en_partida: bool) -> None:
     """Primer Esc abre pausa; segundo Esc en pausa o opcion 3 = salir del juego."""
     accion = menu_pausa(en_partida=en_partida)
@@ -258,10 +258,7 @@ def _gestionar_pausa(*, en_partida: bool) -> None:
         reimprimir_contexto()
         return
     if accion == AccionPausa.PANTALLA_TITULO:
-        if en_partida:
-            limpiar_consola()
-        _reimprimir_solo_titulo()
-        return
+        raise IrMenuPrincipal()
 
 
 def leer_linea(
@@ -315,7 +312,7 @@ class AsistentePasos:
         excepcion_paso1_atras: type[Exception] = IrMenuPrincipal,
         mensaje_paso1_atras: str = "<- Menu principal",
     ) -> None:
-        self.titulo = titulo
+        self.titulo = titulo_ui(titulo)
         self.datos: dict = {}
         self._indice = 0
         self._pasos: list[tuple[str, Callable[["AsistentePasos"], None]]] = []
@@ -327,7 +324,9 @@ class AsistentePasos:
             return
         nombre, _ = self._pasos[self._indice]
         total = len(self._pasos)
-        print(f"\n--- {self.titulo}: paso {self._indice + 1}/{total} — {nombre} ---")
+        print(
+            f"\n--- {self.titulo}: paso {self._indice + 1}/{total} — {nombre_paso(nombre)} ---"
+        )
 
     def _registrar_contexto_paso(self) -> None:
         if self._indice >= len(self._pasos):
@@ -336,7 +335,10 @@ class AsistentePasos:
         total = len(self._pasos)
         establecer_contexto(
             ContextoPantalla(
-                titulo=f"{self.titulo} — paso {self._indice + 1}/{total}: {nombre}",
+                titulo=(
+                    f"{self.titulo} — paso {self._indice + 1}/{total}: "
+                    f"{nombre_paso(nombre)}"
+                ),
                 lineas=[
                     "Menus: numeros o Enter · Supr = atras (paso 1 = menu principal)",
                     "Texto: Supr/Retroceso borra · Esc = atras (o pausa) · Ctrl+C = cerrar",
@@ -357,7 +359,7 @@ class AsistentePasos:
             except VolverAtras:
                 if self._indice > 0:
                     self._indice -= 1
-                    print("<- Paso anterior")
+                    print(con_emoji("<- Paso anterior", "⬅️"))
                     continue
                 print(self._mensaje_paso1_atras)
                 raise self._excepcion_paso1_atras() from None

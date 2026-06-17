@@ -22,8 +22,7 @@ BASE = Path(__file__).resolve().parent.parent.parent
 from utils_plantillas_pool import es_uso_copia_dataset
 from utils_texto import normalizar_basico, normalizar_pregunta
 
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
-PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
+from rutas_data import PATH_PREGUNTAS as PATH_CSV, PATH_PLANTILLAS
 LETRAS = ("A", "B", "C", "D")
 
 _PLACEHOLDER = re.compile(

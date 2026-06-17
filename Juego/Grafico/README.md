@@ -5,22 +5,33 @@ Versión gráfica del juego. Reutiliza [`Comun/`](../Comun/README.md) (datos, re
 | Elemento | Descripción |
 |----------|-------------|
 | [`juego_grafico.py`](../juego_grafico.py) | Lanzador pygame |
-| [`app.py`](app.py) | Bucle principal y enrutador de pantallas |
-| [`pantallas.py`](pantallas.py) | Menú, configuración, partida, resumen |
-| [`ui.py`](ui.py) | Botones, campos de texto y widgets (ratón) |
+| [`app.py`](app.py) | Bucle principal, pausa global, iconos fijos (pausa, feedback) |
+| [`pantallas.py`](pantallas.py) | Menú principal, partida libre, resumen, placeholder feedback |
+| [`pantallas_libre.py`](pantallas_libre.py) | Wizard modo libre (paso 1: reglas; paso 2: filtros) |
+| [`pantallas_historia.py`](pantallas_historia.py) | Historia, resistencia, ranking, carrusel de presets |
 | [`modo_libre.py`](modo_libre.py) | Utilidades del modo libre gráfico |
-| [`tema.py`](tema.py) | Colores, fuentes y constantes de ventana |
+| [`modo_historia.py`](modo_historia.py) | Arranque de presets historia/resistencia |
+| [`ui.py`](ui.py) | Botones, campos de texto, tooltips, texto multilínea |
+| [`tooltips_ui.py`](tooltips_ui.py) | Textos de ayuda al pasar el ratón |
+| [`texto.py`](texto.py) | Renderizado mixto (texto, matemáticas, emojis) |
+| [`textos_grafico.py`](textos_grafico.py) | Atajos de etiquetas sin emoji decorativo |
+| [`tema.py`](tema.py) | Colores, tamaño de ventana (960×720) |
+| [`fuentes.py`](fuentes.py) | Fuentes por familia (texto, símbolos, emoji) |
+| [`barra_estado.py`](barra_estado.py) | Barra superior en partida (vidas, tiempo, puntos) |
+| [`feedback_partida.py`](feedback_partida.py) | Panel de feedback tras cada respuesta |
+| [`aviso_resistencia.py`](aviso_resistencia.py) | Popups de eventos y recompensas (resistencia) |
+| [`informe_partida.py`](informe_partida.py) | Resumen breve y guardado de informes `.txt` |
 
 ## Estrategia de migración
 
 | Fase | Qué ocurre |
 |------|------------|
-| **Actual** | Terminal y gráfico **coexisten**. La terminal es la referencia funcional completa; el gráfico se amplía hasta igualarla. |
-| **Futura** | Cuando el gráfico sea **estable y completo**, se borra todo lo específico de terminal y solo queda `juego_grafico.py` + `Grafico/`. |
+| **Actual** | Terminal y gráfico **coexisten**. La consola sigue siendo referencia completa; el gráfico amplía paridad (libre, historia, resistencia). |
+| **Futura** | Cuando el gráfico sea **estable y completo**, se elimina la UI terminal y solo queda `juego_grafico.py` + `Grafico/`. |
 
-**Se conservará** (motor de dominio): modelos, datos, reglas, motor de partida — en [`Comun/`](../Comun/README.md). Informes y generador de historia siguen en `Consola/` de momento.
+**Se conservará:** dominio en [`Comun/`](../Comun/README.md) (modelos, reglas, motor, pool, resistencia, ranking).
 
-**Se eliminará** (solo UI terminal): `juego_consola.py`, `consola.py`, `entrada_teclas.py`, `entrada_menu.py`, `navegacion.py` (contexto consola), `build_exe_onefile.ps1` orientado a consola, documentación de atajos de teclado, etc.
+**Se eliminará:** `juego_consola.py`, menús por teclado, `build_exe_onefile.ps1` orientado a consola, etc.
 
 Mientras dure la coexistencia, **no romper la terminal** al tocar código compartido.
 
@@ -28,10 +39,10 @@ Mientras dure la coexistencia, **no romper la terminal** al tocar código compar
 
 | Entrada | Uso |
 |---------|-----|
-| **Ratón** | Navegación, menús, elegir opciones A–D, confirmar, volver, pausa, ayuda, feedback |
+| **Ratón** | Navegación, menús, opciones A–D, confirmar, volver, pausa, ayuda, feedback |
 | **Teclado** | Solo donde haga falta **escribir texto** (nombre del jugador, mensajes de feedback, etc.) |
 
-La consola usa teclas (H, F, Esc, Supr, dígitos…). En gráfico esas acciones se traducen a **clics en botones, tarjetas o iconos** visibles en pantalla. No se replican atajos de teclado salvo en campos de texto.
+La consola usa teclas (H, F, Esc, Supr, dígitos…). En gráfico esas acciones se traducen a **clics en botones, tarjetas o iconos** visibles en pantalla.
 
 ## Ejecutar
 
@@ -42,17 +53,32 @@ python Juego/juego_grafico.py
 
 (La terminal sigue en `python Juego/juego_consola.py` hasta la migración.)
 
-## Estado
+## Estado por modo
 
-| Modo | Gráfico |
-|------|---------|
-| **Libre** | v1 — bloque 5/10/15 preguntas, arcade con vidas, opciones clicables |
-| **Historia** | Pendiente |
-| **Feedback** | Pendiente |
+| Modo | Gráfico | Notas |
+|------|---------|-------|
+| **Libre** | Implementado | Wizard en dos pasos: banco, preguntas/infinito, vidas, tiempo, sistema, dificultad progresiva; filtros por temática/semestre/tipo |
+| **Historia** | Implementado (v1) | Carrusel de presets (`presets_historia.json`); exámenes balanceados |
+| **Resistencia** | Implementado (v1) | Partida infinita, eventos, objetos (50/50, bomba, escudo…), ranking local |
+| **Feedback** | Placeholder | Pantalla informativa; envío completo sigue en consola (icono 📣 en barra fija) |
 
-Diferencias respecto a consola en modo libre v1:
+## Tooltips (ayuda al pasar el ratón)
 
-- Configuración reducida (nombre + tamaño del bloque; sin filtros ni menús de reglas).
-- Respuestas A–D como botones en pantalla (no teclas).
-- Feedback visual inmediato (colores en opciones + mensaje).
-- Barra de progreso y botón «Abandonar» siempre visible.
+Textos en [`tooltips_ui.py`](tooltips_ui.py). Implementados en:
+
+- Iconos fijos de pausa y feedback
+- Menú de pausa (3 botones)
+- Menú principal (4 opciones)
+- Navegación Atrás / Siguiente / Empezar / Continuar (libre e historia)
+- Modo libre: valor central de selectores ◀ valor ▶, dificultad progresiva, filtros paso 2
+- Modo historia: valor central de selectores en configuración de preset
+- Abandonar (libre, historia, resistencia)
+- Guardar informe y ver ranking (resumen resistencia)
+- Objetos del inventario en partida resistencia
+
+## Diferencias respecto a consola
+
+- Interfaz visual con barra de estado, progreso y feedback por colores.
+- Configuración libre con ratón (sin menús numéricos).
+- Resistencia con popups visuales y emojis centralizados en [`Comun/iconos_resistencia.py`](../Comun/iconos_resistencia.py).
+- Títulos largos del resumen se parten en varias líneas (`dibujar_texto_centro` con `ancho_max`).

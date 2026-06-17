@@ -1,6 +1,6 @@
 # Revisión — feedback del tutor y estado del proyecto
 
-Documentación de seguimiento del TFG. **Última revisión de banco:** 2026-06-15 (0 pares similares; pool plantillas 1289).
+Documentación de seguimiento del TFG. **Última revisión de banco:** 2026-06-15 (0 pares similares; pool plantillas 1289). **Última actualización de estado:** 2026-06-17.
 
 | Fichero | Rol |
 |---------|-----|

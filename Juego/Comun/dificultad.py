@@ -36,3 +36,75 @@ def max_complejidad_pool(pool: list[Pregunta]) -> int:
     if not pool:
         return 1
     return max(complejidad_pregunta(p) for p in pool)
+
+
+def niveles_en_pool(pool: list[Pregunta]) -> frozenset[int]:
+    if not pool:
+        return frozenset({1})
+    return frozenset(complejidad_pregunta(p) for p in pool)
+
+
+def normalizar_niveles_seleccionados(
+    seleccion: set[int] | frozenset[int] | None,
+    pool: list[Pregunta],
+) -> frozenset[int]:
+    disponibles = niveles_en_pool(pool)
+    if not seleccion:
+        return disponibles
+    elegidos = frozenset(n for n in seleccion if n in disponibles)
+    return elegidos if elegidos else disponibles
+
+
+def niveles_seleccion_ordenados(niveles: frozenset[int]) -> list[int]:
+    return sorted(niveles)
+
+
+def describe_niveles_seleccion(niveles: frozenset[int]) -> str:
+    ordenados = niveles_seleccion_ordenados(niveles)
+    if len(ordenados) == 1:
+        return str(ordenados[0])
+    return ",".join(str(n) for n in ordenados)
+
+
+def techo_complejidad_partida(
+    *,
+    dificultad_progresiva: bool,
+    respondidas: int,
+    niveles_seleccion: frozenset[int],
+    cada_n: int = 40,
+) -> int:
+    ordenados = niveles_seleccion_ordenados(niveles_seleccion)
+    if not ordenados:
+        return 1
+    if not dificultad_progresiva or len(ordenados) == 1:
+        return ordenados[-1]
+    indice = min(respondidas // max(1, cada_n), len(ordenados) - 1)
+    return ordenados[indice]
+
+
+def debe_filtrar_por_nivel(
+    pool: list[Pregunta],
+    niveles_seleccion: frozenset[int],
+    dificultad_progresiva: bool,
+) -> bool:
+    disponibles = niveles_en_pool(pool)
+    if len(disponibles) <= 1:
+        return False
+    if dificultad_progresiva:
+        return bool(niveles_seleccion)
+    return niveles_seleccion != disponibles
+
+
+def pregunta_permitida_por_nivel(
+    pregunta: Pregunta,
+    *,
+    niveles_seleccion: frozenset[int],
+    techo: int,
+    dificultad_progresiva: bool,
+) -> bool:
+    complejidad = complejidad_pregunta(pregunta)
+    if complejidad not in niveles_seleccion:
+        return False
+    if dificultad_progresiva:
+        return complejidad <= techo
+    return True

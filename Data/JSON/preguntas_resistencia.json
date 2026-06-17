@@ -1,0 +1,390 @@
+{
+  "version": 1,
+  "descripcion": "Preguntas exclusivas del modo resistencia; solo aparecen al alcanzar la racha mínima.",
+  "preguntas": [
+    {
+      "id": "res_t1_01",
+      "tier": 1,
+      "racha_minima": 100,
+      "materia": "Àlgebra Lineal",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "Sea A una matriz 3×3 con traza 0 y determinante 8. ¿Cuál puede ser la suma de sus autovalores reales?",
+      "opciones": {
+        "A": "8",
+        "B": "0",
+        "C": "−8",
+        "D": "No están determinados solo por esos datos"
+      },
+      "correcta": "B"
+    },
+    {
+      "id": "res_t1_02",
+      "tier": 1,
+      "racha_minima": 100,
+      "materia": "Càlcul en una Variable",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "¿Cuál es el valor de ∫₀^∞ e^(−x²) dx?",
+      "opciones": {
+        "A": "1",
+        "B": "π",
+        "C": "√π/2",
+        "D": "π/2"
+      },
+      "correcta": "C"
+    },
+    {
+      "id": "res_t1_03",
+      "tier": 1,
+      "racha_minima": 100,
+      "materia": "Probabilitat",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "Si X e Y son independientes con Var(X)=4 y Var(Y)=9, ¿cuál es Var(2X−3Y)?",
+      "opciones": {
+        "A": "97",
+        "B": "25",
+        "C": "13",
+        "D": "85"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_t1_04",
+      "tier": 1,
+      "racha_minima": 100,
+      "materia": "Fonaments de Computadors",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "En un pipeline de 5 etapas con CPI ideal 1, ¿cuántos ciclos se necesitan para ejecutar 1000 instrucciones en el régimen estable?",
+      "opciones": {
+        "A": "5000",
+        "B": "1000",
+        "C": "1004",
+        "D": "5004"
+      },
+      "correcta": "C"
+    },
+    {
+      "id": "res_t1_05",
+      "tier": 1,
+      "racha_minima": 100,
+      "materia": "Visualització 3D",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "En ℝ³, ¿cuántos puntos equidistantes de los vértices de un tetraedro regular pueden existir además del centroide?",
+      "opciones": {
+        "A": "Ninguno más",
+        "B": "Exactamente 1",
+        "C": "Infinitos en una circunferencia",
+        "D": "Depende de la arista"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_t1_06",
+      "tier": 1,
+      "racha_minima": 100,
+      "materia": "Iniciació a la Programació",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "La complejidad temporal de mergesort en el peor caso sobre n elementos es:",
+      "opciones": {
+        "A": "O(n)",
+        "B": "O(n log n)",
+        "C": "O(n²)",
+        "D": "O(log n)"
+      },
+      "correcta": "B"
+    },
+    {
+      "id": "res_t2_01",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Àlgebra Lineal",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "Si A es simétrica real 2×2 con autovalores 1 y 4, ¿cuál es el máximo valor de xᵀAx con ‖x‖=1?",
+      "opciones": {
+        "A": "1",
+        "B": "4",
+        "C": "5",
+        "D": "2,5"
+      },
+      "correcta": "B"
+    },
+    {
+      "id": "res_t2_02",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Càlcul en una Variable",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "La serie ∑_{n=1}^∞ 1/n converge:",
+      "opciones": {
+        "A": "Sí, a e",
+        "B": "Sí, a π²/6",
+        "C": "No",
+        "D": "Sí, a ln 2"
+      },
+      "correcta": "C"
+    },
+    {
+      "id": "res_t2_03",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Equacions Diferencials Ordinàries",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "Para y''+4y=0 con y(0)=1 e y'(0)=0, ¿y(π/4)?",
+      "opciones": {
+        "A": "0",
+        "B": "1",
+        "C": "−1",
+        "D": "e"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_t2_04",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Modelització i Inferència",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "En una regresión lineal simple, el coeficiente de determinación R² mide:",
+      "opciones": {
+        "A": "La pendiente ajustada",
+        "B": "La proporción de varianza de Y explicada por X",
+        "C": "El error estándar residual siempre",
+        "D": "La correlación sin elevar al cuadrado"
+      },
+      "correcta": "B"
+    },
+    {
+      "id": "res_t2_05",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Teoria de Jocs",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "¿Cuántas permutaciones distintas tiene la palabra MATEMATICA?",
+      "opciones": {
+        "A": "9!",
+        "B": "9!/(2!·2!)",
+        "C": "9!/2!",
+        "D": "9!/(2!·2!·2!)"
+      },
+      "correcta": "B"
+    },
+    {
+      "id": "res_t2_06",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Física, Abstracció i Computació",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "Un cuerpo de masa m en movimiento circular uniforme de radio r y velocidad v tiene energía cinética:",
+      "opciones": {
+        "A": "mvr",
+        "B": "mv²/r",
+        "C": "½mv²",
+        "D": "mω²r"
+      },
+      "correcta": "C"
+    },
+    {
+      "id": "res_t3_01",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Àlgebra Lineal",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "El rango de una matriz m×n y el de su transpuesta verifican:",
+      "opciones": {
+        "A": "rank(A)=rank(Aᵀ) siempre",
+        "B": "rank(Aᵀ)=n siempre",
+        "C": "rank(A)+rank(Aᵀ)=m+n",
+        "D": "Solo coinciden si A es cuadrada"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_t3_02",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Càlcul en una Variable",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "Si f es derivable en a y f'(a)=0, f''(a)>0, entonces en a hay:",
+      "opciones": {
+        "A": "Máximo local",
+        "B": "Punto de inflexión",
+        "C": "Mínimo local",
+        "D": "Nada se puede afirmar"
+      },
+      "correcta": "C"
+    },
+    {
+      "id": "res_t3_03",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Probabilitat",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "Para X~N(μ,σ²), el intervalo μ±1,96σ contiene aproximadamente el:",
+      "opciones": {
+        "A": "68% de la masa",
+        "B": "90% de la masa",
+        "C": "95% de la masa",
+        "D": "99% de la masa"
+      },
+      "correcta": "C"
+    },
+    {
+      "id": "res_t3_04",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Fonaments de Computadors",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "Una caché direct-mapped de 32 KB con líneas de 64 B tiene cuántas líneas?",
+      "opciones": {
+        "A": "256",
+        "B": "512",
+        "C": "1024",
+        "D": "2048"
+      },
+      "correcta": "B"
+    },
+    {
+      "id": "res_t3_05",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Visualització 3D",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "En geometría euclídea, la suma de los ángulos internos de un triángulo es:",
+      "opciones": {
+        "A": "Menor que π en todo triángulo",
+        "B": "Exactamente π radianes",
+        "C": "2π radianes",
+        "D": "Depende del área"
+      },
+      "correcta": "B"
+    },
+    {
+      "id": "res_t3_06",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Iniciació a la Programació",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "Un árbol binario de búsqueda balanceado con n nodos tiene altura en O:",
+      "opciones": {
+        "A": "n",
+        "B": "log n",
+        "C": "n log n",
+        "D": "√n"
+      },
+      "correcta": "B"
+    },
+    {
+      "id": "res_t4_01",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Àlgebra Lineal",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "Si A es ortogonal n×n, entonces det(A) vale:",
+      "opciones": {
+        "A": "Siempre 1",
+        "B": "±1",
+        "C": "0",
+        "D": "n"
+      },
+      "correcta": "B"
+    },
+    {
+      "id": "res_t4_02",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Càlcul en una Variable",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "El límite lim_{x→0} (sin x)/x es:",
+      "opciones": {
+        "A": "0",
+        "B": "1",
+        "C": "No existe",
+        "D": "∞"
+      },
+      "correcta": "B"
+    },
+    {
+      "id": "res_t4_03",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Equacions Diferencials Ordinàries",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "La solución general de y'=ky (k≠0) es:",
+      "opciones": {
+        "A": "Ce^{kx}",
+        "B": "Ckx",
+        "C": "C/k",
+        "D": "Ce^{−kx}"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_t4_04",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Teoria de Jocs",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "El número de aristas de un grafo completo K_n es:",
+      "opciones": {
+        "A": "n",
+        "B": "n(n−1)",
+        "C": "n(n−1)/2",
+        "D": "2n"
+      },
+      "correcta": "C"
+    },
+    {
+      "id": "res_t4_05",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Modelització i Inferència",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "La varianza muestral sin corregir de [2,4,6] es:",
+      "opciones": {
+        "A": "8/3",
+        "B": "4",
+        "C": "2",
+        "D": "8"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_t4_06",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Fonaments de Computadors",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "En la ley de Amdahl, si la fracción paralelizable es p y hay N procesadores ideales, el speedup máximo está acotado por:",
+      "opciones": {
+        "A": "N",
+        "B": "1/(1−p)",
+        "C": "p·N",
+        "D": "N²"
+      },
+      "correcta": "B"
+    }
+  ]
+}

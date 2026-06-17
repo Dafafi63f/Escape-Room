@@ -49,9 +49,9 @@ from utils_dataset_csv import materia_de_fila
 from utils_orden_temas import cargar_orden_temas
 
 BASE = Path(__file__).resolve().parent.parent.parent
-PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
-PATH_PREGUNTAS = BASE / "Data" / "Preguntas.csv"
-GIT_PLANTILLAS_REF = "origin/main:Data/plantillas.json"
+PATH_PLANTILLAS = BASE / "Data" / "JSON" / "plantillas.json"
+PATH_PREGUNTAS = BASE / "Data" / "CSV" / "Preguntas.csv"
+GIT_PLANTILLAS_REF = "origin/main:Data/JSON/plantillas.json"
 _RE_ENTEROS = re.compile(r"\b(\d+)\b")
 _USO_PRIORITY = {"general": 0, "dificil": 1, "calculo": 2, "ampliado_var": 3, "ampliado_perm": 4, "ampliado_num": 5}
 
