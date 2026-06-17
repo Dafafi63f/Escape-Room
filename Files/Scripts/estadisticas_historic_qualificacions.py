@@ -2,9 +2,10 @@ from pathlib import Path
 
 import pandas as pd
 
-BASE = Path(__file__).resolve().parent.parent.parent
+from rutas_data import PATH_HISTORICO_QUALIFICACIONS
+
 df_completo = pd.read_csv(
-    BASE / "Data" / "Historic_qualificacions_MatCAD_completo.csv",
+    PATH_HISTORICO_QUALIFICACIONS,
     sep=";",
     encoding="utf-8",
 )
@@ -20,7 +21,7 @@ col_periode = "Periode"
 print("=" * 60)
 print("INFORMACIÓN DEL DATASET HISTÒRIC QUALIFICACIONS MATCAD")
 print("=" * 60)
-print(f"\nFuente: Data/Historic_qualificacions_MatCAD_completo.csv")
+print(f"\nFuente: {PATH_HISTORICO_QUALIFICACIONS}")
 print(f"Años encontrados: {sorted(df_completo[col_any].dropna().unique())}")
 
 

@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "Scripts"))
 
 from recategorizar_y_equilibrar import recategorizar_y_equilibrar_por_id
 
-PATH = BASE / "Data" / "Preguntas.csv"
+PATH = BASE / "Data" / "CSV" / "Preguntas.csv"
 DEST_ALG = "Tècniques de Disseny d'Algoritmes"
 PROG = "Programari de Sistema"
 FON = "Fonaments de Computadors"

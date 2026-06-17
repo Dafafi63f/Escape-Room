@@ -11,6 +11,7 @@ from Comun.compatibilidad_reglas_libre import sanitizar_reglas_libre
 from Comun.reglas_partida import (
     ReglasPartida,
     preset_historia_examen,
+    preset_historia_resistencia,
     preset_historia_reto,
 )
 
@@ -18,6 +19,7 @@ from Comun.reglas_partida import (
 class ContextoPartida(str, Enum):
     HISTORIA_SIMULACRO = "historia_simulacro"
     HISTORIA_RETO = "historia_reto"
+    HISTORIA_RESISTENCIA = "historia_resistencia"
     LIBRE_INFINITO = "libre_infinito"
     LIBRE_UNA_PREGUNTA = "libre_una_pregunta"
     LIBRE_BLOQUE_CORTO = "libre_bloque_corto"
@@ -72,6 +74,29 @@ def politica_historia_reto() -> PoliticaReglas:
     )
 
 
+def politica_historia_resistencia() -> PoliticaReglas:
+    return _politica_fija(
+        ContextoPartida.HISTORIA_RESISTENCIA,
+        preset_historia_resistencia(),
+        "Resistencia infinita: 3 vidas; la dificultad sube con el nº de pregunta; la racha solo bonifica puntos.",
+    )
+
+
+def _fusionar_tiempo_preset(base: ReglasPartida, reglas: ReglasPartida) -> ReglasPartida:
+    if not reglas.tiempo_por_pregunta_seg and not reglas.tiempo_total_seg:
+        return base
+    return ReglasPartida(
+        vidas=base.vidas,
+        tiempo_por_pregunta_seg=reglas.tiempo_por_pregunta_seg,
+        tiempo_total_seg=reglas.tiempo_total_seg,
+        sistema_puntuacion=base.sistema_puntuacion,
+        mostrar_solucion_tras_fallo=base.mostrar_solucion_tras_fallo,
+        mostrar_aciertos_en_curso=base.mostrar_aciertos_en_curso,
+        correccion_al_final=base.correccion_al_final,
+        dificultad_progresiva=base.dificultad_progresiva,
+    )
+
+
 def validar_reglas(
     reglas: ReglasPartida,
     contexto: ContextoPartida,
@@ -80,9 +105,11 @@ def validar_reglas(
     n_preguntas: int = 10,
 ) -> ReglasPartida:
     if contexto == ContextoPartida.HISTORIA_SIMULACRO:
-        return preset_historia_examen()
+        return _fusionar_tiempo_preset(preset_historia_examen(), reglas)
     if contexto == ContextoPartida.HISTORIA_RETO:
-        return preset_historia_reto()
+        return _fusionar_tiempo_preset(preset_historia_reto(), reglas)
+    if contexto == ContextoPartida.HISTORIA_RESISTENCIA:
+        return preset_historia_resistencia()
     if contexto in {
         ContextoPartida.LIBRE_INFINITO,
         ContextoPartida.LIBRE_UNA_PREGUNTA,

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import time
 
+from Consola.textos_consola import campo, con_emoji, feedback as feedback_ui, titulo as titulo_ui
 from Comun.modelos import Pregunta
 from Comun.motor_nucleo import (
     EstadoPartida,
@@ -44,6 +45,8 @@ def mostrar_pregunta(
     extra_meta: str | None = None,
     linea_estado: str | None = None,
     nombre_jugador: str | None = None,
+    letras_ocultas: frozenset[str] | None = None,
+    texto_pregunta: str | None = None,
 ) -> None:
     print("\n" + "=" * 60)
     if nombre_jugador:
@@ -57,8 +60,11 @@ def mostrar_pregunta(
         print(extra_meta)
     print(f"Materia: {p.materia} | {p.tipo} / {p.dificultad}")
     print(f"Tematica: {p.tematica or '-'} | Curso {p.curso or '-'} · Sem. {p.semestre or '-'}")
-    print(f"\n{p.texto}")
+    print(f"\n{texto_pregunta if texto_pregunta is not None else p.texto}")
+    ocultas = letras_ocultas or frozenset()
     for letra in ("A", "B", "C", "D"):
+        if letra in ocultas:
+            continue
         print(f"  {letra}) {p.opciones.get(letra, '(opción no disponible)')}")
 
 
@@ -71,6 +77,8 @@ def registrar_contexto_pregunta(
     etiqueta: str = "Pregunta",
     extra_meta: str | None = None,
     progreso: str | None = None,
+    letras_ocultas: frozenset[str] | None = None,
+    texto_pregunta: str | None = None,
 ) -> None:
     linea = progreso or linea_estado(estado, f"{etiqueta} {indice}/{total or 'inf'}")
     kwargs = dict(
@@ -81,6 +89,8 @@ def registrar_contexto_pregunta(
         extra_meta=extra_meta,
         linea_estado=linea,
         nombre_jugador=estado.nombre,
+        letras_ocultas=letras_ocultas,
+        texto_pregunta=texto_pregunta,
     )
 
     def _reimprimir() -> None:
@@ -105,33 +115,46 @@ def aplicar_respuesta(
     estado: EstadoPartida,
     resultado: ResultadoRespuesta,
 ) -> None:
-    feedback = evaluar_respuesta(p, estado, resultado)
-    if feedback.mensaje == "Respuesta registrada.":
+    fb = evaluar_respuesta(p, estado, resultado)
+    if fb.mensaje == "Respuesta registrada.":
         return
-    if feedback.mensaje.startswith("Correcto"):
-        print(f"[OK] {feedback.mensaje}")
-    elif feedback.mensaje.startswith("Incorrecto"):
-        print(f"[X] {feedback.mensaje}")
+    msg = feedback_ui(fb.mensaje)
+    if fb.mensaje.startswith("Correcto"):
+        print(f"[OK] {msg}")
+    elif fb.mensaje.startswith("Incorrecto"):
+        print(f"[X] {msg}")
     else:
-        print(f"[!] {feedback.mensaje}")
-    if feedback.solucion:
-        print(feedback.solucion)
-    if feedback.sin_vidas:
-        print("\nTe has quedado sin vidas.")
+        print(f"[!] {msg}")
+    if fb.solucion:
+        print(fb.solucion)
+    if fb.sin_vidas:
+        print(f"\n{con_emoji('Te has quedado sin vidas.', '💔')}")
 
 
 def preguntar_con_reglas(
     p: Pregunta,
     estado: EstadoPartida,
+    *,
+    letras_ocultas: frozenset[str] | None = None,
+    tiempo_extra_seg: int = 0,
 ) -> ResultadoRespuesta:
     lim_p = estado.reglas.tiempo_por_pregunta_seg
+    if lim_p is not None:
+        lim_p = lim_p + tiempo_extra_seg
     if lim_p:
         print(f"(Tienes hasta {lim_p}s para responder)")
     inicio = time.monotonic()
+    opciones_validas = [
+        letra
+        for letra in ("A", "B", "C", "D")
+        if letra not in (letras_ocultas or frozenset())
+    ]
+    if not opciones_validas:
+        opciones_validas = ["A", "B", "C", "D"]
     respuesta = pedir_opcion(
         "\nTu respuesta: ",
-        ["A", "B", "C", "D"],
-        default="A",
+        opciones_validas,
+        default=opciones_validas[0],
         permitir_atras=False,
         en_partida=True,
     )
@@ -179,7 +202,7 @@ def ejecutar_lista_fija(
     for i, p in enumerate(preguntas, start=1):
         if not estado.debe_continuar(total):
             if estado.tiempo_total_restante() == 0:
-                print("\nTiempo total del bloque agotado.")
+                print(f"\n{con_emoji('Tiempo total del bloque agotado.', '⏱️')}")
             break
 
         progreso = linea_estado(estado, f"{etiqueta} {i}/{total}")
@@ -207,7 +230,7 @@ def ejecutar_lista_fija(
                 )
         except IrMenuPrincipal:
             abandonado = True
-            print("\nPartida abandonada. Volviendo al menú principal.")
+            print(f"\n{con_emoji('Partida abandonada. Volviendo al menú principal.', '🏠')}")
             break
         except SalirPrograma:
             raise
@@ -241,8 +264,8 @@ def mostrar_resumen_partida(estado: EstadoPartida, titulo: str, total_bloque: in
     incompleto = previsto > total
 
     print("\n" + "=" * 60)
-    print(titulo)
-    print(f"Jugador: {estado.nombre}")
+    print(titulo_ui(titulo))
+    print(campo("jugador", f"Jugador: {estado.nombre}"))
     if incompleto:
         print(f"Preguntas respondidas: {total}/{previsto}")
     print(formatear_resultado_puntuacion(
@@ -251,5 +274,5 @@ def mostrar_resumen_partida(estado: EstadoPartida, titulo: str, total_bloque: in
         total=total,
         puntos_arcade=estado.puntos_arcade,
     ))
-    if estado.reglas.mostrar_aciertos_en_curso or estado.reglas.sistema_puntuacion != SistemaPuntuacion.ARCADE:
+    if estado.reglas.sistema_puntuacion != SistemaPuntuacion.ARCADE:
         print(f"Resumen: {estado.aciertos}/{total} aciertos")

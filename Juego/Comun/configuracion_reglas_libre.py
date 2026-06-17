@@ -50,7 +50,6 @@ class AlcanceConfigLibre:
     permitir_tiempo_total: bool = True
     permitir_dificultad_progresiva: bool = True
     permitir_solucion_tras_fallo: bool = True
-    permitir_aciertos_en_curso: bool = True
 
 
 def alcance_para_contexto(ctx) -> AlcanceConfigLibre | None:
@@ -68,7 +67,6 @@ def construir_reglas_personalizadas(
     tiempo_por_pregunta_seg: int | None = None,
     tiempo_total_seg: int | None = None,
     mostrar_solucion_tras_fallo: bool = True,
-    mostrar_aciertos_en_curso: bool = True,
     dificultad_progresiva: bool = False,
     modo_infinito: bool = False,
     n_preguntas: int = 10,
@@ -82,7 +80,7 @@ def construir_reglas_personalizadas(
         tiempo_total_seg=tiempo_total_seg,
         sistema_puntuacion=sistema,
         mostrar_solucion_tras_fallo=mostrar_solucion_tras_fallo,
-        mostrar_aciertos_en_curso=mostrar_aciertos_en_curso,
+        mostrar_aciertos_en_curso=False,
         correccion_al_final=False,
         dificultad_progresiva=dificultad_progresiva,
     )

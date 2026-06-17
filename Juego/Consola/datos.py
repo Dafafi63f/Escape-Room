@@ -28,18 +28,28 @@ def elegir_banco_preguntas(
 
     from .entrada_menu import elegir_indice_menu
     from .navegacion import ContextoPantalla, VolverAtras, mostrar_transicion
+    from Consola.textos_consola import campo, con_emoji, titulo as titulo_ui
 
     def _mostrar_menu_banco() -> None:
-        print("\nBanco de preguntas:")
+        print(f"\n{campo('banco', 'Banco de preguntas')}")
         print(
-            f"  1) Dataset revisado — MODO SEGURO ({n_ds} preguntas) [por defecto, recomendado]"
+            f"  1) {con_emoji('Dataset revisado — MODO SEGURO', '🛡️')} "
+            f"({n_ds} preguntas) [por defecto, recomendado]"
         )
         print(
-            f"  2) Todo — MODO BETA ({n_ds} + {n_extra} = {n_todo}): "
+            f"  2) {con_emoji('Todo — MODO BETA', '🧪')} ({n_ds} + {n_extra} = {n_todo}): "
             "dataset + plantillas no revisadas"
         )
-        print(f"  3) Solo plantillas extra — MODO BETA ({n_extra} no revisadas)")
-        print("     La opcion 1 es el banco seguro. Las opciones 2 y 3 incluyen contenido beta.")
+        print(
+            f"  3) {con_emoji('Solo plantillas extra — MODO BETA', '🧪')} "
+            f"({n_extra} no revisadas)"
+        )
+        print(
+            con_emoji(
+                "La opcion 1 es el banco seguro. Las opciones 2 y 3 incluyen contenido beta.",
+                "⚠️",
+            )
+        )
 
     mapa_banco = {
         1: BancoPreguntas.DATASET,
@@ -49,7 +59,10 @@ def elegir_banco_preguntas(
 
     mostrar_transicion(
         _mostrar_menu_banco,
-        contexto=ContextoPantalla(titulo="Banco de preguntas", reimprimir=_mostrar_menu_banco),
+        contexto=ContextoPantalla(
+            titulo=titulo_ui("Banco de preguntas"),
+            reimprimir=_mostrar_menu_banco,
+        ),
     )
 
     while True:

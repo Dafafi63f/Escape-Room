@@ -17,6 +17,7 @@ from Comun.reglas_partida import ReglasPartida
 
 from .configuracion_reglas_libre import configurar_reglas_personalizado
 from .consola import pedir_menu_numerado
+from Consola.textos_consola import campo, con_emoji
 
 __all__ = [
     "ContextoPartida",
@@ -44,15 +45,18 @@ def resolver_politica_libre(*, modo_infinito: bool, n_preguntas: int) -> Politic
         contexto=ctx,
         reglas=reglas,
         eleccion_jugador=True,
-        mensaje=f"Modo libre — {titulo}: configura vidas, tiempo y puntuación.",
+        mensaje=con_emoji(
+            f"Modo libre — {titulo}: configura vidas, tiempo y puntuación.",
+            "🎮",
+        ),
     )
 
 
 def resolver_politica_historia() -> PoliticaReglas:
     idx = pedir_menu_numerado(
-        "Modo historia — reglas del creador:",
+        campo("tipo_partida", "Modo historia — reglas del creador"),
         [
-            ("sim", "Simulacro de examen [recomendado]"),
+            ("sim", "Simulacro de parcial [recomendado]"),
             ("reto", "Variante reto (vidas + arcade)"),
         ],
         defecto=1,
@@ -63,6 +67,6 @@ def resolver_politica_historia() -> PoliticaReglas:
 def aplicar_politica(politica: PoliticaReglas) -> ReglasPartida:
     print(f"\n>>> {politica.mensaje}")
     if not politica.eleccion_jugador:
-        print("(Configuración fija para este tipo de partida.)")
+        print(con_emoji("(Configuración fija para este tipo de partida.)", "🔒"))
     print(f">>> {politica.reglas.describe()}")
     return validar_reglas(politica.reglas, politica.contexto)

@@ -1,47 +1,55 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Modo historia (v1): examen balanceado con datos del histórico de qualificacions."""
+"""Modo historia: catálogo con propósito pedagógico y opciones acotadas."""
 
 from __future__ import annotations
 
-from .consola import (
-    elegir_filtro_obligatorio,
-    pedir_entero_en_rango,
-    pedir_menu_numerado,
-    pedir_opcion,
-    pedir_texto,
-)
+from Comun.config_historia import ConfigPresetHistoria
+from Comun.jugador import NOMBRE_JUGADOR_DEFECTO
+from .config_historia import pedir_config_historia
+from .consola import pedir_menu_numerado, pedir_opcion, pedir_texto
 from .datos import cargar_orden_materias
 from .entrada_menu import esperar_enter
 from .generador_examen_historia import (
-    PerfilPedagogico,
     cargar_estadisticas_historicas,
-    describir_perfil,
     generar_examen,
     resumen_estadisticas,
 )
 from Comun.modelos import Pregunta
 from .motor_partida import ejecutar_lista_fija
-from .navegacion import (
+from .motor_resistencia import ejecutar_resistencia_historia
+from Consola.navegacion import (
     AsistentePasos,
     IrMenuPrincipal,
     SalirPrograma,
-    VolverAtras,
     limpiar_consola,
     mostrar_transicion,
 )
-from .politica_reglas import aplicar_politica, resolver_politica_historia
-from Comun.rutas import PATH_MATERIAS
+from Consola.textos_consola import banner, campo, con_emoji, titulo as titulo_ui
+from .politica_reglas import aplicar_politica
+from Comun.cierre_informe import meta_cierre_historia
+from Comun.presets_historia import (
+    PresetHistoria,
+    aplicar_preset,
+    argumentos_generador,
+    cargar_presets_historia,
+    politica_desde_preset,
+)
+from Comun.resistencia_historia import es_preset_resistencia
+from Comun.rutas import PATH_MATERIAS, resolver_presets_historia
 
 
-def _elegir_perfil_en_paso(asist: AsistentePasos) -> None:
-    opciones = list(PerfilPedagogico)
+def _elegir_preset(presets: list[PresetHistoria]) -> PresetHistoria:
+    opciones = [
+        (p.id, f"{p.nombre} — {p.descripcion}")
+        for p in presets
+    ]
     idx = pedir_menu_numerado(
-        "Perfil pedagógico (histórico agregado):",
-        [(p.value, describir_perfil(p)) for p in opciones],
+        campo("tipo_partida", "Tipo de partida (ordenado por utilidad)"),
+        opciones,
         defecto=1,
     )
-    asist.datos["perfil"] = opciones[idx - 1]
+    return presets[idx - 1]
 
 
 def jugar_modo_historia(
@@ -50,24 +58,48 @@ def jugar_modo_historia(
 ) -> bool:
 
     def _pantalla_intro() -> None:
-        print("\n=== MODO HISTORIA (v1) ===")
-        print("Examen balanceado con histórico de qualificacions.")
-        print("Banco: dataset revisado (modo seguro).")
+        print(f"\n{banner('MODO HISTORIA')}")
+        print(con_emoji(
+            "Partidas con propósito claro; cada tipo permite ajustar solo lo relevante.",
+            "📕",
+        ))
+        print(f"{campo('banco_seguro', 'Banco')}: dataset revisado (modo seguro).")
 
     mostrar_transicion(_pantalla_intro)
+
+    try:
+        presets = cargar_presets_historia(resolver_presets_historia())
+    except (FileNotFoundError, ValueError) as e:
+        print(f"\nNo se pudo cargar el catálogo de historia: {e}")
+        return False
 
     stats: dict
     orden_materias: list[str]
 
     def paso_nombre(asist: AsistentePasos) -> None:
         asist.datos["nombre"] = pedir_texto(
-            "Nombre de jugador: ",
-            default="Anonimo",
+            f"{campo('nombre', 'Nombre de jugador')}: ",
+            default=NOMBRE_JUGADOR_DEFECTO,
             permitir_atras=True,
         )
 
-    def paso_reglas(asist: AsistentePasos) -> None:
-        asist.datos["reglas"] = aplicar_politica(resolver_politica_historia())
+    def paso_preset(asist: AsistentePasos) -> None:
+        asist.datos["preset"] = _elegir_preset(presets)
+
+    def paso_opciones(asist: AsistentePasos) -> None:
+        nonlocal orden_materias
+        preset: PresetHistoria = asist.datos["preset"]
+        orden_materias = cargar_orden_materias(PATH_MATERIAS)
+        if preset.tiene_opciones():
+            asist.datos["config"] = pedir_config_historia(
+                preset,
+                materias_meta=materias_meta,
+                materias_orden=orden_materias,
+            )
+        else:
+            asist.datos["config"] = ConfigPresetHistoria()
+        politica = politica_desde_preset(preset, asist.datos["config"])
+        asist.datos["reglas"] = aplicar_politica(politica)
 
     def paso_historico(asist: AsistentePasos) -> None:
         nonlocal stats, orden_materias
@@ -81,118 +113,113 @@ def jugar_modo_historia(
         ) == "S":
             print(resumen_estadisticas(stats, orden_materias))
 
-    def paso_perfil(asist: AsistentePasos) -> None:
-        _elegir_perfil_en_paso(asist)
+    pasos = [
+        ("Nombre", paso_nombre),
+        ("Tipo de partida", paso_preset),
+        ("Opciones del tipo", paso_opciones),
+        ("Histórico (opcional)", paso_historico),
+    ]
 
-    def paso_ambito(asist: AsistentePasos) -> None:
-        perfil: PerfilPedagogico = asist.datos["perfil"]
-        curso_filtro: str | None = None
-        semestre_filtro: str | None = None
-        n_materias = 6
-
-        if perfil == PerfilPedagogico.POR_CURSO:
-            cursos = sorted({m.get("curso", "") for m in materias_meta.values() if m.get("curso")})
-            if not cursos:
-                print("\nNo hay cursos en los metadatos. Pulsa Supr para retroceder.")
-                raise VolverAtras()
-            curso_filtro = elegir_filtro_obligatorio("curso", cursos)
-            semestres = sorted(
-                {
-                    m.get("semestre", "")
-                    for m in materias_meta.values()
-                    if m.get("semestre") and m.get("curso") == curso_filtro
-                }
-            )
-            if semestres and pedir_opcion(
-                "¿Filtrar también por semestre? (S/N): ",
-                ["S", "N"],
-                "N",
-                permitir_atras=True,
-            ) == "S":
-                semestre_filtro = elegir_filtro_obligatorio("semestre", semestres)
-        elif perfil != PerfilPedagogico.SIMULACRO:
-            max_m = max(2, min(20, len(orden_materias)))
-            n_materias = pedir_entero_en_rango(
-                "¿Cuántas materias incluir en el examen? [6]: ",
-                2,
-                max_m,
-                min(6, max_m),
-            )
-
-        asist.datos["curso_filtro"] = curso_filtro
-        asist.datos["semestre_filtro"] = semestre_filtro
-        asist.datos["n_materias"] = n_materias
-
-    asistente = AsistentePasos("Configuración historia")
+    asistente = AsistentePasos("Modo historia")
     try:
-        asistente.ejecutar(
-            [
-                ("Nombre", paso_nombre),
-                ("Reglas de examen", paso_reglas),
-                ("Histórico (opcional)", paso_historico),
-                ("Perfil pedagógico", paso_perfil),
-                ("Ámbito del examen", paso_ambito),
-            ]
-        )
+        asistente.ejecutar(pasos)
     except IrMenuPrincipal:
         return False
     except SalirPrograma:
         raise
 
     nombre = asistente.datos["nombre"]
+    preset: PresetHistoria = asistente.datos["preset"]
+    config: ConfigPresetHistoria = asistente.datos["config"]
     reglas = asistente.datos["reglas"]
-    perfil = asistente.datos["perfil"]
+
+    if es_preset_resistencia(preset):
+        def _pantalla_resistencia() -> None:
+            print(f"\n{banner('RANKING — RESISTENCIA INFINITA')}")
+            print(f"{campo('tipo_partida', 'Tipo')}: {preset.nombre}")
+            print(con_emoji(
+                "Una falla termina la racha. La dificultad sube con cada acierto.",
+                "🔥",
+            ))
+            print(con_emoji(
+                "Récords en ranking local (multijugador offline).",
+                "🏆",
+            ))
+
+        limpiar_consola()
+        _pantalla_resistencia()
+        esperar_enter("\nPulsa Enter para comenzar")
+        try:
+            ejecutar_resistencia_historia(
+                preguntas,
+                nombre=nombre,
+                reglas=reglas,
+                preset_id=preset.id,
+                preset_nombre=preset.nombre,
+                perfil=preset.perfil,
+                materias_meta=materias_meta,
+                stats_historicas=stats,
+            )
+        except SalirPrograma:
+            raise
+        return True
 
     try:
         plan = generar_examen(
             preguntas,
-            perfil=perfil,
             materias_orden=orden_materias,
             materias_meta=materias_meta,
             stats=stats,
-            n_materias=asistente.datos["n_materias"],
-            curso_filtro=asistente.datos.get("curso_filtro"),
-            semestre_filtro=asistente.datos.get("semestre_filtro"),
+            **argumentos_generador(preset, config, materias_meta=materias_meta),
         )
     except ValueError as e:
         print(f"\nNo se pudo generar el examen: {e}")
         return False
 
     def _pantalla_inicio_examen() -> None:
-        print("\n=== EXAMEN (modo historia) ===")
-        print(f"Preguntas: {len(plan.preguntas)}")
-        print(f"Perfil: {perfil.value}")
-        print(f"Materias: {', '.join(plan.materias)}")
-        print("Sin limpiar entre preguntas.")
-        print("No verás si acertaste hasta el final (examen cerrado).")
-        print("Al terminar se guarda un informe .txt en Juego/informes/.")
+        print(f"\n{banner('PARTIDA (modo historia)')}")
+        print(f"{campo('tipo_partida', 'Tipo')}: {preset.nombre}")
+        print(f"{campo('n_preguntas', 'Preguntas')}: {len(plan.preguntas)}")
+        print(f"{campo('banco', 'Materias')}: {', '.join(plan.materias)}")
+        if reglas.tiempo_total_seg:
+            print(f"{campo('tiempo_total', 'Tiempo total')}: {reglas.tiempo_total_seg // 60} min")
+        if reglas.correccion_al_final:
+            print(con_emoji("Sin limpiar entre preguntas.", "📝"))
+            print(con_emoji(
+                "No verás si acertaste hasta el final (examen cerrado).",
+                "🔒",
+            ))
+        print(con_emoji(
+            "Al terminar se guarda un informe .txt en Juego/informes/.",
+            "💾",
+        ))
 
     limpiar_consola()
     _pantalla_inicio_examen()
-    esperar_enter("\nPulsa Enter para comenzar el examen")
+    esperar_enter("\nPulsa Enter para comenzar")
 
     try:
         estado = ejecutar_lista_fija(
             plan.preguntas,
             nombre=nombre,
             reglas=reglas,
-            titulo_fin="FIN DEL EXAMEN (modo historia)",
+            titulo_fin=f"FIN — {preset.nombre}",
             etiqueta="Escena",
             guardar_informe=True,
-            meta_informe={
-                "etiqueta_sesion": f"Examen historia — {perfil.value}",
-                "perfil": perfil.value,
-                "materias": ", ".join(plan.materias),
-                "banco": "dataset revisado (modo seguro)",
-                "n_preguntas": len(plan.preguntas),
-            },
+            meta_informe=meta_cierre_historia(
+                preset_id=preset.id,
+                preset_nombre=preset.nombre,
+                perfil=preset.perfil,
+                materias=plan.materias,
+                n_preguntas=len(plan.preguntas),
+            ),
             stats_historicas=stats,
         )
     except SalirPrograma:
         raise
 
     if estado.fallos_por_materia:
-        print("\nMaterias a reforzar en este intento (también en el informe .txt):")
+        print(f"\n{con_emoji('Materias a reforzar en este intento (también en el informe .txt):', '📊')}")
         for materia, n in sorted(estado.fallos_por_materia.items(), key=lambda x: -x[1]):
             st = stats.get(materia)
             extra = f" (histórico: media {st.media:.2f})" if st else ""

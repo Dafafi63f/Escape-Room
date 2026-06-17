@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent.parent
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
+PATH_CSV = BASE / "Data" / "CSV" / "Preguntas.csv"
 
 # Id -> campos a sustituir (solo los listados)
 CORRECCIONES: dict[str, dict[str, str]] = {

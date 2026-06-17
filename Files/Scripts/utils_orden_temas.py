@@ -11,8 +11,7 @@ import csv
 from pathlib import Path
 
 
-BASE = Path(__file__).resolve().parent.parent.parent
-PATH_MATERIAS = BASE / "Data" / "listado_materias.csv"
+from rutas_data import PATH_LISTADO_MATERIAS as PATH_MATERIAS
 
 
 def cargar_orden_temas(path_materias: Path | None = None) -> tuple[list[str], dict[str, int]]:

@@ -2,17 +2,29 @@
 
 Ficheros que usa el juego y las herramientas de mantenimiento.
 
+## Estructura
+
+```
+Data/
+├── CSV/          # Datos tabulares
+├── JSON/         # Configuración y plantillas
+└── README.md
+```
+
 | Fichero | Uso |
 |---------|-----|
-| `Preguntas.csv` | Banco principal (**480** preguntas cerradas en producción) |
-| `listado_materias.csv` | Metadatos de **40** materias (`Grupo`, `Nivel`, `Curso`, `Semestre`, `Tematica`, …) |
-| `plantillas.json` | Plantillas / pool extra (**1289** entradas; modos beta del juego) |
-| `criterios_clasificacion_materia.csv` | Palabras clave por materia (`utils_puntuacion_materia.py`) |
-| `Historic_qualificacions_MatCAD_completo.csv` | Histórico de qualificacions — **modo historia** |
-| `Històric_qualificacions_MatCAD.xlsx` | Fuente original del histórico; el juego usa el **CSV** |
-| `creador_privado.json` | Datos personales y secretos del creador (local, no se versiona) |
+| `CSV/Preguntas.csv` | Banco principal (**480** preguntas cerradas en producción) |
+| `CSV/listado_materias.csv` | Metadatos de **40** materias (`Grupo`, `Nivel`, `Curso`, `Semestre`, `Tematica`, …) |
+| `JSON/plantillas.json` | Plantillas / pool extra (**1289** entradas; modos beta del juego) |
+| `CSV/criterios_clasificacion_materia.csv` | Palabras clave por materia (`utils_puntuacion_materia.py`) |
+| `CSV/Historic_qualificacions_MatCAD_completo.csv` | Histórico de qualificacions — **modo historia** |
+| `Històric_qualificacions_MatCAD.xlsx` | Fuente original del histórico (raíz de `Data/`); el juego usa el **CSV** |
+| `JSON/presets_historia.json` | Catálogo del modo historia |
+| `JSON/preguntas_resistencia.json` | Pool exclusivo del modo resistencia |
+| `JSON/ranking_resistencia.json` | Ranking local (lectura/escritura en runtime) |
+| `JSON/creador_privado.json` | Datos personales y secretos del creador (local, no se versiona) |
 
-El juego resuelve rutas con [`Juego/Comun/rutas.py`](../Juego/Comun/rutas.py) (resolución lazy en la primera llamada): busca una carpeta `Data/` en la raíz del proyecto, en el directorio de trabajo o junto al `.exe` (PyInstaller extrae `Data/` dentro del bundle).
+El juego resuelve rutas con [`Juego/Comun/rutas.py`](../Juego/Comun/rutas.py): busca en `Data/CSV/` y `Data/JSON/`, con compatibilidad hacia atrás con `csv/`/`json/` o la raíz de `Data/`.
 
 ## Esquema de `Preguntas.csv`
 
@@ -197,7 +209,7 @@ flowchart LR
 
 ## Fichero privado del creador (no se sube a git)
 
-`Data/creador_privado.json` guarda en un solo sitio:
+`Data/JSON/creador_privado.json` guarda en un solo sitio:
 
 - Datos personales (`creador`: nombre, correo, tutor, notas).
 - Secretos de GitHub (`github`: usuario, repo, token).

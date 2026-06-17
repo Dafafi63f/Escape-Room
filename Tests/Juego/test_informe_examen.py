@@ -15,11 +15,13 @@ from Tests.support import ensure_juego_path
 
 ensure_juego_path()
 
+from Comun.jugador import NOMBRE_JUGADOR_DEFECTO
 from Consola.informe_examen import (
     RegistroRespuesta,
     construir_nombre_archivo_informe,
     formatear_informe_examen,
     generar_id_sesion,
+    publicar_informe_partida,
 )
 from Comun.modelos import Pregunta
 from Consola.motor_partida import EstadoPartida, aplicar_respuesta, ResultadoRespuesta
@@ -95,6 +97,76 @@ class TestInformeExamen(unittest.TestCase):
             prefijo="partida_libre", nombre_jugador="x", id_sesion=id2, meta=meta
         )
         self.assertNotEqual(n1, n2)
+
+    def test_nombre_libre_sin_repetir_modo(self) -> None:
+        nombre = construir_nombre_archivo_informe(
+            prefijo="partida_libre",
+            nombre_jugador=NOMBRE_JUGADOR_DEFECTO,
+            id_sesion="MATCAD-20260617-182233-9ecf",
+            meta={"modo": "libre", "tipo_actividad": "libre_infinito"},
+        )
+        self.assertRegex(
+            nombre,
+            r"^partida_libre_infinito_.+_\d{8}_\d{6}_9ecf\.txt$",
+        )
+        self.assertNotIn("_libre_libre_", nombre)
+
+    def test_dos_actividades_misma_ejecucion_dos_archivos(self) -> None:
+        """Cada cierre de partida genera su propio .txt (modo independiente)."""
+        import tempfile
+        from unittest.mock import patch
+
+        reglas = preset_historia_examen()
+        registros = [RegistroRespuesta(1, _pregunta(), "B", True)]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            dir_tmp = Path(tmp)
+            with patch(
+                "Consola.informe_examen.resolver_dir_informes",
+                return_value=dir_tmp,
+            ):
+                estado_libre = EstadoPartida("Ana", preset_libre_arcade(), vidas_restantes=3)
+                estado_libre.aciertos = 1
+                estado_libre.respondidas = 1
+                ruta1 = publicar_informe_partida(
+                    estado_libre,
+                    registros,
+                    titulo="FIN DE PARTIDA (modo libre)",
+                    total_previsto=10,
+                    nombre_jugador="Ana",
+                    meta={
+                        "modo": "libre",
+                        "tipo_actividad": "libre_finito",
+                        "etiqueta_sesion": "Partida modo libre",
+                    },
+                    prefijo="partida_libre",
+                    mostrar_en_consola=False,
+                )
+
+                estado_hist = EstadoPartida("Ana", reglas, vidas_restantes=None)
+                estado_hist.aciertos = 1
+                estado_hist.respondidas = 1
+                ruta2 = publicar_informe_partida(
+                    estado_hist,
+                    registros,
+                    titulo="FIN DEL EXAMEN (modo historia)",
+                    total_previsto=5,
+                    nombre_jugador="Ana",
+                    meta={
+                        "modo": "historia",
+                        "tipo_actividad": "historia",
+                        "preset": "simulacro_examen",
+                        "perfil": "simulacro",
+                        "etiqueta_sesion": "Historia — Simulacro",
+                    },
+                    prefijo="examen_historia",
+                    mostrar_en_consola=False,
+                )
+
+                self.assertIsNotNone(ruta1)
+                self.assertIsNotNone(ruta2)
+                self.assertNotEqual(ruta1, ruta2)
+                self.assertEqual(len(list(dir_tmp.glob("*.txt"))), 2)
 
     def test_preset_historia_examen_correccion_al_final(self) -> None:
         reglas = preset_historia_examen()

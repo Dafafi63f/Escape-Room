@@ -35,7 +35,7 @@ class ReglasPartida:
     tiempo_total_seg: int | None = None
     sistema_puntuacion: SistemaPuntuacion = SistemaPuntuacion.ARCADE
     mostrar_solucion_tras_fallo: bool = True
-    mostrar_aciertos_en_curso: bool = True
+    mostrar_aciertos_en_curso: bool = False
     correccion_al_final: bool = False
     dificultad_progresiva: bool = False
 
@@ -102,6 +102,16 @@ def preset_historia_reto() -> ReglasPartida:
     return ReglasPartida(
         vidas=3,
         sistema_puntuacion=SistemaPuntuacion.ARCADE,
+    )
+
+
+def preset_historia_resistencia() -> ReglasPartida:
+    """Varias vidas; la racha de aciertos seguidos escala la dificultad; sin tiempo al inicio."""
+    return ReglasPartida(
+        vidas=3,
+        sistema_puntuacion=SistemaPuntuacion.ARCADE,
+        mostrar_solucion_tras_fallo=True,
+        dificultad_progresiva=True,
     )
 
 

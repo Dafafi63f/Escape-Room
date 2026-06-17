@@ -37,7 +37,7 @@ from utils_dataset_csv import COLUMNAS_PREGUNTAS, PATH_PREGUNTAS, fila_pregunta,
 from utils_orden_temas import cargar_orden_temas
 
 BASE = Path(__file__).resolve().parent.parent.parent
-PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
+PATH_PLANTILLAS = BASE / "Data" / "JSON" / "plantillas.json"
 
 
 def clave_fila(r: dict) -> tuple:

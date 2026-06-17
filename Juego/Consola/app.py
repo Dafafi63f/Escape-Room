@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from Comun.textos_ui import OPCIONES_MENU_PRINCIPAL
+from Consola.textos_consola import banner, con_emoji, etiqueta, etiqueta_opcion_menu, usar_emojis
 from Consola.consola import pedir_opcion
 from Comun.datos import cargar_materias, cargar_preguntas
 from Consola.datos import elegir_banco_preguntas
@@ -25,8 +27,8 @@ from Comun.rutas import PATH_MATERIAS, PATH_PREGUNTAS, resolver_plantillas
 
 
 def _mostrar_tutorial_inicio() -> None:
-    print("\n=== CUESTIONARIO MATCAD ===")
-    print("\n  Tutorial - donde hacer clic")
+    print(f"\n{banner('CUESTIONARIO MATCAD')}")
+    print(f"\n  {con_emoji('Tutorial - donde hacer clic', '👆')}")
     print()
     print("  Este juego no usa comandos de texto: cada accion es una tecla.")
     print()
@@ -42,7 +44,7 @@ def _mostrar_tutorial_inicio() -> None:
 
 def _contexto_tutorial_inicio() -> ContextoPantalla:
     return ContextoPantalla(
-        titulo="Tutorial - foco del teclado",
+        titulo=con_emoji("Tutorial - foco del teclado", "⌨️"),
         lineas=["Haz clic en la linea que empieza por >> y pulsa Enter."],
         reimprimir=_mostrar_tutorial_inicio,
     )
@@ -56,16 +58,24 @@ def tutorial_inicio() -> None:
 
 
 def _mostrar_menu_principal() -> None:
-    print("\n=== CUESTIONARIO MATCAD ===")
-    print("  1) Modo libre — partida abierta, filtros e informes")
-    print("  2) Modo historia — examen balanceado (histórico de qualificacions)")
-    print("  3) Modo feedback — enviar aviso al creador (bug, sugerencia, etc.)")
-    print("  4) Salir")
+    print(f"\n{banner('CUESTIONARIO MATCAD')}")
+    for i, op in enumerate(OPCIONES_MENU_PRINCIPAL, start=1):
+        sufijo = {
+            "libre": "partida abierta, filtros e informes",
+            "historia": "partidas con presets fijos (sin configuración)",
+            "feedback": "enviar aviso al creador (bug, sugerencia, etc.)",
+            "salir": "",
+        }[op.id]
+        linea = etiqueta_opcion_menu(op)
+        if sufijo:
+            print(f"  {i}) {linea} — {sufijo}")
+        else:
+            print(f"  {i}) {linea}")
 
 
 def _contexto_menu_principal() -> ContextoPantalla:
     return ContextoPantalla(
-        titulo="Menú principal",
+        titulo=etiqueta("Menú principal", "🏠"),
         lineas=["Elige un modo de juego."],
         reimprimir=_mostrar_menu_principal,
     )
@@ -190,4 +200,4 @@ def ejecutar() -> None:
     finally:
         registrar_atajo_feedback(None)
 
-    print("¡Hasta pronto!")
+    print(con_emoji("¡Hasta pronto!", "👋"))

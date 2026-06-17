@@ -32,9 +32,9 @@ from utils_dataset_csv import borrar_pycache_en_proyecto
 from utils_dataset_csv import guardar_filas_csv, materia_de_fila
 from utils_puntuacion_materia import recargar_criterios
 
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
-PATH_PL = BASE / "Data" / "plantillas.json"
-PATH_CRIT = BASE / "Data" / "criterios_clasificacion_materia.csv"
+PATH_CSV = BASE / "Data" / "CSV" / "Preguntas.csv"
+PATH_PL = BASE / "Data" / "JSON" / "plantillas.json"
+PATH_CRIT = BASE / "Data" / "CSV" / "criterios_clasificacion_materia.csv"
 
 # Id -> nueva Materia (tras revisión manual + keywords corregidos)
 CAMBIOS_MATERIA: dict[int, str] = {

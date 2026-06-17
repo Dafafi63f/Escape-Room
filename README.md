@@ -4,7 +4,7 @@
 
 **Alumno:** Daniel Fageda Figueredo · **NIU:** 1601846 · **Tutor:** Víctor Navas Portella
 
-Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en consola (modos libre, historia y feedback) y herramientas de mantenimiento del dataset. La capa gráfica escape room / novela queda como evolución futura.
+Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en consola y en **pygame** (modos libre, historia, resistencia y feedback), y herramientas de mantenimiento del dataset. La capa narrativa escape room queda como evolución futura.
 
 - **Memoria académica (borrador):** [`Memoria_TFG.md`](Memoria_TFG.md)
 - **Memoria para entrega (Word y LaTeX):** [`Entrega/`](Entrega/README.md)
@@ -35,15 +35,15 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 
 | Carpeta / fichero | Rol |
 |------------------|-----|
-| [`Juego/`](Juego/README.md) | [`juego_consola.py`](Juego/juego_consola.py), [`Comun/`](Juego/Comun/README.md), [`Consola/`](Juego/Consola/README.md), build opcional del `.exe` |
+| [`Juego/`](Juego/README.md) | Lanzadores, [`Comun/`](Juego/Comun/README.md), [`Consola/`](Juego/Consola/README.md), [`Grafico/`](Juego/Grafico/README.md), build opcional del `.exe` |
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
 | [`Entrega/`](Entrega/README.md) | `Memoria/` (LaTeX, Word), `Figuras/`, scripts de exportación |
 | [`Revision/`](Revision/ESTADO.md) | Estado del proyecto, feedback tutor; PDF anotados locales (gitignored) |
 | [`Memoria_TFG.md`](Memoria_TFG.md) | Borrador Markdown de la memoria (raíz) |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias (57 tests) y CI |
+| [`Tests/`](Tests/README.md) | Pruebas unitarias (177 tests) y CI |
 | [`borrar_temporales.py`](borrar_temporales.py) | Limpia `__pycache__` y `.txt` de `Juego/Informes/` y `Juego/Feedback/` |
-| [`requirements-dev.txt`](requirements-dev.txt) | Dependencias de desarrollo (pandas, matplotlib, pyinstaller, mypy, pre-commit) |
+| [`requirements.txt`](requirements.txt) | Dependencias (pandas, matplotlib, pyinstaller, pygame-ce, mypy, pre-commit) |
 
 ## Memoria — exportar Word
 
@@ -58,17 +58,24 @@ Genera los `.docx` en `Entrega/Memoria/` (Pandoc). El PDF de entrega lo exportas
 
 ## Jugar
 
+Dos versiones en paralelo (ver [`Juego/README.md`](Juego/README.md)):
+
 ```bash
+# Terminal — completa, solo stdlib
 python Juego/juego_consola.py
+
+# Gráfico — pygame (modo libre, historia, resistencia; feedback en desarrollo)
+pip install -r requirements.txt
+python Juego/juego_grafico.py
 ```
 
-Versión gráfica en pygame: rama `feature/juego-grafico-pygame` (ver [`Juego/README.md`](Juego/README.md)).
+La consola sigue siendo referencia para feedback SMTP y entornos sin pantalla; el gráfico es la interfaz principal en desarrollo activo.
 
 ### Datos
 
-Ver [`Data/README.md`](Data/README.md). Imprescindibles: `Preguntas.csv`, `listado_materias.csv`. Modo historia: `Historic_qualificacions_MatCAD_completo.csv`. Modo con plantillas: `plantillas.json`.
+Ver [`Data/README.md`](Data/README.md). Imprescindibles: `CSV/Preguntas.csv`, `CSV/listado_materias.csv`. Modo historia: `CSV/Historic_qualificacions_MatCAD_completo.csv`, `JSON/presets_historia.json`. Modo resistencia: `JSON/preguntas_resistencia.json`, `JSON/ranking_resistencia.json`. Modo con plantillas: `JSON/plantillas.json`.
 
-Configuración privada del creador (SMTP, GitHub, etc.): `Data/creador_privado.json` (local; plantilla en [`Juego/Consola/config_creador.py`](Juego/Consola/config_creador.py)).
+Configuración privada del creador (SMTP, GitHub, etc.): `Data/JSON/creador_privado.json` (local; plantilla en [`Juego/Consola/config_creador.py`](Juego/Consola/config_creador.py)).
 
 ## Ejecutable (opcional, local)
 

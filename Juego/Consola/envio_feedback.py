@@ -14,6 +14,7 @@ from enum import Enum
 from pathlib import Path
 
 from .config_creador import mensaje_crear_creador_privado
+from Comun.jugador import NOMBRE_JUGADOR_DEFECTO, nombre_jugador_efectivo
 from Comun.rutas import (
     resolver_config_creador_privado,
     resolver_dir_feedback,
@@ -33,7 +34,7 @@ class CategoriaFeedback(str, Enum):
 class ReporteFeedback:
     categoria: CategoriaFeedback
     mensaje: str
-    jugador: str = "Anonimo"
+    jugador: str = NOMBRE_JUGADOR_DEFECTO
     contacto: str = ""
     area: str = ""
     id_reporte: str = ""
@@ -50,7 +51,7 @@ def _slug(texto: str, max_len: int = 24) -> str:
 
 
 def _cuerpo_texto(reporte: ReporteFeedback) -> str:
-    jugador = (reporte.jugador or "").strip() or "Anonimo"
+    jugador = nombre_jugador_efectivo(reporte.jugador or "")
     contacto = (reporte.contacto or "").strip() or "Sin contacto"
     mensaje = (reporte.mensaje or "").strip() or "(sin mensaje)"
     area = (reporte.area or "").strip() or "general"
@@ -89,7 +90,7 @@ def _leer_json(path: Path) -> dict:
 
 
 def _cargar_config() -> dict:
-    """SMTP del feedback desde ``Data/creador_privado.json`` (seccion feedback_smtp)."""
+    """SMTP del feedback desde ``Data/JSON/creador_privado.json`` (seccion feedback_smtp)."""
     path_privado = resolver_config_creador_privado()
     if path_privado is None:
         return {}
@@ -122,7 +123,7 @@ def _enviar_smtp(reporte: ReporteFeedback, config: dict) -> tuple[bool, str | No
         return (
             False,
             "Faltan datos SMTP (servidor, usuario, password, destino) en "
-            "Data/creador_privado.json (seccion feedback_smtp).",
+            "Data/JSON/creador_privado.json (seccion feedback_smtp).",
         )
     puerto = int(config.get("smtp_puerto", 587))
     asunto = _correo_asunto(config, reporte)
@@ -162,7 +163,7 @@ def enviar_feedback(reporte: ReporteFeedback) -> ResultadoEnvioFeedback:
     resultado = ResultadoEnvioFeedback(archivo=archivo)
     if not config.get("habilitar_smtp", True):
         resultado.smtp_error = (
-            "SMTP deshabilitado en Data/creador_privado.json (seccion feedback_smtp)."
+            "SMTP deshabilitado en Data/JSON/creador_privado.json (seccion feedback_smtp)."
         )
         return resultado
     ok, error = _enviar_smtp(reporte, config)
@@ -184,7 +185,7 @@ def describir_resultado_envio(resultado: ResultadoEnvioFeedback) -> list[str]:
     if _faltan_credenciales_smtp(resultado.smtp_error):
         lineas.append(
             "Envio automatico no configurado: falta smtp_password en "
-            "Data/creador_privado.json (seccion feedback_smtp)."
+            "Data/JSON/creador_privado.json (seccion feedback_smtp)."
         )
         lineas.append(mensaje_crear_creador_privado())
         lineas.append(

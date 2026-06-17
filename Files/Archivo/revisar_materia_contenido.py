@@ -35,8 +35,8 @@ from dataset_pipeline import sustituir_filas_incoherentes
 from utils_clasificacion_pregunta import comparar_con_asignacion, metadatos_optimos
 from utils_dataset_csv import guardar_filas_csv, materia_de_fila
 
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
-PATH_PL = BASE / "Data" / "plantillas.json"
+PATH_CSV = BASE / "Data" / "CSV" / "Preguntas.csv"
+PATH_PL = BASE / "Data" / "JSON" / "plantillas.json"
 
 
 def corregir_dataset(inplace: bool, dry_run: bool) -> int:

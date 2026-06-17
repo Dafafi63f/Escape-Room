@@ -50,7 +50,7 @@ def main(argv: list[str] | None = None) -> int:
     p_en.add_argument(
         "--output",
         type=str,
-        default="Data/Preguntas_sin_duplicados_enunciado.csv",
+        default="Data/CSV/Preguntas_sin_duplicados_enunciado.csv",
         help="Salida si no se usa --inplace",
     )
     p_en.add_argument("--seed", type=int, default=42)

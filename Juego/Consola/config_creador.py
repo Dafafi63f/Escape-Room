@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Plantilla y utilidades para ``Data/creador_privado.json`` (no versionado)."""
+"""Plantilla y utilidades para ``Data/JSON/creador_privado.json`` (no versionado)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import json
 from copy import deepcopy
 from pathlib import Path
 
-from Comun.rutas import PATH_PREGUNTAS, resolver_config_creador_privado
+from Comun.rutas import resolver_ruta_creador_privado_defecto
 
 FICHERO_CREADOR_PRIVADO = "creador_privado.json"
 
@@ -47,11 +47,8 @@ def plantilla_creador_privado() -> dict:
 
 
 def ruta_creador_privado() -> Path:
-    """Ruta a ``Data/creador_privado.json`` (existe o no)."""
-    existente = resolver_config_creador_privado()
-    if existente is not None:
-        return existente
-    return PATH_PREGUNTAS.parent / FICHERO_CREADOR_PRIVADO
+    """Ruta a ``Data/JSON/creador_privado.json`` (existe o no)."""
+    return resolver_ruta_creador_privado_defecto()
 
 
 def texto_plantilla_creador_privado() -> str:
@@ -63,7 +60,7 @@ def escribir_plantilla_creador_privado(
     *,
     sobrescribir: bool = False,
 ) -> Path:
-    """Escribe la plantilla en ``Data/creador_privado.json`` si aun no existe."""
+    """Escribe la plantilla en ``Data/JSON/creador_privado.json`` si aun no existe."""
     ruta = destino or ruta_creador_privado()
     if ruta.exists() and not sobrescribir:
         raise FileExistsError(f"Ya existe {ruta}")
@@ -74,7 +71,7 @@ def escribir_plantilla_creador_privado(
 
 def mensaje_crear_creador_privado() -> str:
     return (
-        "Crea Data/creador_privado.json con la plantilla del modulo "
+        "Crea Data/JSON/creador_privado.json con la plantilla del modulo "
         "(python -m Consola.config_creador desde Juego/)."
     )
 
@@ -83,7 +80,7 @@ def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Genera Data/creador_privado.json desde la plantilla embebida",
+        description="Genera Data/JSON/creador_privado.json desde la plantilla embebida",
     )
     parser.add_argument(
         "--sobrescribir",

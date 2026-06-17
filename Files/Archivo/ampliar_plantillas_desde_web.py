@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Amplia Data/plantillas.json con nuevas preguntas semilla basadas en
@@ -19,7 +19,7 @@ import json
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent.parent
-PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
+PATH_PLANTILLAS = BASE / "Data" / "JSON" / "plantillas.json"
 
 
 def _key(t: dict) -> tuple[str, str, str, str, str, str]:

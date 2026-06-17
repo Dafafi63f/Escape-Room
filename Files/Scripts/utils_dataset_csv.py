@@ -11,9 +11,7 @@ from pathlib import Path
 from utils_orden_temas import cargar_orden_temas, key_orden_tema
 
 
-BASE = Path(__file__).resolve().parent.parent.parent
-PATH_PREGUNTAS = BASE / "Data" / "Preguntas.csv"
-PATH_LISTADO_MATERIAS = BASE / "Data" / "listado_materias.csv"
+from rutas_data import BASE, PATH_LISTADO_MATERIAS, PATH_PREGUNTAS
 
 # Cabecera canónica de Data/Preguntas.csv (solo lo no redundante con listado_materias.csv).
 # Grupo, Nivel, Curso, Semestre, Tematica, Id del catálogo y ComplejidadGlobal se obtienen

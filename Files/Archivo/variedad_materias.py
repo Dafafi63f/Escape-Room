@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Variedad temática del banco: análisis, diversificación automática y parches curados.
 
@@ -29,8 +29,8 @@ if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 BASE = Path(__file__).resolve().parent.parent.parent
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
-PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
+PATH_CSV = BASE / "Data" / "CSV" / "Preguntas.csv"
+PATH_PLANTILLAS = BASE / "Data" / "JSON" / "plantillas.json"
 LETTERS = "ABCD"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "Scripts"))
@@ -596,7 +596,7 @@ def expandir_plantilla(template: dict) -> list[dict]:
 
 
 def cargar_keywords_materia() -> dict[str, list[str]]:
-    path = BASE / "Data" / "criterios_clasificacion_materia.csv"
+    path = BASE / "Data" / "CSV" / "criterios_clasificacion_materia.csv"
     out: dict[str, list[str]] = {}
     with path.open(encoding="utf-8", newline="") as f:
         for row in csv.DictReader(f, delimiter=";"):

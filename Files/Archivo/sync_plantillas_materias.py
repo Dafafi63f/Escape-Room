@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Reubica entradas en plantillas.json según las mismas reglas de contenido que
@@ -21,8 +21,8 @@ from collections import defaultdict
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent.parent
-PATH_PL = BASE / "Data" / "plantillas.json"
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
+PATH_PL = BASE / "Data" / "JSON" / "plantillas.json"
+PATH_CSV = BASE / "Data" / "CSV" / "Preguntas.csv"
 
 INI = "Iniciació a la Programació"
 POO = "Programació Orientada als Objectes"

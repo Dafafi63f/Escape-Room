@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Regeneracion del dataset desde plantillas (invocado por balance.py)."""
 
 from __future__ import annotations
@@ -22,8 +22,8 @@ from pathlib import Path
 import pandas as pd
 
 BASE = Path(__file__).resolve().parent.parent.parent
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
-PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
+PATH_CSV = BASE / "Data" / "CSV" / "Preguntas.csv"
+PATH_PLANTILLAS = BASE / "Data" / "JSON" / "plantillas.json"
 
 from objetivos_balanceo import (
     TARGET_TOTAL_PREGUNTAS,
@@ -1012,7 +1012,7 @@ from objetivos_balanceo import lista_objetivos_correcta, objetivos_correcta_por_
 from utils_dataset_csv import COLUMNAS_PREGUNTAS
 
 BASE = Path(__file__).resolve().parent.parent.parent
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
+PATH_CSV = BASE / "Data" / "CSV" / "Preguntas.csv"
 
 
 def permutar_opciones(row, objetivo):

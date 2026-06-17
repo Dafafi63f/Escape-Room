@@ -32,8 +32,7 @@ from utils_dataset_csv import fila_pregunta, guardar_filas_csv, materia_de_fila,
 from utils_texto import normalizar_basico
 from utils_plantillas_core import expandir_plantilla_csv_filas
 
-PATH_PREGUNTAS = BASE / "Data" / "Preguntas.csv"
-PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
+from rutas_data import BASE, PATH_PLANTILLAS, PATH_PREGUNTAS
 
 
 def _safe_print(msg: str) -> None:
@@ -635,7 +634,7 @@ def ejecutar_enunciado(inplace: bool = False, output: str | None = None, seed: i
     filas = ordenar_filas_por_tema_y_id(filas)
     renumerar_ids(filas)
 
-    out_path = PATH_PREGUNTAS if inplace else (BASE / (output or "Data/Preguntas_sin_duplicados_enunciado.csv"))
+    out_path = PATH_PREGUNTAS if inplace else (BASE / (output or "Data/CSV/Preguntas_sin_duplicados_enunciado.csv"))
     out_path.parent.mkdir(parents=True, exist_ok=True)
     guardar_filas_csv(fieldnames, filas, out_path)
 

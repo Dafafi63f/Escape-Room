@@ -45,36 +45,56 @@ def _roots_busqueda() -> list[Path]:
     return candidatos
 
 
+def _subdirs_data_por_nombre(nombre: str) -> list[str]:
+    ext = Path(nombre).suffix.lower()
+    if ext == ".csv":
+        return ["CSV", "csv"]
+    if ext == ".json":
+        return ["JSON", "json"]
+    return []
+
+
+def _candidatos_bajo_data(raiz: Path, nombre: str) -> list[Path]:
+    data = raiz / "Data"
+    if not data.is_dir():
+        return []
+    orden: list[Path] = []
+    for subdir in _subdirs_data_por_nombre(nombre):
+        orden.append(data / subdir / nombre)
+    orden.append(data / nombre)
+    return orden
+
+
 def _buscar_archivo(
     nombre: str,
     preferidas: tuple[str, ...],
     *,
     bajo_data: bool = True,
 ) -> Path:
-    candidatos: list[Path] = []
+    candidatos_raiz: list[Path] = []
     vistos: set[Path] = set()
     for raiz in _roots_busqueda():
         if raiz in vistos:
             continue
         vistos.add(raiz)
-        candidatos.append(raiz)
+        candidatos_raiz.append(raiz)
 
     if bajo_data:
-        for raiz in candidatos:
-            p = raiz / "Data" / nombre
-            if p.exists():
-                return p
+        for raiz in candidatos_raiz:
+            for p in _candidatos_bajo_data(raiz, nombre):
+                if p.exists():
+                    return p
 
-    for raiz in candidatos:
+    for raiz in candidatos_raiz:
         p = raiz / nombre
         if p.exists():
             return p
 
-    for raiz in candidatos:
+    for raiz in candidatos_raiz:
         coincidencias = sorted(
             raiz.rglob(nombre),
             key=lambda p: (
-                0 if p.parent.name.lower() == "data" else 1,
+                0 if p.parent.name.lower() in {"data", "csv", "json"} else 1,
                 len(p.parts),
                 str(p),
             ),
@@ -83,6 +103,18 @@ def _buscar_archivo(
             return coincidencias[0]
 
     raise FileNotFoundError(f"No se encontró '{nombre}' en rutas accesibles.")
+
+
+def _dir_data_escritura() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent / "Data"
+    return _JUEGO_DIR.parent / "Data"
+
+
+def _ruta_json_escritura(nombre: str) -> Path:
+    destino = _dir_data_escritura() / "JSON" / nombre
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    return destino
 
 
 def resolver_dataset() -> Path:
@@ -97,11 +129,57 @@ def resolver_plantillas() -> Path:
     return _buscar_archivo("plantillas.json", ("plantillas.json",))
 
 
+def resolver_preguntas_resistencia() -> Path:
+    return _buscar_archivo("preguntas_resistencia.json", ("preguntas_resistencia.json",))
+
+
+def resolver_presets_historia() -> Path:
+    return _buscar_archivo("presets_historia.json", ("presets_historia.json",))
+
+
+def resolver_ranking_resistencia() -> Path:
+    """JSON local del ranking del modo resistencia (lectura/escritura)."""
+    base = _ruta_json_escritura("ranking_resistencia.json")
+    if not base.exists():
+        try:
+            empaquetado = _buscar_archivo(
+                "ranking_resistencia.json",
+                ("ranking_resistencia.json",),
+            )
+            if empaquetado.exists() and empaquetado != base:
+                base.write_text(empaquetado.read_text(encoding="utf-8"), encoding="utf-8")
+        except FileNotFoundError:
+            base.write_text(
+                '{"version": 1, "records": []}',
+                encoding="utf-8",
+            )
+    return base
+
+
 def resolver_historico_qualificacions() -> Path:
     return _buscar_archivo(
         "Historic_qualificacions_MatCAD_completo.csv",
         ("Historic_qualificacions_MatCAD_completo.csv",),
     )
+
+
+def resolver_config_creador_privado() -> Path | None:
+    """JSON local del creador (datos personales y secretos; no se versiona)."""
+    try:
+        return _buscar_archivo(
+            "creador_privado.json",
+            ("creador_privado.json",),
+        )
+    except FileNotFoundError:
+        return None
+
+
+def resolver_ruta_creador_privado_defecto() -> Path:
+    """Ruta canónica para crear ``creador_privado.json`` si no existe."""
+    existente = resolver_config_creador_privado()
+    if existente is not None:
+        return existente
+    return _ruta_json_escritura("creador_privado.json")
 
 
 def resolver_dir_informes() -> Path:
@@ -133,17 +211,6 @@ def ruta_feedback_para_usuario(archivo: Path) -> str:
     return f"Juego/Feedback/{archivo.name}"
 
 
-def resolver_config_creador_privado() -> Path | None:
-    """JSON local del creador (datos personales y secretos; no se versiona)."""
-    try:
-        return _buscar_archivo(
-            "creador_privado.json",
-            ("creador_privado.json",),
-        )
-    except FileNotFoundError:
-        return None
-
-
 _path_preguntas: Path | None = None
 _path_materias: Path | None = None
 
@@ -169,4 +236,4 @@ def __getattr__(name: str) -> Path:
         return path_preguntas()
     if name == "PATH_MATERIAS":
         return path_materias()
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    raise AttributeError(f"module {name!r} has no attribute {name!r}")

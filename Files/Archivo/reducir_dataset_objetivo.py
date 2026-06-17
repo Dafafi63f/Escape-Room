@@ -29,7 +29,7 @@ from utils_dataset_csv import borrar_pycache_en_proyecto
 
 
 BASE = Path(__file__).resolve().parent.parent.parent
-PATH_PREGUNTAS = BASE / "Data" / "Preguntas.csv"
+PATH_PREGUNTAS = BASE / "Data" / "CSV" / "Preguntas.csv"
 
 
 def normalize_text(text: str) -> str:
@@ -226,8 +226,8 @@ def reduce_dataset(rows: list[dict], target_total: int) -> list[dict]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--target-total", type=int, default=480)
-    parser.add_argument("--inplace", action="store_true", help="Sobrescribe Data/Preguntas.csv")
-    parser.add_argument("--output", type=str, default="Data/Preguntas_reducido.csv")
+    parser.add_argument("--inplace", action="store_true", help="Sobrescribe Data/CSV/Preguntas.csv")
+    parser.add_argument("--output", type=str, default="Data/CSV/Preguntas_reducido.csv")
     args = parser.parse_args()
 
     if args.target_total <= 0:

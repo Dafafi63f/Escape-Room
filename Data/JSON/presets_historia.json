@@ -1,0 +1,147 @@
+{
+  "version": 4,
+  "presets": [
+    {
+      "id": "refuerzo_historico",
+      "orden": 1,
+      "categoria": "Análisis histórico",
+      "nombre": "Refuerzo (histórico del grado)",
+      "descripcion": "Prioriza materias con más suspensos según qualificacions MatCAD. Por defecto cubre un semestre (5 asignaturas); con curso sin semestre, hasta las 10 del año.",
+      "usa_analisis_historico": true,
+      "perfil": "refuerzo",
+      "contexto_reglas": "historia_simulacro",
+      "seleccion_determinista": false,
+      "n_materias": 5,
+      "opciones": [
+        {"id": "curso", "tipo": "curso", "etiqueta": "Limitar a curso (opcional)", "obligatorio": false},
+        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre (opcional)", "obligatorio": false},
+        {"id": "n_materias", "tipo": "entero", "etiqueta": "Materias a reforzar", "min": 1, "max": 10, "defecto": 5}
+      ]
+    },
+    {
+      "id": "desafio_historico",
+      "orden": 2,
+      "categoria": "Análisis histórico",
+      "nombre": "Desafío (histórico del grado)",
+      "descripcion": "Prioriza materias con mejores medias históricas. Por defecto un semestre (5 asignaturas); con curso completo, hasta 10.",
+      "usa_analisis_historico": true,
+      "perfil": "desafio",
+      "contexto_reglas": "historia_simulacro",
+      "seleccion_determinista": false,
+      "n_materias": 5,
+      "opciones": [
+        {"id": "curso", "tipo": "curso", "etiqueta": "Limitar a curso (opcional)", "obligatorio": false},
+        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre (opcional)", "obligatorio": false},
+        {"id": "n_materias", "tipo": "entero", "etiqueta": "Materias en el examen", "min": 1, "max": 10, "defecto": 5}
+      ]
+    },
+    {
+      "id": "simulacro_examen",
+      "orden": 3,
+      "categoria": "Análisis histórico",
+      "nombre": "Simulacro de parcial",
+      "descripcion": "Simula la ronda de parciales del semestre: 5 asignaturas (una por materia), como a mitad de cuatrimestre. Elige curso y semestre; puedes reducir a 1 materia para un solo parcial.",
+      "usa_analisis_historico": true,
+      "perfil": "balanceado",
+      "contexto_reglas": "historia_simulacro",
+      "seleccion_determinista": true,
+      "n_materias": 5,
+      "opciones": [
+        {"id": "curso", "tipo": "curso", "etiqueta": "Curso", "obligatorio": true, "defecto": "1"},
+        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre", "obligatorio": true, "defecto": "1"},
+        {"id": "estrategia_materias", "tipo": "eleccion", "etiqueta": "Selección de materias", "defecto": "debilidades", "valores": [
+          {"valor": "debilidades", "etiqueta": "Debilidades históricas (recomendado)"},
+          {"valor": "fortalezas", "etiqueta": "Fortalezas históricas"},
+          {"valor": "curricular", "etiqueta": "Orden del plan de estudios"}
+        ]},
+        {"id": "n_materias", "tipo": "entero", "etiqueta": "Materias en el parcial", "min": 1, "max": 5, "defecto": 5},
+        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 180, "defecto": 90},
+        {"id": "enfoque", "tipo": "eleccion", "etiqueta": "Contenido del parcial", "defecto": "mixto", "valores": [
+          {"valor": "mixto", "etiqueta": "Teoría y cálculo"},
+          {"valor": "teoria", "etiqueta": "Solo teoría"},
+          {"valor": "calculo", "etiqueta": "Solo cálculo"}
+        ]}
+      ]
+    },
+    {
+      "id": "sesion_pre_entrega",
+      "orden": 4,
+      "categoria": "Análisis histórico",
+      "nombre": "Sesión pre-parcial",
+      "descripcion": "Antes de los 5 parciales del semestre: repaso focalizado en las 3 materias más débiles según el histórico (4 preguntas por asignatura).",
+      "usa_analisis_historico": true,
+      "perfil": "refuerzo",
+      "contexto_reglas": "historia_simulacro",
+      "seleccion_determinista": false,
+      "n_materias": 3,
+      "opciones": [
+        {"id": "curso", "tipo": "curso", "etiqueta": "Curso", "obligatorio": true, "defecto": "1"},
+        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre", "obligatorio": true, "defecto": "1"}
+      ]
+    },
+    {
+      "id": "repaso_curso",
+      "orden": 5,
+      "categoria": "Repasos",
+      "nombre": "Repaso de curso",
+      "descripcion": "Las 10 materias del curso (2 semestres × 5 asignaturas); ordenadas por dificultad histórica (más exigentes primero). Equivale a repasar parciales y finales del año.",
+      "usa_analisis_historico": true,
+      "perfil": "por_curso",
+      "contexto_reglas": "historia_simulacro",
+      "seleccion_determinista": true,
+      "orden_por_historico": "desc",
+      "n_materias": null,
+      "opciones": [
+        {"id": "curso", "tipo": "curso", "etiqueta": "Curso", "obligatorio": true, "defecto": "1"},
+        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 240, "defecto": 0}
+      ]
+    },
+    {
+      "id": "parcial_grupo",
+      "orden": 6,
+      "categoria": "Simulacros",
+      "nombre": "Parcial por bloque temático",
+      "descripcion": "Examen de todas las materias de un grupo G1–G10; ordenadas por dificultad según el histórico agregado.",
+      "usa_analisis_historico": true,
+      "perfil": "balanceado",
+      "contexto_reglas": "historia_simulacro",
+      "seleccion_determinista": true,
+      "orden_por_historico": "desc",
+      "n_materias": null,
+      "grupo_filtro": null,
+      "opciones": [
+        {"id": "grupo", "tipo": "grupo", "etiqueta": "Grupo temático", "obligatorio": true, "defecto": "2"},
+        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 180, "defecto": 0}
+      ]
+    },
+    {
+      "id": "ranking_resistencia",
+      "orden": 4,
+      "categoria": "Ranking / Resistencia",
+      "nombre": "Ranking — resistencia infinita",
+      "descripcion": "Examen infinito con todo el banco: empiezas con 3 vidas (máx. 5) en fácil y sin tiempo. La dificultad sube según el número de pregunta; la racha de aciertos seguidos solo bonifica puntos. Un fallo corta la racha y quita 1 vida. Desde la pregunta 5 hay efectos aleatorios y puedes ganar vidas u objetos (50/50, bomba, saltar, +tiempo, escudo). El ranking ordena por preguntas alcanzadas.",
+      "usa_analisis_historico": false,
+      "perfil": "balanceado",
+      "contexto_reglas": "historia_resistencia",
+      "seleccion_determinista": false,
+      "n_materias": null,
+      "opciones": []
+    },
+    {
+      "id": "parcial_materia",
+      "orden": 7,
+      "categoria": "Simulacros",
+      "nombre": "Examen de una materia",
+      "descripcion": "Simulacro de un solo examen (parcial o final) de una asignatura concreta: 12 preguntas balanceadas.",
+      "usa_analisis_historico": false,
+      "perfil": "balanceado",
+      "contexto_reglas": "historia_simulacro",
+      "seleccion_determinista": true,
+      "n_materias": 1,
+      "opciones": [
+        {"id": "materia", "tipo": "materia", "etiqueta": "Materia", "obligatorio": true},
+        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 120, "defecto": 60}
+      ]
+    }
+  ]
+}

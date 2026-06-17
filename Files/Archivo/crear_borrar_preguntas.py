@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Script para crear o borrar x preguntas del dataset de forma aleatoria.
 Uso:
@@ -21,8 +21,8 @@ from utils_dataset_csv import borrar_pycache_en_proyecto
 
 # Rutas relativas al directorio del proyecto
 BASE = Path(__file__).resolve().parent.parent.parent
-PATH_PREGUNTAS = BASE / "Data" / "Preguntas.csv"
-PATH_PLANTILLAS = BASE / "Data" / "plantillas.json"
+PATH_PREGUNTAS = BASE / "Data" / "CSV" / "Preguntas.csv"
+PATH_PLANTILLAS = BASE / "Data" / "JSON" / "plantillas.json"
 
 
 def cargar_plantillas():

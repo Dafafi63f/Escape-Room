@@ -12,9 +12,10 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_consola.py`](../juego_c
 |------|--------|------------------|
 | **Libre** | Implementado | `modo_libre.py` — banco dataset o plantillas (beta), filtros, informes |
 | **Historia** | Implementado (v1) | `modo_historia.py` + `generador_examen_historia.py` — examen balanceado |
+| **Resistencia** | Implementado (v1) | `motor_resistencia.py` + `modo_historia.py` — partida infinita y ranking |
 | **Feedback** | Implementado (v1) | `modo_feedback.py` + `envio_feedback.py` — avisos al creador (menú o tecla **F**) |
 
-Los tres modos comparten la capa de datos (`Data/Preguntas.csv`, `listado_materias.csv`, plantillas e histórico CSV).
+Los modos comparten la capa de datos (`Data/CSV/Preguntas.csv`, `Data/CSV/listado_materias.csv`, `Data/JSON/plantillas.json`, histórico CSV y JSON de historia/resistencia).
 
 ## Módulos
 
@@ -32,10 +33,11 @@ Los tres modos comparten la capa de datos (`Data/Preguntas.csv`, `listado_materi
 | `configuracion_reglas_libre.py` | Reglas personalizadas en modo libre | Sí |
 | `motor_partida.py` | Bucle de preguntas y estado de partida | Sí |
 | `modo_libre.py` | Orquestación modo libre (terminal hoy; lógica reutilizable) | Parcial* |
-| `modo_historia.py` | Modo historia (examen balanceado) | Parcial* |
+| `modo_historia.py` | Modo historia (examen balanceado) y entrada a resistencia | Parcial* |
+| `motor_resistencia.py` | Bucle de partida infinita, eventos y ranking | Parcial* |
 | `modo_feedback.py` | Modo feedback y asistente de avisos al creador | Parcial* |
 | `envio_feedback.py` | Guardado local `.txt` y envío SMTP | Sí |
-| `config_creador.py` | Plantilla de `Data/creador_privado.json` | Sí |
+| `config_creador.py` | Plantilla de `Data/JSON/creador_privado.json` | Sí |
 | `generador_examen_historia.py` | Generación de exámenes según histórico | Sí |
 | `informe_examen.py` | Informes `.txt` al cerrar partida | Sí |
 
@@ -43,14 +45,16 @@ Los tres modos comparten la capa de datos (`Data/Preguntas.csv`, `listado_materi
 
 ## Entrada de datos y rutas
 
-El lanzador detecta la ruta base del proyecto para funcionar en ejecución normal o empaquetado con PyInstaller. A partir de esa base localiza:
+El lanzador detecta la ruta base del proyecto para funcionar en ejecución normal o empaquetado con PyInstaller. A partir de esa base localiza (vía [`Comun/rutas.py`](../Comun/rutas.py)):
 
-- `Data/Preguntas.csv` — dataset principal.
-- `Data/listado_materias.csv` — metadatos académicos por materia.
-- `Data/plantillas.json`, `Data/Historic_qualificacions_MatCAD_completo.csv` — según modo.
+- `Data/CSV/Preguntas.csv` — dataset principal.
+- `Data/CSV/listado_materias.csv` — metadatos académicos por materia.
+- `Data/JSON/plantillas.json`, `Data/CSV/Historic_qualificacions_MatCAD_completo.csv` — según modo.
+- `Data/JSON/presets_historia.json` — catálogo modo historia.
+- `Data/JSON/preguntas_resistencia.json`, `Data/JSON/ranking_resistencia.json` — modo resistencia.
 - `Juego/Informes/` — informes de examen cerrado (`.txt`, gitignored salvo `.gitkeep`).
 - `Juego/Feedback/` — copias locales del modo feedback (gitignored salvo `.gitkeep`).
-- `Data/creador_privado.json` — datos personales y SMTP (plantilla en `config_creador.py`).
+- `Data/JSON/creador_privado.json` — datos personales y SMTP (plantilla en `config_creador.py`).
 
 La carga valida que cada pregunta tenga enunciado, cuatro opciones completas y respuesta correcta en `{A, B, C, D}`.
 
@@ -68,7 +72,7 @@ Al iniciar cada partida, el jugador elige el **banco**:
 
 | Opción | Calidad | Fuente |
 |--------|---------|--------|
-| 1 — Dataset | **MODO SEGURO** (por defecto) | `Data/Preguntas.csv` — **480** preguntas revisadas |
+| 1 — Dataset | **MODO SEGURO** (por defecto) | `Data/CSV/Preguntas.csv` — **480** preguntas revisadas |
 | 2 — Todo | **MODO BETA** | **480 + 960 = 1440** (dataset + pool extra de plantillas) |
 | 3 — Plantillas extra | **MODO BETA** | **960** instancias (**24** por materia; no revisadas) |
 
@@ -110,7 +114,7 @@ La partida termina al agotar vidas o al completar el objetivo de preguntas.
 
 ## Informes de partida
 
-En partidas con corrección al final, `informe_examen.py` escribe un `.txt` en `Juego/Informes/` (o `Informes/` junto al `.exe`), con ID de sesión y detalle de respuestas. No hay fichero de ranking global.
+En partidas con corrección al final, `informe_examen.py` escribe un `.txt` en `Juego/Informes/` (o `Informes/` junto al `.exe`), con ID de sesión y detalle de respuestas. El modo resistencia registra además el ranking en `Data/JSON/ranking_resistencia.json`.
 
 ## Controles de teclado
 
@@ -136,7 +140,7 @@ Dos accesos:
 1. **Menú principal → opción 3** — limpia la pantalla y abre el asistente.
 2. **Tecla F** en cualquier momento — el historial de la pantalla se mantiene visible para redactar el aviso con contexto.
 
-Flujo: categoría → área → mensaje (multilínea) → nombre → contacto. Siempre se guarda copia en `Juego/Feedback/`. Con `feedback_smtp` en `Data/creador_privado.json`, se intenta envío por correo.
+Flujo: categoría → área → mensaje (multilínea) → nombre → contacto. Siempre se guarda copia en `Juego/Feedback/`. Con `feedback_smtp` en `Data/JSON/creador_privado.json`, se intenta envío por correo.
 
 ## Calidad del banco (2026-06-15)
 

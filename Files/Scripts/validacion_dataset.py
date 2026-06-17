@@ -27,7 +27,7 @@ from utils_orden_temas import cargar_orden_temas  # noqa: E402
 
 MATERIA_CRIPTO = "Informació i Seguretat"
 _PATRON_HASH = re.compile(r"\bhash(?:ing|es|ed)?\b", re.IGNORECASE)
-PATH_CSV = BASE / "Data" / "Preguntas.csv"
+from rutas_data import PATH_LISTADO_MATERIAS, PATH_PREGUNTAS as PATH_CSV
 
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -182,7 +182,7 @@ def validacion_extendida(df: pd.DataFrame, *, con_variedad: bool) -> int:
     else:
         print("Campos obligatorios: OK")
 
-    mapa = mapa_metadatos_por_materia(BASE / "Data" / "listado_materias.csv")
+    mapa = mapa_metadatos_por_materia(PATH_LISTADO_MATERIAS)
     incoherentes: list = []
     desconocidas: list = []
     for _, row in df.iterrows():

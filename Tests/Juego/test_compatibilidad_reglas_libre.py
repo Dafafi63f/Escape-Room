@@ -47,7 +47,6 @@ class TestCompatibilidadReglasLibre(unittest.TestCase):
         self.assertIn(SistemaPuntuacion.NOTA, opts.sistemas)
         self.assertFalse(opts.permitir_con_vidas)
         self.assertFalse(opts.permitir_dificultad_progresiva)
-        self.assertFalse(opts.permitir_aciertos_en_curso)
 
     def test_infinito_solo_arcade(self) -> None:
         opts = opciones_reglas_libre(

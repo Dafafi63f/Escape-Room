@@ -30,8 +30,7 @@ from utils_dataset_csv import borrar_pycache_en_proyecto
 from utils_puntuacion_materia import MATERIAS, recargar_criterios, SEP_KEYWORDS
 
 BASE = Path(__file__).resolve().parent.parent.parent
-PATH_LISTADO = BASE / "Data" / "listado_materias.csv"
-PATH_OUT = BASE / "Data" / "criterios_clasificacion_materia.csv"
+from rutas_data import PATH_LISTADO_MATERIAS as PATH_LISTADO, PATH_CRITERIOS_CLASIFICACION as PATH_OUT
 
 CRITERIO_RESUMEN = (
     "Puntuación = nº de Palabras_clave presentes como subcadena en "

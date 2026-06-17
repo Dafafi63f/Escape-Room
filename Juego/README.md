@@ -1,14 +1,29 @@
 # Juego — cuestionario MATCAD
 
-Cuestionario en **terminal** con tres modos (libre, historia, feedback). La lógica de dominio vive en [`Comun/`](Comun/README.md); la UI y orquestación en [`Consola/`](Consola/README.md).
+Dos interfaces del mismo juego, **en paralelo** hasta que la versión gráfica sea estable:
 
-Una versión gráfica en pygame se desarrolla en la rama `feature/juego-grafico-pygame`.
+| Lanzador | Interfaz | Requisitos |
+|----------|----------|------------|
+| [`juego_consola.py`](juego_consola.py) | Terminal (completa) | Python 3.10+, solo stdlib |
+| [`juego_grafico.py`](juego_grafico.py) | Pygame (libre, historia, resistencia) | `pip install -r requirements.txt` |
+
+La lógica compartida (datos, reglas, motor de partida) vive en [`Comun/`](Comun/README.md). Cada interfaz añade su capa: [`Consola/`](Consola/README.md) (terminal) y [`Grafico/`](Grafico/README.md) (pygame).
+
+## Estrategia de migración
+
+**Ahora:** mantener **ambas versiones operativas**. Cualquier cambio en reglas, datos o motor debe seguir funcionando en terminal y gráfico.
+
+**Más adelante:** cuando `Grafico/` alcance paridad funcional y estabilidad, se eliminará la interfaz terminal (`juego_consola.py`, `entrada_teclas.py`, `entrada_menu.py`, `consola.py`, menús por teclado, build `.exe` de consola, etc.) y solo quedará la versión gráfica. El paquete [`Comun/`](Comun/README.md) se conservará; lo específico de terminal no.
+
+Detalle: [`Grafico/README.md`](Grafico/README.md#estrategia-de-migración).
 
 | Elemento | Descripción |
 |----------|-------------|
-| [`juego_consola.py`](juego_consola.py) | Lanzador: menú principal y arranque de modos |
+| [`juego_consola.py`](juego_consola.py) | Lanzador terminal: menú principal y arranque de modos |
+| [`juego_grafico.py`](juego_grafico.py) | Lanzador pygame (prototipo; ver [`Grafico/README.md`](Grafico/README.md)) |
 | [`Comun/`](Comun/README.md) | Dominio compartido (`from Comun...`) |
-| [`Consola/`](Consola/README.md) | UI terminal y orquestación de modos |
+| [`Consola/`](Consola/README.md) | UI terminal y orquestación de modos en consola |
+| [`Grafico/`](Grafico/README.md) | Interfaz pygame (ratón; teclado solo para texto) |
 | [`Informes/`](Informes/README.md) | Informes `.txt` de partidas (local, gitignored) |
 | [`Feedback/`](Feedback/README.md) | Copias locales de avisos al creador (local, gitignored) |
 | [`Tests/`](../Tests/README.md) | Pruebas unitarias (suite unificada en la raíz) |
@@ -16,11 +31,22 @@ Una versión gráfica en pygame se desarrolla en la rama `feature/juego-grafico-
 
 ## Ejecutar
 
+**Terminal (versión completa):**
+
 ```bash
 python Juego/juego_consola.py
 ```
 
-Requisito: Python 3.10+, solo biblioteca estándar. Datos en [`../Data/README.md`](../Data/README.md).
+**Gráfico:**
+
+```bash
+pip install -r requirements.txt
+python Juego/juego_grafico.py
+```
+
+Datos en [`../Data/README.md`](../Data/README.md).
+
+## Terminal — jugar
 
 Al arrancar, el lanzador muestra un **tutorial breve** de foco de teclado (hay que hacer clic en la línea `>>` de la terminal para que las teclas respondan). Detalle en [`Consola/entrada_teclas.py`](Consola/entrada_teclas.py) y [`Consola/entrada_menu.py`](Consola/entrada_menu.py).
 
@@ -28,11 +54,14 @@ Al arrancar, el lanzador muestra un **tutorial breve** de foco de teclado (hay q
 
 | Modo | Estado | Descripción |
 |------|--------|-------------|
-| **Libre** | Implementado | Partida configurable, filtros por curso/semestre/grupo/nivel, informes al cerrar |
+| **Libre** | Implementado | Partida configurable, filtros, informes al cerrar |
+| **Libre (gráfico)** | Implementado | Wizard dos pasos, tooltips, arcade — [`Grafico/README.md`](Grafico/README.md) |
 | **Historia** | Implementado (v1) | Examen balanceado según histórico de qualificacions |
+| **Historia (gráfico)** | Implementado (v1) | Carrusel de presets — [`Grafico/README.md`](Grafico/README.md) |
+| **Resistencia** | Implementado (v1) | Partida infinita, eventos, objetos, ranking local |
 | **Feedback** | Implementado (v1) | Asistente para enviar bug, sugerencia u otro aviso al creador |
 
-Detalle de bancos de preguntas, puntuación, dificultad progresiva y arquitectura: [`Consola/README.md`](Consola/README.md) y [`Comun/README.md`](Comun/README.md).
+Detalle de bancos de preguntas, puntuación, dificultad progresiva y arquitectura: [`Consola/README.md`](Consola/README.md).
 
 ### Controles (resumen)
 
