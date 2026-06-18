@@ -21,10 +21,15 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+_BASE = Path(__file__).resolve().parent
+
+if str(_BASE / "Juego") not in sys.path:
+    sys.path.insert(0, str(_BASE / "Juego"))
+
+from Comun.limpieza_local import listar_txt_informes_feedback  # noqa: E402
+
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-
-_BASE = Path(__file__).resolve().parent
 
 # Solo estos directorios contienen .txt generados al jugar (informes, feedback).
 _CARPETAS_TXT_TEMPORALES = (
@@ -100,15 +105,8 @@ def listar_cache_herramientas(base: Path | None = None) -> list[Path]:
 
 def listar_txt_temporales(base: Path | None = None) -> list[Path]:
     """Solo informes y feedback del juego; no toca otros ``.txt`` del repo."""
-    raiz = base or _BASE
-    encontrados: list[Path] = []
-    for carpeta in _CARPETAS_TXT_TEMPORALES:
-        if not carpeta.is_dir():
-            continue
-        for p in carpeta.glob("*.txt"):
-            if p.is_file() and not _dentro_de_omitidos(p, raiz):
-                encontrados.append(p)
-    return sorted(encontrados)
+    _ = base  # rutas resueltas por Comun (exe o desarrollo)
+    return listar_txt_informes_feedback()
 
 
 def borrar_temporales(

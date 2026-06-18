@@ -1,6 +1,6 @@
 # Tests — suite unificada
 
-Pruebas del juego (`Tests/Juego/`, **123 tests**) y de los scripts de mantenimiento (`Tests/Scripts/`, **8 tests**). **Total: 131 tests.**
+Pruebas del juego (`Tests/Juego/`) y de los scripts de mantenimiento (`Tests/Scripts/`).
 
 Los tests de la interfaz gráfica (`Juego/Grafico/`) viven en la rama `feature/juego-grafico-pygame`.
 
@@ -37,20 +37,17 @@ También: **PR-Agent** (`OPENAI_KEY`) y **SonarCloud** (`SONAR_TOKEN`).
 
 ## Ficheros — `Tests/Juego/`
 
+Los módulos `test_*.py` agrupan tests relacionados (cada fichero puede contener varias clases `Test*`).
+
 | Módulo | Enfoque |
 |--------|---------|
-| `test_compatibilidad_reglas_libre.py` | Combinaciones de reglas modo libre |
-| `test_configuracion_libre.py` | Wizard y presets libre |
-| `test_informe_examen.py` | Informes al cerrar partida |
-| `test_feedback.py` | Modo feedback consola |
-| `test_robustez_entrada.py` | Entrada de consola |
-| `test_textos_ui.py` | Etiquetas y emojis compartidos (consola) |
-| `test_presets_historia.py` | Catálogo modo historia |
-| `test_resistencia_historia.py` | Eventos y escalada resistencia |
-| `test_motor_resistencia_comun.py` | Turnos, racha, powerups |
-| `test_preguntas_exclusivas_resistencia.py` | Pool exclusivo resistencia |
-| `test_iconos_resistencia.py` | Emojis eventos/objetos |
-| `test_rango_complejidad_libre.py` | Dificultad progresiva libre |
+| `test_libre.py` | Reglas, wizard y complejidad del modo libre |
+| `test_presets_historia.py` | Catálogo historia y modos especiales |
+| `test_informe_feedback.py` | Informes y feedback |
+| `test_consola_paridad.py` | Entrada consola y paridad de dominio |
+| `test_resistencia_historia.py` | Pool, escalada y ranking resistencia |
+| `test_resistencia_motor.py` | Motor, mecánicas, exclusivas e iconos |
+| `paridad_juegos.py` | Builders compartidos para paridad |
 
 ## Ficheros — `Tests/Scripts/`
 
@@ -59,4 +56,4 @@ También: **PR-Agent** (`OPENAI_KEY`) y **SonarCloud** (`SONAR_TOKEN`).
 | `test_balance_validar.py` | Validación del banco (`balance_lib`) |
 | `test_utils_plantillas_core.py` | Claves de contenido de plantillas |
 
-La suite anterior en `Juego/Tests/` se migró aquí en junio 2026.
+La suite anterior en `Juego/Tests/` se migró aquí en junio 2026. Los ficheros individuales muy pequeños se agruparon en los módulos de la tabla.

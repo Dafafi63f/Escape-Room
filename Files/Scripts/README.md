@@ -99,7 +99,7 @@ No están pensados como API pública del juego; la lógica de partida vive en `J
 
 ## Pruebas
 
-Suite unificada en [`Tests/`](../../Tests/README.md) (**177 tests**). CI: `.github/workflows/tests.yml`.
+Suite unificada en [`Tests/`](../../Tests/README.md) (**238 tests**: 230 en `Tests/Juego/` + 8 en `Tests/Scripts/`). CI: `.github/workflows/tests.yml`.
 
 ## Scripts unificados (nombres antiguos)
 

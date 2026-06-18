@@ -4,22 +4,33 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from Comun.estado_resistencia import (
     VIDAS_MAX_ABSOLUTO,
     VIDAS_MIN_CAP,
     EstadoResistencia,
 )
+from Comun.mecanicas_resistencia import (
+    aplicar_efectos_maldicion,
+    aplicar_presion_racha_modificadores,
+    configurar_partida_resistencia,
+    consumir_bloque_filtro,
+    elegir_indice_similar,
+    formatear_aviso_apuesta,
+    preparar_eventos_nuevo_turno,
+    procesar_post_turno_resistencia,
+    texto_progreso_resistencia,
+)
 from Comun.modelos import Pregunta
 from Comun.motor_nucleo import EstadoPartida, FeedbackRespuesta, ResultadoRespuesta, evaluar_respuesta
 from Comun.powerups_resistencia import (
     EventoRecompensaResistencia,
-    evento_recompensa_aleatoria,
     letras_ocultas_fifty_fifty,
     letras_ocultas_bomba,
     letras_ocultas_por_cantidad,
     texto_pregunta_visible,
+    tirar_recompensas_tras_acierto,
 )
 from Comun.iconos_resistencia import (
     emoji_aviso_exclusiva,
@@ -64,13 +75,29 @@ def avisos_pre_pregunta_resistencia(
     p: Pregunta,
     numero_pregunta: int,
     *,
-    recompensa_etiqueta: str | None = None,
+    avisos_extra: list[str] | None = None,
+    er: EstadoResistencia | None = None,
 ) -> list[str]:
-    """Mensajes para popup antes de mostrar la pregunta."""
+    """Mensajes para popup antes de mostrar la pregunta.
+
+    No hay tope global de popups: se encolan todos los avisos (recompensas
+    previas, bloques, apuestas, eventos de escalada, exclusivas…). Los únicos
+    límites numéricos están en la generación de eventos aleatorios y en las
+    tiradas de recompensa tras acierto (la racha extrema puede superar el tope
+    habitual de eventos hostiles).
+    """
     avisos: list[str] = []
-    if recompensa_etiqueta:
-        avisos.append(formatear_aviso_recompensa(recompensa_etiqueta))
-    for evento in eventos_aleatorios_para_pregunta(numero_pregunta):
+    if avisos_extra:
+        avisos.extend(avisos_extra)
+    if er is not None:
+        apuesta_aviso = aviso_apuesta_activa(er)
+        if apuesta_aviso:
+            avisos.append(apuesta_aviso)
+    for evento in eventos_aleatorios_para_pregunta(
+        numero_pregunta,
+        semilla_partida=er.semilla_partida if er else None,
+        racha=er.racha if er is not None else 0,
+    ):
         avisos.append(formatear_aviso_evento(evento.etiqueta))
     if p.exclusiva_resistencia:
         tier = etiqueta_tier_exclusiva(p)
@@ -84,11 +111,18 @@ def avisos_pre_pregunta_resistencia(
     return avisos
 
 
+def aviso_apuesta_activa(er: EstadoResistencia) -> str | None:
+    if not er.apuesta_activa:
+        return None
+    return formatear_aviso_apuesta(er.apuesta_activa)
+
+
 @dataclass(frozen=True)
 class ResultadoTurnoResistencia:
     feedback: FeedbackRespuesta
     reintentar_pregunta: bool = False
-    recompensa: EventoRecompensaResistencia | None = None
+    avisos_extra: tuple[str, ...] = ()
+    mult_apuesta: int = 1
 
 
 def crear_estado_resistencia(vidas_iniciales: int) -> EstadoResistencia:
@@ -112,6 +146,8 @@ def aplicar_modificadores_visuales_escalada(
             semilla=numero_pregunta,
         )
         er.letras_ocultas = er.letras_ocultas | ocultas
+    aplicar_presion_racha_modificadores(er, p, numero_pregunta)
+    aplicar_efectos_maldicion(er)
 
 
 def texto_pregunta_para_turno(p: Pregunta, er: EstadoResistencia) -> str:
@@ -119,9 +155,13 @@ def texto_pregunta_para_turno(p: Pregunta, er: EstadoResistencia) -> str:
 
 
 def tiempo_pregunta_efectivo(reglas_seg: int | None, er: EstadoResistencia) -> int | None:
-    if reglas_seg is None:
+    if er.relampago_forzado_seg is not None:
+        base = er.relampago_forzado_seg
+    elif reglas_seg is None:
         return None
-    return reglas_seg + er.tiempo_extra_seg
+    else:
+        base = reglas_seg
+    return max(3, base + er.tiempo_extra_seg)
 
 
 def aplicar_recompensa(
@@ -149,6 +189,8 @@ def usar_powerup(
     p: Pregunta,
 ) -> str | None:
     """Consume un comodín; devuelve mensaje de error o None si OK."""
+    if er.objetos_bloqueados:
+        return "Maldición activa: no puedes usar objetos."
     if not er.consumir_powerup(powerup_id):
         return "No tienes ese objeto."
     if powerup_id == "fifty_fifty":
@@ -161,6 +203,8 @@ def usar_powerup(
     elif powerup_id == "escudo":
         er.escudo_activo = True
     elif powerup_id == "skip":
+        pass
+    elif powerup_id == "cambio":
         pass
     else:
         return f"Objeto desconocido: {powerup_id}"
@@ -183,8 +227,9 @@ def aplicar_bonificaciones_puntos_resistencia(
     exclusiva: bool,
     acierto: bool,
     tiempo_agotado: bool,
+    mult_apuesta: int = 1,
 ) -> None:
-    """Aplica multiplicadores de escalada, racha y pregunta exclusiva."""
+    """Aplica multiplicadores de escalada, racha, apuesta y pregunta exclusiva."""
     if not acierto or tiempo_agotado:
         return
     delta = estado.puntos_arcade - puntos_prev
@@ -198,8 +243,23 @@ def aplicar_bonificaciones_puntos_resistencia(
         extra += delta * (bonif_racha - 1.0)
     if exclusiva:
         extra += delta * 0.5
+    if mult_apuesta > 1:
+        extra += delta * (mult_apuesta - 1)
     if extra > 0:
         estado.puntos_arcade += int(extra)
+
+
+def _aplicar_penalizacion_apuesta(
+    estado: EstadoPartida,
+    er: EstadoResistencia,
+    *,
+    fallo: bool,
+) -> None:
+    if not fallo or not er.apuesta_activa:
+        return
+    extra = max(0, er.apuesta_activa.vidas_fallo - 1)
+    if extra > 0 and estado.vidas_restantes is not None:
+        estado.vidas_restantes = max(0, estado.vidas_restantes - extra)
 
 
 def procesar_turno_resistencia(
@@ -210,13 +270,15 @@ def procesar_turno_resistencia(
     *,
     indice_pregunta: int,
 ) -> ResultadoTurnoResistencia:
+    """Evalúa la respuesta del jugador. Las vidas solo bajan por fallo o tiempo agotado."""
     acierto = resultado.acierto and not resultado.tiempo_agotado
     fallo = not acierto
+    mult_apuesta = er.apuesta_activa.mult_puntos if (acierto and er.apuesta_activa) else 1
 
     if fallo and er.escudo_activo:
         er.escudo_activo = False
         solucion = None
-        if estado.reglas.mostrar_solucion_tras_fallo:
+        if estado.reglas.mostrar_solucion_tras_fallo and not er.sin_pistas_turno:
             from Comun.motor_nucleo import texto_solucion
 
             solucion = texto_solucion(p)
@@ -229,16 +291,60 @@ def procesar_turno_resistencia(
         )
 
     feedback = evaluar_respuesta(p, estado, resultado)
-    recompensa: EventoRecompensaResistencia | None = None
+    if er.sin_pistas_turno and feedback.solucion:
+        feedback = replace(feedback, solucion=None)
+
+    _aplicar_penalizacion_apuesta(estado, er, fallo=fallo)
+    if fallo and estado.reglas.tiene_vidas() and (estado.vidas_restantes or 0) <= 0:
+        feedback = replace(feedback, sin_vidas=True)
+
+    avisos_post: list[str] = []
     if acierto:
         er.registrar_acierto()
-        recompensa = evento_recompensa_aleatoria(indice_pregunta, semilla=indice_pregunta)
-        if recompensa:
+        for recompensa in tirar_recompensas_tras_acierto(er, numero_pregunta=indice_pregunta):
             aplicar_recompensa(estado, er, recompensa)
+            avisos_post.append(formatear_aviso_recompensa(recompensa.etiqueta))
     elif fallo:
         er.registrar_fallo()
 
+    avisos_post.extend(
+        procesar_post_turno_resistencia(er, acierto=acierto, numero_pregunta=indice_pregunta)
+    )
+
+    if acierto and mult_apuesta > 1:
+        msg = feedback.mensaje
+        if msg.startswith("Correcto"):
+            feedback = replace(
+                feedback,
+                mensaje=f"{msg} (apuesta ×{mult_apuesta})",
+            )
+
     return ResultadoTurnoResistencia(
         feedback=feedback,
-        recompensa=recompensa,
+        avisos_extra=tuple(avisos_post),
+        mult_apuesta=mult_apuesta if acierto else 1,
     )
+
+
+__all__ = [
+    "ResultadoTurnoResistencia",
+    "aplicar_bonificaciones_puntos_resistencia",
+    "aplicar_modificadores_visuales_escalada",
+    "aplicar_recompensa",
+    "aviso_apuesta_activa",
+    "avisos_pre_pregunta_resistencia",
+    "bonificacion_puntos_racha",
+    "configurar_partida_resistencia",
+    "consumir_bloque_filtro",
+    "crear_estado_resistencia",
+    "elegir_indice_similar",
+    "formatear_aviso_apuesta",
+    "formatear_aviso_evento",
+    "formatear_aviso_recompensa",
+    "preparar_eventos_nuevo_turno",
+    "texto_pregunta_para_turno",
+    "procesar_turno_resistencia",
+    "texto_progreso_resistencia",
+    "tiempo_pregunta_efectivo",
+    "usar_powerup",
+]

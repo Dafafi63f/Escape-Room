@@ -6,12 +6,11 @@ Juego/Feedback/*
 !Juego/Feedback/.gitkeep
 !Juego/Feedback/README.md
 
-# --- Local del creador (secretos y .exe; no versionar) ---
-Data/creador_privado.json
-Data/json/creador_privado.json
+# --- Estado local (runtime; no versionar) ---
 Data/JSON/creador_privado.json
+Data/JSON/preferencias_*.json
+Data/JSON/ranking_*.json
 Juego/juego_consola.exe
-Juego/juego_cuestionario.exe
 
 # --- Temporales (limpiar con borrar_temporales.py) ---
 __pycache__/
@@ -26,11 +25,6 @@ Juego/Feedback/*.txt
 Juego/build/
 Juego/dist/
 Juego/*.spec
-
-# --- Revisión del tutor (PDF con comentarios; local) ---
-Revision/*
-!Revision/.gitkeep
-!Revision/*.md
 
 # --- Compilación LaTeX (si compilas Memoria/Memoria_TFG.tex a mano) ---
 Entrega/Memoria/*.aux

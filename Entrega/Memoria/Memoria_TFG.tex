@@ -55,7 +55,7 @@
 \noindent El detalle técnico del repositorio (esquema del banco, scripts, arquitectura del juego) se documenta en los \texttt{README.md} del proyecto y se cita en los apéndices al final de esta memoria.
 
 \smallskip
-\noindent\textbf{Versión de entrega:} dos Word en \texttt{Entrega/Memoria/} (\texttt{Memoria\_TFG\_markdown.docx}, \texttt{Memoria\_TFG\_latex.docx}); figuras en \texttt{Entrega/Figuras/}. Regenerar figuras: \texttt{python Entrega/generar\_figuras\_memoria.py}. Regenerar Word: \texttt{python Entrega/exportar\_memoria.py}. El PDF de entrega lo exportas desde Word tras editar.
+\noindent\textbf{Versión de entrega:} dos Word en \texttt{Entrega/Memoria/} (\texttt{Memoria\_TFG\_markdown.docx}, \texttt{Memoria\_TFG\_latex.docx}); figuras en \texttt{Entrega/Figuras/}. Regenerar figuras: \texttt{python Entrega/generar\_figuras\_memoria.py}. Regenerar Word: \texttt{python exportar\_memoria.py}. El PDF de entrega lo exportas desde Word tras editar.
 
 \begin{abstract}
 \noindent Se presenta el diseño e implementación de un cuestionario educativo alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos (MatCAD). El entregable incluye un banco cerrado de \textbf{480 preguntas} con metadatos curriculares, un juego en consola con tres modos (libre, historia y feedback) y herramientas de validación del dataset. El documento de proyecto inicial planteaba un escape room con interfaz gráfica; se adoptó un enfoque incremental que prioriza el contenido evaluable y el motor de juego antes de la capa narrativa visual. Los resultados muestran un sistema funcional, documentado y extensible; la validación con usuarios y la interfaz gráfica quedan como trabajo futuro.
@@ -76,7 +76,7 @@ Paralelamente, la gamificación y los \textit{serious games} (Michael y Chen, 20
 
 Este Trabajo de Fin de Grado surge de la necesidad de disponer de una herramienta de autoevaluación alineada con las asignaturas del grado. El sistema debe gestionar un banco de preguntas \textbf{estructurado y auditable} ---mediante reglas automatizadas, revisión manual documentada y scripts de mantenimiento reproducibles---, ofrecer una experiencia de juego que incentive la práctica repetida, permitir analizar la calidad del contenido (distractores, duplicados, coherencia curricular) y sentar las bases para modelos pedagógicos más ricos.
 
-En este contexto, \textbf{gamificación} designa el uso de elementos de diseño de juego (puntos, vidas, retos, progresión) en un contexto formativo no recreativo (Deterding et al., 2011); en este TFG se aplica al cuestionario en consola sin interfaz gráfica. Un \textbf{banco de preguntas auditable} es un conjunto de ítems cuya calidad puede revisarse de forma sistemática mediante \texttt{mantenimiento.py validar}, la revisión manual (\texttt{Revision/revision\_manual\_banco.md}) y scripts de auditoría. Los \textbf{distractores plausibles} son opciones incorrectas creíbles para quien no domina el concepto (Haladyna et al., 2002). La \textbf{narrativa} (capa pendiente) sería la secuencia ficcional de escenas que contextualiza los retos; el entregable actual funciona sin ella. Por \textbf{multiasignatura} y \textbf{prerrequisitos} se entiende el solapamiento entre materias y los conocimientos previos que un ítem da por asumidos.
+En este contexto, \textbf{gamificación} designa el uso de elementos de diseño de juego (puntos, vidas, retos, progresión) en un contexto formativo no recreativo (Deterding et al., 2011); en este TFG se aplica al cuestionario en consola sin interfaz gráfica. Un \textbf{banco de preguntas auditable} es un conjunto de ítems cuya calidad puede revisarse de forma sistemática mediante \texttt{mantenimiento.py validar}, la revisión manual del banco de producción (480 ítems, cerrada) y scripts de auditoría. Los \textbf{distractores plausibles} son opciones incorrectas creíbles para quien no domina el concepto (Haladyna et al., 2002). La \textbf{narrativa} (capa pendiente) sería la secuencia ficcional de escenas que contextualiza los retos; el entregable actual funciona sin ella. Por \textbf{multiasignatura} y \textbf{prerrequisitos} se entiende el solapamiento entre materias y los conocimientos previos que un ítem da por asumidos.
 
 La motivación principal es combinar programación, matemáticas y diseño interactivo en una aplicación práctica que consolide conocimientos del grado y que pueda ser extendida por el propio autor o por el profesorado.
 
@@ -174,7 +174,7 @@ Respuesta correcta & 120 por letra A, B, C y D \\
 
 \bloquetfg{\textbf{Metadatos curriculares} en \texttt{listado\_materias.csv}: \texttt{Grupo}, \texttt{Nivel}, \texttt{Curso}, \texttt{Semestre}, \texttt{Tematica} (10 grupos temáticos globales).}
 
-\bloquetfg{\textbf{Revisión de contenido:} revisión manual por bloques de Ids (1--480), con registro en \texttt{Revision/revision\_manual\_banco.md}. Criterios: redacción genérica, coherencia con el nivel de la materia, distractores plausibles, ausencia de referencias a temarios internos de asignatura.}
+\bloquetfg{\textbf{Revisión de contenido:} revisión manual por bloques de Ids (1--480), completada. Criterios: redacción genérica, coherencia con el nivel de la materia, distractores plausibles, ausencia de referencias a temarios internos de asignatura. Validación estructural con \texttt{mantenimiento.py validar}.}
 
 \bloquetfg{\textbf{Validación automatizada:} comando \texttt{mantenimiento.py validar} comprueba balance, orden canónico e integridad de columnas. Auditoría de distractores y detección de duplicados semánticos mediante scripts dedicados.}
 
@@ -248,7 +248,7 @@ Progresión & Dificultad global sube cada 3 preguntas (modo libre arcade). \\
 \textbf{Actividad} & \textbf{Herramienta / método} \\
 \midrule
 Balance estructural del CSV & \texttt{mantenimiento.py validar} \\
-Revisión manual del contenido & Bloques documentados en \texttt{Revision/revision\_manual\_banco.md} \\
+Revisión manual del contenido & 480/480 ítems revisados; validación automatizada \\
 Auditoría de distractores & \texttt{mantenimiento.py auditar-distractores} (consola; \texttt{--json} opcional) \\
 Duplicados semánticos & \texttt{duplicados.py revisar} (0 pares similares en CSV y plantillas intra-materia, 2026-06-15) \\
 Pruebas de regresión & \texttt{python -m unittest discover -s Tests -v} (74 tests) \\
@@ -552,7 +552,7 @@ Veldkamp, A., van de Grint, L., Knippels, M. C. P. J., y van Joolingen, W. R. (2
 \textbf{Apéndice} & \textbf{Contenido} & \textbf{Enlace} \\
 \midrule
 A & Esquema del banco y diagramas curriculares & \texttt{Data/README.md} \\
-H & Estado del proyecto y trazabilidad revisión manual (Ids 1--480) & \texttt{Revision/ESTADO.md}, \texttt{revision\_manual\_banco.md} \\
+H & Estado del proyecto y seguimiento & \texttt{CHANGELOG.md}, \texttt{CHECKLIST.md} \\
 B & Arquitectura del juego, modos, puntuación, bancos beta & \texttt{Juego/Consola/README.md} \\
 C & Scripts de mantenimiento, balanceo, auditorías & \texttt{Files/Scripts/README.md} \\
 D & Scripts legado de regeneración CSV & \texttt{Files/Archivo/README.md} \\

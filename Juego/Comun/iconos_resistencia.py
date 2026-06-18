@@ -12,6 +12,7 @@ EMOJI_POWERUP: dict[str, str] = {
     "skip": "⏭️",
     "tiempo_extra": "⏱️",
     "escudo": "🛡️",
+    "cambio": "🔄",
 }
 
 _SEPARADOR_EMOJI = "  "
@@ -57,6 +58,14 @@ def emoji_evento_etiqueta(etiqueta: str) -> str:
         return "🔥"
     if etiqueta == "Pregunta extra difícil":
         return "☠️"
+    if etiqueta.startswith("Bloque:"):
+        return "📚"
+    if "Maldición" in etiqueta:
+        return "💀"
+    if "Hito racha" in etiqueta:
+        return "🏅"
+    if "Doble o nada" in etiqueta or "Triple arriesgado" in etiqueta:
+        return "🎰"
     return "🎲"
 
 

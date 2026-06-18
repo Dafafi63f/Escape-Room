@@ -44,5 +44,4 @@ PATH_HISTORICO_QUALIFICACIONS = ruta_csv("Historic_qualificacions_MatCAD_complet
 PATH_PLANTILLAS = ruta_json("plantillas.json")
 PATH_PRESETS_HISTORIA = ruta_json("presets_historia.json")
 PATH_PREGUNTAS_RESISTENCIA = ruta_json("preguntas_resistencia.json")
-PATH_RANKING_RESISTENCIA = ruta_json("ranking_resistencia.json")
 PATH_CREADOR_PRIVADO = ruta_json("creador_privado.json")

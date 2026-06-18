@@ -106,7 +106,7 @@ def preset_historia_reto() -> ReglasPartida:
 
 
 def preset_historia_resistencia() -> ReglasPartida:
-    """Varias vidas; la racha de aciertos seguidos escala la dificultad; sin tiempo al inicio."""
+    """Varias vidas; la dificultad escala con el nº de pregunta; la racha solo bonifica puntos."""
     return ReglasPartida(
         vidas=3,
         sistema_puntuacion=SistemaPuntuacion.ARCADE,

@@ -11,16 +11,21 @@ from Comun.dificultad import complejidad_pregunta, max_complejidad_pool
 from Comun.modelos import Pregunta
 from Comun.pool_libre import EstadoSeleccionPool, crear_estado_seleccion
 from Comun.preguntas_resistencia import (
+    BancoResistencia,
+    construir_banco_resistencia,
     construir_pool_resistencia,
     pool_resistencia_desde_dataset,
 )
+from Comun.probabilidad_resistencia import PREGUNTA_MIN_EVENTOS_ALEATORIOS
 from Comun.reglas_partida import ReglasPartida
 
 __all__ = [
+    "BancoResistencia",
     "EscaladaResistencia",
     "EventoAleatorioResistencia",
     "PREGUNTA_MIN_EVENTOS_ALEATORIOS",
     "aplicar_escalada_a_reglas",
+    "construir_banco_resistencia",
     "construir_pool_resistencia",
     "elegir_indice_resistencia",
     "escalada_para_pregunta",
@@ -37,8 +42,6 @@ __all__ = [
 
 _DIFICULTADES = ("Facil", "Media", "Dificil")
 
-# Eventos aleatorios desde esta pregunta; la frecuencia/potencia/cantidad escalan después.
-PREGUNTA_MIN_EVENTOS_ALEATORIOS = 5
 RACHA_MIN_EVENTOS_ALEATORIOS = PREGUNTA_MIN_EVENTOS_ALEATORIOS
 
 _EVENTOS_ALEATORIOS_POOL = (
@@ -48,8 +51,15 @@ _EVENTOS_ALEATORIOS_POOL = (
     "doble",
 )
 
-# Hasta aquí el techo de complejidad suele dejar solo fácil/medio; la sorpresa mete una difícil.
-_PREGUNTA_MAX_SORPRESA_DIFICIL = 49
+_EVENTOS_BUENOS = ("doble",)
+_EVENTOS_MALOS = (
+    "relampago",
+    "opciones_ocultas",
+    "enunciado_oculto",
+)
+
+# Hasta aquí el techo de complejidad suele dejar solo fácil/medio; eventos solo modifican la pregunta actual.
+_PREGUNTA_MAX_SORPRESA_DIFICIL = 49  # reservado; ya no se usa sorpresa_dificil
 
 
 @dataclass(frozen=True)
@@ -107,15 +117,32 @@ def probabilidad_pregunta_exclusiva(numero_pregunta: int) -> float:
     return 0.48
 
 
-def parametros_eventos_aleatorios(numero_pregunta: int) -> tuple[float, int, float]:
-    """Probabilidad por pregunta, tope de eventos simultáneos e intensidad (0..1)."""
+def parametros_eventos_aleatorios(
+    numero_pregunta: int,
+) -> tuple[float, float, int, int, float]:
+    """Prob. buena/mala, cupos de eventos hostiles/favorables e intensidad.
+
+    Los cupos limitan solo la generación de eventos aleatorios de escalada
+    (relámpago, niebla, doble…). No comparten tope con recompensas ni con
+    la cantidad de popups mostrados en pantalla.
+    """
+    from Comun.probabilidad_resistencia import (
+        factor_progreso_resistencia,
+        probabilidad_buena_resistencia,
+        probabilidad_mala_resistencia,
+        progreso_probabilidad_resistencia,
+    )
+
     if numero_pregunta < PREGUNTA_MIN_EVENTOS_ALEATORIOS:
-        return 0.0, 0, 0.0
-    progreso = numero_pregunta - PREGUNTA_MIN_EVENTOS_ALEATORIOS
-    probabilidad = min(0.78, 0.10 + progreso * 0.0045)
-    max_eventos = 1 + min(3, progreso // 30)
-    intensidad = min(1.0, 0.25 + progreso / 180.0)
-    return probabilidad, max_eventos, intensidad
+        return 0.0, 0.0, 0, 0, 0.0
+    progreso = progreso_probabilidad_resistencia(numero_pregunta)
+    t = factor_progreso_resistencia(numero_pregunta)
+    prob_buena = probabilidad_buena_resistencia(numero_pregunta)
+    prob_mala = probabilidad_mala_resistencia(numero_pregunta)
+    max_malos = 1 if progreso < 60 else 2
+    max_buenos = 1
+    intensidad = 0.30 + 0.70 * t
+    return prob_buena, prob_mala, max_malos, max_buenos, intensidad
 
 
 def _construir_evento(kind: str, intensidad: float) -> EventoAleatorioResistencia:
@@ -144,40 +171,60 @@ def _construir_evento(kind: str, intensidad: float) -> EventoAleatorioResistenci
             etiqueta=texto,
             multiplicador_puntos=mult,
         )
-    if kind == "sorpresa_dificil":
-        extra = intensidad >= 0.7
-        cx = 4 if extra else 3
-        return EventoAleatorioResistencia(
-            etiqueta="Pregunta extra difícil" if extra else "Pregunta difícil",
-            min_max_complejidad=cx,
-            unir_dificultades=frozenset({"Dificil"}),
-        )
     raise ValueError(f"Evento desconocido: {kind!r}")
 
 
-def _kinds_eventos_para_pregunta(numero_pregunta: int) -> list[str]:
-    kinds = list(_EVENTOS_ALEATORIOS_POOL)
-    if numero_pregunta <= _PREGUNTA_MAX_SORPRESA_DIFICIL:
-        kinds.append("sorpresa_dificil")
-    return kinds
+def eventos_aleatorios_para_pregunta(
+    numero_pregunta: int,
+    *,
+    semilla_partida: int | None = None,
+    racha: int = 0,
+) -> tuple[EventoAleatorioResistencia, ...]:
+    """Efectos de escalada; con racha extrema se apilan hostiles más allá del tope."""
+    from Comun.mecanicas_resistencia import exceso_presion_racha, intensidad_presion_racha
 
+    prob_buena, prob_mala, max_malos, max_buenos, intensidad = parametros_eventos_aleatorios(
+        numero_pregunta
+    )
+    t_presion = intensidad_presion_racha(racha)
+    if t_presion > 1.0:
+        max_buenos = 0
+    if max_malos <= 0 and max_buenos <= 0 and t_presion <= 1.0:
+        return ()
+    base = semilla_partida or 0
+    rng = random.Random(numero_pregunta * 7919 + 17 + base * 10007)
+    eventos: list[EventoAleatorioResistencia] = []
 
-def eventos_aleatorios_para_pregunta(numero_pregunta: int) -> tuple[EventoAleatorioResistencia, ...]:
-    """Efectos extra con probabilidad creciente; pueden apilarse varios en una pregunta."""
-    probabilidad, max_eventos, intensidad = parametros_eventos_aleatorios(numero_pregunta)
-    if max_eventos <= 0 or probabilidad <= 0.0:
-        return ()
-    rng = random.Random(numero_pregunta * 7919 + 17)
-    if rng.random() > probabilidad:
-        return ()
-    n = 1
-    if max_eventos > 1:
-        chance_extra = min(0.55, 0.08 + intensidad * 0.45)
-        if rng.random() < chance_extra:
-            n = rng.randint(2, max_eventos)
-    kinds = _kinds_eventos_para_pregunta(numero_pregunta)
-    rng.shuffle(kinds)
-    return tuple(_construir_evento(kinds[i % len(kinds)], intensidad) for i in range(n))
+    if prob_mala > 0.0 and max_malos > 0 and rng.random() <= prob_mala:
+        kinds = list(_EVENTOS_MALOS)
+        rng.shuffle(kinds)
+        n_malos = 1
+        if max_malos > 1 and rng.random() < min(0.35, intensidad * 0.4):
+            n_malos = min(2, max_malos, len(kinds))
+        for i in range(n_malos):
+            eventos.append(_construir_evento(kinds[i % len(kinds)], intensidad))
+
+    from Comun.probabilidad_resistencia import probabilidad_evento_bueno_escalada
+
+    prob_evento_bueno = probabilidad_evento_bueno_escalada(numero_pregunta)
+    if prob_evento_bueno > 0.0 and max_buenos > 0 and rng.random() <= prob_evento_bueno:
+        eventos.append(_construir_evento("doble", intensidad))
+
+    exceso = exceso_presion_racha(racha)
+    if exceso > 0.0:
+        rng_extra = random.Random(
+            numero_pregunta * 8311 + 29 + base * 10007 + racha * 17
+        )
+        kinds = list(_EVENTOS_MALOS)
+        rng_extra.shuffle(kinds)
+        n_extra = min(8, 1 + int(exceso * 5))
+        int_extra = min(1.0, intensidad + exceso * 0.2)
+        for i in range(n_extra):
+            eventos.append(
+                _construir_evento(kinds[i % len(kinds)], int_extra)
+            )
+
+    return tuple(eventos)
 
 
 def _fusionar_evento_en_escalada(
@@ -216,7 +263,12 @@ def _fusionar_evento_en_escalada(
     return tiempo, max_cx, permitidas, mult, opciones_ocultas, fraccion_enunciado
 
 
-def escalada_para_pregunta(numero_pregunta: int) -> EscaladaResistencia:
+def escalada_para_pregunta(
+    numero_pregunta: int,
+    *,
+    semilla_partida: int | None = None,
+    racha: int = 0,
+) -> EscaladaResistencia:
     """Calcula reglas vigentes según el número de pregunta (1 = inicio fácil, sin tiempo)."""
     progreso = max(0, numero_pregunta - 1)
     tiempo: int | None = None
@@ -271,7 +323,9 @@ def escalada_para_pregunta(numero_pregunta: int) -> EscaladaResistencia:
         permitidas = frozenset({"Media", "Dificil"})
         efectos.append("Sin preguntas fáciles")
 
-    for evento in eventos_aleatorios_para_pregunta(numero_pregunta):
+    for evento in eventos_aleatorios_para_pregunta(
+        numero_pregunta, semilla_partida=semilla_partida, racha=racha
+    ):
         (
             tiempo,
             max_cx,
@@ -304,7 +358,7 @@ def escalada_para_pregunta(numero_pregunta: int) -> EscaladaResistencia:
 
 
 def escalada_para_racha(racha: int) -> EscaladaResistencia:
-    """Alias histórico: la escalada depende del número de pregunta, no de la racha."""
+    """Alias histórico (no usar la racha para dificultad)."""
     return escalada_para_pregunta(racha + 1)
 
 
@@ -332,6 +386,20 @@ def texto_efectos_escalada(escalada: EscaladaResistencia) -> str:
     return " · ".join(escalada.efectos)
 
 
+def indices_candidatos_resistencia(
+    pool: list[Pregunta],
+    estado: EstadoSeleccionPool,
+    escalada: EscaladaResistencia,
+    numero_pregunta: int,
+    *,
+    solo_no_usadas: bool,
+    er=None,
+) -> list[int]:
+    return _indices_candidatos(
+        pool, estado, escalada, numero_pregunta, solo_no_usadas=solo_no_usadas, er=er
+    )
+
+
 def _indices_candidatos(
     pool: list[Pregunta],
     estado: EstadoSeleccionPool,
@@ -339,11 +407,17 @@ def _indices_candidatos(
     numero_pregunta: int,
     *,
     solo_no_usadas: bool,
+    er=None,
 ) -> list[int]:
+    from Comun.mecanicas_resistencia import pregunta_compatible_bloque
+
     bloqueadas = set(estado.historial_reciente)
     candidatas: list[int] = []
     progreso = max(0, numero_pregunta - 1)
+    banco = getattr(er, "banco_resistencia", None) if er is not None else None
     for idx, p in enumerate(pool):
+        if banco is not None and not banco.indice_habilitado(idx, numero_pregunta):
+            continue
         if idx in bloqueadas:
             continue
         if p.racha_minima_resistencia > progreso:
@@ -351,6 +425,8 @@ def _indices_candidatos(
         if p.dificultad not in escalada.dificultades_permitidas:
             continue
         if complejidad_pregunta(p) > escalada.max_complejidad:
+            continue
+        if er is not None and not pregunta_compatible_bloque(p, er):
             continue
         if solo_no_usadas and idx in estado.usadas:
             continue
@@ -362,13 +438,23 @@ def _elegir_entre_candidatas(
     pool: list[Pregunta],
     candidatas: list[int],
     numero_pregunta: int,
+    *,
+    er=None,
 ) -> int:
+    from Comun.mecanicas_resistencia import rng_partida
+
     exclusivas = [i for i in candidatas if pool[i].exclusiva_resistencia]
     normales = [i for i in candidatas if not pool[i].exclusiva_resistencia]
     if exclusivas and normales:
         prob = probabilidad_pregunta_exclusiva(numero_pregunta)
-        grupo = exclusivas if random.random() < prob else normales
-        return random.choice(grupo)
+        if er is not None and er.semilla_partida is not None:
+            roll = rng_partida(er, numero_pregunta * 11).random()
+        else:
+            roll = random.random()
+        grupo = exclusivas if roll < prob else normales
+        candidatas = grupo
+    if er is not None and er.semilla_partida is not None:
+        return rng_partida(er, numero_pregunta * 13).choice(candidatas)
     return random.choice(candidatas)
 
 
@@ -377,23 +463,32 @@ def elegir_indice_resistencia(
     estado: EstadoSeleccionPool,
     escalada: EscaladaResistencia,
     numero_pregunta: int,
+    *,
+    er=None,
 ) -> int | None:
     if not pool:
         return None
-    candidatas = _indices_candidatos(pool, estado, escalada, numero_pregunta, solo_no_usadas=True)
+    candidatas = _indices_candidatos(
+        pool, estado, escalada, numero_pregunta, solo_no_usadas=True, er=er
+    )
     if not candidatas:
         estado.usadas.clear()
-        candidatas = _indices_candidatos(pool, estado, escalada, numero_pregunta, solo_no_usadas=False)
+        candidatas = _indices_candidatos(
+            pool, estado, escalada, numero_pregunta, solo_no_usadas=False, er=er
+        )
     if not candidatas:
         progreso = max(0, numero_pregunta - 1)
+        from Comun.mecanicas_resistencia import pregunta_compatible_bloque
+
         candidatas = [
             idx
             for idx, p in enumerate(pool)
             if p.racha_minima_resistencia <= progreso
+            and (er is None or pregunta_compatible_bloque(p, er))
         ]
     if not candidatas:
         return None
-    idx = _elegir_entre_candidatas(pool, candidatas, numero_pregunta)
+    idx = _elegir_entre_candidatas(pool, candidatas, numero_pregunta, er=er)
     estado.usadas.add(idx)
     estado.historial_reciente.append(idx)
     return idx

@@ -6,7 +6,7 @@
 
 El detalle técnico del repositorio (esquema del banco, scripts, arquitectura del juego) se documenta en los [`README.md`](README.md) del proyecto y se cita en los apéndices al final de esta memoria.
 
-**Versión de entrega:** dos Word en [`Entrega/Memoria/`](Entrega/README.md) (`Memoria_TFG_markdown.docx`, `Memoria_TFG_latex.docx`). Figuras en [`Entrega/Figuras/`](Entrega/Figuras/README.md). Regenerar figuras: `python Entrega/generar_figuras_memoria.py`. Regenerar Word: `python Entrega/exportar_memoria.py`. El PDF lo exportas desde Word tras editar.
+**Versión de entrega:** dos Word en [`Entrega/Memoria/`](Entrega/README.md) (`Memoria_TFG_markdown.docx`, `Memoria_TFG_latex.docx`). Figuras en [`Entrega/Figuras/`](Entrega/Figuras/README.md). Regenerar figuras: `python Entrega/generar_figuras_memoria.py`. Regenerar Word: `python exportar_memoria.py`. El PDF lo exportas desde Word tras editar.
 
 
 ## Resumen
@@ -28,7 +28,7 @@ Paralelamente, la gamificación y los *serious games* (Michael y Chen, 2005) han
 
 Este Trabajo de Fin de Grado surge de la necesidad de disponer de una herramienta de autoevaluación alineada con las asignaturas del grado. El sistema debe gestionar un banco de preguntas **estructurado y auditable** —mediante reglas automatizadas, revisión manual documentada y scripts de mantenimiento reproducibles—, ofrecer una experiencia de juego que incentive la práctica repetida, permitir analizar la calidad del contenido (distractores, duplicados, coherencia curricular) y sentar las bases para modelos pedagógicos más ricos.
 
-En este contexto, **gamificación** designa el uso de elementos de diseño de juego (puntos, vidas, retos, progresión) en un contexto formativo no recreativo (Deterding et al., 2011); en este TFG se aplica al cuestionario en consola sin interfaz gráfica. Un **banco de preguntas auditable** es un conjunto de ítems cuya calidad y estructura pueden revisarse de forma sistemática mediante `mantenimiento.py validar`, la revisión manual (`Revision/revision_manual_banco.md`) y scripts de auditoría. Los **distractores plausibles** son opciones incorrectas creíbles para quien no domina el concepto (Haladyna et al., 2002). La **narrativa** (capa pendiente) sería la secuencia ficcional de escenas que contextualiza los retos; el entregable actual funciona sin ella. Por **multiasignatura** y **prerrequisitos** se entiende el solapamiento entre materias y los conocimientos previos que un ítem da por asumidos.
+En este contexto, **gamificación** designa el uso de elementos de diseño de juego (puntos, vidas, retos, progresión) en un contexto formativo no recreativo (Deterding et al., 2011); en este TFG se aplica al cuestionario en consola sin interfaz gráfica. Un **banco de preguntas auditable** es un conjunto de ítems cuya calidad y estructura pueden revisarse de forma sistemática mediante `mantenimiento.py validar`, la revisión manual del banco de producción (480 ítems, cerrada) y scripts de auditoría. Los **distractores plausibles** son opciones incorrectas creíbles para quien no domina el concepto (Haladyna et al., 2002). La **narrativa** (capa pendiente) sería la secuencia ficcional de escenas que contextualiza los retos; el entregable actual funciona sin ella. Por **multiasignatura** y **prerrequisitos** se entiende el solapamiento entre materias y los conocimientos previos que un ítem da por asumidos.
 
 La motivación principal es combinar programación, matemáticas y diseño interactivo en una aplicación práctica que consolide conocimientos del grado y que pueda ser extendida por el propio autor o por el profesorado.
 
@@ -130,7 +130,7 @@ El control de versiones con Git permitió iterar sobre el banco y el código de 
 
 **Metadatos curriculares** en `listado_materias.csv`: `Grupo`, `Nivel`, `Curso`, `Semestre`, `Tematica` (10 grupos temáticos globales).
 
-**Revisión de contenido:** revisión manual por bloques de Ids (1–480), con registro en `Revision/revision_manual_banco.md`. Criterios: redacción genérica, coherencia con el nivel de la materia, distractores plausibles, ausencia de referencias a temarios internos de asignatura.
+**Revisión de contenido:** revisión manual por bloques de Ids (1–480), completada. Criterios: redacción genérica, coherencia con el nivel de la materia, distractores plausibles, ausencia de referencias a temarios internos de asignatura. La calidad estructural se verifica con `mantenimiento.py validar`.
 
 **Validación automatizada:** comando `mantenimiento.py validar` comprueba balance, orden canónico e integridad de columnas. Auditoría de distractores y detección de duplicados semánticos mediante scripts dedicados.
 
@@ -185,10 +185,10 @@ La arquitectura del software se organiza en capas desacopladas (figura 1): el la
 | Actividad | Herramienta / método |
 |-----------|---------------------|
 | Balance estructural del CSV | `mantenimiento.py validar` |
-| Revisión manual del contenido | Bloques documentados en `Revision/revision_manual_banco.md` |
+| Revisión manual del contenido | 480/480 ítems revisados; validación automatizada |
 | Auditoría de distractores | `mantenimiento.py auditar-distractores` (consola; `--json` opcional) |
 | Duplicados semánticos | `duplicados.py revisar` (0 pares similares en CSV y plantillas intra-materia, 2026-06-15) |
-| Pruebas de regresión | `python -m unittest discover -s Tests -v` (177 tests) |
+| Pruebas de regresión | `python -m unittest discover -s Tests -v` (238 tests) |
 | Integración continua | GitHub Actions (`.github/workflows/tests.yml`) |
 | Revisión con profesorado | Identificación de solapamiento temático y prerrequisitos (véase sección 7) |
 | Simulación Monte Carlo (respuestas al azar) | `simulacion_evaluacion_azar.py` (véase §5.7) |
@@ -232,7 +232,7 @@ Se entregó un cuestionario en consola funcional:
 | Modo historia | Generador de examen según `Historic_qualificacions_MatCAD_completo.csv` |
 | Modo feedback | Guardado local + envío SMTP opcional |
 | Ejecutable | Build opcional con PyInstaller |
-| Pruebas | Suite en `Tests/` — **177 tests** (`Tests/Juego/` 169 + `Tests/Scripts/` 8); CI en GitHub Actions |
+| Pruebas | Suite en `Tests/` — **238 tests** (`Tests/Juego/` 230 + `Tests/Scripts/` 8); CI en GitHub Actions |
 
 ### 5.3 Organización curricular modelada
 
@@ -270,7 +270,7 @@ Diagrama detallado (40 materias con posición curricular): [`Data/README.md`](Da
 
 ### 5.4 Herramientas de mantenimiento
 
-Se desarrolló un conjunto de scripts en `Files/Scripts/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida en consola), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en `utils_plantillas_core.py`, compartida con `Juego/Comun/datos.py`. Los datos tabulares y JSON se organizan en `Data/CSV/` y `Data/JSON/` (resolución en `rutas.py` y `rutas_data.py`). Los scripts de regeneración masiva del CSV se aislaron en `Files/Archivo/` con protección de banco cerrado. Suite de pruebas en `Tests/` (177 tests) con CI en GitHub Actions. Catálogo de comandos: [`Files/Scripts/README.md`](Files/Scripts/README.md).
+Se desarrolló un conjunto de scripts en `Files/Scripts/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida en consola), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en `utils_plantillas_core.py`, compartida con `Juego/Comun/datos.py`. Los datos tabulares y JSON se organizan en `Data/CSV/` y `Data/JSON/` (resolución en `rutas.py` y `rutas_data.py`). Los scripts de regeneración masiva del CSV se aislaron en `Files/Archivo/` con protección de banco cerrado. Suite de pruebas en `Tests/` (238 tests) con CI en GitHub Actions. Catálogo de comandos: [`Files/Scripts/README.md`](Files/Scripts/README.md).
 
 ### 5.5 Síntesis cuantitativa
 
@@ -354,7 +354,7 @@ El **objetivo general** se cumple de forma parcial: existe un juego educativo in
 | OE2 | Retos por materias | **Cumplido** | Banco 480 ítems, Teoría/Cálculo, tres dificultades |
 | OE3 | Validación de respuestas | **Cumplido** | Motor A–D, puntuación, vidas, informes |
 | OE4 | Interfaz gráfica | Parcial (avanzado) | `juego_grafico.py` + libre, historia y resistencia en pygame; tooltips; consola sigue siendo referencia para feedback SMTP |
-| OE5 | Valor formativo | **Parcialmente cumplido** | Banco validado, 177 tests + CI; sin estudio con usuarios |
+| OE5 | Valor formativo | **Parcialmente cumplido** | Banco validado, 238 tests + CI; sin estudio con usuarios |
 
 Los **objetivos específicos** OE2, OE3 y OE5 están cubiertos en su versión de consola. OE4 avanza con una interfaz gráfica en pygame (modos libre, historia y resistencia); OE1 (narrativa gráfica completa) queda como trabajo futuro. Esta decisión es defendible: el prototipo valida el núcleo evaluable antes del coste de la capa narrativa visual, en línea con el principio de prototipado incremental en ingeniería del software.
 
@@ -440,7 +440,7 @@ Veldkamp, A., van de Grint, L., Knippels, M. C. P. J., y van Joolingen, W. R. (2
 | Apéndice | Contenido | Enlace |
 |----------|-----------|--------|
 | A | Esquema del banco y diagramas curriculares | [`Data/README.md`](Data/README.md) |
-| H | Estado del proyecto y trazabilidad revisión manual (Ids 1–480) | [`Revision/ESTADO.md`](Revision/ESTADO.md), [`revision_manual_banco.md`](Revision/revision_manual_banco.md) |
+| H | Estado del proyecto y seguimiento | [`CHANGELOG.md`](CHANGELOG.md), [`CHECKLIST.md`](CHECKLIST.md) |
 | B | Arquitectura del juego, modos, puntuación, bancos beta | [`Juego/Comun/README.md`](Juego/Comun/README.md) · [`Juego/Consola/README.md`](Juego/Consola/README.md) |
 | C | Scripts de mantenimiento, balanceo, auditorías | [`Files/Scripts/README.md`](Files/Scripts/README.md) |
 | D | Scripts legado de regeneración CSV | [`Files/Archivo/README.md`](Files/Archivo/README.md) |

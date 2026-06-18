@@ -17,7 +17,6 @@ from .generador_examen_historia import (
 )
 from Comun.modelos import Pregunta
 from .motor_partida import ejecutar_lista_fija
-from .motor_resistencia import ejecutar_resistencia_historia
 from Consola.navegacion import (
     AsistentePasos,
     IrMenuPrincipal,
@@ -25,7 +24,7 @@ from Consola.navegacion import (
     limpiar_consola,
     mostrar_transicion,
 )
-from Consola.textos_consola import banner, campo, con_emoji, titulo as titulo_ui
+from Consola.textos_consola import banner, campo, con_emoji
 from .politica_reglas import aplicar_politica
 from Comun.cierre_informe import meta_cierre_historia
 from Comun.presets_historia import (
@@ -34,9 +33,19 @@ from Comun.presets_historia import (
     argumentos_generador,
     cargar_presets_historia,
     politica_desde_preset,
+    semilla_desde_preset,
 )
+from Comun.examen_dia_historia import es_id_examen_dia, etiqueta_fecha_examen_dia
 from Comun.resistencia_historia import es_preset_resistencia
 from Comun.rutas import PATH_MATERIAS, resolver_presets_historia
+
+
+def _presets_historia_sin_especiales() -> list[PresetHistoria]:
+    return [
+        p
+        for p in cargar_presets_historia(resolver_presets_historia())
+        if not es_preset_resistencia(p)
+    ]
 
 
 def _elegir_preset(presets: list[PresetHistoria]) -> PresetHistoria:
@@ -55,6 +64,8 @@ def _elegir_preset(presets: list[PresetHistoria]) -> PresetHistoria:
 def jugar_modo_historia(
     preguntas: list[Pregunta],
     materias_meta: dict[str, dict[str, str]],
+    *,
+    preset_id_fijo: str | None = None,
 ) -> bool:
 
     def _pantalla_intro() -> None:
@@ -68,7 +79,7 @@ def jugar_modo_historia(
     mostrar_transicion(_pantalla_intro)
 
     try:
-        presets = cargar_presets_historia(resolver_presets_historia())
+        presets = _presets_historia_sin_especiales()
     except (FileNotFoundError, ValueError) as e:
         print(f"\nNo se pudo cargar el catálogo de historia: {e}")
         return False
@@ -84,6 +95,12 @@ def jugar_modo_historia(
         )
 
     def paso_preset(asist: AsistentePasos) -> None:
+        if preset_id_fijo:
+            for preset in presets:
+                if preset.id == preset_id_fijo:
+                    asist.datos["preset"] = preset
+                    return
+            raise KeyError(f"Preset no encontrado: {preset_id_fijo!r}")
         asist.datos["preset"] = _elegir_preset(presets)
 
     def paso_opciones(asist: AsistentePasos) -> None:
@@ -133,43 +150,13 @@ def jugar_modo_historia(
     config: ConfigPresetHistoria = asistente.datos["config"]
     reglas = asistente.datos["reglas"]
 
-    if es_preset_resistencia(preset):
-        def _pantalla_resistencia() -> None:
-            print(f"\n{banner('RANKING — RESISTENCIA INFINITA')}")
-            print(f"{campo('tipo_partida', 'Tipo')}: {preset.nombre}")
-            print(con_emoji(
-                "Una falla termina la racha. La dificultad sube con cada acierto.",
-                "🔥",
-            ))
-            print(con_emoji(
-                "Récords en ranking local (multijugador offline).",
-                "🏆",
-            ))
-
-        limpiar_consola()
-        _pantalla_resistencia()
-        esperar_enter("\nPulsa Enter para comenzar")
-        try:
-            ejecutar_resistencia_historia(
-                preguntas,
-                nombre=nombre,
-                reglas=reglas,
-                preset_id=preset.id,
-                preset_nombre=preset.nombre,
-                perfil=preset.perfil,
-                materias_meta=materias_meta,
-                stats_historicas=stats,
-            )
-        except SalirPrograma:
-            raise
-        return True
-
     try:
         plan = generar_examen(
             preguntas,
             materias_orden=orden_materias,
             materias_meta=materias_meta,
             stats=stats,
+            semilla=semilla_desde_preset(preset),
             **argumentos_generador(preset, config, materias_meta=materias_meta),
         )
     except ValueError as e:
@@ -188,6 +175,11 @@ def jugar_modo_historia(
             print(con_emoji(
                 "No verás si acertaste hasta el final (examen cerrado).",
                 "🔒",
+            ))
+        if es_id_examen_dia(preset.id):
+            print(con_emoji(
+                f"Examen del día ({etiqueta_fecha_examen_dia()}): misma secuencia para todos hoy.",
+                "📅",
             ))
         print(con_emoji(
             "Al terminar se guarda un informe .txt en Juego/informes/.",

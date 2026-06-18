@@ -7,6 +7,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+from Comun.linea_estado_ui import EMOJI_TIEMPO_PREG, EMOJI_TIEMPO_TOTAL
+
 __all__ = [
     "ContextoUi",
     "EmojiPar",
@@ -18,10 +20,14 @@ __all__ = [
     "BTN_CONTINUAR_PARTIDA",
     "BTN_EMPEZAR",
     "BTN_GUARDAR_INFORME",
+    "BTN_REPETIR_PARTIDA",
+    "BTN_CAMBIAR_OPCIONES",
     "BTN_PANTALLA_TITULO",
     "BTN_SALIR_PROGRAMA",
     "BTN_SIGUIENTE",
     "BTN_VER_RANKING",
+    "BTN_BORRAR_RANKING",
+    "BTN_BORRAR_TXT_INFORMES",
     "BTN_VOLVER",
     "BTN_VOLVER_MENU",
     "con_emoji",
@@ -69,8 +75,11 @@ def resolver_emoji(emoji: str | EmojiPar, *, contexto: ContextoUi = "grafico") -
 
 # Iconos sueltos de la barra fija / atajos.
 _EMOJI_ICONO: dict[str, EmojiPar] = {
+    "diarios": _p("📅"),
     "feedback": _p("📣"),
     "pausa": _p("⏯", "⏸️"),
+    "ranking": _p("🏆"),
+    "opciones": _p("⚙️"),
 }
 
 # Emojis por título de pantalla (clave = texto sin decorar).
@@ -84,10 +93,10 @@ _EMOJI_TITULO: dict[str, EmojiPar] = {
     "PARTIDA ABANDONADA": _p("⚠️"),
     "ABANDONO (modo libre)": _p("⚠️"),
     "FIN DE PARTIDA (modo libre)": _p("🏁"),
-    "Ranking — resistencia": _p("🏆"),
+    "Ranking local": _p("🏆"),
     "PARTIDA (modo libre)": _p("🎮"),
     "PARTIDA (modo historia)": _p("📖", "📕"),
-    "RANKING — RESISTENCIA INFINITA": _p("🏆"),
+    "RESISTENCIA": _p("🔥"),
     "Banco de preguntas": _p("🗄️"),
     "Configuración modo libre": _p("⚙️"),
     "Modo historia": _p("📖", "📕"),
@@ -125,8 +134,8 @@ _EMOJI_ETIQUETA: dict[str, EmojiPar] = {
     "n_preguntas": _p("🔢", "📝"),
     "vidas": _p("❤️"),
     "tiempo_modo": _p("⏱️"),
-    "tiempo_pregunta": _p("⏳"),
-    "tiempo_total": _p("🕐"),
+    "tiempo_pregunta": _p(EMOJI_TIEMPO_PREG),
+    "tiempo_total": _p(EMOJI_TIEMPO_TOTAL),
     "sistema": _p("⭐"),
     "haz_clic": _p("👆"),
     "estas_en": _p("📍"),
@@ -344,7 +353,9 @@ class OpcionMenuPrincipal:
 
 OPCIONES_MENU_PRINCIPAL: tuple[OpcionMenuPrincipal, ...] = (
     OpcionMenuPrincipal("libre", "Modo libre", _p("🎮")),
+    OpcionMenuPrincipal("diarios", "Retos del día", _p("📅")),
     OpcionMenuPrincipal("historia", "Modo historia", _p("📖", "📕")),
+    OpcionMenuPrincipal("especiales", "Modos especiales", _p("⚡")),
     OpcionMenuPrincipal("feedback", "Modo feedback", _p("📣")),
     OpcionMenuPrincipal("salir", "Salir", _p("🚪")),
 )
@@ -362,7 +373,11 @@ BTN_CONTINUAR = ("Continuar", _EMOJI_ADELANTE)
 BTN_CONTINUAR_PARTIDA = ("Continuar la partida", _EMOJI_ADELANTE)
 BTN_ABANDONAR = ("Abandonar", _p("🛑"))
 BTN_VER_RANKING = ("Ver ranking", _p("🏆"))
+BTN_BORRAR_RANKING = ("Borrar historial", _p("🗑️"))
+BTN_BORRAR_TXT_INFORMES = ("Borrar informes y feedback", _p("🗑️"))
 BTN_GUARDAR_INFORME = ("Guardar informe y volver", _p("💾"))
+BTN_REPETIR_PARTIDA = ("Repetir partida", _p("🔁"))
+BTN_CAMBIAR_OPCIONES = ("Cambiar opciones", _p("⚙️"))
 BTN_PANTALLA_TITULO = ("Pantalla de título", _p("🏠", "📋"))
 BTN_SALIR_PROGRAMA = ("Salir del programa", _p("🚪"))
 

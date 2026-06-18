@@ -6,8 +6,8 @@ Estructura:
 |-------------------|-----------|
 | [`Memoria/`](Memoria/README.md) | LaTeX, Word (×2) |
 | [`Figuras/`](Figuras/README.md) | Imágenes insertadas en la memoria |
-| `exportar_memoria.py` | Regenera los dos `.docx` en `Memoria/` |
 | `generar_figuras_memoria.py` | Regenera las figuras en `Figuras/` |
+| [`../exportar_memoria.py`](../exportar_memoria.py) | Regenera los dos `.docx` en `Memoria/` (raíz del proyecto) |
 
 El borrador Markdown está en la raíz: [`../Memoria_TFG.md`](../Memoria_TFG.md).
 
@@ -26,7 +26,7 @@ Requisito: `matplotlib` (`pip install -r requirements.txt` o `pip install matplo
 Desde la raíz del proyecto:
 
 ```bash
-python Entrega/exportar_memoria.py
+python exportar_memoria.py
 ```
 
 | Opción | Efecto |
@@ -41,6 +41,4 @@ python Entrega/exportar_memoria.py
 
 Cierra Word antes de regenerar si el `.docx` está abierto.
 
-Los PDF de **entrega** los generas tú desde Word tras editar la maquetación.
-
-Los PDF con **comentarios del tutor** no van aquí: [`../Revision/`](../Revision/ESTADO.md).
+Los PDF de **entrega** los generas tú desde Word tras editar la maquetación (fuera del repositorio).

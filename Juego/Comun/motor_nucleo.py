@@ -35,6 +35,10 @@ class EstadoPartida:
         rest = int(lim - (time.monotonic() - self.inicio_total))
         return max(0, rest)
 
+    def tiempo_transcurrido_seg(self) -> int:
+        """Segundos desde el inicio de la partida (tiempo activo sin límite global)."""
+        return max(0, int(time.monotonic() - self.inicio_total))
+
     def debe_continuar(self, total_previsto: int | None) -> bool:
         if self.reglas.tiene_vidas() and (self.vidas_restantes or 0) <= 0:
             return False

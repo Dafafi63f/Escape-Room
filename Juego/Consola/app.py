@@ -13,6 +13,8 @@ from Comun.datos import cargar_materias, cargar_preguntas
 from Consola.datos import elegir_banco_preguntas
 from Consola.entrada_menu import esperar_enter_en_foco
 from Consola.modo_feedback import ejecutar_feedback_rapido, jugar_modo_feedback
+from Consola.modo_diarios import jugar_modos_diarios
+from Consola.modo_especiales import jugar_modos_especiales
 from Consola.modo_historia import jugar_modo_historia
 from Consola.modo_libre import jugar_modo_libre
 from Consola.navegacion import (
@@ -62,7 +64,9 @@ def _mostrar_menu_principal() -> None:
     for i, op in enumerate(OPCIONES_MENU_PRINCIPAL, start=1):
         sufijo = {
             "libre": "partida abierta, filtros e informes",
-            "historia": "partidas con presets fijos (sin configuración)",
+            "diarios": "examen del día y reto del día (semilla diaria)",
+            "historia": "simulacros y repasos con datos históricos",
+            "especiales": "resistencia infinita y futuros retos",
             "feedback": "enviar aviso al creador (bug, sugerencia, etc.)",
             "salir": "",
         }[op.id]
@@ -89,7 +93,7 @@ def _elegir_modo_juego() -> str:
     _ir_menu_principal()
     return pedir_opcion(
         "Selecciona modo",
-        ["1", "2", "3", "4"],
+        ["1", "2", "3", "4", "5", "6"],
         default="1",
         es_menu_principal=True,
     )
@@ -105,9 +109,31 @@ def _ejecutar_modo(
         if not preguntas_dataset:
             print("No hay preguntas en el dataset.")
             return False
-        return jugar_modo_historia(preguntas_dataset, materias_meta)
+        return jugar_modos_diarios(
+            preguntas_dataset,
+            materias_meta,
+            path_plantillas=path_plantillas,
+            path_preguntas_csv=PATH_PREGUNTAS,
+        )
 
     if modo == "3":
+        if not preguntas_dataset:
+            print("No hay preguntas en el dataset.")
+            return False
+        return jugar_modo_historia(preguntas_dataset, materias_meta)
+
+    if modo == "4":
+        if not preguntas_dataset:
+            print("No hay preguntas en el dataset.")
+            return False
+        return jugar_modos_especiales(
+            preguntas_dataset,
+            materias_meta,
+            path_plantillas=path_plantillas,
+            path_preguntas_csv=PATH_PREGUNTAS,
+        )
+
+    if modo == "5":
         if not preguntas_dataset:
             print("No hay preguntas en el dataset.")
             return False
@@ -141,7 +167,7 @@ def bucle_juego(
         except SalirPrograma:
             return
 
-        if modo == "4":
+        if modo == "6":
             return
 
         try:

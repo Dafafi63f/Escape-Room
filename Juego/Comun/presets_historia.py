@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -73,11 +74,94 @@ def _parse_slots(raw: list | None) -> tuple[tuple[str, str], ...] | None:
     return tuple(out)
 
 
-def _clave_orden_catalogo(preset: PresetHistoria) -> tuple[int, int, str]:
-    """Resistencia tras refuerzo/desafío/simulacro; el resto sigue ``orden`` del JSON."""
-    if preset.id == "ranking_resistencia":
-        return (3, 1, preset.nombre)
-    return (preset.orden, 0, preset.nombre)
+_IDS_PRESET_REPASOS: frozenset[str] = frozenset({
+    "refuerzo_historico",
+    "desafio_historico",
+    "sesion_pre_entrega",
+    "repaso_semestre",
+    "repaso_curso",
+})
+
+_IDS_PRESET_SIMULACROS: frozenset[str] = frozenset({
+    "simulacro_examen",
+    "simulacro_solo_teoria",
+    "parcial_materia",
+    "parcial_grupo",
+})
+
+
+def _grupo_catalogo_historia(preset_id: str) -> int:
+    """Orden de bloques en el carrusel: repasos, luego simulacros, luego el resto."""
+    if preset_id in _IDS_PRESET_REPASOS:
+        return 1
+    if preset_id in _IDS_PRESET_SIMULACROS:
+        return 2
+    return 3
+
+
+def _clave_orden_catalogo(preset: PresetHistoria) -> tuple[int, int, int, str]:
+    """Diarios primero; dentro del catálogo, repasos y simulacros en bloques."""
+    from Comun.modos_diarios import prioridad_orden_preset
+
+    return (
+        prioridad_orden_preset(preset.id),
+        _grupo_catalogo_historia(preset.id),
+        preset.orden,
+        preset.nombre,
+    )
+
+
+def _cargar_presets_desde_json(
+    path: Path,
+    *,
+    clave_orden: Callable[[PresetHistoria], tuple],
+) -> list[PresetHistoria]:
+    if not path.exists():
+        raise FileNotFoundError(f"No se encontró el catálogo: {path}")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise ValueError(f"JSON inválido en {path}: {e}") from e
+    items = data.get("presets")
+    if not isinstance(items, list) or not items:
+        raise ValueError(f"El catálogo {path} no contiene presets.")
+    presets = [_parse_preset(x) for x in items]
+    presets.sort(key=clave_orden)
+    ids = [p.id for p in presets]
+    if len(ids) != len(set(ids)):
+        raise ValueError(f"Hay ids duplicados en {path.name}")
+    return presets
+
+
+def cargar_presets_historia(path: Path) -> list[PresetHistoria]:
+    return _cargar_presets_desde_json(path, clave_orden=_clave_orden_catalogo)
+
+
+def cargar_presets_especiales(path: Path) -> list[PresetHistoria]:
+    from Comun.modos_diarios import prioridad_orden_preset
+
+    return _cargar_presets_desde_json(
+        path,
+        clave_orden=lambda preset: (
+            prioridad_orden_preset(preset.id),
+            preset.orden,
+            preset.nombre,
+        ),
+    )
+
+
+def buscar_preset(preset_id: str) -> PresetHistoria:
+    """Busca un preset en historia o en modos especiales."""
+    from Comun.rutas import resolver_presets_especiales, resolver_presets_historia
+
+    for cargar, resolver in (
+        (cargar_presets_historia, resolver_presets_historia),
+        (cargar_presets_especiales, resolver_presets_especiales),
+    ):
+        for preset in cargar(resolver()):
+            if preset.id == preset_id:
+                return preset
+    raise KeyError(f"Preset no encontrado: {preset_id!r}")
 
 
 def _parse_preset(item: dict) -> PresetHistoria:
@@ -107,24 +191,6 @@ def _parse_preset(item: dict) -> PresetHistoria:
         orden_por_historico=item.get("orden_por_historico"),
         usa_analisis_historico=bool(item.get("usa_analisis_historico", False)),
     )
-
-
-def cargar_presets_historia(path: Path) -> list[PresetHistoria]:
-    if not path.exists():
-        raise FileNotFoundError(f"No se encontró el catálogo de historia: {path}")
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        raise ValueError(f"JSON inválido en {path}: {e}") from e
-    items = data.get("presets")
-    if not isinstance(items, list) or not items:
-        raise ValueError(f"El catálogo {path} no contiene presets.")
-    presets = [_parse_preset(x) for x in items]
-    presets.sort(key=_clave_orden_catalogo)
-    ids = [p.id for p in presets]
-    if len(ids) != len(set(ids)):
-        raise ValueError("Hay ids duplicados en presets_historia.json")
-    return presets
 
 
 def config_defecto(
@@ -215,6 +281,14 @@ def _resolver_perfil_y_seleccion(
         perfil, seleccion_det = _ESTRATEGIA_MATERIAS[estrategia]
         return perfil, seleccion_det
     return perfil_desde_preset(preset), preset.seleccion_determinista
+
+
+def semilla_desde_preset(preset: PresetHistoria) -> int | None:
+    from Comun.examen_dia_historia import es_id_examen_dia, semilla_examen_dia
+
+    if es_id_examen_dia(preset.id):
+        return semilla_examen_dia()
+    return None
 
 
 def argumentos_generador(
