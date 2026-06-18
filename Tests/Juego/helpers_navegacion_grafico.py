@@ -4,9 +4,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING
+from unittest.mock import patch
+import tempfile
 
 if TYPE_CHECKING:
     from Grafico.app import AplicacionGrafica, DatosJuego
@@ -24,6 +27,18 @@ def configurar_pygame_tests() -> None:
     pygame.init()
     pygame.display.set_mode((960, 720))
     invalidar_cache_fuentes()
+
+
+@contextmanager
+def preferencias_grafico_aisladas() -> Iterator[Path]:
+    """Evita que los tests escriban en Data/JSON/preferencias_grafico.json del proyecto."""
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "preferencias_grafico.json"
+        with patch(
+            "Comun.preferencias_grafico.resolver_path_preferencias_grafico",
+            return_value=path,
+        ):
+            yield path
 
 
 def evento_clic(centro: tuple[int, int]):
@@ -46,6 +61,28 @@ def datos_prueba(*, preguntas: list | None = None) -> DatosJuego:
         Path("."),
         Path("."),
     )
+
+
+def crear_app_grafica_pruebas(
+    datos: DatosJuego | None = None,
+    *,
+    nombre_jugador: str = "Test",
+) -> AplicacionGrafica:
+    """App gráfica en menú principal con nombre guardado (sin pantalla de bienvenida)."""
+    from Comun.preferencias_grafico import PreferenciasGrafico, guardar_preferencias_grafico
+    from Grafico.app import AplicacionGrafica
+
+    if datos is None:
+        datos = datos_prueba()
+    guardar_preferencias_grafico(
+        PreferenciasGrafico(
+            nombre_jugador=nombre_jugador,
+            mostrar_tooltips=True,
+            mostrar_emojis=True,
+            guardar_informes_txt=True,
+        )
+    )
+    return AplicacionGrafica(datos, saltar_bienvenida=True)
 
 
 def pregunta_minima() -> Pregunta:

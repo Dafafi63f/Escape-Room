@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 import pygame
 
 from Comun.cierre_informe import meta_cierre_libre
+from Comun.navegacion_fin_partida import NavegacionFinPartida
 from Comun.compatibilidad_reglas_libre import (
     normalizar_vidas_y_sistema,
     opciones_reglas_libre,
@@ -24,6 +25,7 @@ from Comun.dificultad import (
 )
 from Comun.modelos import BancoPreguntas, Pregunta
 from Comun.politica_reglas import validar_reglas
+from Comun.preferencias_grafico import nombre_jugador_grafico
 from Comun.pool_libre import (
     filtrar_pool,
     opciones_curso_semestre,
@@ -56,6 +58,7 @@ from Grafico.tema import (
     COLOR_TEXTO,
     COLOR_TITULO,
     MARGEN,
+    Y_INICIO_TITULO,
     crear_fuentes,
 )
 from Grafico.texto import dibujar_texto_centro, preparar_texto_ui
@@ -70,9 +73,9 @@ from Grafico.tooltips_ui import (
 from Grafico.ui import (
     Boton,
     BotonMarcable,
-    CampoTexto,
     _fuente_ajustada,
     cuadricula_rects,
+    dibujar_caja_valor_ciclo,
     dibujar_panel,
     dibujar_tooltips_botones,
     dibujar_tooltip,
@@ -88,13 +91,10 @@ if TYPE_CHECKING:
 GAP_PANEL_BTNS = 24
 GAP_BTNS_NAVEGACION = 12
 GAP_BTNS_NAVEGACION_PASO2 = 28
-Y_TITULO_LIBRE = 46
-Y_SUBTITULO_LIBRE = 78
-GAP_SUBTITULO_CONTENIDO = 20
+Y_TITULO_LIBRE = Y_INICIO_TITULO
+Y_SUBTITULO_LIBRE = Y_TITULO_LIBRE + 32
 ALTO_ETIQUETA_MENU = 24
 GAP_LBL_CAMPO = 12
-Y_NOMBRE_LBL = Y_SUBTITULO_LIBRE + ALTO_ETIQUETA_MENU + GAP_SUBTITULO_CONTENIDO
-ALTO_CAMPO_NOMBRE = 44
 GAP_CAMPO_PANEL = 20
 PADDING_PANEL_OPCIONES = 14
 ALTO_FILA = 48
@@ -155,6 +155,18 @@ class EstadoConfigLibrePaso1:
     tiempo_total: int
     sistema_elegido: SistemaPuntuacion
     reglas: ReglasPartida
+
+
+@dataclass(frozen=True)
+class SnapshotConfigFiltrosLibre:
+    """Estado del paso 2 del modo libre para repetir o reconfigurar tras una partida."""
+
+    estado: EstadoConfigLibrePaso1
+    modo_filtro: str
+    tematicas_sel: frozenset[str]
+    semestres_sel: frozenset[str]
+    tipos_sel: frozenset[str]
+    niveles_sel: frozenset[int]
 
 
 def _dibujar_cabecera_libre(
@@ -231,7 +243,7 @@ def _construir_reglas_paso1(
 
 
 class ConfigOpcionesLibre(Pantalla):
-    """Paso 1: nombre y opciones de partida (selectores cíclicos)."""
+    """Paso 1: opciones de partida (selectores cíclicos)."""
 
     def __init__(
         self,
@@ -239,7 +251,6 @@ class ConfigOpcionesLibre(Pantalla):
         ir_a: Callable[[Pantalla], None],
         salir_app: Callable[[], None],
         *,
-        nombre_inicial: str = "",
         banco_inicial: BancoPreguntas = BancoPreguntas.DATASET,
         modo_infinito_inicial: bool = False,
         total_inicial: int = 10,
@@ -271,12 +282,7 @@ class ConfigOpcionesLibre(Pantalla):
 
         self._y_panel_top = 0
         self._y_opciones = 0
-        self.campo_nombre = CampoTexto(
-            pygame.Rect(MARGEN + 40, 0, ANCHO - 2 * MARGEN - 80, ALTO_CAMPO_NOMBRE),
-            texto_inicial=nombre_inicial,
-            placeholder="Nombre del jugador",
-        )
-        self._calcular_layout_nombre()
+        self._calcular_layout_panel()
 
         self.botones_ciclo: dict[str, tuple[Boton, Boton]] = {}
         self._y_opcion: dict[str, int] = {}
@@ -356,13 +362,8 @@ class ConfigOpcionesLibre(Pantalla):
         self.boton_dificultad_progresiva.seleccionado = self.dificultad_progresiva
         self._reposicionar_botones_navegacion()
 
-    def _calcular_layout_nombre(self) -> None:
-        lbl_h = self.fuentes["menu"].render(
-            etiqueta_campo("nombre", "Nombre:"), True, COLOR_TEXTO
-        ).get_height()
-        y_campo = Y_NOMBRE_LBL + lbl_h + GAP_LBL_CAMPO
-        self.campo_nombre.rect.y = y_campo
-        self._y_panel_top = y_campo + ALTO_CAMPO_NOMBRE + GAP_CAMPO_PANEL
+    def _calcular_layout_panel(self) -> None:
+        self._y_panel_top = Y_SUBTITULO_LIBRE + ALTO_ETIQUETA_MENU + GAP_CAMPO_PANEL
         self._y_opciones = self._y_panel_top + PADDING_PANEL_OPCIONES
 
     def _contexto(self):
@@ -582,10 +583,7 @@ class ConfigOpcionesLibre(Pantalla):
         self._reconstruir_layout()
 
     def _siguiente(self) -> None:
-        nombre = self.campo_nombre.valor().strip()
-        if not nombre:
-            self.mensaje = "Introduce un nombre de jugador."
-            return
+        nombre = nombre_jugador_grafico()
         try:
             reglas = _construir_reglas_paso1(
                 modo_infinito=self.modo_infinito,
@@ -633,7 +631,6 @@ class ConfigOpcionesLibre(Pantalla):
         return botones
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
-        self.campo_nombre.manejar_evento(evento)
         if evento.type == pygame.MOUSEWHEEL and len(self._filas_orden) > self._max_filas_visibles():
             max_scroll = max(0, len(self._filas_orden) - self._max_filas_visibles())
             self.scroll_filas = max(
@@ -646,8 +643,6 @@ class ConfigOpcionesLibre(Pantalla):
                 boton.actualizar_hover(evento.pos)
             self._actualizar_hover_opcion_valor(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
-            if self.campo_nombre.manejar_evento(evento):
-                return None
             for boton in self._botones_ui():
                 if boton.manejar_clic(evento.pos, evento.button):
                     break
@@ -665,24 +660,18 @@ class ConfigOpcionesLibre(Pantalla):
         izq, der = self.botones_ciclo[op_id]
         _, rect_val, _ = self._rects_control_fila(op_id)
         if rect_val.width > 0:
-            dibujar_panel(superficie, rect_val, color=(248, 250, 255))
-            texto = preparar_texto_ui(self._texto_valor(op_id))
-            fuente_val = _fuente_ajustada(texto, self.fuentes["cuerpo"], rect_val.width - 16)
-            val = fuente_val.render(texto, True, (25, 35, 50))
-            superficie.blit(val, val.get_rect(center=rect_val.center))
+            dibujar_caja_valor_ciclo(
+                superficie,
+                rect_val,
+                self._texto_valor(op_id),
+                self.fuentes["cuerpo"],
+            )
         izq.dibujar(superficie, self.fuentes["menu"])
         der.dibujar(superficie, self.fuentes["menu"])
 
     def dibujar(self, superficie: pygame.Surface) -> None:
         superficie.fill(COLOR_FONDO)
         _dibujar_cabecera_libre(superficie, self.fuentes, "Paso 1 de 2 — opciones de partida")
-        superficie.blit(
-            self.fuentes["menu"].render(
-                etiqueta_campo("nombre", "Nombre:"), True, COLOR_TEXTO
-            ),
-            (MARGEN + 40, Y_NOMBRE_LBL),
-        )
-        self.campo_nombre.dibujar(superficie, self.fuentes["menu"])
         dibujar_panel(superficie, self._rect_panel_opciones(), color=(255, 255, 255))
         for op_id, y in self._y_opcion.items():
             self._dibujar_fila_opcion(superficie, op_id, y)
@@ -1106,7 +1095,6 @@ class ConfigFiltrosLibre(Pantalla):
                 self.datos,
                 self.ir_a,
                 self.salir_app,
-                nombre_inicial=e.nombre,
                 banco_inicial=e.banco_elegido,
                 modo_infinito_inicial=e.modo_infinito,
                 total_inicial=e.total_elegido,
@@ -1119,6 +1107,78 @@ class ConfigFiltrosLibre(Pantalla):
                 dificultad_progresiva_inicial=e.reglas.dificultad_progresiva,
             )
         )
+
+    def _snapshot(self) -> SnapshotConfigFiltrosLibre:
+        return SnapshotConfigFiltrosLibre(
+            estado=self.estado,
+            modo_filtro=self.modo_filtro,
+            tematicas_sel=frozenset(self.tematicas_sel),
+            semestres_sel=frozenset(self.semestres_sel),
+            tipos_sel=frozenset(self.tipos_sel),
+            niveles_sel=frozenset(self.niveles_sel),
+        )
+
+    @classmethod
+    def desde_snapshot(
+        cls,
+        datos: DatosJuego,
+        ir_a: Callable[[Pantalla], None],
+        salir_app: Callable[[], None],
+        snap: SnapshotConfigFiltrosLibre,
+    ) -> ConfigFiltrosLibre:
+        pantalla = cls(datos, ir_a, salir_app, snap.estado)
+        pantalla.modo_filtro = snap.modo_filtro
+        pantalla.tematicas_sel = set(snap.tematicas_sel)
+        pantalla.semestres_sel = set(snap.semestres_sel)
+        pantalla.tipos_sel = set(snap.tipos_sel)
+        pantalla.niveles_sel = set(snap.niveles_sel)
+        pantalla._reconstruir_subfiltros()
+        pantalla._reconstruir_niveles_ui()
+        return pantalla
+
+    def _crear_partida(
+        self,
+        *,
+        navegacion_fin: NavegacionFinPartida | None = None,
+    ):
+        from Grafico.pantallas import PartidaModoLibre
+
+        pool = self._pool_filtrado()
+        niveles = normalizar_niveles_seleccionados(self.niveles_sel, pool)
+        reglas = self._construir_reglas_finales()
+        return PartidaModoLibre(
+            nombre=self.estado.nombre,
+            preguntas=pool,
+            pool=pool,
+            reglas=reglas,
+            ir_a=self.ir_a,
+            datos=self.datos,
+            salir_app=self.salir_app,
+            infinito=self.modo_infinito,
+            total_previsto=self.total_elegido,
+            niveles_complejidad=niveles,
+            meta_informe=self._meta_informe(pool),
+            navegacion_fin=navegacion_fin,
+        )
+
+    def _construir_navegacion_fin(
+        self, snap: SnapshotConfigFiltrosLibre
+    ) -> NavegacionFinPartida:
+        datos = self.datos
+        ir_a = self.ir_a
+        salir_app = self.salir_app
+        nav_holder: list[NavegacionFinPartida | None] = [None]
+
+        def repetir():
+            cfg = ConfigFiltrosLibre.desde_snapshot(datos, ir_a, salir_app, snap)
+            return cfg._crear_partida(navegacion_fin=nav_holder[0])
+
+        def configurar():
+            return ConfigFiltrosLibre.desde_snapshot(datos, ir_a, salir_app, snap)
+
+        nav = NavegacionFinPartida(repetir=repetir, configurar=configurar)
+        nav_holder[0] = nav
+        return nav
 
     def _empezar(self) -> None:
         if self.modo_filtro == FILTRO_SEMESTRE and not opciones_curso_semestre(self.pool_raw):
@@ -1139,29 +1199,19 @@ class ConfigFiltrosLibre(Pantalla):
             self.mensaje = "La dificultad progresiva requiere al menos 2 niveles."
             return
         try:
-            reglas = self._construir_reglas_finales()
+            self._construir_reglas_finales()
         except ValueError as e:
             self.mensaje = str(e)
             return
 
-        from Grafico.pantallas import PartidaModoLibre
-
         self.mensaje = ""
-        self.ir_a(
-            PartidaModoLibre(
-                nombre=self.estado.nombre,
-                preguntas=pool,
-                pool=pool,
-                reglas=reglas,
-                ir_a=self.ir_a,
-                datos=self.datos,
-                salir_app=self.salir_app,
-                infinito=self.modo_infinito,
-                total_previsto=self.total_elegido,
-                niveles_complejidad=niveles,
-                meta_informe=self._meta_informe(pool),
-            )
-        )
+        snap = self._snapshot()
+        navegacion = self._construir_navegacion_fin(snap)
+        try:
+            self.ir_a(self._crear_partida(navegacion_fin=navegacion))
+        except ValueError as e:
+            self.mensaje = str(e)
+            return
 
     def _botones_ui(self) -> list:
         botones: list = [

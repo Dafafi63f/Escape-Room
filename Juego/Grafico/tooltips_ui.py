@@ -27,6 +27,13 @@ TOOLTIP_N_PREGUNTAS_INFINITO = (
 )
 
 TOOLTIP_PAUSA = "Menú de pausa: continuar, ir al título o salir del juego."
+TOOLTIP_DIARIOS = (
+    "Retos del día: examen del día (historia) y reto del día (resistencia). "
+    "Misma secuencia para todos hoy."
+)
+TOOLTIP_OPCIONES = (
+    "Opciones globales: nombre por defecto, ayudas al ratón, emojis y borrado de datos locales."
+)
 
 TOOLTIP_PAUSA_CONTINUAR = "Cierra el menú de pausa y vuelve a la pantalla actual."
 TOOLTIP_PAUSA_CONTINUAR_PARTIDA = "Sigue jugando la partida en curso."
@@ -46,8 +53,15 @@ TOOLTIP_MENU_PRINCIPAL: dict[str, str] = {
     "libre": (
         "Partida personalizada: eliges banco, vidas, tiempo, filtros y número de preguntas."
     ),
+    "diarios": (
+        "Acceso rápido al examen del día (historia) y al reto del día (resistencia). "
+        "Misma secuencia para todos hoy."
+    ),
     "historia": (
-        "Presets guiados: simulacros de examen, retos y modo resistencia con ranking."
+        "Presets guiados: simulacros de examen, repasos y retos con datos históricos."
+    ),
+    "especiales": (
+        "Modos aparte del catálogo de historia: resistencia infinita y futuros retos especiales."
     ),
     "feedback": (
         "Repaso de errores con explicación (funcionalidad prevista; aún en construcción)."
@@ -87,10 +101,13 @@ TOOLTIP_GUARDAR_INFORME = (
     "aciertos y corrección pregunta a pregunta."
 )
 
-TOOLTIP_VER_RANKING = (
-    "Tabla local de mejores partidas en modo resistencia, ordenada por "
-    "preguntas alcanzadas (no por racha de aciertos)."
+from Comun.textos_ui import emoji_icono
+
+TOOLTIP_RANKING = (
+    "Ranking local de resistencia infinita y reto del día (dos tablas). "
+    f"Borrado local desde Opciones ({emoji_icono('opciones', contexto='grafico')})."
 )
+TOOLTIP_VER_RANKING = TOOLTIP_RANKING
 
 # Valores de opciones «eleccion» en presets historia (clave op → valor → texto).
 _TOOLTIP_ELECCION_HISTORIA: dict[str, dict[str, str]] = {

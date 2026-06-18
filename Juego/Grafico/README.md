@@ -5,10 +5,11 @@ Versión gráfica del juego. Reutiliza [`Comun/`](../Comun/README.md) (datos, re
 | Elemento | Descripción |
 |----------|-------------|
 | [`juego_grafico.py`](../juego_grafico.py) | Lanzador pygame |
-| [`app.py`](app.py) | Bucle principal, pausa global, iconos fijos (pausa, feedback) |
+| [`app.py`](app.py) | Bucle principal, pausa global, iconos fijos (pausa, feedback, opciones) |
 | [`pantallas.py`](pantallas.py) | Menú principal, partida libre, resumen, placeholder feedback |
 | [`pantallas_libre.py`](pantallas_libre.py) | Wizard modo libre (paso 1: reglas; paso 2: filtros) |
-| [`pantallas_historia.py`](pantallas_historia.py) | Historia, resistencia, ranking, carrusel de presets |
+| [`pantallas_historia.py`](pantallas_historia.py) | Historia (carrusel de presets), opciones, partida y ranking |
+| [`pantallas_especiales.py`](pantallas_especiales.py) | Modos especiales (menú por botones) |
 | [`modo_libre.py`](modo_libre.py) | Utilidades del modo libre gráfico |
 | [`modo_historia.py`](modo_historia.py) | Arranque de presets historia/resistencia |
 | [`ui.py`](ui.py) | Botones, campos de texto, tooltips, texto multilínea |
@@ -17,7 +18,8 @@ Versión gráfica del juego. Reutiliza [`Comun/`](../Comun/README.md) (datos, re
 | [`textos_grafico.py`](textos_grafico.py) | Atajos de etiquetas sin emoji decorativo |
 | [`tema.py`](tema.py) | Colores, tamaño de ventana (960×720) |
 | [`fuentes.py`](fuentes.py) | Fuentes por familia (texto, símbolos, emoji) |
-| [`barra_estado.py`](barra_estado.py) | Barra superior en partida (vidas, tiempo, puntos) |
+| [`barra_estado.py`](barra_estado.py) | Barra superior en partida (chips emoji: pregunta, racha, vidas, tiempos, puntos) |
+| [`menu_opciones.py`](menu_opciones.py) | Panel superpuesto de opciones globales |
 | [`feedback_partida.py`](feedback_partida.py) | Panel de feedback tras cada respuesta |
 | [`aviso_resistencia.py`](aviso_resistencia.py) | Popups de eventos y recompensas (resistencia) |
 | [`informe_partida.py`](informe_partida.py) | Resumen breve y guardado de informes `.txt` |
@@ -66,7 +68,7 @@ python Juego/juego_grafico.py
 
 Textos en [`tooltips_ui.py`](tooltips_ui.py). Implementados en:
 
-- Iconos fijos de pausa y feedback
+- Iconos fijos de pausa, feedback y opciones
 - Menú de pausa (3 botones)
 - Menú principal (4 opciones)
 - Navegación Atrás / Siguiente / Empezar / Continuar (libre e historia)

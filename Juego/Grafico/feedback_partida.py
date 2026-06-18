@@ -9,8 +9,8 @@ import time
 import pygame
 
 from Grafico.tema import ANCHO, COLOR_AVISO, COLOR_ERROR, COLOR_OK, MARGEN
-from Grafico.textos_grafico import mensaje_feedback
 from Grafico.texto import dibujar_texto_centro, medir_texto_mixto
+from Grafico.textos_grafico import mensaje_feedback
 from Grafico.ui import dibujar_texto_multilinea
 
 SEGUNDOS_FEEDBACK_ACIERTO = 1.6
@@ -29,8 +29,12 @@ def marcar_inicio_feedback() -> float:
 
 def segundos_espera_feedback(*, solucion: str | None, acierto: bool) -> float:
     if solucion:
-        return SEGUNDOS_FEEDBACK_CON_SOLUCION
-    return SEGUNDOS_FEEDBACK_ACIERTO if acierto else SEGUNDOS_FEEDBACK_FALLO
+        base = SEGUNDOS_FEEDBACK_CON_SOLUCION
+    elif acierto:
+        base = SEGUNDOS_FEEDBACK_ACIERTO
+    else:
+        base = SEGUNDOS_FEEDBACK_FALLO
+    return base
 
 
 def feedback_debe_avanzar(

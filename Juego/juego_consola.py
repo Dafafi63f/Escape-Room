@@ -23,7 +23,7 @@ _JUEGO = Path(__file__).resolve().parent
 if str(_JUEGO) not in sys.path:
     sys.path.insert(0, str(_JUEGO))
 
-from Consola.app import bucle_juego, tutorial_inicio
+from Comun.ranking_resistencia import finalizar_ranking_al_salir, inicializar_ranking_sesion
 from Comun.datos import cargar_materias, cargar_preguntas
 from Comun.stdio_utf8 import configurar_stdio_utf8
 from Consola.modo_feedback import ejecutar_feedback_rapido
@@ -43,6 +43,7 @@ def main() -> None:
         return
 
     registrar_atajo_feedback(ejecutar_feedback_rapido)
+    inicializar_ranking_sesion()
     try:
         tutorial_inicio()
         bucle_juego(materias_meta, preguntas_dataset, path_plantillas)
@@ -56,6 +57,7 @@ def main() -> None:
         print(f"\n\nError inesperado: {exc}")
         print("El juego se ha cerrado de forma segura.")
     finally:
+        finalizar_ranking_al_salir()
         registrar_atajo_feedback(None)
 
     print(con_emoji("¡Hasta pronto!", "👋") if usar_emojis() else "¡Hasta pronto!")

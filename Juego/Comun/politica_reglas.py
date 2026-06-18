@@ -78,7 +78,9 @@ def politica_historia_resistencia() -> PoliticaReglas:
     return _politica_fija(
         ContextoPartida.HISTORIA_RESISTENCIA,
         preset_historia_resistencia(),
-        "Resistencia infinita: 3 vidas; la dificultad sube con el nº de pregunta; la racha solo bonifica puntos.",
+        "Resistencia infinita: 3 vidas; dificultad por nº de pregunta; la partida solo "
+        "termina cuando el jugador falla (o abandona); la racha bonifica puntos y, si crece "
+        "mucho, endurece la pregunta sin castigos automáticos.",
     )
 
 

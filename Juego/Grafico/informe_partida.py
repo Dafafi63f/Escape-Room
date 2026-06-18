@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from Comun.cierre_informe import CierreInformePartida
+from Comun.preferencias_grafico import guardar_informes_txt_habilitados
 from Comun.reglas_partida import SistemaPuntuacion, formatear_resultado_puntuacion
 from Consola.informe_examen import RegistroRespuesta, publicar_informe_partida
 from Comun.motor_nucleo import EstadoPartida
@@ -46,9 +47,12 @@ def lineas_resumen_breve(
             lineas.append(f"Aciertos: {e.aciertos}/{e.respondidas}")
     if e.respondidas < total_previsto:
         lineas.append(f"Preguntas respondidas: {e.respondidas}/{total_previsto}")
-    lineas.append(
-        "Cada partida genera su propio .txt en Juego/Informes/ al volver al menú."
-    )
+    if guardar_informes_txt_habilitados():
+        lineas.append(
+            "Cada partida genera su propio .txt en Juego/Informes/ al salir del resumen."
+        )
+    else:
+        lineas.append("Los informes .txt están desactivados en Opciones.")
     return lineas
 
 

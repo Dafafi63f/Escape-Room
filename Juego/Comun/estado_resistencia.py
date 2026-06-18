@@ -16,20 +16,37 @@ class EstadoResistencia:
     """Racha de aciertos seguidos (se corta al fallar); vidas e inventario aparte."""
 
     racha: int = 0
-    mejor_racha: int = 0
+    mejor_racha: int = 0  # récord de la partida; solo ranking/resumen, no afecta al juego
     vidas_max: int = VIDAS_MAX_INICIAL
     inventario: dict[str, int] = field(default_factory=dict)
     letras_ocultas: frozenset[str] = field(default_factory=frozenset)
     fraccion_enunciado: float = 1.0
     tiempo_extra_seg: int = 0
+    relampago_forzado_seg: int | None = None
     escudo_activo: bool = False
     ultimo_evento: str = ""
+    semilla_partida: int | None = None
+    reto_dia: bool = False
+    bloque_filtro: object | None = None
+    apuesta_oferta: object | None = None
+    apuesta_activa: object | None = None
+    maldicion: object | None = None
+    ventana_resultados: list[bool] = field(default_factory=list)
+    tiradas_recompensa: int = 0
+    objetos_bloqueados: bool = False
+    sin_pistas_turno: bool = False
+    banco_resistencia: object | None = None
+    presion_racha_intensidad: float = 0.0
 
     def reset_pregunta(self) -> None:
         self.letras_ocultas = frozenset()
         self.fraccion_enunciado = 1.0
         self.tiempo_extra_seg = 0
+        self.relampago_forzado_seg = None
         self.ultimo_evento = ""
+        self.sin_pistas_turno = False
+        self.presion_racha_intensidad = 0.0
+        self.objetos_bloqueados = False
 
     def registrar_acierto(self) -> None:
         self.racha += 1

@@ -11,26 +11,31 @@ from Comun.motor_nucleo import EstadoPartida, FeedbackRespuesta, ResultadoRespue
 from Comun.motor_resistencia_comun import (
     aplicar_bonificaciones_puntos_resistencia,
     aplicar_modificadores_visuales_escalada,
+    configurar_partida_resistencia,
+    consumir_bloque_filtro,
     crear_estado_resistencia,
+    elegir_indice_similar,
+    formatear_aviso_apuesta,
+    preparar_eventos_nuevo_turno,
     procesar_turno_resistencia,
     texto_pregunta_para_turno,
+    texto_progreso_resistencia,
     tiempo_pregunta_efectivo,
     usar_powerup,
 )
 from Comun.iconos_resistencia import emoji_powerup, prefijar_emoji
 from Comun.powerups_resistencia import descripcion_powerup, etiqueta_powerup
-from Comun.ranking_resistencia import registrar_partida
+from Comun.ranking_resistencia import path_ranking_para_preset, registrar_partida
 from Comun.reglas_partida import ReglasPartida, formatear_resultado_puntuacion
 from Comun.resistencia_historia import (
     aplicar_escalada_a_reglas,
-    construir_pool_resistencia,
+    construir_banco_resistencia,
     crear_seleccion_resistencia,
     elegir_indice_resistencia,
     escalada_para_pregunta,
     etiqueta_tier_exclusiva,
     texto_efectos_escalada,
 )
-from Comun.rutas import resolver_ranking_resistencia
 from Consola.consola import pedir_menu_numerado
 from Consola.informe_examen import RegistroRespuesta, publicar_informe_partida
 from Consola.motor_partida import (
@@ -42,11 +47,16 @@ from Consola.navegacion import IrMenuPrincipal, SalirPrograma, establecer_contex
 from Consola.textos_consola import campo, con_emoji, feedback as feedback_ui
 
 
-def _progreso_resistencia(er: EstadoResistencia, numero_pregunta: int) -> str:
-    return f"#{numero_pregunta} · Racha {er.racha}"
+def _mostrar_avisos(avisos: list[str]) -> None:
+    for aviso in avisos:
+        print(f"[!] {aviso}")
 
 
-def _mostrar_feedback_turno(fb: FeedbackRespuesta, *, recompensa: str | None = None) -> None:
+def _mostrar_feedback_turno(
+    fb: FeedbackRespuesta,
+    *,
+    avisos_extra: tuple[str, ...] = (),
+) -> None:
     if fb.mensaje == "Respuesta registrada.":
         return
     msg = feedback_ui(fb.mensaje)
@@ -58,13 +68,15 @@ def _mostrar_feedback_turno(fb: FeedbackRespuesta, *, recompensa: str | None = N
         print(f"[!] {msg}")
     if fb.solucion:
         print(fb.solucion)
-    if recompensa:
-        print(f"[+] {recompensa}")
+    for aviso in avisos_extra:
+        print(f"[!] {aviso}")
     if fb.sin_vidas:
         print(f"\n{con_emoji('Te has quedado sin vidas.', '💔')}")
 
 
 def _menu_powerup(er: EstadoResistencia) -> str | None:
+    if er.objetos_bloqueados:
+        return None
     items = [(pid, n) for pid, n in sorted(er.inventario.items()) if n > 0]
     if not items:
         return None
@@ -82,6 +94,21 @@ def _menu_powerup(er: EstadoResistencia) -> str | None:
     return items[idx - 2][0]
 
 
+def _preguntar_apuesta(er: EstadoResistencia) -> None:
+    if not er.apuesta_oferta:
+        return
+    apuesta = er.apuesta_oferta
+    print(f"\n{formatear_aviso_apuesta(apuesta)}")
+    idx = pedir_menu_numerado(
+        "¿Aceptas la apuesta?",
+        [("1", "Sí, arriesgar"), ("2", "No, jugar normal")],
+        defecto=2,
+    )
+    if idx == 1:
+        er.apuesta_activa = apuesta
+    er.apuesta_oferta = None
+
+
 def ejecutar_resistencia_historia(
     preguntas: list[Pregunta],
     *,
@@ -92,13 +119,26 @@ def ejecutar_resistencia_historia(
     perfil: str,
     materias_meta: dict[str, dict[str, str]] | None = None,
     stats_historicas: dict | None = None,
+    path_plantillas=None,
+    path_preguntas_csv=None,
 ) -> EstadoPartida:
-    pool = construir_pool_resistencia(preguntas, materias_meta or {})
+    banco = construir_banco_resistencia(
+        preguntas,
+        materias_meta or {},
+        path_plantillas=path_plantillas,
+        path_preguntas_csv=path_preguntas_csv,
+    )
+    pool = banco.pool_completo()
     if not pool:
         raise ValueError("No hay preguntas para el modo resistencia.")
 
+    path_ranking = path_ranking_para_preset(preset_id)
     er = crear_estado_resistencia(reglas.vidas or 3)
-    escalada = escalada_para_pregunta(1)
+    er.banco_resistencia = banco
+    configurar_partida_resistencia(
+        er, preset_id=preset_id
+    )
+    escalada = escalada_para_pregunta(1, semilla_partida=er.semilla_partida)
     estado = EstadoPartida(
         nombre=nombre,
         reglas=aplicar_escalada_a_reglas(reglas, escalada),
@@ -107,20 +147,32 @@ def ejecutar_resistencia_historia(
     seleccion = crear_seleccion_resistencia(pool)
     registros: list[RegistroRespuesta] = []
     indice = 0
+    avisos_pendientes: list[str] = []
 
     while estado.debe_continuar(None):
         er.reset_pregunta()
         indice += 1
-        escalada = escalada_para_pregunta(indice)
+        escalada = escalada_para_pregunta(
+            indice, semilla_partida=er.semilla_partida, racha=er.racha
+        )
         estado.reglas = aplicar_escalada_a_reglas(reglas, escalada)
-        idx = elegir_indice_resistencia(pool, seleccion, escalada, indice)
+        avisos_turno = preparar_eventos_nuevo_turno(er, pool, indice)
+        avisos_pendientes.extend(avisos_turno)
+        idx = elegir_indice_resistencia(pool, seleccion, escalada, indice, er=er)
         if idx is None:
             break
+        consumir_bloque_filtro(er)
         p = pool[idx]
+        _preguntar_apuesta(er)
+        if avisos_pendientes:
+            _mostrar_avisos(avisos_pendientes)
+            avisos_pendientes = []
         aplicar_modificadores_visuales_escalada(er, escalada, p, indice)
         texto_mostrar = texto_pregunta_para_turno(p, er)
-        progreso = _progreso_resistencia(er, indice)
+        progreso = texto_progreso_resistencia(er, indice)
         extra = texto_efectos_escalada(escalada)
+        if er.bloque_filtro:
+            extra = (extra + " · " if extra else "") + er.bloque_filtro.etiqueta
         if p.exclusiva_resistencia:
             tier = etiqueta_tier_exclusiva(p)
             extra = f"★ Pregunta exclusiva ({tier})" + (f" · {extra}" if extra else "")
@@ -146,8 +198,37 @@ def ejecutar_resistencia_historia(
                     if err:
                         print(f"[!] {err}")
                         continue
-                    print("[i] Pregunta saltada.")
+                    er.registrar_fallo()
+                    print("[i] Pregunta saltada (racha reiniciada).")
                     break
+                if powerup == "cambio":
+                    err = usar_powerup("cambio", er, p)
+                    if err:
+                        print(f"[!] {err}")
+                        continue
+                    nuevo = elegir_indice_similar(
+                        pool, seleccion, escalada, indice, idx, er=er
+                    )
+                    if nuevo is None:
+                        print("[!] No hay otra pregunta parecida disponible.")
+                        er.agregar_powerup("cambio", 1)
+                        continue
+                    idx = nuevo
+                    p = pool[idx]
+                    aplicar_modificadores_visuales_escalada(er, escalada, p, indice)
+                    print("[i] Pregunta sustituida por una parecida.")
+                    registrar_contexto_pregunta(
+                        p,
+                        estado,
+                        indice=indice,
+                        total=None,
+                        etiqueta="Resistencia",
+                        extra_meta=extra,
+                        progreso=linea_estado(estado, progreso, vidas_max=er.vidas_max),
+                        letras_ocultas=er.letras_ocultas,
+                        texto_pregunta=texto_pregunta_para_turno(p, er),
+                    )
+                    continue
                 if powerup:
                     err = usar_powerup(powerup, er, p)
                     if err:
@@ -171,11 +252,14 @@ def ejecutar_resistencia_historia(
                         print("[i] Escudo activo para el próximo fallo.")
                     continue
 
+                limite = tiempo_pregunta_efectivo(
+                    estado.reglas.tiempo_por_pregunta_seg, er
+                )
                 resultado = preguntar_con_reglas(
                     p,
                     estado,
                     letras_ocultas=er.letras_ocultas,
-                    tiempo_extra_seg=er.tiempo_extra_seg,
+                    limite_pregunta_seg=limite,
                 )
                 puntos_prev = estado.puntos_arcade
                 turno = procesar_turno_resistencia(
@@ -189,9 +273,13 @@ def ejecutar_resistencia_historia(
                     exclusiva=p.exclusiva_resistencia,
                     acierto=resultado.acierto,
                     tiempo_agotado=resultado.tiempo_agotado,
+                    mult_apuesta=turno.mult_apuesta,
                 )
-                recompensa_txt = turno.recompensa.etiqueta if turno.recompensa else None
-                _mostrar_feedback_turno(turno.feedback, recompensa=recompensa_txt)
+                _mostrar_feedback_turno(
+                    turno.feedback,
+                    avisos_extra=turno.avisos_extra,
+                )
+                avisos_pendientes.extend(turno.avisos_extra)
                 if turno.reintentar_pregunta:
                     registrar_contexto_pregunta(
                         p,
@@ -201,7 +289,7 @@ def ejecutar_resistencia_historia(
                         etiqueta="Resistencia",
                         extra_meta=extra,
                         progreso=linea_estado(
-                            estado, _progreso_resistencia(er, indice), vidas_max=er.vidas_max
+                            estado, texto_progreso_resistencia(er, indice), vidas_max=er.vidas_max
                         ),
                         letras_ocultas=er.letras_ocultas,
                         texto_pregunta=texto_pregunta_para_turno(p, er),
@@ -228,7 +316,7 @@ def ejecutar_resistencia_historia(
         posicion: int | None = None
         try:
             _, posicion = registrar_partida(
-                resolver_ranking_resistencia(),
+                path_ranking,
                 nombre=nombre,
                 racha=er.mejor_racha,
                 puntos=estado.puntos_arcade,
@@ -243,13 +331,17 @@ def ejecutar_resistencia_historia(
             f"FIN RACHA — {preset_nombre}",
             estado.respondidas,
         )
-        print(f"\n{campo('racha', f'Preguntas respondidas: {estado.respondidas}. Mejor racha (puntos): {er.mejor_racha}.')}")
-        print(formatear_resultado_puntuacion(
-            reglas,
-            aciertos=estado.aciertos,
-            total=estado.respondidas,
-            puntos_arcade=estado.puntos_arcade,
-        ))
+        print(
+            f"\n{campo('racha', f'Preguntas respondidas: {estado.respondidas}. Mejor racha (puntos): {er.mejor_racha}.')}"
+        )
+        print(
+            formatear_resultado_puntuacion(
+                reglas,
+                aciertos=estado.aciertos,
+                total=estado.respondidas,
+                puntos_arcade=estado.puntos_arcade,
+            )
+        )
         if posicion is not None:
             print(f"{campo('ranking_pos', f'Posición en ranking local: #{posicion}')}")
 

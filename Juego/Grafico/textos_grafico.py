@@ -8,6 +8,7 @@ Títulos, etiquetas de formulario y textos informativos se muestran sin emoji.
 
 from __future__ import annotations
 
+from Comun.preferencias_grafico import emojis_habilitados
 from Comun.textos_ui import (
     BTN_ABANDONAR,
     BTN_ATRAS,
@@ -15,10 +16,14 @@ from Comun.textos_ui import (
     BTN_CONTINUAR_PARTIDA,
     BTN_EMPEZAR,
     BTN_GUARDAR_INFORME,
+    BTN_REPETIR_PARTIDA,
+    BTN_CAMBIAR_OPCIONES,
     BTN_PANTALLA_TITULO,
     BTN_SALIR_PROGRAMA,
     BTN_SIGUIENTE,
     BTN_VER_RANKING,
+    BTN_BORRAR_RANKING,
+    BTN_BORRAR_TXT_INFORMES,
     BTN_VOLVER,
     BTN_VOLVER_MENU,
     EmojiPar,
@@ -40,10 +45,13 @@ __all__ = [
     "BTN_CONTINUAR_PARTIDA",
     "BTN_EMPEZAR",
     "BTN_GUARDAR_INFORME",
+    "BTN_REPETIR_PARTIDA",
+    "BTN_CAMBIAR_OPCIONES",
     "BTN_PANTALLA_TITULO",
     "BTN_SALIR_PROGRAMA",
     "BTN_SIGUIENTE",
     "BTN_VER_RANKING",
+    "BTN_BORRAR_RANKING",
     "BTN_VOLVER",
     "BTN_VOLVER_MENU",
     "btn",
@@ -61,8 +69,19 @@ __all__ = [
 ]
 
 
-def con_emoji(texto: str, emoji: str | EmojiPar) -> str:
-    return _con_emoji(texto, emoji, contexto=_CONTEXTO)
+def con_emoji(
+    texto: str,
+    emoji: str | EmojiPar,
+    *,
+    posicion: PosicionEmoji | None = None,
+) -> str:
+    return _con_emoji(
+        texto,
+        emoji,
+        usar_emojis=emojis_habilitados(),
+        contexto=_CONTEXTO,
+        posicion=posicion,
+    )
 
 
 def _posicion_etiqueta(emoji: str | EmojiPar) -> PosicionEmoji:
@@ -70,12 +89,24 @@ def _posicion_etiqueta(emoji: str | EmojiPar) -> PosicionEmoji:
 
 
 def etiqueta(texto: str, emoji: str | EmojiPar) -> str:
-    return _etiqueta(texto, emoji, contexto=_CONTEXTO, posicion=_posicion_etiqueta(emoji))
+    return _etiqueta(
+        texto,
+        emoji,
+        usar_emojis=emojis_habilitados(),
+        contexto=_CONTEXTO,
+        posicion=_posicion_etiqueta(emoji),
+    )
 
 
 def etiqueta_menu(texto: str, emoji: str | EmojiPar) -> str:
     """Opción de menú vertical (p. ej. pausa): emojis simétricos en los tres botones."""
-    return _etiqueta(texto, emoji, contexto=_CONTEXTO, posicion="simetrico")
+    return _etiqueta(
+        texto,
+        emoji,
+        usar_emojis=emojis_habilitados(),
+        contexto=_CONTEXTO,
+        posicion="simetrico",
+    )
 
 
 def titulo(texto: str) -> str:
@@ -99,7 +130,7 @@ def info_dataset(num_preguntas: int, num_materias: int) -> str:
 
 
 def mensaje_feedback(mensaje: str) -> str:
-    return _mensaje_feedback(mensaje)
+    return _mensaje_feedback(mensaje, usar_emojis=emojis_habilitados())
 
 
 def nombre_paso(nombre: str) -> str:
@@ -107,6 +138,8 @@ def nombre_paso(nombre: str) -> str:
 
 
 def emoji_icono(clave: str) -> str:
+    if not emojis_habilitados():
+        return ""
     return _emoji_icono(clave, contexto=_CONTEXTO)
 
 
@@ -115,4 +148,4 @@ def btn(par: tuple[str, str | EmojiPar]) -> str:
 
 
 def etiqueta_opcion_menu(op: OpcionMenuPrincipal) -> str:
-    return op.etiqueta(contexto=_CONTEXTO)
+    return op.etiqueta(contexto=_CONTEXTO, usar_emojis=emojis_habilitados())

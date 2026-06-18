@@ -26,9 +26,11 @@ from Comun.motor_nucleo import (
 )
 from Comun.cierre_informe import CierreInformePartida
 from Comun.jugador import es_nombre_anonimo
+from Comun.navegacion_fin_partida import NavegacionFinPartida
 from Comun.pool_libre import crear_estado_seleccion, elegir_indice_siguiente
+from Comun.preferencias_grafico import guardar_informes_txt_habilitados
 from Grafico.informe_partida import guardar_informe_cierre, lineas_resumen_breve
-from Grafico.tema import ALTO, ANCHO, COLOR_ACENTO, COLOR_AVISO, COLOR_ERROR, COLOR_FONDO, COLOR_OK, COLOR_TEXTO, COLOR_TITULO, MARGEN, crear_fuentes
+from Grafico.tema import ALTO, ANCHO, COLOR_ACENTO, COLOR_AVISO, COLOR_ERROR, COLOR_FONDO, COLOR_OK, COLOR_TEXTO, COLOR_TITULO, MARGEN, crear_fuentes, x_min_centro_barra_partida
 from Grafico.texto import dibujar_texto_centro, preparar_texto_ui
 from Grafico.ui import (
     Boton,
@@ -37,6 +39,7 @@ from Grafico.ui import (
     dibujar_panel,
     dibujar_texto_multilinea,
     dibujar_tooltips_botones,
+    posicionar_botones_fila,
     posicionar_pila_inferior,
     rect_boton_etiqueta,
     rects_botones_apilados,
@@ -49,6 +52,7 @@ from Grafico.feedback_partida import (
     solucion_feedback_grafico,
 )
 from Comun.textos_ui import OPCIONES_MENU_PRINCIPAL
+from Grafico.textos_grafico import etiqueta_opcion_menu
 from Grafico.tooltips_ui import (
     TOOLTIP_ABANDONAR_LIBRE,
     TOOLTIP_GUARDAR_INFORME,
@@ -56,7 +60,9 @@ from Grafico.tooltips_ui import (
 )
 from Grafico.textos_grafico import (
     BTN_ABANDONAR,
+    BTN_CAMBIAR_OPCIONES,
     BTN_GUARDAR_INFORME,
+    BTN_REPETIR_PARTIDA,
     BTN_VOLVER,
     BTN_VOLVER_MENU,
     etiqueta,
@@ -68,10 +74,9 @@ if TYPE_CHECKING:
 
 Y_WIZARD_CONTENIDO = 96
 
-# Reservado para los iconos fijos
-MARGEN_ICONOS_FIJOS = 112
-ALTURA_BARRA_PARTIDA = 52
-Y_PANEL_PREGUNTA = ALTURA_BARRA_PARTIDA + 14
+ALTURA_BARRA_PARTIDA = 58
+GAP_BAJO_BARRA_PARTIDA = 20
+Y_PANEL_PREGUNTA = ALTURA_BARRA_PARTIDA + GAP_BAJO_BARRA_PARTIDA
 ALTO_PANEL_PREGUNTA = 150
 ALTO_OPCION_PARTIDA = 64
 SEP_OPCIONES_PARTIDA = 8
@@ -94,6 +99,13 @@ class Pantalla:
 
     def dibujar(self, superficie: pygame.Surface) -> None:
         raise NotImplementedError
+
+    def popup_bloqueante(self) -> bool:
+        """Popup modal: bloquea y atenúa la barra fija hasta cerrarse (clic o tiempo)."""
+        return False
+
+    def dibujar_contenido_popup_bloqueante(self, superficie: pygame.Surface) -> None:
+        """Panel del popup; la app dibuja el velo semitransparente antes."""
 
     def restaurar_vista_completa(self) -> None:
         """Tras pausa → Continuar: redibuja la pantalla actual con su UI completa."""
@@ -165,7 +177,7 @@ class PantallaFeedback(Pantalla):
         dibujar_texto_centro(
             superficie,
             titulo_pantalla("MODO FEEDBACK"),
-            (ANCHO // 2, 90),
+            (ANCHO // 2, 100),
             self.fuentes["titulo"].get_height(),
             COLOR_TITULO,
             bold=True,
@@ -188,8 +200,13 @@ class PantallaFeedback(Pantalla):
         self.boton_volver.dibujar(superficie, self.fuentes["menu"])
 
 
+_OPCIONES_MENU_EXCLUIDAS_GRAFICO = frozenset({"diarios"})
+
+
 class MenuPrincipal(Pantalla):
-    OPCIONES = OPCIONES_MENU_PRINCIPAL
+    OPCIONES = tuple(
+        o for o in OPCIONES_MENU_PRINCIPAL if o.id not in _OPCIONES_MENU_EXCLUIDAS_GRAFICO
+    )
 
     def __init__(
         self,
@@ -210,7 +227,7 @@ class MenuPrincipal(Pantalla):
 
     def _crear_botones(self) -> list[Boton]:
         fuente = self.fuentes["menu"]
-        etiquetas = [opcion.etiqueta() for opcion in self.OPCIONES]
+        etiquetas = [etiqueta_opcion_menu(opcion) for opcion in self.OPCIONES]
         rects = rects_botones_apilados(
             etiquetas,
             fuente,
@@ -222,9 +239,10 @@ class MenuPrincipal(Pantalla):
         )
         botones: list[Boton] = []
         for opcion, rect in zip(self.OPCIONES, rects, strict=True):
+            etiq = etiqueta_opcion_menu(opcion)
             botones.append(
                 Boton(
-                    opcion.etiqueta(),
+                    etiq,
                     rect,
                     lambda oid=opcion.id: self._al_pulsar(oid),
                     tooltip=tooltip_menu_principal(opcion.id),
@@ -245,6 +263,11 @@ class MenuPrincipal(Pantalla):
             from Grafico.pantallas_historia import ConfigModoHistoria
 
             self.ir_a(ConfigModoHistoria(self.datos, self.ir_a, self.salir_app))
+            return
+        if opcion_id == "especiales":
+            from Grafico.pantallas_especiales import ConfigModosEspeciales
+
+            self.ir_a(ConfigModosEspeciales(self.datos, self.ir_a, self.salir_app))
             return
         if opcion_id == "feedback":
             if self.abrir_feedback is not None:
@@ -316,6 +339,7 @@ class PartidaModoLibre(Pantalla):
         complejidad_max: int | None = None,
         niveles_complejidad: frozenset[int] | set[int] | None = None,
         meta_informe: dict | None = None,
+        navegacion_fin: NavegacionFinPartida | None = None,
     ) -> None:
         self.nombre = nombre
         self.pool = list(pool or preguntas)
@@ -330,6 +354,7 @@ class PartidaModoLibre(Pantalla):
             rango = set(range(complejidad_min, (complejidad_max or max_complejidad_pool(self.pool)) + 1))
             self.niveles_complejidad = normalizar_niveles_seleccionados(rango, self.pool)
         self.meta_informe = meta_informe or {}
+        self.navegacion_fin = navegacion_fin
         self.registros: list = []
         self.ir_a = ir_a
         self.datos = datos
@@ -415,7 +440,7 @@ class PartidaModoLibre(Pantalla):
             x_derecha=ANCHO - MARGEN,
             y=14,
         )
-        x_centro_min = MARGEN_ICONOS_FIJOS + 8
+        x_centro_min = x_min_centro_barra_partida(self.fuentes["menu"])
         x_centro_max = self.boton_abandonar.rect.x - 12
         ancho_centro = max(80, x_centro_max - x_centro_min)
         seg_preg = None
@@ -574,6 +599,7 @@ class PartidaModoLibre(Pantalla):
             self.salir_app,
             cierre_informe=cierre,
             titulo="PARTIDA ABANDONADA" if abandonado else "FIN DE PARTIDA",
+            navegacion_fin=self.navegacion_fin,
         )
 
     def actualizar(self) -> Pantalla | None:
@@ -703,6 +729,7 @@ class ResumenPartida(Pantalla):
         cierre_informe: CierreInformePartida | None = None,
         titulo: str = "FIN DE PARTIDA",
         subtitulo: str | None = None,
+        navegacion_fin: NavegacionFinPartida | None = None,
     ) -> None:
         self.estado = estado
         self.total_previsto = total_previsto
@@ -710,37 +737,60 @@ class ResumenPartida(Pantalla):
         self.datos = datos
         self.salir_app = salir_app
         self.cierre_informe = cierre_informe
+        self.navegacion_fin = navegacion_fin
         self.titulo_pantalla = titulo
         self.subtitulo = subtitulo
         self.fuentes = crear_fuentes()
         self.lineas = self._construir_lineas()
         self.mensaje_pie = ""
-        etiqueta_boton = (
-            etiqueta(*BTN_GUARDAR_INFORME)
-            if cierre_informe and cierre_informe.registros
-            else etiqueta(*BTN_VOLVER_MENU)
-        )
-        self.boton_menu = Boton(
-            etiqueta_boton,
-            rect_boton_etiqueta(
-                etiqueta_boton,
-                self.fuentes["menu"],
+        self._botones_accion: list[Boton] = []
+        self._crear_botones_accion()
+        y_botones = ALTO - 88
+        if len(self._botones_accion) == 1:
+            posicionar_pila_inferior(
+                self._botones_accion,
                 x_centro=ANCHO // 2,
-                y=0,
-                alto_min=48,
-            ),
-            self._volver,
-            tooltip=(
-                TOOLTIP_GUARDAR_INFORME
-                if cierre_informe and cierre_informe.registros
-                else None
-            ),
-        )
-        posicionar_pila_inferior(
-            [self.boton_menu],
-            x_centro=ANCHO // 2,
-            gap=0,
-            margen_inferior=20,
+                gap=0,
+                margen_inferior=20,
+            )
+        else:
+            posicionar_botones_fila(
+                self._botones_accion,
+                y_botones,
+                x_centro=ANCHO // 2,
+                gap=10,
+            )
+
+    def _crear_botones_accion(self) -> None:
+        fuente = self.fuentes["menu"]
+        nav = self.navegacion_fin
+        if nav and nav.repetir:
+            etiq = etiqueta(*BTN_REPETIR_PARTIDA)
+            self._botones_accion.append(
+                Boton(
+                    etiq,
+                    rect_boton_etiqueta(etiq, fuente, x_centro=0, y=0, alto_min=44),
+                    self._repetir,
+                    tooltip="Misma configuración; preguntas nuevas.",
+                )
+            )
+        if nav and nav.configurar:
+            etiq = etiqueta(*BTN_CAMBIAR_OPCIONES)
+            self._botones_accion.append(
+                Boton(
+                    etiq,
+                    rect_boton_etiqueta(etiq, fuente, x_centro=0, y=0, alto_min=44),
+                    self._configurar,
+                    tooltip="Vuelve a la pantalla de ajustes del modo.",
+                )
+            )
+        etiq_menu = etiqueta(*BTN_VOLVER_MENU)
+        self._botones_accion.append(
+            Boton(
+                etiq_menu,
+                rect_boton_etiqueta(etiq_menu, fuente, x_centro=0, y=0, alto_min=44),
+                self._ir_menu,
+            )
         )
 
     def _construir_lineas(self) -> list[str]:
@@ -758,19 +808,42 @@ class ResumenPartida(Pantalla):
         )
         return lineas
 
-    def _volver(self) -> None:
-        if self.cierre_informe and self.cierre_informe.registros:
-            ruta = guardar_informe_cierre(self.estado, self.cierre_informe)
-            if ruta is None:
-                self.mensaje_pie = "No se pudo guardar el informe."
-                return
+    def _guardar_informe_si_procede(self) -> bool:
+        if not self.cierre_informe or not self.cierre_informe.registros:
+            return True
+        if not guardar_informes_txt_habilitados():
+            return True
+        ruta = guardar_informe_cierre(self.estado, self.cierre_informe)
+        if ruta is None:
+            self.mensaje_pie = "No se pudo guardar el informe."
+            return False
+        return True
+
+    def _ir_menu(self) -> None:
+        if not self._guardar_informe_si_procede():
+            return
         self.ir_a(MenuPrincipal(self.datos, self.ir_a, self.salir_app))
+
+    def _repetir(self) -> None:
+        if not self._guardar_informe_si_procede():
+            return
+        if self.navegacion_fin and self.navegacion_fin.repetir:
+            self.ir_a(self.navegacion_fin.repetir())
+
+    def _configurar(self) -> None:
+        if not self._guardar_informe_si_procede():
+            return
+        if self.navegacion_fin and self.navegacion_fin.configurar:
+            self.ir_a(self.navegacion_fin.configurar())
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
         if evento.type == pygame.MOUSEMOTION:
-            self.boton_menu.actualizar_hover(evento.pos)
+            for boton in self._botones_accion:
+                boton.actualizar_hover(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
-            self.boton_menu.manejar_clic(evento.pos, evento.button)
+            for boton in self._botones_accion:
+                if boton.manejar_clic(evento.pos, evento.button):
+                    break
         return None
 
     def dibujar(self, superficie: pygame.Surface) -> None:
@@ -793,7 +866,7 @@ class ResumenPartida(Pantalla):
         superficie.blit(nombre, nombre.get_rect(center=(ANCHO // 2, y_nombre)))
         y = y_nombre + 52
         for i, linea in enumerate(self.lineas):
-            if linea.startswith("Cada partida"):
+            if linea.startswith("Cada partida") or linea.startswith("Los informes"):
                 fuente = self.fuentes["pequena"]
             elif i == 0 and self.subtitulo:
                 fuente = self.fuentes["subtitulo"]
@@ -804,9 +877,13 @@ class ResumenPartida(Pantalla):
             y += 34 if fuente == self.fuentes["pequena"] else 42
         if self.mensaje_pie:
             aviso = self.fuentes["menu"].render(self.mensaje_pie, True, COLOR_AVISO)
-            superficie.blit(aviso, aviso.get_rect(center=(ANCHO // 2, self.boton_menu.rect.y - 40)))
-        self.boton_menu.dibujar(superficie, self.fuentes["menu"])
-        dibujar_tooltips_botones(superficie, self.fuentes["pequena"], [self.boton_menu])
+            y_aviso = self._botones_accion[0].rect.y - 40
+            superficie.blit(aviso, aviso.get_rect(center=(ANCHO // 2, y_aviso)))
+        for boton in self._botones_accion:
+            boton.dibujar(superficie, self.fuentes["menu"])
+        dibujar_tooltips_botones(
+            superficie, self.fuentes["pequena"], self._botones_accion
+        )
 
     def titulo_pausa(self) -> str:
         return "Fin de partida"

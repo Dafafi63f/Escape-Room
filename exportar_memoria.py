@@ -4,8 +4,8 @@
 
 Salida en ``Entrega/Memoria/``; fuentes:
 
-  - ``Memoria_TFG_markdown.docx`` ← ``../Memoria_TFG.md``
-  - ``Memoria_TFG_latex.docx``    ← ``Memoria/Memoria_TFG.tex``
+  - ``Memoria_TFG_markdown.docx`` ← ``Memoria_TFG.md``
+  - ``Memoria_TFG_latex.docx``    ← ``Entrega/Memoria/Memoria_TFG.tex``
 
 Requisitos: Pandoc (``winget install JohnMacFarlane.Pandoc``). Figuras en
 ``Entrega/Figuras/`` (regenerar antes si faltan:
@@ -16,9 +16,9 @@ El PDF de entrega lo exportas tú desde Word tras editar.
 Uso (desde la raíz del TFG):
 
   python Entrega/generar_figuras_memoria.py   # opcional, si cambiaron datos o gráficos
-  python Entrega/exportar_memoria.py
-  python Entrega/exportar_memoria.py --solo-markdown
-  python Entrega/exportar_memoria.py --solo-latex
+  python exportar_memoria.py
+  python exportar_memoria.py --solo-markdown
+  python exportar_memoria.py --solo-latex
 """
 
 from __future__ import annotations
@@ -32,11 +32,10 @@ from pathlib import Path
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-DIR = Path(__file__).resolve().parent
-ROOT = DIR.parent
-
-MEMORIA = DIR / "Memoria"
-FIGURAS = DIR / "Figuras"
+ROOT = Path(__file__).resolve().parent
+ENTREGA = ROOT / "Entrega"
+MEMORIA = ENTREGA / "Memoria"
+FIGURAS = ENTREGA / "Figuras"
 MD = ROOT / "Memoria_TFG.md"
 TEX = MEMORIA / "Memoria_TFG.tex"
 DOCX_MD = MEMORIA / "Memoria_TFG_markdown.docx"
@@ -52,7 +51,7 @@ def _rel(p: Path) -> Path | str:
 
 def _rel_entrega(p: Path) -> Path | str:
     try:
-        return p.relative_to(DIR)
+        return p.relative_to(ENTREGA)
     except ValueError:
         return _rel(p)
 
@@ -77,7 +76,7 @@ def _pandoc(entrada: Path, salida: Path, *, formato_entrada: str) -> None:
     ]
     resultado = subprocess.run(
         cmd,
-        cwd=entrada.parent if entrada.parent != DIR else ROOT,
+        cwd=entrada.parent if entrada.parent != ENTREGA else ROOT,
         capture_output=True,
         text=True,
         encoding="utf-8",

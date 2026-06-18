@@ -20,9 +20,20 @@ Data/
 | `CSV/Historic_qualificacions_MatCAD_completo.csv` | Histórico de qualificacions — **modo historia** |
 | `Històric_qualificacions_MatCAD.xlsx` | Fuente original del histórico (raíz de `Data/`); el juego usa el **CSV** |
 | `JSON/presets_historia.json` | Catálogo del modo historia |
+| `JSON/presets_especiales.json` | Catálogo de modos especiales |
 | `JSON/preguntas_resistencia.json` | Pool exclusivo del modo resistencia |
-| `JSON/ranking_resistencia.json` | Ranking local (lectura/escritura en runtime) |
-| `JSON/creador_privado.json` | Datos personales y secretos del creador (local, no se versiona) |
+| `JSON/creador_privado.json` | Datos personales del creador (local, no se versiona) |
+
+**Estado local al jugar** (generados en runtime; en `.gitignore`, no commitear):
+
+| Fichero | Uso |
+|---------|-----|
+| `JSON/preferencias_grafico.json` | Nombre, emojis, tooltips, informes `.txt` |
+| `JSON/preferencias_ranking.json` | Conservación del ranking (sesión / días / permanente) |
+| `JSON/ranking_resistencia_infinita.json` | Ranking resistencia infinita |
+| `JSON/ranking_reto_dia.json` | Ranking del reto diario (se reinicia cada día) |
+
+El juego los crea al arrancar si no existen (patrón `Data/JSON/ranking_*.json` en `.gitignore`).
 
 El juego resuelve rutas con [`Juego/Comun/rutas.py`](../Juego/Comun/rutas.py): busca en `Data/CSV/` y `Data/JSON/`, con compatibilidad hacia atrás con `csv/`/`json/` o la raíz de `Data/`.
 
@@ -64,7 +75,7 @@ Definidos en [`Files/Scripts/objetivos_balanceo.py`](../Files/Scripts/objetivos_
 
 ## Revisión manual del banco
 
-**Progreso: 480 / 480** — banco cerrado (redacción genérica). El detalle tramo a tramo (Ids 1–480) y el estado global del TFG están en [`Revision/`](../Revision/README.md) (`revision_manual_banco.md`, [`ESTADO.md`](../Revision/ESTADO.md)).
+**Progreso: 480 / 480** — banco cerrado (redacción genérica; revisión manual completada). Plantillas beta en `JSON/plantillas.json` (no todas en producción). Estado del TFG: [`CHANGELOG.md`](../CHANGELOG.md) y checklist en [`CHECKLIST.md`](../CHECKLIST.md).
 
 ## Evolución futura del modelo de datos
 

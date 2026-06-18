@@ -15,6 +15,63 @@ FPS = 60
 TITULO_VENTANA = "Cuestionario MATCAD"
 MARGEN = 40
 
+# Velo semitransparente de popups globales (pausa, opciones).
+ALPHA_OVERLAY_POPUP = 170
+
+# Barra fija superior (iconos de pausa, diarios, ranking, feedback y opciones).
+X_ICONOS_FIJOS = 16
+Y_ICONOS_FIJOS = 14
+GAP_ICONOS_FIJOS = 10
+NUM_ICONOS_FIJOS = 5
+ANCHO_MIN_ICONO_FIJO = 40
+ALTO_MIN_ICONO_FIJO = 30
+PADDING_ICONO_FIJO_X = 10
+PADDING_ICONO_FIJO_Y = 6
+_GAP_TRAS_ICONOS_FIJOS = 20
+_MARGEN_EXTRA_BARRA_PARTIDA = 8
+_ETIQUETAS_REF_ICONO_FIJO = ("II", "DI", "RK", "FB", "OP")
+
+# Contenido de pantalla: debajo de la barra fija (iconos en y≈14, alto≈36).
+_GAP_TRAS_BARRA_ICONOS = 34
+Y_INICIO_TITULO = Y_ICONOS_FIJOS + ALTO_MIN_ICONO_FIJO + _GAP_TRAS_BARRA_ICONOS
+
+
+def ancho_icono_fijo(fuente_menu: pygame.font.Font) -> int:
+    """Mismo criterio que ``AplicacionGrafica._crear_botones_fijos``."""
+    ancho_ref = max(
+        fuente_menu.size(etiqueta)[0] for etiqueta in _ETIQUETAS_REF_ICONO_FIJO
+    )
+    return max(ANCHO_MIN_ICONO_FIJO, ancho_ref + 2 * PADDING_ICONO_FIJO_X)
+
+
+def alto_icono_fijo(fuente_menu: pygame.font.Font) -> int:
+    alto_ref = max(
+        fuente_menu.size(etiqueta)[1] for etiqueta in _ETIQUETAS_REF_ICONO_FIJO
+    )
+    return max(ALTO_MIN_ICONO_FIJO, alto_ref + 2 * PADDING_ICONO_FIJO_Y)
+
+
+def borde_derecho_iconos_fijos(fuente_menu: pygame.font.Font | None = None) -> int:
+    """Coordenada X justo después del último icono fijo."""
+    if fuente_menu is None:
+        fuente_menu = crear_fuentes()["menu"]
+    ancho = ancho_icono_fijo(fuente_menu)
+    return (
+        X_ICONOS_FIJOS
+        + NUM_ICONOS_FIJOS * ancho
+        + (NUM_ICONOS_FIJOS - 1) * GAP_ICONOS_FIJOS
+    )
+
+
+def x_min_contenido_bajo_iconos(fuente_menu: pygame.font.Font | None = None) -> int:
+    """Borde izquierdo del área útil (a la derecha de la barra fija)."""
+    return borde_derecho_iconos_fijos(fuente_menu) + _GAP_TRAS_ICONOS_FIJOS
+
+
+def x_min_centro_barra_partida(fuente_menu: pygame.font.Font) -> int:
+    """Inicio de la zona central de la barra de partida (sin solapar iconos)."""
+    return x_min_contenido_bajo_iconos(fuente_menu) + _MARGEN_EXTRA_BARRA_PARTIDA
+
 COLOR_FONDO = (32, 72, 140)
 COLOR_TITULO = (255, 255, 255)
 COLOR_TEXTO = (220, 232, 248)
@@ -22,6 +79,7 @@ COLOR_AVISO = (255, 196, 96)
 COLOR_OK = (72, 180, 120)
 COLOR_ERROR = (220, 90, 90)
 COLOR_PANEL = (26, 58, 110)
+COLOR_TEXTO_PANEL = (170, 190, 220)
 COLOR_ACENTO = (70, 130, 210)
 
 

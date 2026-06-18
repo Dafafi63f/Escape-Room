@@ -10,4 +10,4 @@ Borrador editable en Markdown: [`../../Memoria_TFG.md`](../../Memoria_TFG.md).
 
 Figuras referenciadas en [`../Figuras/`](../Figuras/README.md).
 
-Regenerar Word: `python Entrega/exportar_memoria.py` (desde la raíz del proyecto).
+Regenerar Word: `python exportar_memoria.py` (desde la raíz del proyecto).

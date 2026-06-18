@@ -297,13 +297,12 @@ class BackendConsola:
 
     def reglas_historia_preset(self, preset_id: str) -> tuple:
         from Comun.datos import cargar_materias, cargar_orden_materias
-        from Comun.presets_historia import aplicar_preset, cargar_presets_historia, config_defecto
-        from Comun.rutas import PATH_MATERIAS, resolver_presets_historia
+        from Comun.presets_historia import aplicar_preset, buscar_preset, config_defecto
+        from Comun.rutas import PATH_MATERIAS
 
         materias_meta = cargar_materias(PATH_MATERIAS)
         orden_materias = cargar_orden_materias(PATH_MATERIAS)
-        presets = cargar_presets_historia(resolver_presets_historia())
-        preset = next(p for p in presets if p.id == preset_id)
+        preset = buscar_preset(preset_id)
         config = config_defecto(
             preset,
             materias_meta=materias_meta,
@@ -482,13 +481,12 @@ class BackendGrafico:
 
     def reglas_historia_preset(self, preset_id: str) -> tuple:
         from Comun.datos import cargar_materias, cargar_orden_materias
-        from Comun.presets_historia import aplicar_preset, cargar_presets_historia, config_defecto
-        from Comun.rutas import PATH_MATERIAS, resolver_presets_historia
+        from Comun.presets_historia import aplicar_preset, buscar_preset, config_defecto
+        from Comun.rutas import PATH_MATERIAS
 
         materias_meta = cargar_materias(PATH_MATERIAS)
         orden_materias = cargar_orden_materias(PATH_MATERIAS)
-        presets = cargar_presets_historia(resolver_presets_historia())
-        preset = next(p for p in presets if p.id == preset_id)
+        preset = buscar_preset(preset_id)
         config = config_defecto(
             preset,
             materias_meta=materias_meta,

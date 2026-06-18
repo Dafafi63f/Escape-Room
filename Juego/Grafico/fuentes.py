@@ -152,3 +152,45 @@ def crear_fuente(
 def conjunto_fuentes(tamano: int, *, bold: bool = False) -> dict[FamiliaFuente, pygame.font.Font]:
     familias: tuple[FamiliaFuente, ...] = ("texto", "matematicas", "simbolos", "emoji")
     return {f: crear_fuente(tamano, familia=f, bold=bold and f == "texto") for f in familias}
+
+
+def superficie_emoji_valida(surf: pygame.Surface) -> bool:
+    """True si la superficie parece un emoji a color (no tofu ni reloj en escala de grises)."""
+    if surf.get_width() <= 4:
+        return False
+    vivid = 0
+    opacos = 0
+    for x in range(surf.get_width()):
+        for y in range(surf.get_height()):
+            c = surf.get_at((x, y))
+            if c.a <= 10:
+                continue
+            opacos += 1
+            r, g, b = c[:3]
+            if max(r, g, b) - min(r, g, b) > 35:
+                vivid += 1
+    if opacos < 24 or vivid < 10:
+        return False
+    return vivid / opacos > 0.06
+
+
+def render_icono_barra(
+    fuente_emoji: pygame.font.Font,
+    fuente_txt: pygame.font.Font,
+    candidatos: tuple[str, ...],
+    ascii_fallback: str,
+    color: tuple[int, int, int],
+    *,
+    usar_emoji: bool,
+) -> pygame.Surface:
+    """Emoji con fuente emoji; si el glifo falla (tofu), prueba alternativas o ASCII."""
+    if usar_emoji:
+        for glyph in candidatos:
+            for antialias in (True, False):
+                try:
+                    surf = fuente_emoji.render(glyph, antialias, color)
+                except Exception:
+                    continue
+                if superficie_emoji_valida(surf):
+                    return surf
+    return fuente_txt.render(ascii_fallback, True, color)

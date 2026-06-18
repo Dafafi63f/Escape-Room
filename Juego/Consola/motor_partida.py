@@ -137,10 +137,14 @@ def preguntar_con_reglas(
     *,
     letras_ocultas: frozenset[str] | None = None,
     tiempo_extra_seg: int = 0,
+    limite_pregunta_seg: int | None = None,
 ) -> ResultadoRespuesta:
-    lim_p = estado.reglas.tiempo_por_pregunta_seg
-    if lim_p is not None:
-        lim_p = lim_p + tiempo_extra_seg
+    if limite_pregunta_seg is not None:
+        lim_p = limite_pregunta_seg
+    else:
+        lim_p = estado.reglas.tiempo_por_pregunta_seg
+        if lim_p is not None:
+            lim_p = lim_p + tiempo_extra_seg
     if lim_p:
         print(f"(Tienes hasta {lim_p}s para responder)")
     inicio = time.monotonic()

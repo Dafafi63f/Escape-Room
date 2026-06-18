@@ -25,7 +25,7 @@ def aviso_debe_avanzar(inicio_aviso: float) -> bool:
     return (time.monotonic() - inicio_aviso) >= SEGUNDOS_AVISO_RESISTENCIA
 
 
-def dibujar_aviso_resistencia(
+def dibujar_contenido_aviso_resistencia(
     superficie: pygame.Surface,
     fuentes: dict[str, pygame.font.Font],
     *,
@@ -33,11 +33,7 @@ def dibujar_aviso_resistencia(
     indice: int = 0,
     total: int = 1,
 ) -> None:
-    """Popup centrado sobre fondo atenuado."""
-    overlay = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
-    overlay.fill((8, 12, 22, 200))
-    superficie.blit(overlay, (0, 0))
-
+    """Panel del aviso de resistencia (sin velo; lo aplica la app)."""
     panel = pygame.Rect(ANCHO // 2 - 280, ALTO // 2 - 108, 560, 216)
     dibujar_panel(superficie, panel)
 
@@ -75,3 +71,24 @@ def dibujar_aviso_resistencia(
         COLOR_AVISO,
     )
     superficie.blit(pie, pie.get_rect(midbottom=(ANCHO // 2, panel.bottom - 14)))
+
+
+def dibujar_aviso_resistencia(
+    superficie: pygame.Surface,
+    fuentes: dict[str, pygame.font.Font],
+    *,
+    mensaje: str,
+    indice: int = 0,
+    total: int = 1,
+) -> None:
+    """Popup completo con velo (p. ej. tests o uso fuera de la app)."""
+    overlay = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+    overlay.fill((8, 12, 22, 200))
+    superficie.blit(overlay, (0, 0))
+    dibujar_contenido_aviso_resistencia(
+        superficie,
+        fuentes,
+        mensaje=mensaje,
+        indice=indice,
+        total=total,
+    )

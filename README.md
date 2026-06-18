@@ -8,7 +8,8 @@ Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en co
 
 - **Memoria académica (borrador):** [`Memoria_TFG.md`](Memoria_TFG.md)
 - **Memoria para entrega (Word y LaTeX):** [`Entrega/`](Entrega/README.md)
-- **Estado del proyecto y feedback del tutor:** [`Revision/ESTADO.md`](Revision/ESTADO.md)
+- **Changelog del proyecto (estado, tutor, historial):** [`CHANGELOG.md`](CHANGELOG.md)
+- **Checklist de pendientes e ideas:** [`CHECKLIST.md`](CHECKLIST.md)
 - **Repositorio:** https://github.com/Dafafi63f/Escape-Room.git
 
 ```bash
@@ -27,8 +28,9 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | Scripts de mantenimiento y balanceo | [`Files/README.md`](Files/README.md) → [`Files/Scripts/README.md`](Files/Scripts/README.md) |
 | Scripts legado de regeneración CSV | [`Files/Archivo/README.md`](Files/Archivo/README.md) |
 | Pruebas unitarias | [`Tests/README.md`](Tests/README.md) |
-| Trazabilidad revisión manual del banco | [`Revision/revision_manual_banco.md`](Revision/revision_manual_banco.md) |
-| Estado, feedback tutor, pendientes | [`Revision/ESTADO.md`](Revision/ESTADO.md) |
+| Banco de preguntas (480 ítems) | [`Data/README.md`](Data/README.md) |
+| Changelog (estado, tutor, historial) | [`CHANGELOG.md`](CHANGELOG.md) |
+| Checklist de pendientes e ideas | [`CHECKLIST.md`](CHECKLIST.md) |
 | Exportación Word de la memoria | [`Entrega/README.md`](Entrega/README.md) |
 
 ## Estructura
@@ -39,9 +41,10 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
 | [`Entrega/`](Entrega/README.md) | `Memoria/` (LaTeX, Word), `Figuras/`, scripts de exportación |
-| [`Revision/`](Revision/ESTADO.md) | Estado del proyecto, feedback tutor; PDF anotados locales (gitignored) |
-| [`Memoria_TFG.md`](Memoria_TFG.md) | Borrador Markdown de la memoria (raíz) |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias (177 tests) y CI |
+| [`Memoria_TFG.md`](Memoria_TFG.md) | Borrador Markdown de la memoria |
+| [`CHANGELOG.md`](CHANGELOG.md) | Estado, feedback del tutor, changelog |
+| [`CHECKLIST.md`](CHECKLIST.md) | Checklist de pendientes e ideas futuras |
+| [`Tests/`](Tests/README.md) | Pruebas unitarias (238 tests) y CI |
 | [`borrar_temporales.py`](borrar_temporales.py) | Limpia `__pycache__` y `.txt` de `Juego/Informes/` y `Juego/Feedback/` |
 | [`requirements.txt`](requirements.txt) | Dependencias (pandas, matplotlib, pyinstaller, pygame-ce, mypy, pre-commit) |
 
@@ -51,7 +54,7 @@ El borrador editable está en [`Memoria_TFG.md`](Memoria_TFG.md). Ficheros de en
 
 ```bash
 python Entrega/generar_figuras_memoria.py
-python Entrega/exportar_memoria.py
+python exportar_memoria.py
 ```
 
 Genera los `.docx` en `Entrega/Memoria/` (Pandoc). El PDF de entrega lo exportas desde Word tras editar. Detalle en [`Entrega/README.md`](Entrega/README.md).
@@ -73,7 +76,7 @@ La consola sigue siendo referencia para feedback SMTP y entornos sin pantalla; e
 
 ### Datos
 
-Ver [`Data/README.md`](Data/README.md). Imprescindibles: `CSV/Preguntas.csv`, `CSV/listado_materias.csv`. Modo historia: `CSV/Historic_qualificacions_MatCAD_completo.csv`, `JSON/presets_historia.json`. Modo resistencia: `JSON/preguntas_resistencia.json`, `JSON/ranking_resistencia.json`. Modo con plantillas: `JSON/plantillas.json`.
+Ver [`Data/README.md`](Data/README.md). Imprescindibles: `CSV/Preguntas.csv`, `CSV/listado_materias.csv`. Modo historia: `CSV/Historic_qualificacions_MatCAD_completo.csv`, `JSON/presets_historia.json`. Modo resistencia: `JSON/preguntas_resistencia.json`, `JSON/ranking_resistencia_infinita.json`, `JSON/ranking_reto_dia.json`. Modo con plantillas: `JSON/plantillas.json`.
 
 Configuración privada del creador (SMTP, GitHub, etc.): `Data/JSON/creador_privado.json` (local; plantilla en [`Juego/Consola/config_creador.py`](Juego/Consola/config_creador.py)).
 
@@ -132,7 +135,7 @@ El juego en consola solo necesita Python 3.10+ (stdlib). Para scripts de manteni
 pip install -r requirements.txt
 ```
 
-Pandoc (binario externo) para `Entrega/exportar_memoria.py`.
+Pandoc (binario externo) para `exportar_memoria.py`.
 
 ## Limpieza
 

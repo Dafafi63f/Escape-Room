@@ -20,9 +20,15 @@ from Comun.motor_resistencia_comun import (
     aplicar_bonificaciones_puntos_resistencia,
     aplicar_modificadores_visuales_escalada,
     avisos_pre_pregunta_resistencia,
+    configurar_partida_resistencia,
+    consumir_bloque_filtro,
     crear_estado_resistencia,
+    elegir_indice_similar,
+    formatear_aviso_apuesta,
+    preparar_eventos_nuevo_turno,
     procesar_turno_resistencia,
     texto_pregunta_para_turno,
+    texto_progreso_resistencia,
     tiempo_pregunta_efectivo,
     usar_powerup,
 )
@@ -37,9 +43,19 @@ from Comun.config_historia import (
     validar_config,
 )
 from Comun.presets_historia import PresetHistoria, config_defecto
+from Comun.preferencias_grafico import nombre_jugador_grafico
 from Comun.reglas_partida import ReglasPartida, formatear_resultado_puntuacion
 from Comun.cierre_informe import CierreInformePartida, meta_cierre_historia
-from Comun.ranking_resistencia import mejor_de_jugador, registrar_partida, top_records
+from Comun.ranking_resistencia import (
+    VARIANTES_RANKING,
+    etiqueta_variante_ranking,
+    mejor_de_jugador,
+    path_ranking_para_preset,
+    path_ranking_para_variante,
+    registrar_partida,
+    top_records,
+    variante_desde_preset,
+)
 from Comun.resistencia_historia import (
     aplicar_escalada_a_reglas,
     crear_seleccion_resistencia,
@@ -48,15 +64,15 @@ from Comun.resistencia_historia import (
     etiqueta_tier_exclusiva,
     texto_efectos_escalada,
 )
-from Comun.rutas import resolver_ranking_resistencia
+from Comun.reto_dia_resistencia import etiqueta_fecha_reto_dia
 from Grafico.textos_grafico import (
     BTN_ABANDONAR,
     BTN_ATRAS,
     BTN_CONTINUAR,
     BTN_EMPEZAR,
-    BTN_VER_RANKING,
     BTN_VOLVER,
     BTN_VOLVER_MENU,
+    emoji_icono,
     etiqueta,
     etiqueta_campo,
     subtitulo,
@@ -65,7 +81,7 @@ from Grafico.textos_grafico import (
 from Grafico.informe_partida import lineas_resumen_breve
 from Grafico.aviso_resistencia import (
     aviso_debe_avanzar,
-    dibujar_aviso_resistencia,
+    dibujar_contenido_aviso_resistencia,
     marcar_inicio_aviso,
 )
 from Grafico.feedback_partida import (
@@ -77,10 +93,10 @@ from Grafico.feedback_partida import (
 from Grafico.barra_estado import dibujar_estado_partida_en_barra
 from Grafico.modo_historia import (
     cargar_catalogo_historia,
+    construir_navegacion_fin_partida_historia,
     iniciar_pantalla_partida_historia,
     preparar_partida_historia,
 )
-from Comun.resistencia_historia import es_preset_resistencia
 from Grafico.pantallas import (
     ALTURA_BARRA_PARTIDA,
     ALTO_BOTON_CONTINUAR_PARTIDA,
@@ -89,7 +105,6 @@ from Grafico.pantallas import (
     ALTO_PANEL_PREGUNTA,
     GAP_TRAS_BARRA_PROGRESO,
     GAP_TRAS_PANEL_PARTIDA,
-    MARGEN_ICONOS_FIJOS,
     MARGEN_INF_PARTIDA,
     SEP_OPCIONES_PARTIDA,
     Y_PANEL_PREGUNTA,
@@ -104,7 +119,6 @@ from Grafico.tooltips_ui import (
     TOOLTIP_ATRAS,
     TOOLTIP_CONTINUAR,
     TOOLTIP_EMPEZAR,
-    TOOLTIP_VER_RANKING,
     tooltip_opcion_ciclo_historia,
 )
 from Grafico.tema import (
@@ -115,16 +129,19 @@ from Grafico.tema import (
     COLOR_ERROR,
     COLOR_FONDO,
     COLOR_OK,
+    COLOR_PANEL,
     COLOR_TEXTO,
     COLOR_TITULO,
     MARGEN,
+    Y_INICIO_TITULO,
     crear_fuentes,
+    x_min_centro_barra_partida,
 )
-from Grafico.texto import dibujar_texto_centro, preparar_texto_ui
 from Grafico.ui import (
     Boton,
     BotonOpcion,
     _fuente_ajustada,
+    dibujar_caja_valor_ciclo,
     dibujar_panel,
     dibujar_texto_multilinea,
     dibujar_tooltip,
@@ -135,25 +152,22 @@ from Grafico.ui import (
     rect_boton_etiqueta,
     tamano_grupo_botones,
 )
+from Grafico.texto import dibujar_texto_centro, preparar_texto_ui, texto_requiere_fuentes_mixtas
 
 if TYPE_CHECKING:
     from Grafico.app import DatosJuego
 
-
-Y_TITULO_HISTORIA = 46
-COLOR_TEXTO_PANEL = (45, 55, 70)
-Y_PASO_HISTORIA = 78
+Y_TITULO_HISTORIA = Y_INICIO_TITULO
+COLOR_ETIQUETA_PANEL_CLARO = (45, 55, 70)
+Y_PASO_HISTORIA = Y_TITULO_HISTORIA + 32
 GAP_SUBTITULO_CONTENIDO = 20
 GAP_LBL_CAMPO = 12
-ALTO_CAMPO_NOMBRE_HIST = 44
 GAP_CAMPO_SECCION = 28
 GAP_SECCION_CARRUSEL = 20
 ALTO_ETIQUETA_MENU = 24
-Y_NOMBRE_LBL = Y_PASO_HISTORIA + ALTO_ETIQUETA_MENU + GAP_SUBTITULO_CONTENIDO
-Y_CAMPO_NOMBRE = Y_NOMBRE_LBL + ALTO_ETIQUETA_MENU + GAP_LBL_CAMPO
-Y_PRESET_LBL_TOP = Y_CAMPO_NOMBRE + ALTO_CAMPO_NOMBRE_HIST + GAP_CAMPO_SECCION
+Y_PRESET_LBL_TOP = Y_PASO_HISTORIA + ALTO_ETIQUETA_MENU + GAP_CAMPO_SECCION
 Y_CARRUSEL = Y_PRESET_LBL_TOP + ALTO_ETIQUETA_MENU + GAP_SECCION_CARRUSEL
-ALTO_TARJETA_PRESET = 300
+ALTO_TARJETA_PRESET = 320
 ANCHO_FLECHA = 44
 GAP_TRAS_TARJETA_DOTS = 14
 MARGEN_INF_HISTORIA = 22
@@ -167,6 +181,45 @@ DOT_RADIO_ACTIVO = 6
 DOT_RADIO_INACTIVO = 4
 DOT_SEPARACION = 16
 DOT_MAX_ANCHO = ANCHO - 2 * MARGEN - 120
+
+
+def _dibujar_cabecera_historia(
+    superficie: pygame.Surface,
+    fuentes: dict[str, pygame.font.Font],
+    paso: str,
+) -> None:
+    _dibujar_cabecera_catalogo(
+        superficie,
+        fuentes,
+        titulo="MODO HISTORIA",
+        paso=paso,
+        emoji="📕",
+    )
+
+
+def _dibujar_cabecera_catalogo(
+    superficie: pygame.Surface,
+    fuentes: dict[str, pygame.font.Font],
+    *,
+    titulo: str,
+    paso: str,
+    emoji: str = "📕",
+) -> None:
+    dibujar_texto_centro(
+        superficie,
+        titulo_pantalla(titulo),
+        (ANCHO // 2, Y_TITULO_HISTORIA),
+        fuentes["titulo"].get_height(),
+        COLOR_TITULO,
+        bold=True,
+    )
+    dibujar_texto_centro(
+        superficie,
+        subtitulo(paso, emoji),
+        (ANCHO // 2, Y_PASO_HISTORIA),
+        fuentes["pequena"].get_height(),
+        COLOR_TEXTO,
+    )
 
 
 def _rect_tarjeta_carrusel() -> pygame.Rect:
@@ -213,30 +266,8 @@ def _layout_puntos_carrusel(n: int) -> tuple[list[tuple[int, int]], int]:
     return [(x0 + i * sep, Y_DOTS) for i in range(n)], sep
 
 
-def _dibujar_cabecera_historia(
-    superficie: pygame.Surface,
-    fuentes: dict[str, pygame.font.Font],
-    paso: str,
-) -> None:
-    dibujar_texto_centro(
-        superficie,
-        titulo_pantalla("MODO HISTORIA"),
-        (ANCHO // 2, Y_TITULO_HISTORIA),
-        fuentes["titulo"].get_height(),
-        COLOR_TITULO,
-        bold=True,
-    )
-    dibujar_texto_centro(
-        superficie,
-        subtitulo(paso, "📕"),
-        (ANCHO // 2, Y_PASO_HISTORIA),
-        fuentes["pequena"].get_height(),
-        COLOR_TEXTO,
-    )
-
-
 class ConfigModoHistoria(Pantalla):
-    """Nombre del jugador y carrusel de presets (uno por pantalla)."""
+    """Carrusel de presets del modo historia."""
 
     def __init__(
         self,
@@ -245,11 +276,9 @@ class ConfigModoHistoria(Pantalla):
         salir_app: Callable[[], None],
         *,
         indice_inicial: int = 0,
-        nombre_inicial: str = "",
+        preset_id_inicial: str | None = None,
         configs_preset: dict[str, ConfigPresetHistoria] | None = None,
     ) -> None:
-        from Grafico.ui import CampoTexto
-
         self.datos = datos
         self.ir_a = ir_a
         self.salir_app = salir_app
@@ -261,13 +290,13 @@ class ConfigModoHistoria(Pantalla):
         )
         self.indice = 0
         if self.presets:
-            self.indice = max(0, min(len(self.presets) - 1, indice_inicial))
-
-        self.campo_nombre = CampoTexto(
-            pygame.Rect(MARGEN + 40, Y_CAMPO_NOMBRE, ANCHO - 2 * MARGEN - 80, ALTO_CAMPO_NOMBRE_HIST),
-            texto_inicial=nombre_inicial,
-            placeholder="Nombre del jugador",
-        )
+            if preset_id_inicial:
+                for i, preset in enumerate(self.presets):
+                    if preset.id == preset_id_inicial:
+                        self.indice = i
+                        break
+            else:
+                self.indice = max(0, min(len(self.presets) - 1, indice_inicial))
 
         tarjeta = _rect_tarjeta_carrusel()
         alto_flecha = min(88, ALTO_TARJETA_PRESET - 40)
@@ -278,11 +307,10 @@ class ConfigModoHistoria(Pantalla):
         self.hover_der = False
 
         fuente_menu = self.fuentes["menu"]
-        etiq_ranking = etiqueta(*BTN_VER_RANKING)
         etiq_empezar = etiqueta(*BTN_CONTINUAR)
         etiq_volver = etiqueta(*BTN_VOLVER_MENU)
         ancho_btns, alto_btns = tamano_grupo_botones(
-            [etiq_ranking, etiq_empezar, etiq_volver],
+            [etiq_empezar, etiq_volver],
             fuente_menu,
             alto_min=44,
         )
@@ -299,22 +327,6 @@ class ConfigModoHistoria(Pantalla):
             self._continuar,
             tooltip=TOOLTIP_CONTINUAR,
         )
-        self.boton_ranking = Boton(
-            etiq_ranking,
-            rect_boton_etiqueta(
-                etiq_ranking,
-                fuente_menu,
-                x_centro=ANCHO // 2,
-                y=0,
-                ancho=ancho_btns,
-                alto=alto_btns,
-            ),
-            self._ver_ranking,
-            tooltip=TOOLTIP_VER_RANKING,
-        )
-        self.boton_ranking.activo = False
-        if self.presets:
-            self.boton_ranking.activo = es_preset_resistencia(self.presets[self.indice])
         self.boton_volver = Boton(
             etiq_volver,
             rect_boton_etiqueta(
@@ -333,7 +345,6 @@ class ConfigModoHistoria(Pantalla):
         self,
         *,
         indice: int | None = None,
-        nombre: str | None = None,
         configs_preset: dict[str, ConfigPresetHistoria] | None = None,
     ) -> ConfigModoHistoria:
         return ConfigModoHistoria(
@@ -341,43 +352,15 @@ class ConfigModoHistoria(Pantalla):
             self.ir_a,
             self.salir_app,
             indice_inicial=self.indice if indice is None else indice,
-            nombre_inicial=self.campo_nombre.texto if nombre is None else nombre,
             configs_preset=(
                 self._configs_preset if configs_preset is None else configs_preset
             ),
         )
 
-    def _pie_tarjeta_con_ranking(self) -> bool:
-        preset = self.preset_actual
-        return bool(
-            self.boton_ranking.activo
-            and preset is not None
-            and es_preset_resistencia(preset)
-        )
-
-    def _y_contador_tarjeta(self, tarjeta: pygame.Rect) -> int:
-        return tarjeta.bottom - MARGEN_PIE_TARJETA
-
     def _reserva_pie_tarjeta(self) -> int:
-        reserva = MARGEN_PIE_TARJETA + ALTO_TEXTO_CONTADOR
-        if self._pie_tarjeta_con_ranking():
-            reserva += GAP_RANKING_CONTADOR + self.boton_ranking.rect.height + GAP_DESC_RANKING
-        return reserva
-
-    def _reposicionar_boton_ranking_en_tarjeta(self) -> None:
-        if not self.boton_ranking.activo:
-            return
-        tarjeta = _rect_tarjeta_carrusel()
-        ancho_max = tarjeta.width - 2 * MARGEN_RANKING_TARJETA
-        ancho = min(self.boton_ranking.rect.width, ancho_max)
-        alto = self.boton_ranking.rect.height
-        y_contador = self._y_contador_tarjeta(tarjeta)
-        y = y_contador - ALTO_TEXTO_CONTADOR - GAP_RANKING_CONTADOR - alto
-        x = tarjeta.centerx - ancho // 2
-        self.boton_ranking.rect = pygame.Rect(x, y, ancho, alto)
+        return MARGEN_PIE_TARJETA + ALTO_TEXTO_CONTADOR
 
     def _reposicionar_botones_navegacion(self) -> None:
-        self._reposicionar_boton_ranking_en_tarjeta()
         alto = self.boton_empezar.rect.height
         y_nav = ALTO - MARGEN_INF_HISTORIA - alto
         posicionar_botones_fila(
@@ -398,20 +381,7 @@ class ConfigModoHistoria(Pantalla):
             return
         self.indice = max(0, min(len(self.presets) - 1, indice))
         self.mensaje = ""
-        preset = self.preset_actual
-        self.boton_ranking.activo = bool(preset and es_preset_resistencia(preset))
         self._reposicionar_botones_navegacion()
-
-    def _ver_ranking(self) -> None:
-        carrusel = self._pantalla_carrusel()
-        self.ir_a(
-            RankingResistenciaHistoria(
-                self.datos,
-                self.ir_a,
-                self.salir_app,
-                volver_a=lambda: self.ir_a(carrusel),
-            )
-        )
 
     def _anterior(self) -> None:
         self._ir_a_indice(self.indice - 1)
@@ -432,11 +402,10 @@ class ConfigModoHistoria(Pantalla):
         if preset is None:
             self.mensaje = "No hay presets disponibles."
             return
-        nombre = self.campo_nombre.valor()
+        nombre = nombre_jugador_grafico()
         self.mensaje = ""
         if preset.tiene_opciones():
             indice = self.indice
-            nombre_campo = self.campo_nombre.texto
             configs = dict(self._configs_preset)
 
             def _volver_opciones(config: ConfigPresetHistoria) -> None:
@@ -447,7 +416,6 @@ class ConfigModoHistoria(Pantalla):
                         self.ir_a,
                         self.salir_app,
                         indice_inicial=indice,
-                        nombre_inicial=nombre_campo,
                         configs_preset=configs,
                     )
                 )
@@ -473,6 +441,47 @@ class ConfigModoHistoria(Pantalla):
         config: ConfigPresetHistoria,
         nombre: str,
     ) -> None:
+        indice = self.indice
+        configs = dict(self._configs_preset)
+
+        def _pantalla_configuracion() -> Pantalla:
+            if preset.tiene_opciones():
+
+                def _volver_opciones(cfg: ConfigPresetHistoria) -> None:
+                    configs[preset.id] = cfg
+                    self.ir_a(
+                        ConfigModoHistoria(
+                            self.datos,
+                            self.ir_a,
+                            self.salir_app,
+                            indice_inicial=indice,
+                            configs_preset=configs,
+                        )
+                    )
+
+                return ConfigOpcionesHistoria(
+                    self.datos,
+                    preset,
+                    nombre,
+                    self.ir_a,
+                    self.salir_app,
+                    _volver_opciones,
+                    config_inicial=config,
+                )
+            return self._pantalla_carrusel(
+                indice=indice,
+                configs_preset={**configs, preset.id: config},
+            )
+
+        navegacion = construir_navegacion_fin_partida_historia(
+            self.datos,
+            preset,
+            config,
+            nombre,
+            self.ir_a,
+            self.salir_app,
+            _pantalla_configuracion,
+        )
         try:
             pantalla = iniciar_pantalla_partida_historia(
                 self.datos,
@@ -481,6 +490,7 @@ class ConfigModoHistoria(Pantalla):
                 nombre,
                 self.ir_a,
                 self.salir_app,
+                navegacion_fin=navegacion,
             )
         except ValueError as e:
             self.mensaje = str(e)
@@ -489,10 +499,7 @@ class ConfigModoHistoria(Pantalla):
         self.ir_a(pantalla)
 
     def _botones_ui(self) -> list[Boton]:
-        botones = [self.boton_empezar, self.boton_volver]
-        if self.boton_ranking.activo:
-            botones.insert(0, self.boton_ranking)
-        return botones
+        return [self.boton_empezar, self.boton_volver]
 
     def _clic_flecha(self, pos: tuple[int, int], boton: int) -> bool:
         if boton != 1:
@@ -506,7 +513,6 @@ class ConfigModoHistoria(Pantalla):
         return False
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
-        self.campo_nombre.manejar_evento(evento)
         if evento.type == pygame.MOUSEWHEEL and self.presets:
             if evento.y > 0:
                 self._anterior()
@@ -518,8 +524,6 @@ class ConfigModoHistoria(Pantalla):
             for boton in self._botones_ui():
                 boton.actualizar_hover(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
-            if self.campo_nombre.manejar_evento(evento):
-                return None
             if self._clic_flecha(evento.pos, evento.button):
                 return None
             idx = self._indice_desde_punto(evento.pos)
@@ -571,17 +575,15 @@ class ConfigModoHistoria(Pantalla):
             alineacion_centro=True,
         )
 
-        if self._pie_tarjeta_con_ranking():
-            self.boton_ranking.dibujar(superficie, self.fuentes["menu"])
-
         contador = self.fuentes["pie"].render(
             f"{self.indice + 1} / {len(self.presets)}",
             True,
             (90, 100, 115),
         )
+        tarjeta = _rect_tarjeta_carrusel()
         superficie.blit(
             contador,
-            contador.get_rect(midbottom=(tarjeta.centerx, self._y_contador_tarjeta(tarjeta))),
+            contador.get_rect(midbottom=(tarjeta.centerx, tarjeta.bottom - MARGEN_PIE_TARJETA)),
         )
 
     def _dibujar_puntos(self, superficie: pygame.Surface) -> None:
@@ -603,14 +605,10 @@ class ConfigModoHistoria(Pantalla):
             "Los primeros modos usan qualificacions históricas del grado",
         )
 
-        lbl = self.fuentes["menu"].render(
-            etiqueta_campo("nombre_teclado", "Nombre (teclado):"), True, COLOR_TEXTO
-        )
-        superficie.blit(lbl, (MARGEN + 40, Y_NOMBRE_LBL))
-        self.campo_nombre.dibujar(superficie, self.fuentes["menu"])
-
         preset_lbl = self.fuentes["menu"].render(
-            etiqueta_campo("tipo_partida", "Tipo de partida:"), True, COLOR_TEXTO
+            etiqueta_campo("tipo_partida", "Tipo de partida:"),
+            True,
+            COLOR_TEXTO,
         )
         superficie.blit(preset_lbl, preset_lbl.get_rect(midtop=(ANCHO // 2, Y_PRESET_LBL_TOP)))
 
@@ -956,6 +954,27 @@ class ConfigOpcionesHistoria(Pantalla):
             self.mensaje = str(e)
             return
         self.mensaje = ""
+
+        def _pantalla_configuracion() -> Pantalla:
+            return ConfigOpcionesHistoria(
+                self.datos,
+                self.preset,
+                self.nombre,
+                self.ir_a,
+                self.salir_app,
+                self.volver,
+                config_inicial=config,
+            )
+
+        navegacion = construir_navegacion_fin_partida_historia(
+            self.datos,
+            self.preset,
+            config,
+            self.nombre,
+            self.ir_a,
+            self.salir_app,
+            _pantalla_configuracion,
+        )
         try:
             pantalla = iniciar_pantalla_partida_historia(
                 self.datos,
@@ -964,6 +983,7 @@ class ConfigOpcionesHistoria(Pantalla):
                 self.nombre,
                 self.ir_a,
                 self.salir_app,
+                navegacion_fin=navegacion,
             )
         except ValueError as e:
             self.mensaje = str(e)
@@ -989,7 +1009,7 @@ class ConfigOpcionesHistoria(Pantalla):
 
     def _dibujar_fila_opcion(self, superficie: pygame.Surface, op, y: int) -> None:
         etiqueta = op.etiqueta.rstrip(":")
-        lbl = self.fuentes["menu"].render(etiqueta + ":", True, COLOR_TEXTO_PANEL)
+        lbl = self.fuentes["menu"].render(etiqueta + ":", True, COLOR_ETIQUETA_PANEL_CLARO)
         superficie.blit(lbl, (self.X_ETIQUETA, y + 16))
 
         if op.id not in self.botones_ciclo:
@@ -998,15 +1018,12 @@ class ConfigOpcionesHistoria(Pantalla):
         izq, der = self.botones_ciclo[op.id]
         val_rect = self._rect_valor_ciclo(op.id)
         if val_rect and val_rect.width > 0:
-            dibujar_panel(superficie, val_rect, color=(248, 250, 255))
-            texto = preparar_texto_ui(self._texto_valor(op.id))
-            fuente_val = _fuente_ajustada(
-                texto,
+            dibujar_caja_valor_ciclo(
+                superficie,
+                val_rect,
+                self._texto_valor(op.id),
                 self.fuentes["cuerpo"],
-                val_rect.width - 16,
             )
-            val = fuente_val.render(texto, True, (25, 35, 50))
-            superficie.blit(val, val.get_rect(center=val_rect.center))
 
         izq.dibujar(superficie, self.fuentes["menu"])
         der.dibujar(superficie, self.fuentes["menu"])
@@ -1059,9 +1076,15 @@ class PartidaModoHistoria(Pantalla):
         datos: DatosJuego,
         salir_app: Callable[[], None],
         materias_examen: list[str] | None = None,
+        config_historia: ConfigPresetHistoria | None = None,
+        navegacion_fin=None,
     ) -> None:
+        from Comun.navegacion_fin_partida import NavegacionFinPartida
+
         self.nombre = nombre
         self.preset = preset
+        self.config_historia = config_historia or ConfigPresetHistoria()
+        self.navegacion_fin: NavegacionFinPartida | None = navegacion_fin
         self.preguntas = preguntas
         self.materias_examen = materias_examen or []
         self.total = len(preguntas)
@@ -1202,6 +1225,7 @@ class PartidaModoHistoria(Pantalla):
                 self.salir_app,
                 cierre_informe=cierre,
                 titulo=titulo_pantalla,
+                navegacion_fin=self.navegacion_fin,
             )
         )
 
@@ -1291,7 +1315,7 @@ class PartidaModoHistoria(Pantalla):
             x_derecha=ANCHO - MARGEN,
             y=14,
         )
-        x_centro_min = MARGEN_ICONOS_FIJOS + 8
+        x_centro_min = x_min_centro_barra_partida(self.fuentes["menu"])
         x_centro_max = self.boton_abandonar.rect.x - 12
         ancho_centro = max(80, x_centro_max - x_centro_min)
         seg_preg = None
@@ -1403,13 +1427,18 @@ class PartidaResistenciaHistoria(Pantalla):
         nombre: str,
         preset: PresetHistoria,
         pool: list[Pregunta],
+        banco,
         reglas: ReglasPartida,
         ir_a: Callable[[Pantalla], None],
         datos: DatosJuego,
         salir_app: Callable[[], None],
+        navegacion_fin=None,
     ) -> None:
+        from Comun.navegacion_fin_partida import NavegacionFinPartida
+
         self.nombre = nombre
         self.preset = preset
+        self.navegacion_fin: NavegacionFinPartida | None = navegacion_fin
         self.pool = pool
         self.ir_a = ir_a
         self.datos = datos
@@ -1418,7 +1447,9 @@ class PartidaResistenciaHistoria(Pantalla):
         self.registros: list = []
         self.reglas_base = reglas
         self.er = crear_estado_resistencia(reglas.vidas or 3)
-        self.escalada = escalada_para_pregunta(1)
+        self.er.banco_resistencia = banco
+        configurar_partida_resistencia(self.er, preset_id=self.preset.id)
+        self.escalada = escalada_para_pregunta(1, semilla_partida=self.er.semilla_partida)
         self.estado = EstadoPartida(
             nombre=nombre,
             reglas=aplicar_escalada_a_reglas(reglas, self.escalada),
@@ -1432,11 +1463,13 @@ class PartidaResistenciaHistoria(Pantalla):
         self.feedback_solucion: str | None = None
         self.feedback_ok = False
         self.reintentar_pregunta = False
-        self.recompensa_pendiente = ""
         self.efecto_actual = ""
         self.avisos_cola: list[str] = []
+        self.avisos_pendientes: list[str] = []
         self.indice_aviso = 0
         self.inicio_aviso = 0.0
+        self.boton_apuesta_si: Boton | None = None
+        self.boton_apuesta_no: Boton | None = None
         self.botones_opcion: list[BotonOpcion] = []
         self.botones_powerup: list[Boton] = []
         self.inicio_pregunta = time.monotonic()
@@ -1469,14 +1502,21 @@ class PartidaResistenciaHistoria(Pantalla):
     def _texto_pregunta_visible(self) -> str:
         return texto_pregunta_para_turno(self._pregunta_actual(), self.er)
 
-    def _entrar_pregunta_o_avisos(self, *, recompensa_etiqueta: str | None = None) -> None:
-        etiqueta_recompensa = recompensa_etiqueta or self.recompensa_pendiente or None
-        self.recompensa_pendiente = ""
+    def _entrar_pregunta_o_avisos(self) -> None:
+        if self.er.apuesta_oferta:
+            self.fase = "apuesta"
+            self._reconstruir_botones_apuesta()
+            self.botones_opcion = []
+            self.botones_powerup = []
+            return
         p = self._pregunta_actual()
+        avisos_extra = list(self.avisos_pendientes)
+        self.avisos_pendientes = []
         avisos = avisos_pre_pregunta_resistencia(
             p,
             self._numero_pregunta(),
-            recompensa_etiqueta=etiqueta_recompensa,
+            avisos_extra=avisos_extra,
+            er=self.er,
         )
         if avisos:
             self.avisos_cola = avisos
@@ -1488,6 +1528,33 @@ class PartidaResistenciaHistoria(Pantalla):
             return
         self._iniciar_fase_pregunta()
 
+    def _reconstruir_botones_apuesta(self) -> None:
+        fuente = self.fuentes["menu"]
+        lbl_si = etiqueta("apuesta_si", "Aceptar apuesta")
+        lbl_no = etiqueta("apuesta_no", "Jugar normal")
+        ancho, alto = tamano_grupo_botones([lbl_si, lbl_no], fuente, alto_min=44)
+        y = ALTO // 2 + 72
+        self.boton_apuesta_si = Boton(
+            lbl_si,
+            pygame.Rect(ANCHO // 2 - ancho - 8, y, ancho, alto),
+            self._aceptar_apuesta,
+        )
+        self.boton_apuesta_no = Boton(
+            lbl_no,
+            pygame.Rect(ANCHO // 2 + 8, y, ancho, alto),
+            self._rechazar_apuesta,
+        )
+
+    def _aceptar_apuesta(self) -> None:
+        if self.er.apuesta_oferta:
+            self.er.apuesta_activa = self.er.apuesta_oferta
+            self.er.apuesta_oferta = None
+        self._entrar_pregunta_o_avisos()
+
+    def _rechazar_apuesta(self) -> None:
+        self.er.apuesta_oferta = None
+        self._entrar_pregunta_o_avisos()
+
     def _limite_tiempo_pregunta(self) -> int | None:
         return tiempo_pregunta_efectivo(
             self.estado.reglas.tiempo_por_pregunta_seg,
@@ -1498,7 +1565,9 @@ class PartidaResistenciaHistoria(Pantalla):
         return self.indice_global + 1
 
     def _aplicar_escalada(self, numero_pregunta: int) -> None:
-        self.escalada = escalada_para_pregunta(numero_pregunta)
+        self.escalada = escalada_para_pregunta(
+            numero_pregunta, semilla_partida=self.er.semilla_partida, racha=self.er.racha
+        )
         self.estado.reglas = aplicar_escalada_a_reglas(self.reglas_base, self.escalada)
         self.efecto_actual = texto_efectos_escalada(self.escalada)
 
@@ -1506,11 +1575,14 @@ class PartidaResistenciaHistoria(Pantalla):
         self.er.reset_pregunta()
         numero = self._numero_pregunta()
         self._aplicar_escalada(numero)
+        avisos_turno = preparar_eventos_nuevo_turno(self.er, self.pool, numero)
+        self.avisos_pendientes.extend(avisos_turno)
         idx = elegir_indice_resistencia(
-            self.pool, self.seleccion_pool, self.escalada, numero
+            self.pool, self.seleccion_pool, self.escalada, numero, er=self.er
         )
         if idx is None:
             return False
+        consumir_bloque_filtro(self.er)
         self.pregunta_idx = idx
         return True
 
@@ -1520,7 +1592,7 @@ class PartidaResistenciaHistoria(Pantalla):
         return self.pool[self.pregunta_idx]
 
     def _texto_progreso(self) -> str:
-        return f"#{self._numero_pregunta()} · Racha {self.er.racha}"
+        return texto_progreso_resistencia(self.er, self._numero_pregunta())
 
     def _altura_banda_powerups(self) -> int:
         n = sum(1 for pid in self.er.inventario if self.er.cantidad(pid) > 0)
@@ -1535,8 +1607,16 @@ class PartidaResistenciaHistoria(Pantalla):
             return ALTO - MARGEN_INF_PARTIDA
         return ALTO - MARGEN_INF_PARTIDA - altura
 
+    def _offset_y_panel(self) -> int:
+        if not self._texto_extra_barra():
+            return 0
+        return self.fuentes["pequena"].get_height() + 22
+
+    def _y_panel_pregunta(self) -> int:
+        return Y_PANEL_PREGUNTA + self._offset_y_panel()
+
     def _y_inicio_opciones(self) -> int:
-        return Y_PANEL_PREGUNTA + ALTO_PANEL_PREGUNTA + GAP_TRAS_PANEL_PARTIDA + 8
+        return self._y_panel_pregunta() + ALTO_PANEL_PREGUNTA + GAP_TRAS_PANEL_PARTIDA + 8
 
     def _y_fin_opciones(self) -> int:
         n = len(self.botones_opcion)
@@ -1558,7 +1638,7 @@ class PartidaResistenciaHistoria(Pantalla):
 
     def _reconstruir_powerups(self) -> None:
         self.botones_powerup = []
-        if self.fase != "pregunta":
+        if self.fase != "pregunta" or self.er.objetos_bloqueados:
             return
         items = [
             (pid, self.er.cantidad(pid))
@@ -1617,6 +1697,7 @@ class PartidaResistenciaHistoria(Pantalla):
             self.inicio_feedback = marcar_inicio_feedback()
             return
         if powerup_id == "skip":
+            self.er.registrar_fallo()
             self.indice_global += 1
             if not self._cargar_siguiente_pregunta():
                 self._fin_partida()
@@ -1624,6 +1705,32 @@ class PartidaResistenciaHistoria(Pantalla):
             self.feedback_mensaje = ""
             self.feedback_solucion = None
             self._entrar_pregunta_o_avisos()
+            return
+        if powerup_id == "cambio":
+            if self.pregunta_idx is None:
+                return
+            nuevo = elegir_indice_similar(
+                self.pool,
+                self.seleccion_pool,
+                self.escalada,
+                self._numero_pregunta(),
+                self.pregunta_idx,
+                er=self.er,
+            )
+            if nuevo is None:
+                self.er.agregar_powerup("cambio", 1)
+                self.feedback_mensaje = "No hay otra pregunta parecida disponible."
+                self.feedback_solucion = None
+                self.feedback_ok = False
+                self.fase = "feedback"
+                self.inicio_feedback = marcar_inicio_feedback()
+                return
+            self.pregunta_idx = nuevo
+            aplicar_modificadores_visuales_escalada(
+                self.er, self.escalada, self._pregunta_actual(), self._numero_pregunta()
+            )
+            self._reconstruir_opciones()
+            self._reconstruir_powerups()
             return
         if powerup_id in {"fifty_fifty", "bomba"}:
             self._reconstruir_opciones()
@@ -1642,7 +1749,7 @@ class PartidaResistenciaHistoria(Pantalla):
             )
         )
 
-    def _ajustar_multiplicador(self, resultado: ResultadoRespuesta, puntos_prev: int) -> None:
+    def _ajustar_multiplicador(self, resultado: ResultadoRespuesta, puntos_prev: int, mult_apuesta: int) -> None:
         aplicar_bonificaciones_puntos_resistencia(
             self.estado,
             puntos_prev=puntos_prev,
@@ -1651,6 +1758,7 @@ class PartidaResistenciaHistoria(Pantalla):
             exclusiva=self._pregunta_actual().exclusiva_resistencia,
             acierto=resultado.acierto,
             tiempo_agotado=resultado.tiempo_agotado,
+            mult_apuesta=mult_apuesta,
         )
 
     def _fin_partida(self, *, abandonado: bool = False) -> None:
@@ -1660,7 +1768,7 @@ class PartidaResistenciaHistoria(Pantalla):
         if self.registros and not abandonado:
             try:
                 _, posicion_ranking = registrar_partida(
-                    resolver_ranking_resistencia(),
+                    path_ranking_para_preset(self.preset.id),
                     nombre=self.nombre,
                     racha=self.er.mejor_racha,
                     puntos=self.estado.puntos_arcade,
@@ -1714,6 +1822,7 @@ class PartidaResistenciaHistoria(Pantalla):
                 posicion_ranking=posicion_ranking,
                 abandonado=abandonado,
                 mejor_racha=self.er.mejor_racha,
+                navegacion_fin=self.navegacion_fin,
             )
         )
 
@@ -1733,10 +1842,10 @@ class PartidaResistenciaHistoria(Pantalla):
             resultado,
             indice_pregunta=self._numero_pregunta(),
         )
-        self._ajustar_multiplicador(resultado, puntos_prev)
+        self._ajustar_multiplicador(resultado, puntos_prev, turno.mult_apuesta)
         self.reintentar_pregunta = turno.reintentar_pregunta
-        if turno.recompensa:
-            self.recompensa_pendiente = turno.recompensa.etiqueta
+        if turno.avisos_extra:
+            self.avisos_pendientes.extend(turno.avisos_extra)
         if not turno.reintentar_pregunta:
             self._registrar_respuesta(p, resultado)
 
@@ -1794,14 +1903,12 @@ class PartidaResistenciaHistoria(Pantalla):
             return
         if self.reintentar_pregunta:
             self.reintentar_pregunta = False
-            self.recompensa_pendiente = ""
             self._iniciar_fase_pregunta()
             for boton in self.botones_opcion:
                 boton.activo = True
                 boton.marcar_correcta = False
                 boton.marcar_incorrecta = False
             return
-        recompensa = self.recompensa_pendiente or None
         self.indice_global += 1
         if not self._cargar_siguiente_pregunta():
             self._fin_partida()
@@ -1809,7 +1916,7 @@ class PartidaResistenciaHistoria(Pantalla):
         self.feedback_mensaje = ""
         self.feedback_solucion = None
         self.feedback_ok = False
-        self._entrar_pregunta_o_avisos(recompensa_etiqueta=recompensa)
+        self._entrar_pregunta_o_avisos()
 
     def actualizar(self) -> Pantalla | None:
         if self.fase == "aviso":
@@ -1838,6 +1945,41 @@ class PartidaResistenciaHistoria(Pantalla):
     def titulo_pausa(self) -> str:
         return f"{self.preset.nombre} · {self._linea_estado_actual()}"
 
+    def popup_bloqueante(self) -> bool:
+        return self.fase in ("aviso", "apuesta")
+
+    def dibujar_contenido_popup_bloqueante(self, superficie: pygame.Surface) -> None:
+        fuente = self.fuentes["menu"]
+        if self.fase == "apuesta" and self.er.apuesta_oferta:
+            dibujar_contenido_aviso_resistencia(
+                superficie,
+                self.fuentes,
+                mensaje=formatear_aviso_apuesta(self.er.apuesta_oferta),
+            )
+            if self.boton_apuesta_si:
+                self.boton_apuesta_si.dibujar(superficie, fuente)
+            if self.boton_apuesta_no:
+                self.boton_apuesta_no.dibujar(superficie, fuente)
+            return
+        if self.fase == "aviso" and self.avisos_cola:
+            dibujar_contenido_aviso_resistencia(
+                superficie,
+                self.fuentes,
+                mensaje=self.avisos_cola[self.indice_aviso],
+                indice=self.indice_aviso,
+                total=len(self.avisos_cola),
+            )
+
+    def _texto_extra_barra(self) -> str:
+        if self.fase != "pregunta":
+            return ""
+        partes: list[str] = []
+        if self.efecto_actual:
+            partes.append(self.efecto_actual[:80])
+        if self.er.bloque_filtro:
+            partes.append(self.er.bloque_filtro.etiqueta[:72])
+        return " · ".join(partes)
+
     def _dibujar_barra_superior(self, superficie: pygame.Surface) -> None:
         fuente = self.fuentes["pequena"]
         lbl_abandonar = etiqueta(*BTN_ABANDONAR)
@@ -1847,29 +1989,42 @@ class PartidaResistenciaHistoria(Pantalla):
             x_derecha=ANCHO - MARGEN,
             y=14,
         )
-        x_centro_min = MARGEN_ICONOS_FIJOS + 8
+        x_centro_min = x_min_centro_barra_partida(self.fuentes["menu"])
         x_centro_max = self.boton_abandonar.rect.x - 12
         ancho_centro = max(80, x_centro_max - x_centro_min)
+        altura_fuente = fuente.get_height()
+        texto_extra = self._texto_extra_barra()
+        y_estado = (ALTURA_BARRA_PARTIDA - altura_fuente) // 2
         seg_preg = None
         if self.fase == "pregunta":
             seg_preg = _segundos_pregunta_restantes(
                 self.inicio_pregunta,
                 self._limite_tiempo_pregunta(),
             )
+        numero = self._numero_pregunta()
         dibujar_estado_partida_en_barra(
             superficie,
             estado=self.estado,
-            progreso=self._texto_progreso(),
+            progreso="",
             fuentes=self.fuentes,
             x_centro_min=x_centro_min,
             x_centro_max=x_centro_max,
+            y=y_estado,
             segundos_pregunta_restantes=seg_preg,
             vidas_max=self.er.vidas_max,
+            numero_pregunta=numero,
+            racha=self.er.racha,
         )
-        if self.efecto_actual and self.fase == "pregunta":
-            fx = fuente.render(preparar_texto_ui(self.efecto_actual[:80]), True, COLOR_AVISO)
-            if fx.get_width() <= ancho_centro:
-                superficie.blit(fx, fx.get_rect(midtop=(ANCHO // 2, 36)))
+        if texto_extra:
+            extra_txt = preparar_texto_ui(texto_extra)
+            if len(extra_txt) > 96:
+                extra_txt = extra_txt[:93] + "…"
+            extra = fuente.render(extra_txt, True, COLOR_AVISO)
+            y_extra = ALTURA_BARRA_PARTIDA + 10
+            if extra.get_width() <= ancho_centro:
+                superficie.blit(extra, extra.get_rect(midtop=(ANCHO // 2, y_extra)))
+            else:
+                superficie.blit(extra, (x_centro_min, y_extra))
         pygame.draw.line(
             superficie,
             (50, 72, 110),
@@ -1882,7 +2037,12 @@ class PartidaResistenciaHistoria(Pantalla):
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
         if evento.type == pygame.MOUSEMOTION:
             self.boton_abandonar.actualizar_hover(evento.pos)
-            if self.fase == "pregunta":
+            if self.fase == "apuesta":
+                if self.boton_apuesta_si:
+                    self.boton_apuesta_si.actualizar_hover(evento.pos)
+                if self.boton_apuesta_no:
+                    self.boton_apuesta_no.actualizar_hover(evento.pos)
+            elif self.fase == "pregunta":
                 for boton in self.botones_powerup:
                     boton.actualizar_hover(evento.pos)
                 for boton in self.botones_opcion:
@@ -1890,7 +2050,16 @@ class PartidaResistenciaHistoria(Pantalla):
         elif evento.type == pygame.MOUSEBUTTONDOWN:
             if self.boton_abandonar.manejar_clic(evento.pos, evento.button):
                 return None
-            if self.fase == "pregunta":
+            if self.fase == "apuesta":
+                if self.boton_apuesta_si and self.boton_apuesta_si.manejar_clic(
+                    evento.pos, evento.button
+                ):
+                    return None
+                if self.boton_apuesta_no and self.boton_apuesta_no.manejar_clic(
+                    evento.pos, evento.button
+                ):
+                    return None
+            elif self.fase == "pregunta":
                 for boton in self.botones_powerup:
                     if boton.manejar_clic(evento.pos, evento.button):
                         return None
@@ -1902,17 +2071,10 @@ class PartidaResistenciaHistoria(Pantalla):
     def dibujar(self, superficie: pygame.Surface) -> None:
         superficie.fill(COLOR_FONDO)
         self._dibujar_barra_superior(superficie)
-        if self.fase == "aviso" and self.avisos_cola:
-            dibujar_aviso_resistencia(
-                superficie,
-                self.fuentes,
-                mensaje=self.avisos_cola[self.indice_aviso],
-                indice=self.indice_aviso,
-                total=len(self.avisos_cola),
-            )
+        if self.popup_bloqueante():
             return
         p = self._pregunta_actual()
-        panel = pygame.Rect(MARGEN, Y_PANEL_PREGUNTA, ANCHO - 2 * MARGEN, ALTO_PANEL_PREGUNTA)
+        panel = pygame.Rect(MARGEN, self._y_panel_pregunta(), ANCHO - 2 * MARGEN, ALTO_PANEL_PREGUNTA)
         dibujar_panel(superficie, panel)
         meta_partes: list[str] = []
         if p.exclusiva_resistencia:
@@ -1958,7 +2120,54 @@ class PartidaResistenciaHistoria(Pantalla):
 
 
 class RankingResistenciaHistoria(Pantalla):
-    """Tabla histórica del modo resistencia (ranking local / multijugador offline)."""
+    """Tablas locales de resistencia infinita y reto del día (lado a lado)."""
+
+    Y_INFO = Y_INICIO_TITULO + 48
+    ALTURA_LINEA_INFO = 22
+    _LINEAS_INFO_BASE = (
+        "Solo en este ordenador. En otro PC no verás estos récords.",
+        "Orden: preguntas alcanzadas, luego puntos.",
+    )
+    Y_TABLAS = Y_INFO + (len(_LINEAS_INFO_BASE) + 1) * ALTURA_LINEA_INFO + 16
+    LIMITE_FILAS = 12
+    GAP_COLUMNAS = 16
+    _COLOR_TABLA_FONDO = (18, 44, 86)
+    _COLOR_TABLA_FILA_ALT = (24, 56, 104)
+    _COLOR_TABLA_BORDE = (88, 148, 215)
+    _COLOR_TABLA_BORDE_DESTACADO = (255, 196, 96)
+    _COLOR_TABLA_CABECERA = (120, 175, 235)
+    _COLOR_TEXTO_SECUNDARIO = (200, 215, 235)
+    _TAM_TEXTO_INFO = 16
+    _GAP_TITULO_SUB_RETO = 38
+    _GAP_LINEA_RETO = 24
+
+    @classmethod
+    def _lineas_info(cls) -> tuple[str, ...]:
+        icono_opciones = emoji_icono("opciones")
+        return (
+            *cls._LINEAS_INFO_BASE,
+            f"Borrado local: Opciones ({icono_opciones}) en la barra superior.",
+        )
+
+    def _dibujar_linea_info(
+        self,
+        superficie: pygame.Surface,
+        texto: str,
+        y: int,
+    ) -> None:
+        tam = self._TAM_TEXTO_INFO
+        color = self._COLOR_TEXTO_SECUNDARIO
+        if texto_requiere_fuentes_mixtas(texto):
+            dibujar_texto_centro(
+                superficie,
+                texto,
+                (ANCHO // 2, y + tam // 2),
+                tam,
+                color,
+            )
+            return
+        subt = self.fuentes["pequena"].render(texto, True, color)
+        superficie.blit(subt, subt.get_rect(midtop=(ANCHO // 2, y)))
 
     def __init__(
         self,
@@ -1967,6 +2176,7 @@ class RankingResistenciaHistoria(Pantalla):
         salir_app: Callable[[], None],
         *,
         volver_a: Callable[[], None] | None = None,
+        preset_id_inicial: str | None = None,
     ) -> None:
         self.datos = datos
         self.ir_a = ir_a
@@ -1975,7 +2185,30 @@ class RankingResistenciaHistoria(Pantalla):
             lambda: self.ir_a(MenuPrincipal(datos, ir_a, salir_app))
         )
         self.fuentes = crear_fuentes()
-        self.records = top_records(resolver_ranking_resistencia(), limite=25)
+        self.columna_destacada = (
+            variante_desde_preset(preset_id_inicial)
+            if preset_id_inicial
+            else None
+        )
+        self.records_por_variante: dict[str, list] = {}
+        self._layout_columnas = self._calcular_layout_columnas()
+        self._recargar_tablas()
+        self._crear_botones_inferiores()
+
+    def _calcular_layout_columnas(self) -> dict[str, pygame.Rect]:
+        ancho_col = (ANCHO - 2 * MARGEN - self.GAP_COLUMNAS) // 2
+        alto_tabla = ALTO - self.Y_TABLAS - 88
+        return {
+            "infinita": pygame.Rect(MARGEN, self.Y_TABLAS, ancho_col, alto_tabla),
+            "reto_dia": pygame.Rect(
+                MARGEN + ancho_col + self.GAP_COLUMNAS,
+                self.Y_TABLAS,
+                ancho_col,
+                alto_tabla,
+            ),
+        }
+
+    def _crear_botones_inferiores(self) -> None:
         self.boton_volver = Boton(
             etiqueta(*BTN_VOLVER),
             rect_boton_etiqueta(
@@ -1987,59 +2220,133 @@ class RankingResistenciaHistoria(Pantalla):
             ),
             self.volver_a,
         )
-        posicionar_pila_inferior(
-            [self.boton_volver],
-            x_centro=ANCHO // 2,
-            gap=0,
-            margen_inferior=70,
-        )
+        self.boton_volver.rect.midtop = (ANCHO // 2, ALTO - 64)
+
+    def _recargar_tablas(self) -> None:
+        for variante in VARIANTES_RANKING:
+            path = path_ranking_para_variante(variante)
+            self.records_por_variante[variante] = top_records(path, limite=25)
+
+    def _botones_ui(self) -> list[Boton]:
+        return [self.boton_volver]
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
         if evento.type == pygame.MOUSEMOTION:
-            self.boton_volver.actualizar_hover(evento.pos)
+            for boton in self._botones_ui():
+                boton.actualizar_hover(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
-            self.boton_volver.manejar_clic(evento.pos, evento.button)
+            for boton in self._botones_ui():
+                if boton.manejar_clic(evento.pos, evento.button):
+                    break
         return None
+
+    def _dibujar_cabecera_columna(
+        self,
+        superficie: pygame.Surface,
+        fuente_peq: pygame.font.Font,
+        variante: str,
+        rect_col: pygame.Rect,
+    ) -> int:
+        titulo = etiqueta_variante_ranking(variante)
+        color_titulo = COLOR_TITULO
+        if self.columna_destacada == variante:
+            color_titulo = self._COLOR_TABLA_BORDE_DESTACADO
+        txt_titulo = self.fuentes["subtitulo"].render(titulo, True, color_titulo)
+        y = rect_col.y + 10
+        superficie.blit(txt_titulo, txt_titulo.get_rect(midtop=(rect_col.centerx, y)))
+        y += self._GAP_TITULO_SUB_RETO
+        if variante == "reto_dia":
+            fecha = fuente_peq.render(
+                f"Hoy: {etiqueta_fecha_reto_dia()}",
+                True,
+                self._COLOR_TEXTO_SECUNDARIO,
+            )
+            superficie.blit(fecha, fecha.get_rect(midtop=(rect_col.centerx, y)))
+            y += self._GAP_LINEA_RETO
+            reinicio = fuente_peq.render(
+                "Se reinicia mañana automáticamente.",
+                True,
+                self._COLOR_TEXTO_SECUNDARIO,
+            )
+            superficie.blit(reinicio, reinicio.get_rect(midtop=(rect_col.centerx, y)))
+            y += self._GAP_LINEA_RETO
+        return y + 10
+
+    def _dibujar_tabla_columna(
+        self,
+        superficie: pygame.Surface,
+        fuente: pygame.font.Font,
+        variante: str,
+        rect_col: pygame.Rect,
+    ) -> None:
+        destacada = self.columna_destacada == variante
+        borde = self._COLOR_TABLA_BORDE_DESTACADO if destacada else self._COLOR_TABLA_BORDE
+        dibujar_panel(superficie, rect_col, color=self._COLOR_TABLA_FONDO)
+        pygame.draw.rect(
+            superficie,
+            borde,
+            rect_col,
+            width=2,
+            border_radius=8,
+        )
+        y = self._dibujar_cabecera_columna(superficie, fuente, variante, rect_col)
+        records = self.records_por_variante.get(variante, [])
+        if not records:
+            vacio = fuente.render(
+                etiqueta_campo("sin_registros", "Aún no hay partidas."),
+                True,
+                COLOR_TEXTO,
+            )
+            superficie.blit(vacio, vacio.get_rect(midtop=(rect_col.centerx, y + 28)))
+            return
+        cab = fuente.render("#  Jugador       Preg.  Puntos", True, self._COLOR_TABLA_CABECERA)
+        superficie.blit(cab, (rect_col.x + 12, y))
+        y += 24
+        for i, rec in enumerate(records[: self.LIMITE_FILAS], start=1):
+            if i % 2 == 0:
+                fila_rect = pygame.Rect(rect_col.x + 4, y - 2, rect_col.width - 8, 20)
+                pygame.draw.rect(
+                    superficie,
+                    self._COLOR_TABLA_FILA_ALT,
+                    fila_rect,
+                    border_radius=4,
+                )
+            nombre = rec.nombre[:12].ljust(12)
+            linea = f"{i:2} {nombre} {rec.respondidas:5} {rec.puntos:6}"
+            txt = fuente.render(linea, True, COLOR_TITULO)
+            superficie.blit(txt, (rect_col.x + 12, y))
+            y += 20
+        if len(records) > self.LIMITE_FILAS:
+            mas = fuente.render("…", True, self._COLOR_TEXTO_SECUNDARIO)
+            superficie.blit(mas, (rect_col.x + 12, y))
 
     def dibujar(self, superficie: pygame.Surface) -> None:
         superficie.fill(COLOR_FONDO)
-        titulo = self.fuentes["titulo"].render(
-            titulo_pantalla("Ranking — resistencia"), True, COLOR_TITULO
+        dibujar_texto_centro(
+            superficie,
+            titulo_pantalla("Ranking local"),
+            (ANCHO // 2, Y_INICIO_TITULO),
+            self.fuentes["titulo"].get_height(),
+            COLOR_TITULO,
+            bold=True,
         )
-        superficie.blit(titulo, titulo.get_rect(midtop=(ANCHO // 2, 36)))
-        subt = self.fuentes["pequena"].render(
-            "Multijugador local: récords guardados en este equipo",
-            True,
-            COLOR_TEXTO_PANEL,
-        )
-        superficie.blit(subt, subt.get_rect(midtop=(ANCHO // 2, 72)))
 
-        y = 110
-        fuente = self.fuentes["pequena"]
-        if not self.records:
-            vacio = fuente.render(
-                etiqueta_campo("sin_registros", "Aún no hay partidas registradas."), True, COLOR_TEXTO
+        fuente_peq = self.fuentes["pequena"]
+        for i, texto in enumerate(self._lineas_info()):
+            self._dibujar_linea_info(
+                superficie,
+                texto,
+                self.Y_INFO + i * self.ALTURA_LINEA_INFO,
             )
-            superficie.blit(vacio, vacio.get_rect(midtop=(ANCHO // 2, y + 40)))
-        else:
-            cab = fuente.render("#   Jugador          Preg.   Puntos", True, COLOR_ACENTO)
-            superficie.blit(cab, (MARGEN + 20, y))
-            y += 28
-            for i, rec in enumerate(self.records, start=1):
-                nombre = rec.nombre[:14].ljust(14)
-                linea = f"{i:2}. {nombre}  {rec.respondidas:5}   {rec.puntos:6}"
-                txt = fuente.render(linea, True, COLOR_TEXTO)
-                superficie.blit(txt, (MARGEN + 20, y))
-                y += 22
-                if y > ALTO - 120:
-                    mas = fuente.render("…", True, COLOR_TEXTO_PANEL)
-                    superficie.blit(mas, (MARGEN + 20, y))
-                    break
+
+        for variante in VARIANTES_RANKING:
+            rect_col = self._layout_columnas[variante]
+            self._dibujar_tabla_columna(superficie, fuente_peq, variante, rect_col)
 
         self.boton_volver.dibujar(superficie, self.fuentes["menu"])
 
     def titulo_pausa(self) -> str:
-        return "Ranking — resistencia"
+        return "Ranking local"
 
 
 class ResumenHistoriaPartida(ResumenPartida):
@@ -2054,6 +2361,7 @@ class ResumenHistoriaPartida(ResumenPartida):
         *,
         cierre_informe: CierreInformePartida | None = None,
         titulo: str | None = None,
+        navegacion_fin=None,
     ) -> None:
         self.preset = preset
         titulo_resumen = titulo or f"FIN — {preset.nombre[:44]}"
@@ -2065,6 +2373,7 @@ class ResumenHistoriaPartida(ResumenPartida):
             salir_app,
             cierre_informe=cierre_informe,
             titulo=titulo_resumen,
+            navegacion_fin=navegacion_fin,
         )
 
     def _construir_lineas(self) -> list[str]:
@@ -2092,6 +2401,7 @@ class ResumenResistenciaHistoria(ResumenHistoriaPartida):
         posicion_ranking: int | None = None,
         abandonado: bool = False,
         mejor_racha: int | None = None,
+        navegacion_fin=None,
     ) -> None:
         self.posicion_ranking = posicion_ranking
         self.abandonado_resistencia = abandonado
@@ -2105,72 +2415,20 @@ class ResumenResistenciaHistoria(ResumenHistoriaPartida):
             salir_app,
             cierre_informe=cierre_informe,
             titulo=titulo,
-        )
-        fuente_menu = self.fuentes["menu"]
-        etiq_ranking = etiqueta(*BTN_VER_RANKING)
-        ancho_btns, alto_btns = tamano_grupo_botones(
-            [self.boton_menu.etiqueta, etiq_ranking],
-            fuente_menu,
-            alto_min=44,
-        )
-        self.boton_menu.rect = rect_boton_etiqueta(
-            self.boton_menu.etiqueta,
-            fuente_menu,
-            x_centro=ANCHO // 2,
-            y=0,
-            ancho=ancho_btns,
-            alto=alto_btns,
-        )
-        self.boton_ranking = Boton(
-            etiq_ranking,
-            rect_boton_etiqueta(
-                etiq_ranking,
-                fuente_menu,
-                x_centro=ANCHO // 2,
-                y=0,
-                ancho=ancho_btns,
-                alto=alto_btns,
-            ),
-            self._ver_ranking,
-        )
-        posicionar_pila_inferior(
-            [self.boton_ranking, self.boton_menu],
-            x_centro=ANCHO // 2,
-            gap=14,
-            margen_inferior=20,
-        )
-
-    def _ver_ranking(self) -> None:
-        self.ir_a(
-            RankingResistenciaHistoria(
-                self.datos,
-                self.ir_a,
-                self.salir_app,
-                volver_a=lambda: self.ir_a(MenuPrincipal(self.datos, self.ir_a, self.salir_app)),
-            )
+            navegacion_fin=navegacion_fin,
         )
 
     def _construir_lineas(self) -> list[str]:
         lineas = super()._construir_lineas()
         lineas.insert(0, f"Preguntas respondidas: {self.estado.respondidas}")
         lineas.insert(1, f"Mejor racha (bonificación puntos): {self.mejor_racha}")
+        path_rank = path_ranking_para_preset(self.preset.id)
+        etiqueta_tabla = etiqueta_variante_ranking(variante_desde_preset(self.preset.id))
         if self.posicion_ranking is not None:
-            lineas.insert(2, f"Posición en ranking: #{self.posicion_ranking}")
-        mejor = mejor_de_jugador(resolver_ranking_resistencia(), self.estado.nombre)
+            lineas.insert(2, f"Posición en ranking ({etiqueta_tabla}): #{self.posicion_ranking}")
+        mejor = mejor_de_jugador(path_rank, self.estado.nombre)
         if mejor and mejor.respondidas > self.estado.respondidas:
             lineas.append(
                 f"Tu récord personal: pregunta {mejor.respondidas} (puntos {mejor.puntos})"
             )
         return lineas
-
-    def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
-        if evento.type == pygame.MOUSEMOTION:
-            self.boton_ranking.actualizar_hover(evento.pos)
-        elif evento.type == pygame.MOUSEBUTTONDOWN:
-            self.boton_ranking.manejar_clic(evento.pos, evento.button)
-        return super().manejar_evento(evento)
-
-    def dibujar(self, superficie: pygame.Surface) -> None:
-        super().dibujar(superficie)
-        if not self.abandonado_resistencia:
-            self.boton_ranking.dibujar(superficie, self.fuentes["menu"])

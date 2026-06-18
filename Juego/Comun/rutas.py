@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 _COMUN_DIR = Path(__file__).resolve().parent
@@ -137,23 +139,33 @@ def resolver_presets_historia() -> Path:
     return _buscar_archivo("presets_historia.json", ("presets_historia.json",))
 
 
-def resolver_ranking_resistencia() -> Path:
-    """JSON local del ranking del modo resistencia (lectura/escritura)."""
-    base = _ruta_json_escritura("ranking_resistencia.json")
+def resolver_presets_especiales() -> Path:
+    return _buscar_archivo("presets_especiales.json", ("presets_especiales.json",))
+
+
+def resolver_ranking_resistencia_infinita() -> Path:
+    """JSON local del ranking de resistencia infinita."""
+    base = _ruta_json_escritura("ranking_resistencia_infinita.json")
     if not base.exists():
-        try:
-            empaquetado = _buscar_archivo(
-                "ranking_resistencia.json",
-                ("ranking_resistencia.json",),
-            )
-            if empaquetado.exists() and empaquetado != base:
-                base.write_text(empaquetado.read_text(encoding="utf-8"), encoding="utf-8")
-        except FileNotFoundError:
-            base.write_text(
-                '{"version": 1, "records": []}',
-                encoding="utf-8",
-            )
+        base.write_text('{"version": 1, "records": []}', encoding="utf-8")
     return base
+
+
+def resolver_ranking_reto_dia() -> Path:
+    """JSON local del ranking del reto del día (se reinicia cada día)."""
+    base = _ruta_json_escritura("ranking_reto_dia.json")
+    if not base.exists():
+        hoy = datetime.now(timezone.utc).date().isoformat()
+        base.write_text(
+            json.dumps({"version": 2, "fecha_reto": hoy, "records": []}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    return base
+
+
+def resolver_ranking_resistencia() -> Path:
+    """Compatibilidad: ranking de resistencia infinita."""
+    return resolver_ranking_resistencia_infinita()
 
 
 def resolver_historico_qualificacions() -> Path:

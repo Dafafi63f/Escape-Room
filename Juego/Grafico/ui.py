@@ -690,11 +690,16 @@ def dibujar_tooltip(
     _dibujar_lineas_tooltip(pantalla, fuente_tip, lineas, panel, COLOR_TOOLTIP_TEXTO)
 
 
+from Comun.preferencias_grafico import tooltips_habilitados
+
+
 def dibujar_tooltips_botones(
     pantalla: pygame.Surface,
     fuente: pygame.font.Font,
     botones: list[Boton],
 ) -> None:
+    if not tooltips_habilitados():
+        return
     for boton in botones:
         if boton.activo and boton.hover and boton.tooltip:
             dibujar_tooltip(pantalla, fuente, boton.rect, boton.tooltip)
@@ -854,6 +859,39 @@ class CampoEntero:
                 (x_cursor, self.rect.bottom - 10),
                 2,
             )
+
+
+def dibujar_overlay_atenuacion(
+    superficie: pygame.Surface,
+    *,
+    alpha: int | None = None,
+) -> None:
+    """Oscurece pantalla e iconos fijos bajo un popup modal."""
+    from Grafico.tema import ALPHA_OVERLAY_POPUP
+
+    if alpha is None:
+        alpha = ALPHA_OVERLAY_POPUP
+    overlay = pygame.Surface(superficie.get_size(), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, alpha))
+    superficie.blit(overlay, (0, 0))
+
+
+def dibujar_caja_valor_ciclo(
+    superficie: pygame.Surface,
+    rect: pygame.Rect,
+    texto: str,
+    fuente: pygame.font.Font,
+    *,
+    padding_x: int = 8,
+) -> None:
+    """Fondo azul del valor central en selectores ◀ valor ▶."""
+    if rect.width <= 0 or rect.height <= 0:
+        return
+    pygame.draw.rect(superficie, COLOR_PANEL, rect, border_radius=6)
+    texto_ui = preparar_texto_ui(texto)
+    fuente_val = _fuente_ajustada(texto_ui, fuente, rect.width - 2 * padding_x)
+    surf = fuente_val.render(texto_ui, True, COLOR_TEXTO)
+    superficie.blit(surf, surf.get_rect(center=rect.center))
 
 
 def dibujar_panel(

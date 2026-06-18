@@ -51,7 +51,7 @@ El lanzador detecta la ruta base del proyecto para funcionar en ejecución norma
 - `Data/CSV/listado_materias.csv` — metadatos académicos por materia.
 - `Data/JSON/plantillas.json`, `Data/CSV/Historic_qualificacions_MatCAD_completo.csv` — según modo.
 - `Data/JSON/presets_historia.json` — catálogo modo historia.
-- `Data/JSON/preguntas_resistencia.json`, `Data/JSON/ranking_resistencia.json` — modo resistencia.
+- `Data/JSON/preguntas_resistencia.json`, `ranking_resistencia_infinita.json`, `ranking_reto_dia.json` — modo resistencia.
 - `Juego/Informes/` — informes de examen cerrado (`.txt`, gitignored salvo `.gitkeep`).
 - `Juego/Feedback/` — copias locales del modo feedback (gitignored salvo `.gitkeep`).
 - `Data/JSON/creador_privado.json` — datos personales y SMTP (plantilla en `config_creador.py`).
@@ -114,7 +114,7 @@ La partida termina al agotar vidas o al completar el objetivo de preguntas.
 
 ## Informes de partida
 
-En partidas con corrección al final, `informe_examen.py` escribe un `.txt` en `Juego/Informes/` (o `Informes/` junto al `.exe`), con ID de sesión y detalle de respuestas. El modo resistencia registra además el ranking en `Data/JSON/ranking_resistencia.json`.
+En partidas con corrección al final, `informe_examen.py` escribe un `.txt` en `Juego/Informes/` (o `Informes/` junto al `.exe`), con ID de sesión y detalle de respuestas. El modo resistencia registra el ranking en `Data/JSON/ranking_resistencia_infinita.json` o `ranking_reto_dia.json` (este último se reinicia cada día).
 
 ## Controles de teclado
 
@@ -146,7 +146,7 @@ Flujo: categoría → área → mensaje (multilínea) → nombre → contacto. S
 
 `python Files/Scripts/duplicados.py revisar` → **0 pares similares** en CSV y plantillas intra-materia. `mantenimiento.py validar` → OK.
 
-Mejoras futuras opcionales: ampliar catálogo de plantillas, repuestos LSTM/Sharpe, dedup al cargar banco beta. Ver [`Revision/revision_manual_banco.md`](../../Revision/revision_manual_banco.md).
+Mejoras futuras opcionales: ampliar catálogo de plantillas, repuestos LSTM/Sharpe, dedup al cargar banco beta. Ver [`CHECKLIST.md`](../../CHECKLIST.md).
 
 ## Dependencias entre capas
 
