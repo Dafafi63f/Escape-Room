@@ -61,7 +61,7 @@ def dibujar_feedback_partida(
     color_fb = COLOR_OK if acierto else COLOR_ERROR
     texto_fb = mensaje_feedback(mensaje)
     tam = fuentes["subtitulo"].get_height()
-    _, alto_msg = medir_texto_mixto(texto_fb, tam, bold=True, color_texto=color_fb)
+    _, alto_msg = medir_texto_mixto(texto_fb, tam, bold=True)
     dibujar_texto_centro(
         superficie,
         texto_fb,

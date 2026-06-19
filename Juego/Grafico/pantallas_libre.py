@@ -24,7 +24,7 @@ from Comun.dificultad import (
     normalizar_niveles_seleccionados,
 )
 from Comun.modelos import BancoPreguntas, Pregunta
-from Comun.politica_reglas import validar_reglas
+from Comun.politica_reglas import ContextoPartida, validar_reglas
 from Comun.preferencias_grafico import nombre_jugador_grafico
 from Comun.pool_libre import (
     filtrar_pool,
@@ -367,7 +367,7 @@ class ConfigOpcionesLibre(Pantalla):
         self._y_panel_top = Y_SUBTITULO_LIBRE + ALTO_ETIQUETA_MENU + GAP_CAMPO_PANEL
         self._y_opciones = self._y_panel_top + PADDING_PANEL_OPCIONES
 
-    def _contexto(self):
+    def _contexto(self) -> ContextoPartida:
         return contexto_partida(
             modo_infinito=self.modo_infinito,
             n_preguntas=_n_preguntas_efectivas(self.modo_infinito, self.total_elegido),
@@ -881,7 +881,7 @@ class ConfigFiltrosLibre(Pantalla):
     def _n_preguntas_efectivas(self) -> int:
         return _n_preguntas_efectivas(self.modo_infinito, self.total_elegido)
 
-    def _contexto(self):
+    def _contexto(self) -> ContextoPartida:
         return contexto_partida(
             modo_infinito=self.modo_infinito,
             n_preguntas=self._n_preguntas_efectivas(),

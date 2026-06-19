@@ -137,7 +137,6 @@ def medir_texto_mixto(
     tamano: int,
     *,
     bold: bool = False,
-    color_texto: tuple[int, int, int] | None = None,
 ) -> tuple[int, int]:
     texto = preparar_texto_ui(texto)
     ancho = 0
@@ -238,7 +237,7 @@ def dibujar_texto_centro(
             for linea in lineas:
                 if texto_requiere_fuentes_mixtas(linea):
                     ancho_linea, alto_linea = medir_texto_mixto(
-                        linea, tamano, bold=bold, color_texto=color
+                        linea, tamano, bold=bold
                     )
                     x = centro[0] - ancho_linea // 2
                     rect = renderizar_texto_mixto(
@@ -254,7 +253,7 @@ def dibujar_texto_centro(
             union.centerx = centro[0]
             return union
     if texto_requiere_fuentes_mixtas(texto):
-        ancho, alto = medir_texto_mixto(texto, tamano, bold=bold, color_texto=color)
+        ancho, alto = medir_texto_mixto(texto, tamano, bold=bold)
         x = centro[0] - ancho // 2
         y = centro[1] - alto // 2
         rect = renderizar_texto_mixto(pantalla, texto, (x, y), color, tamano, bold=bold)

@@ -363,18 +363,25 @@ class AplicacionGrafica:
             return False
         return any(b.manejar_clic(pos, boton) for b, _tipo in self._botones_fijos)
 
+    def _manejar_hover_pausa(self, pos: tuple[int, int]) -> None:
+        for boton in self._botones_pausa:
+            boton.actualizar_hover(pos)
+
+    def _manejar_clic_pausa(self, pos: tuple[int, int], boton: int) -> None:
+        for btn in self._botones_pausa:
+            if btn.manejar_clic(pos, boton):
+                break
+
     def _manejar_eventos_overlay(self, evento: pygame.event.Event) -> None:
         if self._menu_opciones_abierto and self._overlay_opciones is not None:
             self._overlay_opciones.manejar_evento(evento)
             return
-        if self._menu_pausa_abierto:
-            if evento.type == pygame.MOUSEMOTION:
-                for boton in self._botones_pausa:
-                    boton.actualizar_hover(evento.pos)
-            elif evento.type == pygame.MOUSEBUTTONDOWN:
-                for boton in self._botones_pausa:
-                    if boton.manejar_clic(evento.pos, evento.button):
-                        break
+        if not self._menu_pausa_abierto:
+            return
+        if evento.type == pygame.MOUSEMOTION:
+            self._manejar_hover_pausa(evento.pos)
+        elif evento.type == pygame.MOUSEBUTTONDOWN:
+            self._manejar_clic_pausa(evento.pos, evento.button)
 
     def _manejar_eventos_pausa(self, evento: pygame.event.Event) -> None:
         self._manejar_eventos_overlay(evento)
@@ -382,26 +389,44 @@ class AplicacionGrafica:
     def _dibujar_pantalla_actual(self) -> None:
         self.actual.dibujar(self.pantalla)
 
+    def _procesar_evento(self, evento: pygame.event.Event) -> None:
+        if evento.type == pygame.QUIT:
+            self.ejecutando = False
+            return
+        if self._overlay_abierto():
+            self._manejar_eventos_overlay(evento)
+            return
+        if evento.type == pygame.MOUSEMOTION:
+            self._manejar_hover_fijos(evento.pos)
+        elif evento.type == pygame.MOUSEBUTTONDOWN:
+            if self._manejar_clic_fijos(evento.pos, evento.button):
+                return
+        nueva = self.actual.manejar_evento(evento)
+        if nueva is not None:
+            self.actual = nueva
+
+    def _dibujar_overlays_y_tooltips(self) -> None:
+        if self._barra_fija_bloqueada():
+            dibujar_overlay_atenuacion(self.pantalla)
+        if self._menu_pausa_abierto:
+            self._dibujar_contenido_menu_pausa()
+        elif self._menu_opciones_abierto and self._overlay_opciones is not None:
+            self._overlay_opciones.dibujar_contenido(self.pantalla)
+        elif self.actual.popup_bloqueante():
+            self.actual.dibujar_contenido_popup_bloqueante(self.pantalla)
+        if not self._barra_fija_bloqueada():
+            dibujar_tooltips_botones(
+                self.pantalla,
+                self.fuentes["pequena"],
+                [b for b, _tipo in self._botones_fijos],
+            )
+
     def ejecutar(self) -> None:
         while self.ejecutando:
             for evento in pygame.event.get():
-                if evento.type == pygame.QUIT:
-                    self.ejecutando = False
+                self._procesar_evento(evento)
+                if not self.ejecutando:
                     break
-
-                if self._overlay_abierto():
-                    self._manejar_eventos_overlay(evento)
-                    continue
-
-                if evento.type == pygame.MOUSEMOTION:
-                    self._manejar_hover_fijos(evento.pos)
-                elif evento.type == pygame.MOUSEBUTTONDOWN:
-                    if self._manejar_clic_fijos(evento.pos, evento.button):
-                        continue
-
-                nueva = self.actual.manejar_evento(evento)
-                if nueva is not None:
-                    self.actual = nueva
 
             if not self._overlay_abierto():
                 cambio = self.actual.actualizar()
@@ -414,22 +439,7 @@ class AplicacionGrafica:
                 b.dibujar(self.pantalla, self.fuentes["menu"])
                 self._dibujar_icono_fijo(tipo, b.rect)
 
-            if self._barra_fija_bloqueada():
-                dibujar_overlay_atenuacion(self.pantalla)
-
-            if self._menu_pausa_abierto:
-                self._dibujar_contenido_menu_pausa()
-            elif self._menu_opciones_abierto and self._overlay_opciones is not None:
-                self._overlay_opciones.dibujar_contenido(self.pantalla)
-            elif self.actual.popup_bloqueante():
-                self.actual.dibujar_contenido_popup_bloqueante(self.pantalla)
-
-            if not self._barra_fija_bloqueada():
-                dibujar_tooltips_botones(
-                    self.pantalla,
-                    self.fuentes["pequena"],
-                    [b for b, _tipo in self._botones_fijos],
-                )
+            self._dibujar_overlays_y_tooltips()
 
             pygame.display.flip()
             self.reloj.tick(FPS)

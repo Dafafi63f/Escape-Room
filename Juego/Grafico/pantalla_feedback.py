@@ -311,14 +311,21 @@ class PantallaFeedback(Pantalla):
             out.extend(par)
         return out
 
+    def _manejar_evento_formulario(self, evento: pygame.event.Event) -> bool:
+        if self._fase != "form":
+            return False
+        for campo in (self.campo_mensaje, self.campo_contacto):
+            if not campo.manejar_evento(evento):
+                continue
+            for otro in (self.campo_mensaje, self.campo_contacto):
+                if otro is not campo:
+                    otro.activo = False
+            return True
+        return False
+
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
-        if self._fase == "form":
-            for campo in (self.campo_mensaje, self.campo_contacto):
-                if campo.manejar_evento(evento):
-                    for otro in (self.campo_mensaje, self.campo_contacto):
-                        if otro is not campo:
-                            otro.activo = False
-                    return None
+        if self._manejar_evento_formulario(evento):
+            return None
         if evento.type == pygame.MOUSEMOTION:
             for boton in self._botones_ui():
                 boton.actualizar_hover(evento.pos)

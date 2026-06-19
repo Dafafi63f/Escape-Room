@@ -864,33 +864,39 @@ class ConfigOpcionesHistoria(Pantalla):
                 return list(op.valores)
         return []
 
-    def _texto_valor(self, op_id: str) -> str:
-        for op in self.preset.opciones:
-            if op.id != op_id:
-                continue
-            raw = self.config.valores.get(op_id)
-            if raw is None or raw == "":
-                if op.tipo == "curso" and not op.obligatorio:
-                    return "Todo el grado"
-                if op.tipo == "semestre" and not op.obligatorio:
-                    return "Todo el curso"
-                return "—"
-            if op.tipo == "grupo":
-                return GRUPOS_TEMATICOS.get(str(raw), str(raw))
-            if op.tipo == "eleccion":
-                for v, etq in op.valores:
-                    if v == str(raw):
-                        return etq
-            if op.tipo == "curso":
-                return f"Curso {raw}"
-            if op.tipo == "semestre":
-                return f"Semestre {raw}"
-            if op.tipo == "entero":
-                if op.id == "tiempo_total_min" and int(raw) == 0:
-                    return "Sin límite"
-                return str(raw)
+    def _texto_valor_vacio(self, op: OpcionPreset) -> str:
+        if op.tipo == "curso" and not op.obligatorio:
+            return "Todo el grado"
+        if op.tipo == "semestre" and not op.obligatorio:
+            return "Todo el curso"
+        return "—"
+
+    def _texto_valor_con_dato(self, op: OpcionPreset, raw: object) -> str:
+        if op.tipo == "grupo":
+            return GRUPOS_TEMATICOS.get(str(raw), str(raw))
+        if op.tipo == "eleccion":
+            for v, etq in op.valores:
+                if v == str(raw):
+                    return etq
             return str(raw)
-        return ""
+        if op.tipo == "curso":
+            return f"Curso {raw}"
+        if op.tipo == "semestre":
+            return f"Semestre {raw}"
+        if op.tipo == "entero":
+            if op.id == "tiempo_total_min" and int(str(raw)) == 0:
+                return "Sin límite"
+            return str(raw)
+        return str(raw)
+
+    def _texto_valor(self, op_id: str) -> str:
+        op = self._opcion_preset(op_id)
+        if op is None:
+            return ""
+        raw = self.config.valores.get(op_id)
+        if raw is None or raw == "":
+            return self._texto_valor_vacio(op)
+        return self._texto_valor_con_dato(op, raw)
 
     def _ciclar_opcion(self, op_id: str, delta: int) -> None:
         for op in self.preset.opciones:

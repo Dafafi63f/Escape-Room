@@ -286,9 +286,7 @@ def dibujar_texto_multilinea(
     tamano = fuente.get_height()
     for linea in lineas:
         if texto_requiere_fuentes_mixtas(linea):
-            ancho_linea, alto_linea = medir_texto_mixto(
-                linea, tamano, color_texto=color
-            )
+            ancho_linea, alto_linea = medir_texto_mixto(linea, tamano)
             x = rect.centerx - ancho_linea // 2 if alineacion_centro else rect.x + 8
             renderizar_texto_mixto(pantalla, linea, (x, y), color, tamano)
             y += max(fuente.get_linesize(), alto_linea)
