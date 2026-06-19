@@ -382,32 +382,35 @@ class ResumenLimpieza:
         )
 
 
+def _unlink_ficheros(ficheros: list[Path]) -> tuple[int, int]:
+    borrados = 0
+    errores = 0
+    for fichero in ficheros:
+        try:
+            fichero.unlink()
+            borrados += 1
+        except OSError:
+            errores += 1
+    return borrados, errores
+
+
 def eliminar_ficheros_runtime_juego() -> tuple[ResumenBorradoJson, ResumenBorradoTxt]:
     """Elimina del disco los ficheros runtime en ``Data/Juego/`` (solo utilidad externa)."""
     resumen_json = ResumenBorradoJson()
     resumen_txt = ResumenBorradoTxt()
     preferencias, rankings, txt = listar_ficheros_runtime_juego()
 
-    for fichero in preferencias:
-        try:
-            fichero.unlink()
-            resumen_json.preferencias += 1
-        except OSError:
-            resumen_json.errores += 1
+    ok, err = _unlink_ficheros(preferencias)
+    resumen_json.preferencias += ok
+    resumen_json.errores += err
 
-    for fichero in rankings:
-        try:
-            fichero.unlink()
-            resumen_json.rankings += 1
-        except OSError:
-            resumen_json.errores += 1
+    ok, err = _unlink_ficheros(rankings)
+    resumen_json.rankings += ok
+    resumen_json.errores += err
 
-    for fichero in txt:
-        try:
-            fichero.unlink()
-            resumen_txt.borrados += 1
-        except OSError:
-            resumen_txt.errores += 1
+    ok, err = _unlink_ficheros(txt)
+    resumen_txt.borrados += ok
+    resumen_txt.errores += err
 
     return resumen_json, resumen_txt
 
@@ -464,6 +467,39 @@ def _es_directorio_vacio_eliminable(carpeta: Path, eliminables: set[Path]) -> bo
     )
 
 
+def _candidatos_directorios_repo(
+    base: Path,
+    *,
+    omitir_data_exe: bool,
+) -> list[Path]:
+    return [
+        p
+        for p in base.rglob("*")
+        if p.is_dir()
+        and not _dentro_de_omitidos(p, base)
+        and not (omitir_data_exe and _es_data_exe(p, base))
+    ]
+
+
+def _paso_marca_eliminables(candidatos: list[Path], eliminables: set[Path]) -> bool:
+    changed = False
+    for carpeta in sorted(candidatos, key=lambda p: len(p.parts), reverse=True):
+        if _clave_ruta(carpeta) in eliminables:
+            continue
+        if not _es_directorio_vacio_eliminable(carpeta, eliminables):
+            continue
+        eliminables.add(_clave_ruta(carpeta))
+        changed = True
+    return changed
+
+
+def _calcular_eliminables_cascada(candidatos: list[Path]) -> set[Path]:
+    eliminables: set[Path] = set()
+    while _paso_marca_eliminables(candidatos, eliminables):
+        pass
+    return eliminables
+
+
 def listar_directorios_vacios(
     raiz: Path | None = None,
     *,
@@ -483,23 +519,8 @@ def listar_directorios_vacios(
     ``_eliminar_data_junto_al_exe`` en la limpieza de runtime).
     """
     base = raiz or raiz_proyecto()
-    candidatos = [
-        p
-        for p in base.rglob("*")
-        if p.is_dir()
-        and not _dentro_de_omitidos(p, base)
-        and not (omitir_data_exe and _es_data_exe(p, base))
-    ]
-    eliminables: set[Path] = set()
-    changed = True
-    while changed:
-        changed = False
-        for carpeta in sorted(candidatos, key=lambda p: len(p.parts), reverse=True):
-            if _clave_ruta(carpeta) in eliminables:
-                continue
-            if _es_directorio_vacio_eliminable(carpeta, eliminables):
-                eliminables.add(_clave_ruta(carpeta))
-                changed = True
+    candidatos = _candidatos_directorios_repo(base, omitir_data_exe=omitir_data_exe)
+    eliminables = _calcular_eliminables_cascada(candidatos)
     return sorted(
         (p for p in candidatos if _clave_ruta(p) in eliminables),
         key=lambda p: len(p.parts),
