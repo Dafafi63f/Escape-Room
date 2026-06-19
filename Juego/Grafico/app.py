@@ -361,26 +361,7 @@ class AplicacionGrafica:
     def _manejar_clic_fijos(self, pos: tuple[int, int], boton: int) -> bool:
         if self._barra_fija_bloqueada():
             return False
-        for b, tipo in self._botones_fijos:
-            if not b.manejar_clic(pos, boton):
-                continue
-            if tipo == "ranking":
-                from Grafico.pantallas_historia import RankingResistenciaHistoria
-
-                if isinstance(
-                    self.actual,
-                    (PantallaInfoHub, PantallaInfoTexto, RankingResistenciaHistoria),
-                ):
-                    return True
-            if tipo == "feedback" and isinstance(self.actual, PantallaFeedback):
-                return True
-            if tipo == "diarios":
-                from Grafico.pantallas_diarios import ConfigModosDiarios
-
-                if isinstance(self.actual, ConfigModosDiarios):
-                    return True
-            return True
-        return False
+        return any(b.manejar_clic(pos, boton) for b, _tipo in self._botones_fijos)
 
     def _manejar_eventos_overlay(self, evento: pygame.event.Event) -> None:
         if self._menu_opciones_abierto and self._overlay_opciones is not None:

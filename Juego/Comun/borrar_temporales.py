@@ -280,12 +280,15 @@ def _imprimir_listado(
     return hay_algo
 
 
-def main(argv: list[str] | None = None) -> int:
-    if sys.platform == "win32":
-        reconfigure = getattr(sys.stdout, "reconfigure", None)
-        if callable(reconfigure):
-            reconfigure(encoding="utf-8", errors="replace")
+def _configurar_stdout_utf8() -> None:
+    if sys.platform != "win32":
+        return
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if callable(reconfigure):
+        reconfigure(encoding="utf-8", errors="replace")
 
+
+def _parser_borrar_temporales() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Utilidad externa: borra __pycache__, cachés y elimina del disco los "
@@ -310,13 +313,54 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Solo elimina ficheros .txt en Data/Juego/",
     )
-    args = parser.parse_args(argv)
+    return parser
 
-    raiz = raiz_proyecto()
+
+def _alcance_borrado(args: argparse.Namespace) -> tuple[bool, bool, bool]:
     incluir_pycache = not args.solo_txt and not args.solo_juego
     incluir_txt = not args.solo_pycache
     incluir_json = not args.solo_pycache and not args.solo_txt
+    return incluir_pycache, incluir_txt, incluir_json
 
+
+def _imprimir_resumen_post_borrado(
+    resumen: ResumenLimpieza,
+    *,
+    incluir_pycache: bool,
+    incluir_txt: bool,
+    incluir_json: bool,
+) -> None:
+    print("\nResumen:")
+    if incluir_pycache:
+        print(
+            f"  __pycache__: {resumen.pycache_borradas} borradas | "
+            f"errores: {resumen.pycache_errores}"
+        )
+        print(
+            f"  cachés herramientas: {resumen.cache_herramientas_borradas} borradas | "
+            f"errores: {resumen.cache_herramientas_errores}"
+        )
+    if incluir_txt:
+        print(
+            f"  .txt eliminados: {resumen.txt_borrados} | errores: {resumen.txt_errores} | "
+            f"liberados: {_formatear_tamano(resumen.bytes_txt)}"
+        )
+    if incluir_json:
+        print(
+            f"  JSON eliminados: {resumen.json_preferencias_borrados} preferencias, "
+            f"{resumen.json_rankings_borrados} rankings | errores: {resumen.json_errores} | "
+            f"liberados: {_formatear_tamano(resumen.bytes_json)}"
+        )
+        if resumen.json_preferencias_borrados or resumen.json_rankings_borrados:
+            print("  (Al abrir el juego se recrearán con valores por defecto.)")
+
+
+def main(argv: list[str] | None = None) -> int:
+    _configurar_stdout_utf8()
+    args = _parser_borrar_temporales().parse_args(argv)
+    incluir_pycache, incluir_txt, incluir_json = _alcance_borrado(args)
+
+    raiz = raiz_proyecto()
     preferencias, rankings, txt = listar_ficheros_runtime_juego()
     pycache = listar_pycache(raiz) if incluir_pycache else []
     cache_herramientas = listar_cache_herramientas(raiz) if incluir_pycache else []
@@ -346,27 +390,10 @@ def main(argv: list[str] | None = None) -> int:
         incluir_txt=incluir_txt,
         incluir_json=incluir_json,
     )
-    print("\nResumen:")
-    if incluir_pycache:
-        print(
-            f"  __pycache__: {resumen.pycache_borradas} borradas | "
-            f"errores: {resumen.pycache_errores}"
-        )
-        print(
-            f"  cachés herramientas: {resumen.cache_herramientas_borradas} borradas | "
-            f"errores: {resumen.cache_herramientas_errores}"
-        )
-    if incluir_txt:
-        print(
-            f"  .txt eliminados: {resumen.txt_borrados} | errores: {resumen.txt_errores} | "
-            f"liberados: {_formatear_tamano(resumen.bytes_txt)}"
-        )
-    if incluir_json:
-        print(
-            f"  JSON eliminados: {resumen.json_preferencias_borrados} preferencias, "
-            f"{resumen.json_rankings_borrados} rankings | errores: {resumen.json_errores} | "
-            f"liberados: {_formatear_tamano(resumen.bytes_json)}"
-        )
-        if resumen.json_preferencias_borrados or resumen.json_rankings_borrados:
-            print("  (Al abrir el juego se recrearán con valores por defecto.)")
+    _imprimir_resumen_post_borrado(
+        resumen,
+        incluir_pycache=incluir_pycache,
+        incluir_txt=incluir_txt,
+        incluir_json=incluir_json,
+    )
     return 1 if resumen.errores_totales else 0

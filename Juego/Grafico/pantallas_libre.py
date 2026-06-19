@@ -482,45 +482,57 @@ class ConfigOpcionesLibre(Pantalla):
         _, rect_val, _ = self._rects_control_fila(op_id)
         dibujar_tooltip(superficie, self.fuentes["pequena"], rect_val, tip)
 
-    def _items_opcion(self, op_id: str) -> list[tuple[str, str]]:
-        if op_id == "banco":
-            return [(b.value, etq) for b, etq in OPCIONES_BANCO]
-        if op_id == "n_preguntas":
-            items_np: list[tuple[str, str]] = [("infinito", "Infinito (sin límite)")]
-            items_np.extend((str(n), str(n)) for n in PRESETS_PREGUNTAS)
-            return items_np
-        if op_id == "vidas":
-            items_vidas: list[tuple[str, str]] = []
-            opts = self._opciones_compat()
-            if opts.permitir_sin_vidas:
-                items_vidas.append(("sin", "Sin vidas"))
-            if opts.permitir_con_vidas:
-                alc = self._alcance()
-                min_v = alc.min_vidas if alc else 1
-                max_v = alc.max_vidas if alc else 10
-                items_vidas.extend((str(n), str(n)) for n in range(min_v, max_v + 1))
+    def _items_opcion_banco(self) -> list[tuple[str, str]]:
+        return [(b.value, etq) for b, etq in OPCIONES_BANCO]
+
+    def _items_opcion_n_preguntas(self) -> list[tuple[str, str]]:
+        items: list[tuple[str, str]] = [("infinito", "Infinito (sin límite)")]
+        items.extend((str(n), str(n)) for n in PRESETS_PREGUNTAS)
+        return items
+
+    def _items_opcion_vidas(self) -> list[tuple[str, str]]:
+        items_vidas: list[tuple[str, str]] = []
+        opts = self._opciones_compat()
+        if opts.permitir_sin_vidas:
+            items_vidas.append(("sin", "Sin vidas"))
+        if not opts.permitir_con_vidas:
             return items_vidas
-        if op_id == "tiempo_modo":
-            items = [(TIEMPO_NINGUNO, "Sin límite")]
-            alc = self._alcance()
-            if alc and alc.permitir_tiempo_pregunta:
-                items.append((TIEMPO_PREGUNTA, "Por pregunta"))
-            if alc and alc.permitir_tiempo_total:
-                items.append((TIEMPO_TOTAL, "Tiempo total"))
-            return items
-        if op_id == "tiempo_pregunta":
-            return [(str(s), f"{s} s") for s in PRESETS_TIEMPO_PREG]
-        if op_id == "tiempo_total":
-            return [
+        alc = self._alcance()
+        min_v = alc.min_vidas if alc else 1
+        max_v = alc.max_vidas if alc else 10
+        items_vidas.extend((str(n), str(n)) for n in range(min_v, max_v + 1))
+        return items_vidas
+
+    def _items_opcion_tiempo_modo(self) -> list[tuple[str, str]]:
+        items = [(TIEMPO_NINGUNO, "Sin límite")]
+        alc = self._alcance()
+        if alc and alc.permitir_tiempo_pregunta:
+            items.append((TIEMPO_PREGUNTA, "Por pregunta"))
+        if alc and alc.permitir_tiempo_total:
+            items.append((TIEMPO_TOTAL, "Tiempo total"))
+        return items
+
+    def _items_opcion_sistema(self) -> list[tuple[str, str]]:
+        return [
+            (s.value, ETIQUETAS_SISTEMA.get(s, s.value))
+            for s in self._opciones_compat().sistemas
+        ]
+
+    def _items_opcion(self, op_id: str) -> list[tuple[str, str]]:
+        builders: dict[str, Callable[[], list[tuple[str, str]]]] = {
+            "banco": self._items_opcion_banco,
+            "n_preguntas": self._items_opcion_n_preguntas,
+            "vidas": self._items_opcion_vidas,
+            "tiempo_modo": self._items_opcion_tiempo_modo,
+            "tiempo_pregunta": lambda: [(str(s), f"{s} s") for s in PRESETS_TIEMPO_PREG],
+            "tiempo_total": lambda: [
                 (str(s), f"{s // 60} min" if s % 60 == 0 else f"{s} s")
                 for s in PRESETS_TIEMPO_TOTAL
-            ]
-        if op_id == "sistema":
-            return [
-                (s.value, ETIQUETAS_SISTEMA.get(s, s.value))
-                for s in self._opciones_compat().sistemas
-            ]
-        return []
+            ],
+            "sistema": self._items_opcion_sistema,
+        }
+        builder = builders.get(op_id)
+        return builder() if builder else []
 
     def _clave_actual(self, op_id: str) -> str:
         if op_id == "banco":

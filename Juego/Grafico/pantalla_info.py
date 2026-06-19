@@ -272,7 +272,6 @@ class PantallaInfoHub(Pantalla):
                     self._volver_al_hub,
                 ),
             )
-            return
 
     def _botones_ui(self) -> list[Boton]:
         return [*self.botones_seccion, self.boton_volver]

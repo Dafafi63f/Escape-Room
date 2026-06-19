@@ -1351,19 +1351,26 @@ class PartidaModoHistoria(Pantalla):
         )
         self.boton_abandonar.dibujar(superficie, fuente)
 
+    def _actualizar_hover_partida(self, pos: tuple[int, int]) -> None:
+        self.boton_abandonar.actualizar_hover(pos)
+        if self.fase != "pregunta":
+            return
+        for boton in self.botones_opcion:
+            boton.actualizar_hover(pos)
+
+    def _manejar_clic_partida(self, pos: tuple[int, int], boton: int) -> bool:
+        if self.boton_abandonar.manejar_clic(pos, boton):
+            return True
+        if self.fase != "pregunta":
+            return False
+        return any(b.manejar_clic(pos, boton) for b in self.botones_opcion)
+
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
         if evento.type == pygame.MOUSEMOTION:
-            self.boton_abandonar.actualizar_hover(evento.pos)
-            if self.fase == "pregunta":
-                for boton in self.botones_opcion:
-                    boton.actualizar_hover(evento.pos)
+            self._actualizar_hover_partida(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
-            if self.boton_abandonar.manejar_clic(evento.pos, evento.button):
+            if self._manejar_clic_partida(evento.pos, evento.button):
                 return None
-            if self.fase == "pregunta":
-                for boton in self.botones_opcion:
-                    if boton.manejar_clic(evento.pos, evento.button):
-                        break
         return None
 
     def dibujar(self, superficie: pygame.Surface) -> None:
