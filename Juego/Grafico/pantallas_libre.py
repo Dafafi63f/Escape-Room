@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from dataclasses import replace
 from typing import TYPE_CHECKING
 
 import pygame
@@ -1073,12 +1072,21 @@ class ConfigFiltrosLibre(Pantalla):
                 boton.seleccionado = clave in seleccion
 
     def _construir_reglas_finales(self) -> ReglasPartida:
-        reglas: ReglasPartida = replace(
-            self.reglas,
+        base = self.reglas
+        reglas = ReglasPartida(
+            vidas=base.vidas,
+            tiempo_por_pregunta_seg=base.tiempo_por_pregunta_seg,
+            tiempo_total_seg=base.tiempo_total_seg,
+            sistema_puntuacion=base.sistema_puntuacion,
             mostrar_solucion_tras_fallo=False,
             mostrar_aciertos_en_curso=False,
+            correccion_al_final=base.correccion_al_final,
+            dificultad_progresiva=base.dificultad_progresiva,
         )
-        ctx: ContextoPartida = self._contexto()
+        ctx = contexto_partida(
+            modo_infinito=self.modo_infinito,
+            n_preguntas=self._n_preguntas_efectivas(),
+        )
         return validar_reglas(
             reglas,
             ctx,
