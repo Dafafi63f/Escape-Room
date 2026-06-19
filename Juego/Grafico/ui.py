@@ -419,26 +419,24 @@ class Boton:
             return True
         return False
 
-    def dibujar(self, pantalla: pygame.Surface, fuente: pygame.font.Font) -> None:
+    def _colores_dibujo(self) -> tuple[tuple[int, int, int], tuple[int, int, int], tuple[int, int, int]]:
         if not self.activo:
-            fondo = (40, 40, 40)
-            texto_color = (120, 120, 120)
-            borde = (70, 70, 70)
-        elif self.seleccionado:
+            return (40, 40, 40), (120, 120, 120), (70, 70, 70)
+        if self.seleccionado:
             fondo = self.fondo or COLOR_BOTON_SELECCION
-            texto_color = COLOR_BOTON_TEXTO_HOVER
-            borde = COLOR_ACENTO
-        else:
-            fondo = (self.fondo_hover if self.hover else self.fondo) or (
-                COLOR_BOTON_HOVER if self.hover else COLOR_BOTON
-            )
-            texto_color = COLOR_BOTON_TEXTO_HOVER if self.hover else COLOR_BOTON_TEXTO
-            borde = COLOR_BOTON_BORDE
-        pygame.draw.rect(pantalla, fondo, self.rect, border_radius=8)
-        pygame.draw.rect(pantalla, borde, self.rect, width=2, border_radius=8)
-        if not self.mostrar_texto or not self.etiqueta.strip():
-            return
+            return fondo, COLOR_BOTON_TEXTO_HOVER, COLOR_ACENTO
+        fondo = (self.fondo_hover if self.hover else self.fondo) or (
+            COLOR_BOTON_HOVER if self.hover else COLOR_BOTON
+        )
+        texto_color = COLOR_BOTON_TEXTO_HOVER if self.hover else COLOR_BOTON_TEXTO
+        return fondo, texto_color, COLOR_BOTON_BORDE
 
+    def _dibujar_etiqueta_centro(
+        self,
+        pantalla: pygame.Surface,
+        fuente: pygame.font.Font,
+        texto_color: tuple[int, int, int],
+    ) -> None:
         padding = 16
         ancho_texto = max(8, self.rect.width - 2 * padding)
         etiqueta = preparar_texto_ui(self.etiqueta)
@@ -457,16 +455,21 @@ class Boton:
                 familia=self.familia_etiqueta,
             )
             superficie = fuente_etiqueta.render(etiqueta, True, texto_color)
-            rect_texto = superficie.get_rect(center=self.rect.center)
-            pantalla.blit(superficie, rect_texto)
-        else:
-            tamano = fuente.get_height()
-            ancho, alto = medir_texto_mixto(etiqueta, tamano)
-            x = self.rect.centerx - ancho // 2
-            y = self.rect.centery - alto // 2
-            renderizar_texto_mixto(
-                pantalla, etiqueta, (x, y), texto_color, tamano
-            )
+            pantalla.blit(superficie, superficie.get_rect(center=self.rect.center))
+            return
+        tamano = fuente.get_height()
+        ancho, alto = medir_texto_mixto(etiqueta, tamano)
+        x = self.rect.centerx - ancho // 2
+        y = self.rect.centery - alto // 2
+        renderizar_texto_mixto(pantalla, etiqueta, (x, y), texto_color, tamano)
+
+    def dibujar(self, pantalla: pygame.Surface, fuente: pygame.font.Font) -> None:
+        fondo, texto_color, borde = self._colores_dibujo()
+        pygame.draw.rect(pantalla, fondo, self.rect, border_radius=8)
+        pygame.draw.rect(pantalla, borde, self.rect, width=2, border_radius=8)
+        if not self.mostrar_texto or not self.etiqueta.strip():
+            return
+        self._dibujar_etiqueta_centro(pantalla, fuente, texto_color)
 
 
 class BotonMarcable(Boton):

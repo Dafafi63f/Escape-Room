@@ -39,12 +39,15 @@ def lineas_resumen_breve(
             puntos_arcade=e.puntos_arcade,
         )
     )
-    if mostrar_aciertos and (
-        e.reglas.sistema_puntuacion == SistemaPuntuacion.ARCADE
-        or e.reglas.correccion_al_final
+    if (
+        mostrar_aciertos
+        and (
+            e.reglas.sistema_puntuacion == SistemaPuntuacion.ARCADE
+            or e.reglas.correccion_al_final
+        )
+        and e.reglas.sistema_puntuacion != SistemaPuntuacion.PORCENTAJE
     ):
-        if e.reglas.sistema_puntuacion != SistemaPuntuacion.PORCENTAJE:
-            lineas.append(f"Aciertos: {e.aciertos}/{e.respondidas}")
+        lineas.append(f"Aciertos: {e.aciertos}/{e.respondidas}")
     if e.respondidas < total_previsto:
         lineas.append(f"Preguntas respondidas: {e.respondidas}/{total_previsto}")
     if guardar_informes_txt_habilitados():

@@ -518,27 +518,35 @@ class ConfigModoHistoria(Pantalla):
             return True
         return False
 
+    def _manejar_rueda_carrusel(self, evento: pygame.event.Event) -> None:
+        if evento.y > 0:
+            self._anterior()
+        elif evento.y < 0:
+            self._siguiente()
+
+    def _actualizar_hover_carrusel(self, pos: tuple[int, int]) -> None:
+        self.hover_izq = self.rect_flecha_izq.collidepoint(pos)
+        self.hover_der = self.rect_flecha_der.collidepoint(pos)
+        for boton in self._botones_ui():
+            boton.actualizar_hover(pos)
+
+    def _manejar_clic_carrusel(self, pos: tuple[int, int], boton: int) -> bool:
+        if self._clic_flecha(pos, boton):
+            return True
+        idx = self._indice_desde_punto(pos)
+        if idx is not None and boton == 1:
+            self._ir_a_indice(idx)
+            return True
+        return any(b.manejar_clic(pos, boton) for b in self._botones_ui())
+
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
         if evento.type == pygame.MOUSEWHEEL and self.presets:
-            if evento.y > 0:
-                self._anterior()
-            elif evento.y < 0:
-                self._siguiente()
+            self._manejar_rueda_carrusel(evento)
         elif evento.type == pygame.MOUSEMOTION:
-            self.hover_izq = self.rect_flecha_izq.collidepoint(evento.pos)
-            self.hover_der = self.rect_flecha_der.collidepoint(evento.pos)
-            for boton in self._botones_ui():
-                boton.actualizar_hover(evento.pos)
+            self._actualizar_hover_carrusel(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
-            if self._clic_flecha(evento.pos, evento.button):
+            if self._manejar_clic_carrusel(evento.pos, evento.button):
                 return None
-            idx = self._indice_desde_punto(evento.pos)
-            if idx is not None and evento.button == 1:
-                self._ir_a_indice(idx)
-                return None
-            for boton in self._botones_ui():
-                if boton.manejar_clic(evento.pos, evento.button):
-                    break
         return None
 
     def _dibujar_tarjeta_preset(self, superficie: pygame.Surface, preset: PresetHistoria) -> None:
@@ -1877,6 +1885,28 @@ class PartidaResistenciaHistoria(Pantalla):
             return
         self.ir_a(MenuPrincipal(self.datos, self.ir_a, self.salir_app))
 
+    def _mostrar_feedback_tras_respuesta(
+        self,
+        p: Pregunta,
+        resultado: ResultadoRespuesta,
+        mensaje: str,
+        feedback,
+        *,
+        acierto_ok: bool,
+    ) -> None:
+        self.feedback_mensaje = mensaje
+        self.feedback_solucion = solucion_feedback_grafico(feedback.solucion)
+        self.feedback_ok = acierto_ok
+        self.fase = "feedback"
+        self.inicio_feedback = marcar_inicio_feedback()
+        self.botones_powerup = []
+        for boton in self.botones_opcion:
+            boton.activo = False
+            if boton.letra == p.correcta:
+                boton.marcar_correcta = True
+            elif boton.letra == resultado.respuesta and not resultado.acierto:
+                boton.marcar_incorrecta = True
+
     def _tras_respuesta(self, resultado: ResultadoRespuesta) -> None:
         p = self._pregunta_actual()
         puntos_prev = self.estado.puntos_arcade
@@ -1898,32 +1928,18 @@ class PartidaResistenciaHistoria(Pantalla):
         mensaje = feedback.mensaje
 
         if feedback.sin_vidas or not self.estado.debe_continuar(None):
-            self.feedback_mensaje = mensaje
-            self.feedback_solucion = solucion_feedback_grafico(feedback.solucion)
-            self.feedback_ok = False
-            self.fase = "feedback"
-            self.inicio_feedback = marcar_inicio_feedback()
-            self.botones_powerup = []
-            for boton in self.botones_opcion:
-                boton.activo = False
-                if boton.letra == p.correcta:
-                    boton.marcar_correcta = True
-                elif boton.letra == resultado.respuesta and not resultado.acierto:
-                    boton.marcar_incorrecta = True
+            self._mostrar_feedback_tras_respuesta(
+                p, resultado, mensaje, feedback, acierto_ok=False
+            )
             return
 
-        self.feedback_mensaje = mensaje
-        self.feedback_solucion = solucion_feedback_grafico(feedback.solucion)
-        self.feedback_ok = resultado.acierto and not resultado.tiempo_agotado
-        self.fase = "feedback"
-        self.inicio_feedback = marcar_inicio_feedback()
-        self.botones_powerup = []
-        for boton in self.botones_opcion:
-            boton.activo = False
-            if boton.letra == p.correcta:
-                boton.marcar_correcta = True
-            elif boton.letra == resultado.respuesta and not resultado.acierto:
-                boton.marcar_incorrecta = True
+        self._mostrar_feedback_tras_respuesta(
+            p,
+            resultado,
+            mensaje,
+            feedback,
+            acierto_ok=resultado.acierto and not resultado.tiempo_agotado,
+        )
 
     def _responder(self, letra: str) -> None:
         if self.fase != "pregunta":

@@ -185,6 +185,43 @@ def listar_cache_herramientas(base: Path | None = None) -> list[Path]:
     )
 
 
+def _eliminar_carpetas(carpetas: list[Path]) -> tuple[int, int]:
+    borradas = 0
+    errores = 0
+    for carpeta in carpetas:
+        try:
+            shutil.rmtree(carpeta)
+            borradas += 1
+        except OSError:
+            errores += 1
+    return borradas, errores
+
+
+def _eliminar_ficheros_txt(ficheros: list[Path], resumen: ResumenLimpieza) -> None:
+    for fichero in ficheros:
+        try:
+            resumen.bytes_txt += fichero.stat().st_size
+            fichero.unlink()
+            resumen.txt_borrados += 1
+        except OSError:
+            resumen.txt_errores += 1
+
+
+def _eliminar_ficheros_json(
+    ficheros: list[Path],
+    resumen: ResumenLimpieza,
+    *,
+    contador: str,
+) -> None:
+    for fichero in ficheros:
+        try:
+            resumen.bytes_json += fichero.stat().st_size
+            fichero.unlink()
+            setattr(resumen, contador, getattr(resumen, contador) + 1)
+        except OSError:
+            resumen.json_errores += 1
+
+
 def borrar_temporales(
     base: Path | None = None,
     *,
@@ -196,48 +233,32 @@ def borrar_temporales(
     resumen = ResumenLimpieza()
 
     if incluir_pycache:
-        for carpeta in listar_pycache(raiz):
-            try:
-                shutil.rmtree(carpeta)
-                resumen.pycache_borradas += 1
-            except OSError:
-                resumen.pycache_errores += 1
-
-        for carpeta in listar_cache_herramientas(raiz):
-            try:
-                shutil.rmtree(carpeta)
-                resumen.cache_herramientas_borradas += 1
-            except OSError:
-                resumen.cache_herramientas_errores += 1
+        ok, err = _eliminar_carpetas(listar_pycache(raiz))
+        resumen.pycache_borradas += ok
+        resumen.pycache_errores += err
+        ok, err = _eliminar_carpetas(listar_cache_herramientas(raiz))
+        resumen.cache_herramientas_borradas += ok
+        resumen.cache_herramientas_errores += err
 
     preferencias, rankings, txt = listar_ficheros_runtime_juego()
 
     if incluir_txt:
-        for fichero in txt:
-            try:
-                resumen.bytes_txt += fichero.stat().st_size
-                fichero.unlink()
-                resumen.txt_borrados += 1
-            except OSError:
-                resumen.txt_errores += 1
+        _eliminar_ficheros_txt(txt, resumen)
 
     if incluir_json:
-        for fichero in preferencias:
-            try:
-                resumen.bytes_json += fichero.stat().st_size
-                fichero.unlink()
-                resumen.json_preferencias_borrados += 1
-            except OSError:
-                resumen.json_errores += 1
-        for fichero in rankings:
-            try:
-                resumen.bytes_json += fichero.stat().st_size
-                fichero.unlink()
-                resumen.json_rankings_borrados += 1
-            except OSError:
-                resumen.json_errores += 1
+        _eliminar_ficheros_json(preferencias, resumen, contador="json_preferencias_borrados")
+        _eliminar_ficheros_json(rankings, resumen, contador="json_rankings_borrados")
 
     return resumen
+
+
+def _imprimir_rutas(titulo: str, rutas: list[Path]) -> bool:
+    if not rutas:
+        return False
+    print(f"{titulo}: {len(rutas)} carpetas")
+    for p in rutas:
+        print(f" - {p}")
+    return True
 
 
 def _imprimir_listado(
@@ -253,17 +274,9 @@ def _imprimir_listado(
 ) -> bool:
     hay_algo = False
 
-    if incluir_pycache and pycache:
-        hay_algo = True
-        print(f"__pycache__: {len(pycache)} carpetas")
-        for p in pycache:
-            print(f" - {p}")
-
-    if incluir_pycache and cache_herramientas:
-        hay_algo = True
-        print(f"cachés de herramientas: {len(cache_herramientas)} carpetas")
-        for p in cache_herramientas:
-            print(f" - {p}")
+    if incluir_pycache:
+        hay_algo |= _imprimir_rutas("__pycache__", pycache)
+        hay_algo |= _imprimir_rutas("cachés de herramientas", cache_herramientas)
 
     if incluir_txt and txt:
         hay_algo = True
@@ -276,7 +289,10 @@ def _imprimir_listado(
         hay_algo = True
         json_locales = [*preferencias, *rankings]
         bytes_total = sum(p.stat().st_size for p in json_locales)
-        print(f"JSON runtime (se eliminarán): {len(json_locales)} ficheros ({_formatear_tamano(bytes_total)})")
+        print(
+            f"JSON runtime (se eliminarán): {len(json_locales)} ficheros "
+            f"({_formatear_tamano(bytes_total)})"
+        )
         for p in json_locales:
             print(f" - {p}")
 
