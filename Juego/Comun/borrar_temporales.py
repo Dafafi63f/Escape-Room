@@ -495,8 +495,9 @@ def _paso_marca_eliminables(candidatos: list[Path], eliminables: set[Path]) -> b
 
 def _calcular_eliminables_cascada(candidatos: list[Path]) -> set[Path]:
     eliminables: set[Path] = set()
-    while _paso_marca_eliminables(candidatos, eliminables):
-        pass
+    changed = True
+    while changed:
+        changed = _paso_marca_eliminables(candidatos, eliminables)
     return eliminables
 
 
