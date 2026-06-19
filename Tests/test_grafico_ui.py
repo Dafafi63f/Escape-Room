@@ -722,8 +722,14 @@ class TestBarraEstado(unittest.TestCase):
         self.assertFalse(superficie_emoji_valida(tofu))
         reloj_gris = fe.render(EMOJI_TIEMPO_TOTAL, True, (220, 232, 248))
         self.assertTrue(superficie_emoji_valida(reloj_gris))
-        reloj_cara = fe.render("\U0001f550", True, (220, 232, 248))
-        self.assertFalse(superficie_emoji_valida(reloj_cara))
+        # Noto Color Emoji ignora el tinte y dibuja bitmap a color; usamos gris sintético.
+        pseudo_reloj = pygame.Surface((28, 28), pygame.SRCALPHA)
+        for x in range(28):
+            for y in range(28):
+                if (x - 14) ** 2 + (y - 14) ** 2 <= 13**2:
+                    g = 210 + (x + y) % 8
+                    pseudo_reloj.set_at((x, y), (g, g + 2, g + 4, 255))
+        self.assertFalse(superficie_emoji_valida(pseudo_reloj))
         surf = render_icono_barra(
             fe,
             ft,
