@@ -9,7 +9,7 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_consola.py`](../juego_c
 | Módulo | Responsabilidad |
 |--------|-----------------|
 | `modelos.py` | `Pregunta`, `BancoPreguntas`, etiquetas |
-| `rutas.py` | Rutas a `Data/CSV/`, `Data/JSON/`, informes, feedback, PyInstaller |
+| `rutas.py` | Rutas a `Data/Banco/`, `Data/Juego/`, PyInstaller |
 | `datos.py` | Carga CSV/JSON, conteo de bancos |
 | `reglas_partida.py` | Presets, puntuación arcade/nota/porcentaje |
 | `compatibilidad_reglas_libre.py` | Bloqueos de combinaciones incoherentes |
@@ -43,8 +43,12 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_consola.py`](../juego_c
 | `examen_dia_historia.py` | Semilla del examen del día (historia) |
 | `ranking_resistencia.py` | Rankings locales (`ranking_resistencia_infinita.json`, `ranking_reto_dia.json`) |
 | `preferencias_grafico.py` | Opciones globales gráficas (nombre, feedback, tooltips) |
-| `preferencias_ranking.py` | Conservación del ranking (sesión, días, permanente) |
-| `limpieza_local.py` | Borrado de `.txt` (informes/feedback) y rankings locales |
+| `preferencias_ranking.py` | Retención interna del ranking (sin fichero ni UI) |
+| `datos_locales_juego.py` | Creación al inicio y limpieza desde el juego (`Data/Juego/`) |
+| `borrar_temporales.py` | Lógica de limpieza de temporales (CLI: [`utilidades_tfg.py`](../../utilidades_tfg.py) en la raíz) |
+| `changelog_juego.py` | Lectura de `Docs/CHANGELOG_JUEGO.md` para la UI |
+| `contacto_creador.py` | Canales de contacto públicos (sin credenciales SMTP) |
+| `feedback_opciones.py` | Categorías y zonas del formulario de feedback |
 | `iconos_resistencia.py` | Emojis y descripciones de eventos/objetos |
 | `linea_estado_ui.py` | Segmentos de barra de estado (chips emoji; consola y gráfico) |
 
@@ -59,4 +63,4 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_consola.py`](../juego_c
 
 ## Pruebas de paridad
 
-Los tests en [`Tests/Juego/test_consola_paridad.py`](../../Tests/Juego/test_consola_paridad.py) comprueban que consola y gráfico producen el mismo resultado de dominio para las mismas operaciones.
+Los tests en [`Tests/test_consola_paridad.py`](../../Tests/test_consola_paridad.py) comprueban que consola y gráfico producen el mismo resultado de dominio para las mismas operaciones.

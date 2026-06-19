@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Bootstrap de ``sys.path`` para la suite de tests unificada."""
+"""Bootstrap de ``sys.path`` para los tests del juego en ``Tests/``."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 JUEGO_DIR = ROOT / "Juego"
-SCRIPTS_DIR = ROOT / "Files" / "Scripts"
 
 
 def _prepend(path: Path) -> None:
@@ -25,8 +24,3 @@ def ensure_root_on_path() -> None:
 def ensure_juego_path() -> None:
     ensure_root_on_path()
     _prepend(JUEGO_DIR)
-
-
-def ensure_scripts_path() -> None:
-    ensure_root_on_path()
-    _prepend(SCRIPTS_DIR)

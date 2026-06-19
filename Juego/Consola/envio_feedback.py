@@ -14,6 +14,7 @@ from enum import Enum
 from pathlib import Path
 
 from .config_creador import mensaje_crear_creador_privado
+from Comun.contacto_creador import lineas_contacto_alternativo
 from Comun.jugador import NOMBRE_JUGADOR_DEFECTO, nombre_jugador_efectivo
 from Comun.rutas import (
     resolver_config_creador_privado,
@@ -90,7 +91,7 @@ def _leer_json(path: Path) -> dict:
 
 
 def _cargar_config() -> dict:
-    """SMTP del feedback desde ``Data/JSON/creador_privado.json`` (seccion feedback_smtp)."""
+    """SMTP del feedback desde ``Data/Banco/creador_privado.json`` (seccion feedback_smtp)."""
     path_privado = resolver_config_creador_privado()
     if path_privado is None:
         return {}
@@ -123,7 +124,7 @@ def _enviar_smtp(reporte: ReporteFeedback, config: dict) -> tuple[bool, str | No
         return (
             False,
             "Faltan datos SMTP (servidor, usuario, password, destino) en "
-            "Data/JSON/creador_privado.json (seccion feedback_smtp).",
+            "Data/Banco/creador_privado.json (seccion feedback_smtp).",
         )
     puerto = int(config.get("smtp_puerto", 587))
     asunto = _correo_asunto(config, reporte)
@@ -163,7 +164,7 @@ def enviar_feedback(reporte: ReporteFeedback) -> ResultadoEnvioFeedback:
     resultado = ResultadoEnvioFeedback(archivo=archivo)
     if not config.get("habilitar_smtp", True):
         resultado.smtp_error = (
-            "SMTP deshabilitado en Data/JSON/creador_privado.json (seccion feedback_smtp)."
+            "SMTP deshabilitado en Data/Banco/creador_privado.json (seccion feedback_smtp)."
         )
         return resultado
     ok, error = _enviar_smtp(reporte, config)
@@ -181,11 +182,10 @@ def describir_resultado_envio(resultado: ResultadoEnvioFeedback) -> list[str]:
     ]
     if resultado.smtp_enviado:
         lineas.append(f"Correo enviado automaticamente a {resultado.smtp_destino}.")
-        return lineas
-    if _faltan_credenciales_smtp(resultado.smtp_error):
+    elif _faltan_credenciales_smtp(resultado.smtp_error):
         lineas.append(
             "Envio automatico no configurado: falta smtp_password en "
-            "Data/JSON/creador_privado.json (seccion feedback_smtp)."
+            "Data/Banco/creador_privado.json (seccion feedback_smtp)."
         )
         lineas.append(mensaje_crear_creador_privado())
         lineas.append(
@@ -194,4 +194,8 @@ def describir_resultado_envio(resultado: ResultadoEnvioFeedback) -> list[str]:
         )
     elif resultado.smtp_error:
         lineas.append(f"No se pudo enviar por correo: {resultado.smtp_error}")
+    contacto = lineas_contacto_alternativo()
+    if contacto:
+        lineas.append("")
+        lineas.extend(contacto)
     return lineas

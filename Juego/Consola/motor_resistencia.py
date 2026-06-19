@@ -24,6 +24,7 @@ from Comun.motor_resistencia_comun import (
     usar_powerup,
 )
 from Comun.iconos_resistencia import emoji_powerup, prefijar_emoji
+from Comun.textos_ui import BTN_APUESTA_NO, BTN_APUESTA_SI
 from Comun.powerups_resistencia import descripcion_powerup, etiqueta_powerup
 from Comun.ranking_resistencia import path_ranking_para_preset, registrar_partida
 from Comun.reglas_partida import ReglasPartida, formatear_resultado_puntuacion
@@ -37,6 +38,7 @@ from Comun.resistencia_historia import (
     texto_efectos_escalada,
 )
 from Consola.consola import pedir_menu_numerado
+from Consola.textos_consola import etiqueta
 from Consola.informe_examen import RegistroRespuesta, publicar_informe_partida
 from Consola.motor_partida import (
     mostrar_resumen_partida,
@@ -101,7 +103,10 @@ def _preguntar_apuesta(er: EstadoResistencia) -> None:
     print(f"\n{formatear_aviso_apuesta(apuesta)}")
     idx = pedir_menu_numerado(
         "¿Aceptas la apuesta?",
-        [("1", "Sí, arriesgar"), ("2", "No, jugar normal")],
+        [
+            ("1", etiqueta(*BTN_APUESTA_SI)),
+            ("2", etiqueta(*BTN_APUESTA_NO)),
+        ],
         defecto=2,
     )
     if idx == 1:

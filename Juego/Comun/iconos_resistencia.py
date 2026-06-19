@@ -64,7 +64,9 @@ def emoji_evento_etiqueta(etiqueta: str) -> str:
         return "💀"
     if "Hito racha" in etiqueta:
         return "🏅"
-    if "Doble o nada" in etiqueta or "Triple arriesgado" in etiqueta:
+    from Comun.mecanicas_resistencia import APUESTAS_DISPONIBLES
+
+    if any(ap.etiqueta == etiqueta for ap in APUESTAS_DISPONIBLES):
         return "🎰"
     return "🎲"
 

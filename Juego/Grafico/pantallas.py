@@ -30,7 +30,7 @@ from Comun.navegacion_fin_partida import NavegacionFinPartida
 from Comun.pool_libre import crear_estado_seleccion, elegir_indice_siguiente
 from Comun.preferencias_grafico import guardar_informes_txt_habilitados
 from Grafico.informe_partida import guardar_informe_cierre, lineas_resumen_breve
-from Grafico.tema import ALTO, ANCHO, COLOR_ACENTO, COLOR_AVISO, COLOR_ERROR, COLOR_FONDO, COLOR_OK, COLOR_TEXTO, COLOR_TITULO, MARGEN, crear_fuentes, x_min_centro_barra_partida
+from Grafico.tema import ALTO, ANCHO, COLOR_ACENTO, COLOR_AVISO, COLOR_ERROR, COLOR_FONDO, COLOR_OK, COLOR_TEXTO, COLOR_TEXTO_PANEL, COLOR_TITULO, MARGEN, crear_fuentes, x_min_centro_barra_partida
 from Grafico.texto import dibujar_texto_centro, preparar_texto_ui
 from Grafico.ui import (
     Boton,
@@ -66,6 +66,7 @@ from Grafico.textos_grafico import (
     BTN_VOLVER,
     BTN_VOLVER_MENU,
     etiqueta,
+    emoji_icono,
     titulo_pantalla,
 )
 
@@ -136,68 +137,6 @@ class Pantalla:
         if isinstance(grupo, (list, tuple)):
             for item in grupo:
                 Pantalla._reset_hover_ui(item)
-
-
-class PantallaFeedback(Pantalla):
-    """Pantalla informativa del modo feedback (placeholder inicial)."""
-
-    def titulo_pausa(self) -> str:
-        return "Modo feedback"
-
-    def __init__(self, volver: Callable[[], None]) -> None:
-        self.volver = volver
-        self.fuentes = crear_fuentes()
-        self.boton_volver = Boton(
-            etiqueta(*BTN_VOLVER),
-            rect_boton_etiqueta(
-                etiqueta(*BTN_VOLVER),
-                self.fuentes["menu"],
-                x_centro=ANCHO // 2,
-                y=0,
-                alto_min=48,
-            ),
-            self.volver,
-        )
-        posicionar_pila_inferior(
-            [self.boton_volver],
-            x_centro=ANCHO // 2,
-            gap=0,
-            margen_inferior=90,
-        )
-
-    def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
-        if evento.type == pygame.MOUSEMOTION:
-            self.boton_volver.actualizar_hover(evento.pos)
-        elif evento.type == pygame.MOUSEBUTTONDOWN:
-            self.boton_volver.manejar_clic(evento.pos, evento.button)
-        return None
-
-    def dibujar(self, superficie: pygame.Surface) -> None:
-        superficie.fill(COLOR_FONDO)
-        dibujar_texto_centro(
-            superficie,
-            titulo_pantalla("MODO FEEDBACK"),
-            (ANCHO // 2, 100),
-            self.fuentes["titulo"].get_height(),
-            COLOR_TITULO,
-            bold=True,
-        )
-
-        panel = pygame.Rect(MARGEN, 170, ANCHO - 2 * MARGEN, 300)
-        dibujar_panel(superficie, panel)
-        texto = (
-            "Aquí irá el modo feedback.\n\n"
-            "Idea: después de responder, mostrar explicación y registrar errores "
-            "para repetirlos más adelante."
-        )
-        dibujar_texto_multilinea(
-            superficie,
-            self.fuentes["cuerpo"],
-            texto,
-            pygame.Rect(panel.x + 16, panel.y + 16, panel.width - 32, panel.height - 32),
-            COLOR_TEXTO,
-        )
-        self.boton_volver.dibujar(superficie, self.fuentes["menu"])
 
 
 _OPCIONES_MENU_EXCLUIDAS_GRAFICO = frozenset({"diarios"})
@@ -275,6 +214,16 @@ class MenuPrincipal(Pantalla):
             return
         self.mensaje = f"«{opcion_id}» — disponible próximamente."
 
+    @staticmethod
+    def _texto_barra_superior() -> str:
+        return (
+            f"{emoji_icono('pausa')} Pausa · "
+            f"{emoji_icono('diarios')} Retos del día · "
+            f"{emoji_icono('ranking')} Info del juego · "
+            f"{emoji_icono('feedback')} Avisos · "
+            f"{emoji_icono('opciones')} Opciones"
+        )
+
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
         if evento.type == pygame.MOUSEMOTION:
             for boton in self.botones:
@@ -304,10 +253,13 @@ class MenuPrincipal(Pantalla):
         for boton in self.botones:
             boton.dibujar(superficie, self.fuentes["menu"])
         dibujar_tooltips_botones(superficie, self.fuentes["pequena"], self.botones)
+        fuente_pie = self.fuentes["pequena"]
+        barra = fuente_pie.render(self._texto_barra_superior(), True, COLOR_TEXTO_PANEL)
+        superficie.blit(barra, barra.get_rect(center=(ANCHO // 2, ALTO - 72)))
         dibujar_texto_centro(
             superficie,
             "Haz clic en una opción",
-            (ANCHO // 2, ALTO - 56),
+            (ANCHO // 2, ALTO - 40),
             self.fuentes["pie"].get_height(),
             COLOR_TEXTO,
         )
@@ -887,3 +839,6 @@ class ResumenPartida(Pantalla):
 
     def titulo_pausa(self) -> str:
         return "Fin de partida"
+
+
+from Grafico.pantalla_feedback import PantallaFeedback  # noqa: E402

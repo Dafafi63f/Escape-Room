@@ -81,7 +81,7 @@ class EventoAleatorioResistencia:
 class EscaladaResistencia:
     """Parámetros de juego según el número de pregunta en la partida."""
 
-    nivel: int
+    nivel: int  # Índice interno (0 = inicio); en pantalla usar ``nivel_visible``.
     tiempo_pregunta_seg: int | None
     max_complejidad: int
     dificultades_permitidas: frozenset[str]
@@ -90,6 +90,11 @@ class EscaladaResistencia:
     opciones_ocultas: int = 0
     fraccion_enunciado: float = 1.0
     efectos: tuple[str, ...] = ()
+
+    @property
+    def nivel_visible(self) -> int:
+        """Nivel mostrado al jugador (1 = inicio, sin usar 0)."""
+        return self.nivel + 1
 
 
 def es_preset_resistencia(preset) -> bool:
@@ -382,7 +387,7 @@ def texto_efectos_escalada(escalada: EscaladaResistencia) -> str:
     if not escalada.efectos:
         if escalada.nivel == 0:
             return "Inicio: fácil, sin límite de tiempo"
-        return f"Nivel {escalada.nivel}"
+        return f"Nivel {escalada.nivel_visible}"
     return " · ".join(escalada.efectos)
 
 

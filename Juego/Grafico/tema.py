@@ -18,7 +18,7 @@ MARGEN = 40
 # Velo semitransparente de popups globales (pausa, opciones).
 ALPHA_OVERLAY_POPUP = 170
 
-# Barra fija superior (iconos de pausa, diarios, ranking, feedback y opciones).
+# Barra fija superior (pausa, diarios, ranking/info, feedback, opciones).
 X_ICONOS_FIJOS = 16
 Y_ICONOS_FIJOS = 14
 GAP_ICONOS_FIJOS = 10
@@ -29,7 +29,7 @@ PADDING_ICONO_FIJO_X = 10
 PADDING_ICONO_FIJO_Y = 6
 _GAP_TRAS_ICONOS_FIJOS = 20
 _MARGEN_EXTRA_BARRA_PARTIDA = 8
-_ETIQUETAS_REF_ICONO_FIJO = ("II", "DI", "RK", "FB", "OP")
+_ETIQUETAS_REF_ICONO_FIJO = ("II", "DI", "IN", "FB", "OP")
 
 # Contenido de pantalla: debajo de la barra fija (iconos en y≈14, alto≈36).
 _GAP_TRAS_BARRA_ICONOS = 34

@@ -1,15 +1,8 @@
-﻿# --- Generado al jugar (informes y feedback) ---
-Juego/Informes/*
-!Juego/Informes/.gitkeep
-!Juego/Informes/README.md
-Juego/Feedback/*
-!Juego/Feedback/.gitkeep
-!Juego/Feedback/README.md
-
-# --- Estado local (runtime; no versionar) ---
-Data/JSON/creador_privado.json
-Data/JSON/preferencias_*.json
-Data/JSON/ranking_*.json
+﻿# --- Generado al jugar / privado local (no versionar; borrar con borrar_temporales.py) ---
+Data/Banco/creador_privado.json
+Data/Juego/preferencias_*.json
+Data/Juego/ranking_*.json
+Data/Juego/*.txt
 Juego/juego_consola.exe
 
 # --- Temporales (limpiar con borrar_temporales.py) ---
@@ -18,8 +11,6 @@ __pycache__/
 .ruff_cache/
 .pytest_cache/
 .scannerwork/
-Juego/Informes/*.txt
-Juego/Feedback/*.txt
 
 # --- Build PyInstaller (Juego/build_exe_onefile.ps1) ---
 Juego/build/

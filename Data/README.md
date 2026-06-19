@@ -6,36 +6,35 @@ Ficheros que usa el juego y las herramientas de mantenimiento.
 
 ```
 Data/
-├── CSV/          # Datos tabulares
-├── JSON/         # Configuración y plantillas
+├── Banco/        # Banco de preguntas y catálogos (.csv, .json de producción)
+├── Juego/        # Estado local del jugador (.json runtime, informes .txt)
 └── README.md
 ```
 
-| Fichero | Uso |
-|---------|-----|
-| `CSV/Preguntas.csv` | Banco principal (**480** preguntas cerradas en producción) |
-| `CSV/listado_materias.csv` | Metadatos de **40** materias (`Grupo`, `Nivel`, `Curso`, `Semestre`, `Tematica`, …) |
-| `JSON/plantillas.json` | Plantillas / pool extra (**1289** entradas; modos beta del juego) |
-| `CSV/criterios_clasificacion_materia.csv` | Palabras clave por materia (`utils_puntuacion_materia.py`) |
-| `CSV/Historic_qualificacions_MatCAD_completo.csv` | Histórico de qualificacions — **modo historia** |
-| `Històric_qualificacions_MatCAD.xlsx` | Fuente original del histórico (raíz de `Data/`); el juego usa el **CSV** |
-| `JSON/presets_historia.json` | Catálogo del modo historia |
-| `JSON/presets_especiales.json` | Catálogo de modos especiales |
-| `JSON/preguntas_resistencia.json` | Pool exclusivo del modo resistencia |
-| `JSON/creador_privado.json` | Datos personales del creador (local, no se versiona) |
-
-**Estado local al jugar** (generados en runtime; en `.gitignore`, no commitear):
+### `Data/Banco/` (banco cerrado y datos de mantenimiento)
 
 | Fichero | Uso |
 |---------|-----|
-| `JSON/preferencias_grafico.json` | Nombre, emojis, tooltips, informes `.txt` |
-| `JSON/preferencias_ranking.json` | Conservación del ranking (sesión / días / permanente) |
-| `JSON/ranking_resistencia_infinita.json` | Ranking resistencia infinita |
-| `JSON/ranking_reto_dia.json` | Ranking del reto diario (se reinicia cada día) |
+| `Preguntas.csv` | Banco principal (**480** preguntas cerradas) |
+| `listado_materias.csv` | Metadatos de **40** materias |
+| `plantillas.json` | Plantillas / pool extra (modos beta) |
+| `criterios_clasificacion_materia.csv` | Palabras clave por materia |
+| `Historic_qualificacions_MatCAD_completo.csv` | Histórico — modo historia |
+| `creador_privado.json` | Datos personales y SMTP del creador (local, no se versiona) |
 
-El juego los crea al arrancar si no existen (patrón `Data/JSON/ranking_*.json` en `.gitignore`).
+### `Data/Juego/` (modos, estado local del jugador)
 
-El juego resuelve rutas con [`Juego/Comun/rutas.py`](../Juego/Comun/rutas.py): busca en `Data/CSV/` y `Data/JSON/`, con compatibilidad hacia atrás con `csv/`/`json/` o la raíz de `Data/`.
+| Fichero | Uso |
+|---------|-----|
+| `presets_historia.json` | Catálogo modo historia |
+| `presets_especiales.json` | Catálogo modos especiales |
+| `preguntas_resistencia.json` | Pool modo resistencia |
+| `preferencias_grafico.json` | Nombre, emojis, tooltips (menú opciones) |
+| `ranking_resistencia_infinita.json` | Ranking resistencia infinita |
+| `ranking_reto_dia.json` | Ranking reto diario |
+| `*.txt` | Informes de partida y copias de feedback |
+
+El juego resuelve rutas con [`Juego/Comun/rutas.py`](../Juego/Comun/rutas.py): banco en `Data/Banco/`, estado local en `Data/Juego/` (con compatibilidad hacia rutas legadas).
 
 ## Esquema de `Preguntas.csv`
 
@@ -57,17 +56,17 @@ Banco cerrado (**480** preguntas = **40 materias × 12**), separador `;`, UTF-8.
 
 Los metadatos curriculares (`curso`, `semestre`, `grupo`, `nivel`, `tematica`) **no** van en el CSV de preguntas; se obtienen de `listado_materias.csv` al cargar o al guardar con `utils_dataset_csv.guardar_filas_csv`.
 
-Validación: `python Files/Scripts/mantenimiento.py validar`
+Validación: `python Files/mantenimiento.py validar`
 
-Auditoría de distractores (consola; `--json` opcional): `python Files/Scripts/mantenimiento.py auditar-distractores`
+Auditoría de distractores (consola; `--json` opcional): `python Files/mantenimiento.py auditar-distractores`
 
-Duplicados semánticos: `python Files/Scripts/duplicados.py revisar` → **0 pares similares** en CSV y plantillas intra-materia (2026-06-15).
+Duplicados semánticos: `python Files/duplicados.py revisar` → **0 pares similares** en CSV y plantillas intra-materia (2026-06-15).
 
-Regeneración histórica del CSV: solo scripts en `Files/Archivo/` con `TFG_PERMITIR_CSV=1`.
+El CSV está cerrado; cualquier reescritura requiere `TFG_PERMITIR_CSV=1` (solo mantenimiento excepcional).
 
 ## Objetivos de balanceo
 
-Definidos en [`Files/Scripts/objetivos_balanceo.py`](../Files/Scripts/objetivos_balanceo.py):
+Definidos en [`Files/objetivos_balanceo.py`](../Files/objetivos_balanceo.py):
 
 - `TARGET_TOTAL_PREGUNTAS = 480`
 - 12 preguntas por materia (2FT 2MT 2DT 2FC 2MC 2DC)
@@ -75,7 +74,7 @@ Definidos en [`Files/Scripts/objetivos_balanceo.py`](../Files/Scripts/objetivos_
 
 ## Revisión manual del banco
 
-**Progreso: 480 / 480** — banco cerrado (redacción genérica; revisión manual completada). Plantillas beta en `JSON/plantillas.json` (no todas en producción). Estado del TFG: [`CHANGELOG.md`](../CHANGELOG.md) y checklist en [`CHECKLIST.md`](../CHECKLIST.md).
+**Progreso: 480 / 480** — banco cerrado (redacción genérica; revisión manual completada). Plantillas beta en `Banco/plantillas.json` (no todas en producción). Estado del TFG: [`CHANGELOG_PROYECTO.md`](../Docs/CHANGELOG_PROYECTO.md) y checklist en [`CHECKLIST.md`](../Docs/CHECKLIST.md).
 
 ## Evolución futura del modelo de datos
 
@@ -220,7 +219,7 @@ flowchart LR
 
 ## Fichero privado del creador (no se sube a git)
 
-`Data/JSON/creador_privado.json` guarda en un solo sitio:
+`Data/Banco/creador_privado.json` guarda en un solo sitio:
 
 - Datos personales (`creador`: nombre, correo, tutor, notas).
 - Secretos de GitHub (`github`: usuario, repo, token).
@@ -240,3 +239,13 @@ Rellena tus datos reales en el fichero generado. En Gmail, `smtp_password` es un
 Al ejecutar `Juego/build_exe_onefile.ps1`, se incluye esta carpeta (salvo que copies datos solo en `Juego/Data/`). Conviene tener aquí al menos los CSV/JSON que uses en todos los modos.
 
 `creador_privado.json` **no** se empaqueta en el `.exe`; configúralo en la máquina donde generes o distribuyas el ejecutable si necesitas SMTP.
+
+## Limpieza de datos locales
+
+Informes `.txt`, preferencias y rankings en `Data/Juego/` se pueden borrar desde la raíz del proyecto:
+
+```bash
+python utilidades_tfg.py --solo-limpieza
+```
+
+Ver también [`utilidades_tfg.py`](../utilidades_tfg.py) y [`Juego/Comun/datos_locales_juego.py`](../Juego/Comun/datos_locales_juego.py).

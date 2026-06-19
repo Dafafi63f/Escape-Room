@@ -32,12 +32,15 @@ def dibujar_contenido_aviso_resistencia(
     mensaje: str,
     indice: int = 0,
     total: int = 1,
+    titulo: str | None = None,
+    mostrar_pie_espera: bool = True,
 ) -> None:
     """Panel del aviso de resistencia (sin velo; lo aplica la app)."""
     panel = pygame.Rect(ANCHO // 2 - 280, ALTO // 2 - 108, 560, 216)
     dibujar_panel(superficie, panel)
 
-    titulo = "Evento" if total == 1 else f"Evento ({indice + 1}/{total})"
+    if titulo is None:
+        titulo = "Evento" if total == 1 else f"Evento ({indice + 1}/{total})"
     dibujar_texto_centro(
         superficie,
         titulo,
@@ -65,12 +68,13 @@ def dibujar_contenido_aviso_resistencia(
         alineacion_centro=True,
     )
 
-    pie = fuentes["pequena"].render(
-        preparar_texto_ui("La pregunta empezará en un momento…"),
-        True,
-        COLOR_AVISO,
-    )
-    superficie.blit(pie, pie.get_rect(midbottom=(ANCHO // 2, panel.bottom - 14)))
+    if mostrar_pie_espera:
+        pie = fuentes["pequena"].render(
+            preparar_texto_ui("La pregunta empezará en un momento…"),
+            True,
+            COLOR_AVISO,
+        )
+        superficie.blit(pie, pie.get_rect(midbottom=(ANCHO // 2, panel.bottom - 14)))
 
 
 def dibujar_aviso_resistencia(

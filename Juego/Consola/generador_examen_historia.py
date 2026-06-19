@@ -7,7 +7,7 @@ Usa el histórico de qualificacions (MatCAD) para ponderar materias según el
 perfil pedagógico y el banco de preguntas revisado con slots canónicos
 (Teoria/Calculo × Facil/Media/Dificil).
 
-Importado por modo_historia.py. Para probar sin jugar: Files/Scripts/cli_examen_historia.py
+Importado por modo_historia.py. Para probar sin jugar: Files/cli_examen_historia.py
 
 Versión 1: perfiles agregados (sin expediente individual). Las versiones
 futuras podrán importar notas por alumno.

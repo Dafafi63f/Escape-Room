@@ -49,7 +49,7 @@ def lineas_resumen_breve(
         lineas.append(f"Preguntas respondidas: {e.respondidas}/{total_previsto}")
     if guardar_informes_txt_habilitados():
         lineas.append(
-            "Cada partida genera su propio .txt en Juego/Informes/ al salir del resumen."
+            "Cada partida genera su propio .txt en Data/Juego/ al salir del resumen."
         )
     else:
         lineas.append("Los informes .txt están desactivados en Opciones.")

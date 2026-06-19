@@ -29,6 +29,7 @@ __all__ = [
     "top_records",
     "mejor_de_jugador",
     "vaciar_ranking",
+    "vaciar_ranking_variante",
     "inicializar_ranking_sesion",
     "finalizar_ranking_al_salir",
     "aplicar_cambio_modo_retencion",
@@ -329,7 +330,10 @@ def _paths_ranking() -> list[Path]:
 
 def inicializar_ranking_sesion() -> None:
     """Carga preferencias y prepara los rankings al abrir el juego."""
+    from Comun.datos_locales_juego import inicializar_datos_locales_juego
+
     global _modo_sesion_activo
+    inicializar_datos_locales_juego()
     _migrar_ranking_legacy()
     prefs = cargar_preferencias()
     _modo_sesion_activo = prefs.modo == ModoRetencionRanking.SESION
@@ -401,6 +405,13 @@ def vaciar_ranking(path: Path) -> None:
     else:
         guardar_ranking(path, vacio)
     _estados[_cache_key(path)] = vacio
+
+
+def vaciar_ranking_variante(variante: str) -> None:
+    """Vacía el contenido del JSON de ranking (no elimina el fichero)."""
+    if variante not in VARIANTES_RANKING:
+        raise ValueError(f"Variante de ranking desconocida: {variante}")
+    vaciar_ranking(path_ranking_para_variante(variante))
 
 
 def registrar_partida(

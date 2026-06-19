@@ -20,12 +20,15 @@ from Comun.mecanicas_resistencia import (
     formatear_aviso_apuesta,
     preparar_eventos_nuevo_turno,
     procesar_post_turno_resistencia,
+    rng_partida,
     texto_progreso_resistencia,
 )
 from Comun.modelos import Pregunta
 from Comun.motor_nucleo import EstadoPartida, FeedbackRespuesta, ResultadoRespuesta, evaluar_respuesta
 from Comun.powerups_resistencia import (
     EventoRecompensaResistencia,
+    POWERUPS_LOOT,
+    etiqueta_powerup,
     letras_ocultas_fifty_fifty,
     letras_ocultas_bomba,
     letras_ocultas_por_cantidad,
@@ -249,17 +252,73 @@ def aplicar_bonificaciones_puntos_resistencia(
         estado.puntos_arcade += int(extra)
 
 
+def _aplicar_recompensa_apuesta_exito(
+    estado: EstadoPartida,
+    er: EstadoResistencia,
+    *,
+    numero_pregunta: int,
+) -> list[str]:
+    if not er.apuesta_activa:
+        return []
+    recompensa = er.apuesta_activa.recompensa
+    avisos: list[str] = []
+    if recompensa.delta_vidas:
+        aplicar_recompensa(
+            estado,
+            er,
+            EventoRecompensaResistencia(
+                "Apuesta: vida extra",
+                delta_vidas=recompensa.delta_vidas,
+            ),
+        )
+        n = recompensa.delta_vidas
+        avisos.append(f"Apuesta: +{n} vida" + ("s" if n > 1 else ""))
+    if recompensa.powerup_id:
+        er.agregar_powerup(recompensa.powerup_id, recompensa.cantidad_powerup)
+        nom = etiqueta_powerup(recompensa.powerup_id)
+        avisos.append(f"Apuesta: {nom}")
+    elif recompensa.powerup_aleatorio:
+        rng = rng_partida(er, numero_pregunta * 19 + 7701)
+        pid = rng.choice(POWERUPS_LOOT)
+        er.agregar_powerup(pid, 1)
+        avisos.append(f"Apuesta: {etiqueta_powerup(pid)}")
+    return avisos
+
+
 def _aplicar_penalizacion_apuesta(
     estado: EstadoPartida,
     er: EstadoResistencia,
     *,
     fallo: bool,
-) -> None:
+    numero_pregunta: int,
+) -> tuple[bool, list[str]]:
+    """Penalización de la apuesta activa. Devuelve (fin_partida, avisos)."""
     if not fallo or not er.apuesta_activa:
-        return
-    extra = max(0, er.apuesta_activa.vidas_fallo - 1)
+        return False, []
+    coste = er.apuesta_activa.coste
+    avisos: list[str] = []
+    if coste.fin_partida:
+        if estado.vidas_restantes is not None:
+            estado.vidas_restantes = 0
+        avisos.append("Apuesta perdida: fin de partida.")
+        return True, avisos
+    extra = max(0, coste.vidas_fallo - 1)
     if extra > 0 and estado.vidas_restantes is not None:
         estado.vidas_restantes = max(0, estado.vidas_restantes - extra)
+    if coste.puntos_perdidos > 0:
+        estado.puntos_arcade = max(0, estado.puntos_arcade - coste.puntos_perdidos)
+        avisos.append(f"Apuesta: −{coste.puntos_perdidos} puntos")
+    if coste.pierde_todos_objetos and er.inventario:
+        er.inventario.clear()
+        avisos.append("Apuesta: pierdes todos los objetos")
+    elif coste.pierde_powerup_aleatorio and er.inventario:
+        rng = rng_partida(er, numero_pregunta * 23 + 8803)
+        candidatos = [pid for pid, n in er.inventario.items() if n > 0]
+        if candidatos:
+            pid = rng.choice(candidatos)
+            er.consumir_powerup(pid)
+            avisos.append(f"Apuesta: pierdes {etiqueta_powerup(pid)}")
+    return False, avisos
 
 
 def procesar_turno_resistencia(
@@ -273,7 +332,9 @@ def procesar_turno_resistencia(
     """Evalúa la respuesta del jugador. Las vidas solo bajan por fallo o tiempo agotado."""
     acierto = resultado.acierto and not resultado.tiempo_agotado
     fallo = not acierto
-    mult_apuesta = er.apuesta_activa.mult_puntos if (acierto and er.apuesta_activa) else 1
+    mult_apuesta = 1
+    if acierto and er.apuesta_activa:
+        mult_apuesta = max(1, er.apuesta_activa.recompensa.mult_puntos)
 
     if fallo and er.escudo_activo:
         er.escudo_activo = False
@@ -294,13 +355,25 @@ def procesar_turno_resistencia(
     if er.sin_pistas_turno and feedback.solucion:
         feedback = replace(feedback, solucion=None)
 
-    _aplicar_penalizacion_apuesta(estado, er, fallo=fallo)
+    _fin_apuesta, avisos_apuesta_fallo = _aplicar_penalizacion_apuesta(
+        estado,
+        er,
+        fallo=fallo,
+        numero_pregunta=indice_pregunta,
+    )
     if fallo and estado.reglas.tiene_vidas() and (estado.vidas_restantes or 0) <= 0:
         feedback = replace(feedback, sin_vidas=True)
+    elif fallo and _fin_apuesta:
+        feedback = replace(feedback, sin_vidas=True)
 
-    avisos_post: list[str] = []
+    avisos_post: list[str] = list(avisos_apuesta_fallo)
     if acierto:
         er.registrar_acierto()
+        avisos_post.extend(
+            _aplicar_recompensa_apuesta_exito(
+                estado, er, numero_pregunta=indice_pregunta
+            )
+        )
         for recompensa in tirar_recompensas_tras_acierto(er, numero_pregunta=indice_pregunta):
             aplicar_recompensa(estado, er, recompensa)
             avisos_post.append(formatear_aviso_recompensa(recompensa.etiqueta))
@@ -311,13 +384,22 @@ def procesar_turno_resistencia(
         procesar_post_turno_resistencia(er, acierto=acierto, numero_pregunta=indice_pregunta)
     )
 
-    if acierto and mult_apuesta > 1:
+    if acierto and er.apuesta_activa:
         msg = feedback.mensaje
         if msg.startswith("Correcto"):
-            feedback = replace(
-                feedback,
-                mensaje=f"{msg} (apuesta ×{mult_apuesta})",
-            )
+            extras_apuesta: list[str] = []
+            if mult_apuesta > 1:
+                extras_apuesta.append(f"×{mult_apuesta}")
+            r = er.apuesta_activa.recompensa
+            if r.delta_vidas > 0:
+                extras_apuesta.append(f"+{r.delta_vidas} vida" + ("s" if r.delta_vidas > 1 else ""))
+            if r.powerup_id or r.powerup_aleatorio:
+                extras_apuesta.append("objeto")
+            if extras_apuesta:
+                feedback = replace(
+                    feedback,
+                    mensaje=f"{msg} (apuesta: {', '.join(extras_apuesta)})",
+                )
 
     return ResultadoTurnoResistencia(
         feedback=feedback,

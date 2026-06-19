@@ -182,7 +182,7 @@ def jugar_modo_historia(
                 "📅",
             ))
         print(con_emoji(
-            "Al terminar se guarda un informe .txt en Juego/informes/.",
+            "Al terminar se guarda un informe .txt en Data/Juego/.",
             "💾",
         ))
 

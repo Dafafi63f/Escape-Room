@@ -2,6 +2,10 @@
 # -*- coding: utf-8 -*-
 """Mecánicas extendidas del modo resistencia (reto día, apuestas, maldiciones, bloques).
 
+El pool disponible en cada pregunta lo fija el juego (cuotas del banco + escalada).
+Los bloques solo añaden un filtro temporal (materia, tipo, grupo, curso, semestre);
+al expirar, ``bloque_filtro`` pasa a ``None`` y vuelve el criterio por defecto.
+
 Fin de partida: solo por acciones del jugador (fallar, tiempo agotado, apuesta perdida,
 abandonar). No hay derrota automática ni pérdida de vidas sin una respuesta/decisión.
 La escalada y la presión de racha hacen más probable el fallo, pero la vida solo baja
@@ -13,14 +17,19 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 
+from Comun.config_historia import GRUPOS_TEMATICOS
 from Comun.estado_resistencia import EstadoResistencia
 from Comun.iconos_resistencia import prefijar_emoji
 from Comun.modelos import Pregunta
 from Comun.pool_libre import EstadoSeleccionPool
 from Comun.resistencia_historia import EscaladaResistencia, PREGUNTA_MIN_EVENTOS_ALEATORIOS
+from Comun.probabilidad_resistencia import factor_progreso_resistencia
 
 __all__ = [
+    "APUESTAS_DISPONIBLES",
     "ApuestaRiesgo",
+    "CosteApuesta",
+    "RecompensaApuesta",
     "BloqueFiltroActivo",
     "MaldicionActiva",
     "aplicar_efectos_maldicion",
@@ -152,19 +161,147 @@ def aplicar_presion_racha_modificadores(
 
 @dataclass(frozen=True)
 class BloqueFiltroActivo:
+    """Filtro temporal sobre el pool ya disponible (materia, tipo, grupo, curso o semestre)."""
+
     etiqueta: str
     preguntas_restantes: int
     materia: str | None = None
     tipo: str | None = None
     grupo: str | None = None
-    dificultad: str | None = None
+    curso: str | None = None
+    semestre: str | None = None
+
+
+_ETIQUETA_TIPO: dict[str, str] = {
+    "Teoria": "Teoría",
+    "Calculo": "Cálculo",
+    "General": "generales",
+}
+
+
+def _etiqueta_bloque(n: int, descripcion: str) -> str:
+    return f"Bloque: {n} preguntas {descripcion}"
+
+
+def _descripcion_grupo_tematico(grupo: str, pool: list[Pregunta]) -> str:
+    clave = str(grupo).strip()
+    if clave in GRUPOS_TEMATICOS:
+        return f"de {GRUPOS_TEMATICOS[clave]}"
+    materias = sorted({p.materia for p in pool if p.grupo == grupo and p.materia})
+    if len(materias) == 1:
+        return f"de {materias[0]}"
+    if materias:
+        resto = f" (+{len(materias) - 2})" if len(materias) > 2 else ""
+        return f"de {' · '.join(materias[:2])}{resto}"
+    return f"del grupo {grupo}"
+
+
+def _descripcion_tipo(tipo: str) -> str:
+    etiqueta = _ETIQUETA_TIPO.get(tipo, tipo)
+    if tipo in _ETIQUETA_TIPO:
+        return f"de {etiqueta}"
+    return f"de tipo {etiqueta}"
+
+
+def _descripcion_curso(curso: str) -> str:
+    return f"del curso {curso}"
+
+
+def _descripcion_semestre(curso: str, semestre: str) -> str:
+    if curso:
+        return f"del curso {curso} · semestre {semestre}"
+    return f"del semestre {semestre}"
+
+
+@dataclass(frozen=True)
+class RecompensaApuesta:
+    mult_puntos: int = 1
+    delta_vidas: int = 0
+    powerup_id: str | None = None
+    cantidad_powerup: int = 1
+    powerup_aleatorio: bool = False
+
+
+@dataclass(frozen=True)
+class CosteApuesta:
+    """Penalización si fallas la pregunta con apuesta activa."""
+
+    vidas_fallo: int = 1  # Total de vidas perdidas (1 = solo el fallo habitual)
+    puntos_perdidos: int = 0
+    pierde_powerup_aleatorio: bool = False
+    pierde_todos_objetos: bool = False
+    fin_partida: bool = False
 
 
 @dataclass(frozen=True)
 class ApuestaRiesgo:
     etiqueta: str
-    mult_puntos: int
-    vidas_fallo: int
+    recompensa: RecompensaApuesta
+    coste: CosteApuesta
+
+
+APUESTAS_DISPONIBLES: tuple[ApuestaRiesgo, ...] = (
+    ApuestaRiesgo(
+        "Doble o nada",
+        RecompensaApuesta(mult_puntos=2),
+        CosteApuesta(vidas_fallo=2),
+    ),
+    ApuestaRiesgo(
+        "Triple arriesgado",
+        RecompensaApuesta(mult_puntos=3),
+        CosteApuesta(vidas_fallo=2),
+    ),
+    ApuestaRiesgo(
+        "Cuádruple audaz",
+        RecompensaApuesta(mult_puntos=4),
+        CosteApuesta(vidas_fallo=3),
+    ),
+    ApuestaRiesgo(
+        "Todo o nada",
+        RecompensaApuesta(mult_puntos=5),
+        CosteApuesta(vidas_fallo=3),
+    ),
+    ApuestaRiesgo(
+        "Botín seguro",
+        RecompensaApuesta(powerup_aleatorio=True),
+        CosteApuesta(vidas_fallo=1),
+    ),
+    ApuestaRiesgo(
+        "Vida de la suerte",
+        RecompensaApuesta(delta_vidas=1),
+        CosteApuesta(puntos_perdidos=35),
+    ),
+    ApuestaRiesgo(
+        "Cofre arriesgado",
+        RecompensaApuesta(mult_puntos=2, powerup_aleatorio=True),
+        CosteApuesta(pierde_powerup_aleatorio=True),
+    ),
+    ApuestaRiesgo(
+        "Escudo de oro",
+        RecompensaApuesta(powerup_id="escudo"),
+        CosteApuesta(vidas_fallo=2, puntos_perdidos=20),
+    ),
+    ApuestaRiesgo(
+        "Impulso doble",
+        RecompensaApuesta(mult_puntos=2, delta_vidas=1),
+        CosteApuesta(pierde_powerup_aleatorio=True, vidas_fallo=1),
+    ),
+    ApuestaRiesgo(
+        "Ruleta roja",
+        RecompensaApuesta(mult_puntos=3),
+        CosteApuesta(pierde_todos_objetos=True, vidas_fallo=1),
+    ),
+    ApuestaRiesgo(
+        "Última carta",
+        RecompensaApuesta(mult_puntos=4),
+        CosteApuesta(fin_partida=True),
+    ),
+    ApuestaRiesgo(
+        "Riesgo mortal",
+        RecompensaApuesta(mult_puntos=3, powerup_aleatorio=True),
+        CosteApuesta(fin_partida=True),
+    ),
+)
 
 
 @dataclass
@@ -198,26 +335,31 @@ def _pregunta_cumple_bloque(p: Pregunta, bloque: BloqueFiltroActivo) -> bool:
         return False
     if bloque.grupo and p.grupo != bloque.grupo:
         return False
-    if bloque.dificultad and p.dificultad != bloque.dificultad:
+    if bloque.curso and p.curso != bloque.curso:
+        return False
+    if bloque.semestre and p.semestre != bloque.semestre:
         return False
     return True
 
 
 def consumir_bloque_filtro(er: EstadoResistencia) -> None:
-    if er.bloque_filtro and er.bloque_filtro.preguntas_restantes > 0:
-        rest = er.bloque_filtro.preguntas_restantes - 1
-        if rest <= 0:
-            er.bloque_filtro = None
-        else:
-            bf = er.bloque_filtro
-            er.bloque_filtro = BloqueFiltroActivo(
-                etiqueta=bf.etiqueta,
-                preguntas_restantes=rest,
-                materia=bf.materia,
-                tipo=bf.tipo,
-                grupo=bf.grupo,
-                dificultad=bf.dificultad,
-            )
+    """Avanza el filtro de bloque; al expirar vuelve al pool por defecto del momento."""
+    if not er.bloque_filtro or er.bloque_filtro.preguntas_restantes <= 0:
+        return
+    rest = er.bloque_filtro.preguntas_restantes - 1
+    if rest <= 0:
+        er.bloque_filtro = None
+        return
+    bf = er.bloque_filtro
+    er.bloque_filtro = BloqueFiltroActivo(
+        etiqueta=bf.etiqueta,
+        preguntas_restantes=rest,
+        materia=bf.materia,
+        tipo=bf.tipo,
+        grupo=bf.grupo,
+        curso=bf.curso,
+        semestre=bf.semestre,
+    )
 
 
 def _materias_en_pool(pool: list[Pregunta]) -> list[str]:
@@ -226,6 +368,14 @@ def _materias_en_pool(pool: list[Pregunta]) -> list[str]:
 
 def _grupos_en_pool(pool: list[Pregunta]) -> list[str]:
     return sorted({p.grupo for p in pool if p.grupo})
+
+
+def _cursos_en_pool(pool: list[Pregunta]) -> list[str]:
+    return sorted({p.curso for p in pool if p.curso})
+
+
+def _pares_curso_semestre_en_pool(pool: list[Pregunta]) -> list[tuple[str, str]]:
+    return sorted({(p.curso, p.semestre) for p in pool if p.curso and p.semestre})
 
 
 def _generar_bloque_filtro(
@@ -252,21 +402,21 @@ def _generar_bloque_filtro(
         mat = rng.choice(materias)
         opciones.append(
             BloqueFiltroActivo(
-                etiqueta=f"Bloque: {n} preguntas de {mat}",
+                etiqueta=_etiqueta_bloque(n, f"de {mat}"),
                 preguntas_restantes=n,
                 materia=mat,
             )
         )
     opciones.append(
         BloqueFiltroActivo(
-            etiqueta=f"Bloque: {n} preguntas de Cálculo",
+            etiqueta=_etiqueta_bloque(n, _descripcion_tipo("Calculo")),
             preguntas_restantes=n,
             tipo="Calculo",
         )
     )
     opciones.append(
         BloqueFiltroActivo(
-            etiqueta=f"Bloque: {n} preguntas de Teoría",
+            etiqueta=_etiqueta_bloque(n, _descripcion_tipo("Teoria")),
             preguntas_restantes=n,
             tipo="Teoria",
         )
@@ -275,12 +425,59 @@ def _generar_bloque_filtro(
         g = rng.choice(grupos)
         opciones.append(
             BloqueFiltroActivo(
-                etiqueta=f"Bloque: {n} preguntas del grupo {g}",
+                etiqueta=_etiqueta_bloque(n, _descripcion_grupo_tematico(g, pool)),
                 preguntas_restantes=n,
                 grupo=g,
             )
         )
+    cursos = _cursos_en_pool(pool)
+    if cursos:
+        curso = rng.choice(cursos)
+        opciones.append(
+            BloqueFiltroActivo(
+                etiqueta=_etiqueta_bloque(n, _descripcion_curso(curso)),
+                preguntas_restantes=n,
+                curso=curso,
+            )
+        )
+    pares_cs = _pares_curso_semestre_en_pool(pool)
+    if pares_cs:
+        curso, semestre = rng.choice(pares_cs)
+        opciones.append(
+            BloqueFiltroActivo(
+                etiqueta=_etiqueta_bloque(n, _descripcion_semestre(curso, semestre)),
+                preguntas_restantes=n,
+                curso=curso,
+                semestre=semestre,
+            )
+        )
     return rng.choice(opciones)
+
+
+def _riesgo_apuesta(apuesta: ApuestaRiesgo) -> float:
+    r = apuesta.recompensa
+    c = apuesta.coste
+    score = (c.vidas_fallo - 1) * 1.25
+    score += c.puntos_perdidos / 30.0
+    if c.pierde_powerup_aleatorio:
+        score += 1.0
+    if c.pierde_todos_objetos:
+        score += 2.0
+    if c.fin_partida:
+        score += 5.0
+    score -= (r.mult_puntos - 1) * 0.35
+    score -= r.delta_vidas * 0.9
+    if r.powerup_id or r.powerup_aleatorio:
+        score -= 0.7
+    return max(0.4, score)
+
+
+def _elegir_apuesta(rng: random.Random, numero_pregunta: int) -> ApuestaRiesgo:
+    """Elige una apuesta; al avanzar la partida pesan más las de mayor riesgo."""
+    t = factor_progreso_resistencia(numero_pregunta)
+    centro = 1.0 + t * 4.5
+    pesos = [1.0 / (0.6 + abs(_riesgo_apuesta(ap) - centro)) for ap in APUESTAS_DISPONIBLES]
+    return rng.choices(APUESTAS_DISPONIBLES, weights=pesos, k=1)[0]
 
 
 def oferta_apuesta_para_pregunta(
@@ -299,11 +496,51 @@ def oferta_apuesta_para_pregunta(
     prob = probabilidad_buena_resistencia(numero_pregunta) * 0.34
     if rng.random() > prob:
         return None
-    tabla = [
-        ApuestaRiesgo("Doble o nada", mult_puntos=2, vidas_fallo=2),
-        ApuestaRiesgo("Triple arriesgado", mult_puntos=3, vidas_fallo=2),
-    ]
-    return rng.choice(tabla)
+    return _elegir_apuesta(rng, numero_pregunta)
+
+
+def _texto_recompensa_apuesta(recompensa: RecompensaApuesta) -> str:
+    from Comun.powerups_resistencia import etiqueta_powerup
+
+    partes: list[str] = []
+    if recompensa.mult_puntos > 1:
+        partes.append(f"×{recompensa.mult_puntos} puntos")
+    if recompensa.delta_vidas > 0:
+        n = recompensa.delta_vidas
+        partes.append(f"+{n} vida" + ("s" if n > 1 else ""))
+    if recompensa.powerup_id:
+        nom = etiqueta_powerup(recompensa.powerup_id)
+        if recompensa.cantidad_powerup > 1:
+            partes.append(f"{recompensa.cantidad_powerup}× {nom}")
+        else:
+            partes.append(f"objeto {nom}")
+    elif recompensa.powerup_aleatorio:
+        partes.append("un objeto al azar")
+    return ", ".join(partes) if partes else "sin bonus extra"
+
+
+def _texto_coste_apuesta(coste: CosteApuesta) -> str:
+    if coste.fin_partida:
+        return "la partida termina al instante"
+    partes: list[str] = []
+    if coste.vidas_fallo <= 1:
+        partes.append("pierdes 1 vida como de costumbre")
+    else:
+        partes.append(f"pierdes {coste.vidas_fallo} vidas")
+    if coste.puntos_perdidos > 0:
+        partes.append(f"−{coste.puntos_perdidos} puntos")
+    if coste.pierde_todos_objetos:
+        partes.append("pierdes todos los objetos")
+    elif coste.pierde_powerup_aleatorio:
+        partes.append("pierdes un objeto al azar")
+    return "; ".join(partes)
+
+
+def formatear_aviso_apuesta(apuesta: ApuestaRiesgo) -> str:
+    recomp = _texto_recompensa_apuesta(apuesta.recompensa)
+    coste = _texto_coste_apuesta(apuesta.coste)
+    texto = f"{apuesta.etiqueta}: si aciertas, {recomp}; si fallas, {coste}."
+    return prefijar_emoji(texto, "🎰")
 
 
 def preparar_eventos_nuevo_turno(
@@ -327,14 +564,6 @@ def preparar_eventos_nuevo_turno(
 
 def formatear_aviso_bloque(etiqueta: str) -> str:
     return prefijar_emoji(etiqueta, "📚")
-
-
-def formatear_aviso_apuesta(apuesta: ApuestaRiesgo) -> str:
-    texto = (
-        f"{apuesta.etiqueta}: ×{apuesta.mult_puntos} puntos si aciertas, "
-        f"pero un fallo cuesta {apuesta.vidas_fallo} vidas."
-    )
-    return prefijar_emoji(texto, "🎰")
 
 
 def formatear_aviso_maldicion(etiqueta: str) -> str:
@@ -402,6 +631,7 @@ def procesar_post_turno_resistencia(
 
 
 def pregunta_compatible_bloque(p: Pregunta, er: EstadoResistencia) -> bool:
+    """Sin bloque activo: todas las preguntas del pool del momento son válidas."""
     if not er.bloque_filtro or er.bloque_filtro.preguntas_restantes <= 0:
         return True
     return _pregunta_cumple_bloque(p, er.bloque_filtro)

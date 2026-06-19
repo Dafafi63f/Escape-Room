@@ -15,7 +15,7 @@ class BancoPreguntas(str, Enum):
 
 
 ETIQUETA_BANCO: dict[BancoPreguntas, tuple[str, str]] = {
-    BancoPreguntas.DATASET: ("MODO SEGURO", "Data/CSV/Preguntas.csv (banco revisado)"),
+    BancoPreguntas.DATASET: ("MODO SEGURO", "Data/Banco/Preguntas.csv (banco revisado)"),
     BancoPreguntas.PLANTILLAS_TODO: (
         "MODO BETA",
         "dataset revisado + plantillas fuera del dataset",

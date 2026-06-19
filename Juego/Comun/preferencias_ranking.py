@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Preferencias de persistencia del ranking local (modo resistencia)."""
+"""Política interna de retención del ranking (sin fichero ni UI).
+
+Las preferencias visibles del jugador están solo en ``preferencias_grafico.json``
+(menú de opciones). Este módulo conserva la lógica de retención para el motor
+de rankings y para tests; por defecto el historial es permanente en el equipo.
+"""
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -18,7 +22,6 @@ __all__ = [
     "guardar_preferencias",
     "ciclar_modo",
     "etiqueta_modo",
-    "resolver_path_preferencias_ranking",
 ]
 
 _ORDEN_MODOS = (
@@ -27,6 +30,8 @@ _ORDEN_MODOS = (
     "7_dias",
     "30_dias",
 )
+
+_modo_actual: ModoRetencionRanking
 
 
 class ModoRetencionRanking(str, Enum):
@@ -48,9 +53,18 @@ _ETIQUETAS: dict[ModoRetencionRanking, str] = {
     ModoRetencionRanking.DIAS_30: "30 días en este equipo",
 }
 
+_modo_actual = ModoRetencionRanking.PERMANENTE
+_legado_eliminado = False
 
-def resolver_path_preferencias_ranking() -> Path:
-    return _ruta_json_escritura("preferencias_ranking.json")
+
+def _eliminar_legado_si_existe() -> None:
+    global _legado_eliminado
+    if _legado_eliminado:
+        return
+    _legado_eliminado = True
+    legado = _ruta_json_escritura("preferencias_ranking.json")
+    if legado.is_file():
+        legado.unlink(missing_ok=True)
 
 
 def etiqueta_modo(modo: ModoRetencionRanking) -> str:
@@ -67,23 +81,10 @@ def ciclar_modo(modo: ModoRetencionRanking, delta: int) -> ModoRetencionRanking:
 
 
 def cargar_preferencias() -> PreferenciasRanking:
-    path = resolver_path_preferencias_ranking()
-    if not path.is_file():
-        return PreferenciasRanking()
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return PreferenciasRanking()
-    raw = str(data.get("modo", ModoRetencionRanking.PERMANENTE.value))
-    try:
-        modo = ModoRetencionRanking(raw)
-    except ValueError:
-        modo = ModoRetencionRanking.PERMANENTE
-    return PreferenciasRanking(modo=modo)
+    _eliminar_legado_si_existe()
+    return PreferenciasRanking(modo=_modo_actual)
 
 
 def guardar_preferencias(prefs: PreferenciasRanking) -> None:
-    path = resolver_path_preferencias_ranking()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {"version": 1, "modo": prefs.modo.value}
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    global _modo_actual
+    _modo_actual = prefs.modo

@@ -11,6 +11,8 @@ from .envio_feedback import (
     describir_resultado_envio,
     enviar_feedback,
 )
+from Comun.contacto_creador import lineas_contacto_alternativo
+from Comun.feedback_opciones import AREAS_FEEDBACK, CATEGORIAS_FEEDBACK
 from Comun.jugador import NOMBRE_JUGADOR_DEFECTO
 from Comun.modelos import Pregunta
 from .navegacion import (
@@ -27,21 +29,10 @@ from Consola.textos_consola import banner, campo, con_emoji
 
 
 _CATEGORIAS: list[tuple[CategoriaFeedback, str]] = [
-    (CategoriaFeedback.BUG, "Error o fallo del juego"),
-    (CategoriaFeedback.SUGERENCIA, "Sugerencia de mejora"),
-    (CategoriaFeedback.PREGUNTA_INCORRECTA, "Pregunta con error o respuesta dudosa"),
-    (CategoriaFeedback.CONTROLES_INTERFAZ, "Controles, menus o interfaz"),
-    (CategoriaFeedback.OTRO, "Otro tema"),
+    (CategoriaFeedback(cat_id), desc) for cat_id, desc in CATEGORIAS_FEEDBACK
 ]
 
-_AREAS: list[tuple[str, str]] = [
-    ("menu", "Menus y navegacion"),
-    ("partida", "Durante una partida o pregunta"),
-    ("datos", "Preguntas, materias o banco de datos"),
-    ("informes", "Informes o resultados"),
-    ("rendimiento", "Rendimiento o carga"),
-    ("general", "General / no se"),
-]
+_AREAS: list[tuple[str, str]] = list(AREAS_FEEDBACK)
 
 
 def _tiene_config_externa() -> bool:
@@ -60,7 +51,7 @@ def _imprimir_intro(*, acceso_rapido: bool) -> None:
         "Envia un aviso al creador del juego (bug, sugerencia, etc.).",
         "📣",
     ))
-    print(con_emoji("Siempre se guarda una copia en Juego/Feedback/.", "💾"))
+    print(con_emoji("Siempre se guarda una copia en Data/Juego/.", "💾"))
     if acceso_rapido:
         print("Supr en el paso 1 = cancelar y volver al juego.")
     else:
@@ -73,6 +64,11 @@ def _imprimir_intro(*, acceso_rapido: bool) -> None:
         print("Si falta smtp_password, solo se guardara copia local y veras instrucciones.")
     else:
         print(f"Opcional: {mensaje_crear_creador_privado()}")
+    contacto = lineas_contacto_alternativo()
+    if contacto:
+        print()
+        for linea in contacto:
+            print(linea)
     print("=" * 60)
 
 

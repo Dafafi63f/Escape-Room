@@ -9,11 +9,8 @@ from collections.abc import Callable
 import pygame
 
 from Comun.jugador import es_nombre_anonimo, nombre_jugador_efectivo
-from Comun.limpieza_local import (
-    borrar_txt_informes_feedback,
-    etiqueta_variante_ranking,
-    vaciar_ranking_variante,
-)
+from Comun.datos_locales_juego import borrar_txt_informes_feedback, vaciar_preferencias_locales
+from Comun.ranking_resistencia import vaciar_ranking_variante
 from Comun.preferencias_grafico import (
     PreferenciasGrafico,
     cargar_preferencias_grafico,
@@ -24,13 +21,18 @@ from Comun.preferencias_grafico import (
     nombre_inicial_grafico,
 )
 from Grafico.tema import (
+    ALTO,
     ANCHO,
-    COLOR_AVISO,
     MARGEN,
     crear_fuentes,
 )
 from Grafico.texto import dibujar_texto_centro
-from Grafico.textos_grafico import BTN_BORRAR_RANKING, BTN_BORRAR_TXT_INFORMES, etiqueta
+from Grafico.textos_grafico import (
+    BTN_BORRAR_RANKING,
+    BTN_BORRAR_TXT_INFORMES,
+    BTN_VACIAR_PREFERENCIAS,
+    etiqueta,
+)
 from Grafico.ui import (
     Boton,
     CampoTexto,
@@ -53,42 +55,46 @@ class OverlayOpcionesGrafico:
     ANCHO_CICLO = 200
 
     # Desplazamientos verticales respecto a ``panel.y``.
-    _Y_SUBTITULO = 68
-    _Y_CAMPO_NOMBRE = 118
-    _GAP_LBL_CAMPO = 14
-    _Y_TOOLTIPS_LBL = 176
-    _Y_TOOLTIPS_FILA = 202
-    _Y_EMOJIS_LBL = 252
-    _Y_EMOJIS_FILA = 278
-    _Y_INFORMES_LBL = 320
-    _Y_INFORMES_FILA = 346
-    _GAP_TRAS_FILA_CICLO = 20
+    _Y_SUBTITULO = 58
+    _Y_CAMPO_NOMBRE = 104
+    _Y_TOOLTIPS_LBL = 160
+    _Y_TOOLTIPS_FILA = 184
+    _Y_EMOJIS_LBL = 232
+    _Y_EMOJIS_FILA = 256
+    _Y_INFORMES_LBL = 296
+    _Y_INFORMES_FILA = 320
+    _GAP_TRAS_FILA_CICLO = 14
+    _GAP_CAMPO_RESTABLECER = 12
+    _ANCHO_FRACCION_CAMPO_NOMBRE = 0.58
     _Y_BORRADO_LBL = _Y_INFORMES_FILA + ALTO_CTRL + _GAP_TRAS_FILA_CICLO
-    _Y_BORRAR_TXT = _Y_BORRADO_LBL + 28
-    _GAP_BORRADO_FILAS = 12
+    _GAP_HINT_BORRADO = 18
+    _GAP_ZONA_BORRADO = 12
+    _GAP_BORRADO_FILAS = 10
     _GAP_BORRADO_COLUMNAS = 16
-    _GAP_MENSAJE = 10
-    _RESERVA_MENSAJE = 22
-    _GAP_LISTO = 18
-    _MARGEN_PANEL_INFERIOR = 16
+    _MARGEN_PANEL_INFERIOR = 24
+    _MARGEN_VENTANA_INFERIOR = 44
+    _Y_PANEL = 58
 
     def __init__(self, *, on_cerrar: Callable[[], None]) -> None:
         self.on_cerrar = on_cerrar
         self.fuentes = crear_fuentes()
-        self.panel = pygame.Rect(MARGEN + 24, 72, ANCHO - 2 * (MARGEN + 24), 572)
+        self.panel = pygame.Rect(
+            MARGEN + 24,
+            self._Y_PANEL,
+            ANCHO - 2 * (MARGEN + 24),
+            520,
+        )
         prefs = cargar_preferencias_grafico()
         self.mostrar_tooltips = prefs.mostrar_tooltips
         self.mostrar_emojis = prefs.mostrar_emojis
         self.guardar_informes_txt = prefs.guardar_informes_txt
-        self._confirmar_borrado: str | None = None
-        self.mensaje = ""
         self.campo_nombre = CampoTexto(
             pygame.Rect(self.panel.x + 48, 0, self.panel.width - 96, 40),
             texto_inicial=nombre_inicial_grafico(),
             placeholder="Nombre del jugador",
         )
-        self.campo_nombre.rect.y = self.panel.y + self._Y_CAMPO_NOMBRE
         py = self.panel.y
+        self.campo_nombre.rect.y = py + self._Y_CAMPO_NOMBRE
         self._y_etiquetas = {
             "tooltips": py + self._Y_TOOLTIPS_LBL,
             "emojis": py + self._Y_EMOJIS_LBL,
@@ -101,7 +107,7 @@ class OverlayOpcionesGrafico:
         }
         self._crear_ciclos()
         self._crear_botones_borrado()
-        self._reposicionar_botones_borrado()
+        self._reposicionar_campo_y_restablecer()
         self.boton_listo = Boton(
             "Listo",
             rect_boton_etiqueta(
@@ -146,8 +152,9 @@ class OverlayOpcionesGrafico:
         fuente_peq = self.fuentes["pequena"]
         _, icono_borrar = BTN_BORRAR_RANKING
         etiq_txt = etiqueta(*BTN_BORRAR_TXT_INFORMES)
-        etiq_infinita = etiqueta("Borrar ranking infinita", icono_borrar)
-        etiq_reto = etiqueta("Borrar ranking reto del día", icono_borrar)
+        etiq_prefs = etiqueta(*BTN_VACIAR_PREFERENCIAS)
+        etiq_infinita = etiqueta("Vaciar ranking infinita", icono_borrar)
+        etiq_reto = etiqueta("Vaciar ranking reto del día", icono_borrar)
         self.boton_borrar_txt = Boton(
             etiq_txt,
             rect_boton_etiqueta(
@@ -158,7 +165,19 @@ class OverlayOpcionesGrafico:
                 alto_min=36,
             ),
             lambda: self._solicitar_borrado("txt"),
-            tooltip="Elimina los .txt de Juego/Informes/ y Juego/Feedback/.",
+            tooltip="Elimina los .txt de Data/Juego/.",
+        )
+        self.boton_vaciar_preferencias = Boton(
+            etiq_prefs,
+            rect_boton_etiqueta(
+                etiq_prefs,
+                fuente_peq,
+                x_centro=0,
+                y=0,
+                alto_min=36,
+            ),
+            lambda: self._solicitar_borrado("preferencias"),
+            tooltip="Restablece preferencias a valores por defecto (el .json se conserva).",
         )
         self.boton_borrar_infinita = Boton(
             etiq_infinita,
@@ -170,7 +189,7 @@ class OverlayOpcionesGrafico:
                 alto_min=36,
             ),
             lambda: self._solicitar_borrado("infinita"),
-            tooltip="Vacía el historial local del modo resistencia infinita.",
+            tooltip="Vacía el historial local del modo resistencia infinita (el fichero JSON se conserva).",
         )
         self.boton_borrar_reto = Boton(
             etiq_reto,
@@ -182,24 +201,69 @@ class OverlayOpcionesGrafico:
                 alto_min=36,
             ),
             lambda: self._solicitar_borrado("reto_dia"),
-            tooltip="Vacía el historial local del reto del día (resistencia).",
+            tooltip="Vacía el historial local del reto del día (el fichero JSON se conserva).",
         )
 
-    def _reposicionar_botones_borrado(self) -> None:
-        y_txt = self.panel.y + self._Y_BORRAR_TXT
-        self.boton_borrar_txt.rect.midtop = (ANCHO // 2, y_txt)
+    def _reposicionar_campo_y_restablecer(self) -> None:
+        """Nombre a la izquierda y «Restablecer preferencias» a la derecha, misma fila."""
+        margen = 48
+        ancho_util = self.panel.width - 2 * margen
+        ancho_campo = int(ancho_util * self._ANCHO_FRACCION_CAMPO_NOMBRE)
+        x0 = self.panel.x + margen
+        y = self.panel.y + self._Y_CAMPO_NOMBRE
+        self.campo_nombre.rect.topleft = (x0, y)
+        self.campo_nombre.rect.width = ancho_campo
+        x_reset = x0 + ancho_campo + self._GAP_CAMPO_RESTABLECER
+        ancho_reset = self.panel.right - margen - x_reset
+        self.boton_vaciar_preferencias.rect.topleft = (x_reset, y)
+        alto_fila = max(self.campo_nombre.rect.height, self.boton_vaciar_preferencias.rect.height)
+        if self.boton_vaciar_preferencias.rect.width > ancho_reset:
+            self.boton_vaciar_preferencias.rect.width = max(ancho_reset, 120)
+        self.campo_nombre.rect.centery = y + alto_fila // 2
+        self.boton_vaciar_preferencias.rect.centery = y + alto_fila // 2
+
+    def _y_inferior_hint_borrado(self) -> int:
+        fuente_peq = self.fuentes["pequena"]
+        hint = fuente_peq.render(
+            "Borrar: .txt | Vaciar: rankings (los .json se conservan).",
+            True,
+            _COLOR_ETIQUETA_PANEL,
+        )
+        return self.panel.y + self._Y_BORRADO_LBL + self._GAP_HINT_BORRADO + hint.get_height()
+
+    def _alto_bloque_borrado(self) -> int:
+        fila = [self.boton_borrar_infinita, self.boton_borrar_reto]
+        gap_h = self._GAP_BORRADO_COLUMNAS
+        ancho_max = self.panel.width - 48
+        total_w = sum(boton.rect.width for boton in fila) + gap_h * (len(fila) - 1)
+        if total_w > ancho_max:
+            alto_ranking = sum(boton.rect.height for boton in fila) + self._GAP_BORRADO_FILAS * (
+                len(fila) - 1
+            )
+        else:
+            alto_ranking = max(boton.rect.height for boton in fila)
+        return self.boton_borrar_txt.rect.height + self._GAP_BORRADO_FILAS + alto_ranking
+
+    def _reposicionar_botones_borrado(self, *, y_superior: int, y_inferior: int) -> None:
+        alto_bloque = self._alto_bloque_borrado()
+        espacio = y_inferior - y_superior
+        if espacio >= alto_bloque:
+            y_bloque = y_superior + (espacio - alto_bloque) // 2
+        else:
+            y_bloque = y_superior
+
+        self.boton_borrar_txt.rect.midtop = (ANCHO // 2, y_bloque)
 
         fila = [self.boton_borrar_infinita, self.boton_borrar_reto]
         gap_h = self._GAP_BORRADO_COLUMNAS
-        gap_v = self._GAP_BORRADO_FILAS
-        y_ranking = self.boton_borrar_txt.rect.bottom + gap_v
+        y_ranking = y_bloque + self.boton_borrar_txt.rect.height + self._GAP_BORRADO_FILAS
         ancho_max = self.panel.width - 48
         total_w = sum(boton.rect.width for boton in fila) + gap_h * (len(fila) - 1)
         if total_w > ancho_max:
             y = y_ranking
             for boton in fila:
                 boton.rect.midtop = (ANCHO // 2, y)
-                y = boton.rect.bottom + gap_v
+                y = boton.rect.bottom + self._GAP_BORRADO_FILAS
             return
 
         alto_fila = max(boton.rect.height for boton in fila)
@@ -212,18 +276,20 @@ class OverlayOpcionesGrafico:
             x += boton.rect.width + gap_h
 
     def _reposicionar_inferior(self) -> None:
-        """Coloca mensaje y «Listo» debajo de los botones de borrado sin solaparse."""
-        botones_borrado = (
-            self.boton_borrar_txt,
-            self.boton_borrar_infinita,
-            self.boton_borrar_reto,
+        """Ancla «Listo» abajo y centra los botones de borrado entre el hint y «Listo»."""
+        self.boton_listo.rect.midbottom = (
+            ANCHO // 2,
+            ALTO - self._MARGEN_VENTANA_INFERIOR - self._MARGEN_PANEL_INFERIOR,
         )
-        y_mensaje = max(boton.rect.bottom for boton in botones_borrado) + self._GAP_MENSAJE
-        y_listo = y_mensaje + self._RESERVA_MENSAJE + self._GAP_LISTO
-        self._y_mensaje = y_mensaje
-        self.boton_listo.rect.midtop = (ANCHO // 2, y_listo)
+        y_listo_top = self.boton_listo.rect.top
+        self._reposicionar_botones_borrado(
+            y_superior=self._y_inferior_hint_borrado() + self._GAP_ZONA_BORRADO,
+            y_inferior=y_listo_top - self._GAP_ZONA_BORRADO,
+        )
         contenido_bottom = self.boton_listo.rect.bottom + self._MARGEN_PANEL_INFERIOR
-        self.panel.height = max(572, contenido_bottom - self.panel.y)
+        alto_necesario = contenido_bottom - self.panel.y
+        alto_maximo = ALTO - self.panel.y - self._MARGEN_VENTANA_INFERIOR
+        self.panel.height = min(max(520, alto_necesario), alto_maximo)
 
     def _ciclar(self, clave: str, delta: int) -> None:
         if clave == "tooltips":
@@ -232,40 +298,20 @@ class OverlayOpcionesGrafico:
             self.mostrar_emojis = ciclar_emojis(self.mostrar_emojis)
         elif clave == "informes":
             self.guardar_informes_txt = ciclar_guardar_informes(self.guardar_informes_txt)
-        self._confirmar_borrado = None
-        self.mensaje = ""
-
-    def _etiqueta_accion_borrado(self, accion: str) -> str:
-        if accion == "txt":
-            return etiqueta(*BTN_BORRAR_TXT_INFORMES)
-        _, icono_borrar = BTN_BORRAR_RANKING
-        return etiqueta(
-            f"Borrar ranking {etiqueta_variante_ranking(accion).lower()}",
-            icono_borrar,
-        )
 
     def _solicitar_borrado(self, accion: str) -> None:
-        if self._confirmar_borrado != accion:
-            self._confirmar_borrado = accion
-            etiqueta_accion = self._etiqueta_accion_borrado(accion)
-            self.mensaje = f"Pulsa otra vez «{etiqueta_accion}» para confirmar."
-            return
-        self._confirmar_borrado = None
         if accion == "txt":
-            resumen = borrar_txt_informes_feedback()
-            if resumen.errores:
-                self.mensaje = (
-                    f"Se borraron {resumen.borrados} .txt; "
-                    f"{resumen.errores} no pudieron eliminarse."
-                )
-            elif resumen.borrados:
-                self.mensaje = f"Se borraron {resumen.borrados} ficheros .txt de informes y feedback."
-            else:
-                self.mensaje = "No había ficheros .txt de informes ni feedback."
+            borrar_txt_informes_feedback()
+            return
+        if accion == "preferencias":
+            vaciar_preferencias_locales()
+            prefs = PreferenciasGrafico()
+            self.mostrar_tooltips = prefs.mostrar_tooltips
+            self.mostrar_emojis = prefs.mostrar_emojis
+            self.guardar_informes_txt = prefs.guardar_informes_txt
+            self.campo_nombre.texto = ""
             return
         vaciar_ranking_variante(accion)
-        etiqueta_tabla = etiqueta_variante_ranking(accion)
-        self.mensaje = f"Historial de «{etiqueta_tabla}» borrado en este equipo."
 
     def _texto_valor(self, clave: str) -> str:
         if clave == "tooltips":
@@ -295,6 +341,7 @@ class OverlayOpcionesGrafico:
         out = [
             self.boton_listo,
             self.boton_borrar_txt,
+            self.boton_vaciar_preferencias,
             self.boton_borrar_infinita,
             self.boton_borrar_reto,
         ]
@@ -333,17 +380,8 @@ class OverlayOpcionesGrafico:
         )
         superficie.blit(subt, subt.get_rect(midtop=(ANCHO // 2, self.panel.y + self._Y_SUBTITULO)))
 
-        lbl_nombre = fuente_peq.render("Nombre del jugador:", True, _COLOR_ETIQUETA_PANEL)
-        superficie.blit(
-            lbl_nombre,
-            lbl_nombre.get_rect(
-                midbottom=(
-                    self.campo_nombre.rect.centerx,
-                    self.campo_nombre.rect.y - self._GAP_LBL_CAMPO,
-                )
-            ),
-        )
         self.campo_nombre.dibujar(superficie, self.fuentes["menu"])
+        self.boton_vaciar_preferencias.dibujar(superficie, fuente_peq)
 
         etiquetas = {
             "tooltips": "Ayudas al pasar el ratón:",
@@ -367,19 +405,26 @@ class OverlayOpcionesGrafico:
             menos.dibujar(superficie, self.fuentes["menu"])
             mas.dibujar(superficie, self.fuentes["menu"])
 
-        lbl_borrado = fuente_peq.render("Borrar datos locales:", True, _COLOR_ETIQUETA_PANEL)
+        lbl_borrado = fuente_peq.render("Limpiar datos locales:", True, _COLOR_ETIQUETA_PANEL)
+        hint_borrado = fuente_peq.render(
+            "Borrar: .txt | Vaciar: rankings (los .json se conservan).",
+            True,
+            _COLOR_ETIQUETA_PANEL,
+        )
         superficie.blit(
             lbl_borrado,
             lbl_borrado.get_rect(midtop=(ANCHO // 2, self.panel.y + self._Y_BORRADO_LBL)),
+        )
+        superficie.blit(
+            hint_borrado,
+            hint_borrado.get_rect(
+                midtop=(ANCHO // 2, self.panel.y + self._Y_BORRADO_LBL + self._GAP_HINT_BORRADO),
+            ),
         )
 
         self.boton_borrar_txt.dibujar(superficie, fuente_peq)
         self.boton_borrar_infinita.dibujar(superficie, fuente_peq)
         self.boton_borrar_reto.dibujar(superficie, fuente_peq)
-
-        if self.mensaje:
-            msg = fuente_peq.render(self.mensaje, True, COLOR_AVISO)
-            superficie.blit(msg, msg.get_rect(midtop=(ANCHO // 2, self._y_mensaje)))
 
         self.boton_listo.dibujar(superficie, self.fuentes["menu"])
         dibujar_tooltips_botones(superficie, fuente_peq, self._botones())

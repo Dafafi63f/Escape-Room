@@ -47,13 +47,14 @@ from Grafico.menu_opciones import OverlayOpcionesGrafico
 from Comun.ranking_resistencia import finalizar_ranking_al_salir, inicializar_ranking_sesion
 from Comun.preferencias_grafico import debe_saltar_bienvenida_grafico
 from Grafico.pantallas import MenuPrincipal, Pantalla, PantallaFeedback, PartidaModoLibre
+from Grafico.pantalla_info import PantallaInfoHub, PantallaInfoTexto
 from Grafico.pantallas_bienvenida import PantallaBienvenida
 from Grafico.pantallas_historia import PartidaModoHistoria, PartidaResistenciaHistoria
 
 _ETIQUETA_ICONO_FIJO_SIN_EMOJI: dict[str, str] = {
     "pausa": "PA",
     "diarios": "DI",
-    "ranking": "RK",
+    "ranking": "IN",
     "feedback": "FB",
     "opciones": "OP",
 }
@@ -96,8 +97,14 @@ class AplicacionGrafica:
 
     def _ir_a(self, pantalla: Pantalla) -> None:
         self.actual = pantalla
-        if not isinstance(pantalla, PantallaFeedback):
+        if not isinstance(
+            pantalla,
+            (PantallaFeedback, PantallaInfoHub, PantallaInfoTexto),
+        ):
             self._anterior = None
+
+    def _navegar_auxiliar(self, pantalla: Pantalla) -> None:
+        self.actual = pantalla
 
     def _salir(self) -> None:
         self.ejecutando = False
@@ -107,7 +114,10 @@ class AplicacionGrafica:
         self.actual.restaurar_vista_completa()
 
     def _pantalla_en_contexto(self) -> Pantalla:
-        if isinstance(self.actual, PantallaFeedback) and self._anterior is not None:
+        if isinstance(
+            self.actual,
+            (PantallaFeedback, PantallaInfoHub, PantallaInfoTexto),
+        ) and self._anterior is not None:
             return self._anterior
         return self.actual
 
@@ -124,7 +134,7 @@ class AplicacionGrafica:
         botones_cfg: list[tuple[str, Callable[[], None], str, str]] = [
             ("II", self._toggle_pausa, "pausa", TOOLTIP_PAUSA),
             ("DI", self._abrir_diarios, "diarios", TOOLTIP_DIARIOS),
-            ("RK", self._abrir_ranking, "ranking", TOOLTIP_RANKING),
+            ("IN", self._abrir_info, "ranking", TOOLTIP_RANKING),
             ("FB", self._abrir_feedback, "feedback", TOOLTIP_FEEDBACK),
             ("OP", self._toggle_opciones, "opciones", TOOLTIP_OPCIONES),
         ]
@@ -246,6 +256,35 @@ class AplicacionGrafica:
             return
         self._abrir_menu_pausa()
 
+    def _abrir_info(self) -> None:
+        if self._overlay_abierto():
+            return
+        if isinstance(self.actual, (PantallaInfoHub, PantallaInfoTexto)):
+            return
+        pantalla_previa = self.actual
+
+        def volver() -> None:
+            self.actual = pantalla_previa
+            pantalla_previa.restaurar_vista_completa()
+
+        def abrir_ranking(volver_al_hub: Callable[[], None]) -> None:
+            from Grafico.pantallas_historia import RankingResistenciaHistoria
+
+            preset_id = self._preset_ranking_desde_pantalla(pantalla_previa)
+            self.actual = RankingResistenciaHistoria(
+                self.datos,
+                self._navegar_auxiliar,
+                self._salir,
+                volver_a=volver_al_hub,
+                preset_id_inicial=preset_id,
+            )
+
+        self.actual = PantallaInfoHub(
+            volver,
+            navegar=self._navegar_auxiliar,
+            abrir_ranking=abrir_ranking,
+        )
+
     def _abrir_feedback(self) -> None:
         if self._overlay_abierto():
             return
@@ -272,21 +311,8 @@ class AplicacionGrafica:
             return
         self._ir_a(ConfigModosDiarios(self.datos, self._ir_a, self._salir))
 
-    def _preset_ranking_desde_pantalla(self, pantalla: Pantalla) -> str | None:
-        from Comun.modos_diarios import ID_PRESET_RETO_DIA
-        from Grafico.pantallas_diarios import ConfigModosDiarios
-        from Grafico.pantallas_especiales import ConfigModosEspeciales
-        from Grafico.pantallas_historia import ResumenResistenciaHistoria
-
-        if isinstance(pantalla, ResumenResistenciaHistoria):
-            return pantalla.preset.id
-        if isinstance(pantalla, ConfigModosDiarios):
-            return ID_PRESET_RETO_DIA
-        if isinstance(pantalla, ConfigModosEspeciales):
-            return "ranking_resistencia"
-        return None
-
     def _abrir_ranking(self) -> None:
+        """Atajo directo al ranking (p. ej. desde código o tests)."""
         if self._overlay_abierto():
             return
         from Grafico.pantallas_historia import RankingResistenciaHistoria
@@ -301,15 +327,29 @@ class AplicacionGrafica:
             self.actual = pantalla_previa
             pantalla_previa.restaurar_vista_completa()
 
-        self._ir_a(
+        self._navegar_auxiliar(
             RankingResistenciaHistoria(
                 self.datos,
-                self._ir_a,
+                self._navegar_auxiliar,
                 self._salir,
                 volver_a=volver,
                 preset_id_inicial=preset_id,
             )
         )
+
+    def _preset_ranking_desde_pantalla(self, pantalla: Pantalla) -> str | None:
+        from Comun.modos_diarios import ID_PRESET_RETO_DIA
+        from Grafico.pantallas_diarios import ConfigModosDiarios
+        from Grafico.pantallas_especiales import ConfigModosEspeciales
+        from Grafico.pantallas_historia import ResumenResistenciaHistoria
+
+        if isinstance(pantalla, ResumenResistenciaHistoria):
+            return pantalla.preset.id
+        if isinstance(pantalla, ConfigModosDiarios):
+            return ID_PRESET_RETO_DIA
+        if isinstance(pantalla, ConfigModosEspeciales):
+            return "ranking_resistencia"
+        return None
 
     def _manejar_hover_fijos(self, pos: tuple[int, int]) -> None:
         if self._barra_fija_bloqueada():
@@ -324,17 +364,20 @@ class AplicacionGrafica:
         for b, tipo in self._botones_fijos:
             if not b.manejar_clic(pos, boton):
                 continue
+            if tipo == "ranking":
+                from Grafico.pantallas_historia import RankingResistenciaHistoria
+
+                if isinstance(
+                    self.actual,
+                    (PantallaInfoHub, PantallaInfoTexto, RankingResistenciaHistoria),
+                ):
+                    return True
             if tipo == "feedback" and isinstance(self.actual, PantallaFeedback):
                 return True
             if tipo == "diarios":
                 from Grafico.pantallas_diarios import ConfigModosDiarios
 
                 if isinstance(self.actual, ConfigModosDiarios):
-                    return True
-            if tipo == "ranking":
-                from Grafico.pantallas_historia import RankingResistenciaHistoria
-
-                if isinstance(self.actual, RankingResistenciaHistoria):
                     return True
             return True
         return False

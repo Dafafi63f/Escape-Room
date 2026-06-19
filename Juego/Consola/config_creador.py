@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Plantilla y utilidades para ``Data/JSON/creador_privado.json`` (no versionado)."""
+"""Plantilla y utilidades para ``Data/Banco/creador_privado.json`` (no versionado)."""
 
 from __future__ import annotations
 
@@ -38,6 +38,12 @@ PLANTILLA_CREADOR_PRIVADO: dict = {
         "smtp_remitente": "tu.cuenta@gmail.com",
         "smtp_destino": "tu.correo@ejemplo.com",
     },
+    "contacto_jugador": {
+        "nota": "Si prefieres no usar el formulario del juego, también puedes escribirme por:",
+        "canales": [
+            {"etiqueta": "Correo", "valor": ""}
+        ],
+    },
 }
 
 
@@ -47,7 +53,7 @@ def plantilla_creador_privado() -> dict:
 
 
 def ruta_creador_privado() -> Path:
-    """Ruta a ``Data/JSON/creador_privado.json`` (existe o no)."""
+    """Ruta a ``Data/Banco/creador_privado.json`` (existe o no)."""
     return resolver_ruta_creador_privado_defecto()
 
 
@@ -60,7 +66,7 @@ def escribir_plantilla_creador_privado(
     *,
     sobrescribir: bool = False,
 ) -> Path:
-    """Escribe la plantilla en ``Data/JSON/creador_privado.json`` si aun no existe."""
+    """Escribe la plantilla en ``Data/Banco/creador_privado.json`` si aun no existe."""
     ruta = destino or ruta_creador_privado()
     if ruta.exists() and not sobrescribir:
         raise FileExistsError(f"Ya existe {ruta}")
@@ -71,7 +77,7 @@ def escribir_plantilla_creador_privado(
 
 def mensaje_crear_creador_privado() -> str:
     return (
-        "Crea Data/JSON/creador_privado.json con la plantilla del modulo "
+        "Crea Data/Banco/creador_privado.json con la plantilla del modulo "
         "(python -m Consola.config_creador desde Juego/)."
     )
 
@@ -80,7 +86,7 @@ def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Genera Data/JSON/creador_privado.json desde la plantilla embebida",
+        description="Genera Data/Banco/creador_privado.json desde la plantilla embebida",
     )
     parser.add_argument(
         "--sobrescribir",

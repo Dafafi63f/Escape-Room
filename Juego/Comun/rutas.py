@@ -8,16 +8,20 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
 
 _COMUN_DIR = Path(__file__).resolve().parent
 _JUEGO_DIR = _COMUN_DIR.parent
-_SCRIPTS_DIR = _JUEGO_DIR.parent / "Files" / "Scripts"
+_FILES_DIR = _JUEGO_DIR.parent / "Files"
+
+_ZonaDatos = Literal["banco", "juego"]
+_LEGACY_DATA_SUBDIRS = ("CSV", "csv", "JSON", "json", "Informes", "Feedback")
 
 
 def registrar_scripts_en_path() -> None:
-    """Añade ``Files/Scripts`` al path para importar utilidades compartidas con el juego."""
-    if _SCRIPTS_DIR.is_dir() and str(_SCRIPTS_DIR) not in sys.path:
-        sys.path.insert(0, str(_SCRIPTS_DIR))
+    """Añade ``Files`` al path para importar utilidades compartidas con el juego."""
+    if _FILES_DIR.is_dir() and str(_FILES_DIR) not in sys.path:
+        sys.path.insert(0, str(_FILES_DIR))
 
 
 def juego_dir() -> Path:
@@ -47,21 +51,41 @@ def _roots_busqueda() -> list[Path]:
     return candidatos
 
 
-def _subdirs_data_por_nombre(nombre: str) -> list[str]:
-    ext = Path(nombre).suffix.lower()
-    if ext == ".csv":
-        return ["CSV", "csv"]
-    if ext == ".json":
-        return ["JSON", "json"]
-    return []
+def _data_root() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent / "Data"
+    return _JUEGO_DIR.parent / "Data"
 
 
-def _candidatos_bajo_data(raiz: Path, nombre: str) -> list[Path]:
+def _dir_banco() -> Path:
+    """Directorio plano ``Data/Banco/`` (banco de preguntas y catálogos)."""
+    base = _data_root() / "Banco"
+    base.mkdir(parents=True, exist_ok=True)
+    return base
+
+
+def _dir_juego_datos() -> Path:
+    """Directorio plano ``Data/Juego/`` (estado local del jugador)."""
+    base = _data_root() / "Juego"
+    base.mkdir(parents=True, exist_ok=True)
+    return base
+
+
+def _dir_data_escritura() -> Path:
+    return _dir_juego_datos()
+
+
+def _candidatos_bajo_data(raiz: Path, nombre: str, *, zona: _ZonaDatos) -> list[Path]:
     data = raiz / "Data"
     if not data.is_dir():
         return []
-    orden: list[Path] = []
-    for subdir in _subdirs_data_por_nombre(nombre):
+    principal = "Banco" if zona == "banco" else "Juego"
+    secundario = "Juego" if zona == "banco" else "Banco"
+    orden: list[Path] = [
+        data / principal / nombre,
+        data / secundario / nombre,
+    ]
+    for subdir in _LEGACY_DATA_SUBDIRS:
         orden.append(data / subdir / nombre)
     orden.append(data / nombre)
     return orden
@@ -72,6 +96,7 @@ def _buscar_archivo(
     preferidas: tuple[str, ...],
     *,
     bajo_data: bool = True,
+    zona: _ZonaDatos = "banco",
 ) -> Path:
     candidatos_raiz: list[Path] = []
     vistos: set[Path] = set()
@@ -83,7 +108,7 @@ def _buscar_archivo(
 
     if bajo_data:
         for raiz in candidatos_raiz:
-            for p in _candidatos_bajo_data(raiz, nombre):
+            for p in _candidatos_bajo_data(raiz, nombre, zona=zona):
                 if p.exists():
                     return p
 
@@ -96,7 +121,7 @@ def _buscar_archivo(
         coincidencias = sorted(
             raiz.rglob(nombre),
             key=lambda p: (
-                0 if p.parent.name.lower() in {"data", "csv", "json"} else 1,
+                0 if p.parent.name.lower() in {"data", "banco", "juego", "csv", "json"} else 1,
                 len(p.parts),
                 str(p),
             ),
@@ -107,45 +132,42 @@ def _buscar_archivo(
     raise FileNotFoundError(f"No se encontró '{nombre}' en rutas accesibles.")
 
 
-def _dir_data_escritura() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent / "Data"
-    return _JUEGO_DIR.parent / "Data"
+def _ruta_juego_escritura(nombre: str) -> Path:
+    return _dir_juego_datos() / nombre
 
 
 def _ruta_json_escritura(nombre: str) -> Path:
-    destino = _dir_data_escritura() / "JSON" / nombre
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    return destino
+    """Alias: JSON de estado local del jugador en ``Data/Juego/``."""
+    return _ruta_juego_escritura(nombre)
 
 
 def resolver_dataset() -> Path:
-    return _buscar_archivo("Preguntas.csv", ("Preguntas.csv",))
+    return _buscar_archivo("Preguntas.csv", ("Preguntas.csv",), zona="banco")
 
 
 def resolver_listado_materias() -> Path:
-    return _buscar_archivo("listado_materias.csv", ("listado_materias.csv",))
+    return _buscar_archivo("listado_materias.csv", ("listado_materias.csv",), zona="banco")
 
 
 def resolver_plantillas() -> Path:
-    return _buscar_archivo("plantillas.json", ("plantillas.json",))
+    return _buscar_archivo("plantillas.json", ("plantillas.json",), zona="banco")
 
 
 def resolver_preguntas_resistencia() -> Path:
-    return _buscar_archivo("preguntas_resistencia.json", ("preguntas_resistencia.json",))
+    return _buscar_archivo("preguntas_resistencia.json", ("preguntas_resistencia.json",), zona="juego")
 
 
 def resolver_presets_historia() -> Path:
-    return _buscar_archivo("presets_historia.json", ("presets_historia.json",))
+    return _buscar_archivo("presets_historia.json", ("presets_historia.json",), zona="juego")
 
 
 def resolver_presets_especiales() -> Path:
-    return _buscar_archivo("presets_especiales.json", ("presets_especiales.json",))
+    return _buscar_archivo("presets_especiales.json", ("presets_especiales.json",), zona="juego")
 
 
 def resolver_ranking_resistencia_infinita() -> Path:
     """JSON local del ranking de resistencia infinita."""
-    base = _ruta_json_escritura("ranking_resistencia_infinita.json")
+    base = _ruta_juego_escritura("ranking_resistencia_infinita.json")
     if not base.exists():
         base.write_text('{"version": 1, "records": []}', encoding="utf-8")
     return base
@@ -153,7 +175,7 @@ def resolver_ranking_resistencia_infinita() -> Path:
 
 def resolver_ranking_reto_dia() -> Path:
     """JSON local del ranking del reto del día (se reinicia cada día)."""
-    base = _ruta_json_escritura("ranking_reto_dia.json")
+    base = _ruta_juego_escritura("ranking_reto_dia.json")
     if not base.exists():
         hoy = datetime.now(timezone.utc).date().isoformat()
         base.write_text(
@@ -172,6 +194,7 @@ def resolver_historico_qualificacions() -> Path:
     return _buscar_archivo(
         "Historic_qualificacions_MatCAD_completo.csv",
         ("Historic_qualificacions_MatCAD_completo.csv",),
+        zona="banco",
     )
 
 
@@ -181,6 +204,7 @@ def resolver_config_creador_privado() -> Path | None:
         return _buscar_archivo(
             "creador_privado.json",
             ("creador_privado.json",),
+            zona="banco",
         )
     except FileNotFoundError:
         return None
@@ -191,36 +215,26 @@ def resolver_ruta_creador_privado_defecto() -> Path:
     existente = resolver_config_creador_privado()
     if existente is not None:
         return existente
-    return _ruta_json_escritura("creador_privado.json")
+    return _dir_banco() / "creador_privado.json"
 
 
 def resolver_dir_informes() -> Path:
     """Carpeta donde se guardan los informes de examen (.txt)."""
-    if getattr(sys, "frozen", False):
-        base = Path(sys.executable).resolve().parent / "Informes"
-    else:
-        base = _JUEGO_DIR / "Informes"
-    base.mkdir(parents=True, exist_ok=True)
-    return base
+    return _dir_juego_datos()
 
 
 def ruta_informe_para_usuario(archivo: Path) -> str:
     """Ruta corta sin caracteres problemáticos para la consola de Windows."""
-    return f"Juego/Informes/{archivo.name}"
+    return f"Data/Juego/{archivo.name}"
 
 
 def resolver_dir_feedback() -> Path:
     """Carpeta donde se guardan los avisos del modo feedback."""
-    if getattr(sys, "frozen", False):
-        base = Path(sys.executable).resolve().parent / "Feedback"
-    else:
-        base = _JUEGO_DIR / "Feedback"
-    base.mkdir(parents=True, exist_ok=True)
-    return base
+    return _dir_juego_datos()
 
 
 def ruta_feedback_para_usuario(archivo: Path) -> str:
-    return f"Juego/Feedback/{archivo.name}"
+    return f"Data/Juego/{archivo.name}"
 
 
 _path_preguntas: Path | None = None

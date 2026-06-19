@@ -54,6 +54,10 @@ def _buscar_archivo(
 
     if bajo_data:
         for raiz in candidatos:
+            for sub in ("Banco", "Juego", "CSV", "csv", "JSON", "json"):
+                p = raiz / "Data" / sub / nombre
+                if p.exists():
+                    return p
             p = raiz / "Data" / nombre
             if p.exists():
                 return p
@@ -67,7 +71,7 @@ def _buscar_archivo(
         coincidencias = sorted(
             raiz.rglob(nombre),
             key=lambda p: (
-                0 if p.parent.name.lower() == "data" else 1,
+                0 if p.parent.name.lower() in {"data", "banco", "juego", "csv", "json"} else 1,
                 len(p.parts),
                 str(p),
             ),
@@ -99,31 +103,25 @@ def resolver_historico_qualificacions() -> Path:
 
 def resolver_dir_informes() -> Path:
     """Carpeta donde se guardan los informes de examen (.txt)."""
+    data = _JUEGO_DIR.parent / "Data" / "Juego"
     if getattr(sys, "frozen", False):
-        base = Path(sys.executable).resolve().parent / "Informes"
-    else:
-        base = _JUEGO_DIR / "Informes"
-    base.mkdir(parents=True, exist_ok=True)
-    return base
+        data = Path(sys.executable).resolve().parent / "Data" / "Juego"
+    data.mkdir(parents=True, exist_ok=True)
+    return data
 
 
 def ruta_informe_para_usuario(archivo: Path) -> str:
     """Ruta corta sin caracteres problemáticos para la consola de Windows."""
-    return f"Juego/Informes/{archivo.name}"
+    return f"Data/Juego/{archivo.name}"
 
 
 def resolver_dir_feedback() -> Path:
     """Carpeta donde se guardan los avisos del modo feedback."""
-    if getattr(sys, "frozen", False):
-        base = Path(sys.executable).resolve().parent / "Feedback"
-    else:
-        base = _JUEGO_DIR / "Feedback"
-    base.mkdir(parents=True, exist_ok=True)
-    return base
+    return resolver_dir_informes()
 
 
 def ruta_feedback_para_usuario(archivo: Path) -> str:
-    return f"Juego/Feedback/{archivo.name}"
+    return f"Data/Juego/{archivo.name}"
 
 
 def resolver_config_creador_privado() -> Path | None:

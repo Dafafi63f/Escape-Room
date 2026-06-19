@@ -354,7 +354,7 @@ def _imprimir_aviso_informe_guardado(ruta: Path) -> None:
         f"Archivo: {rel}",
         f"(nombre unico por intento; ver ID de sesion dentro del .txt)",
         "Contenido: estadisticas, nota o puntos, correccion pregunta a pregunta.",
-        "(Historial personal en Juego/Informes/ — un .txt por actividad cerrada)",
+        "(Historial personal en Data/Juego/ — un .txt por actividad cerrada)",
     )
     for linea in lineas:
         try:

@@ -24,8 +24,8 @@ Detalle: [`Grafico/README.md`](Grafico/README.md#estrategia-de-migración).
 | [`Comun/`](Comun/README.md) | Dominio compartido (`from Comun...`) |
 | [`Consola/`](Consola/README.md) | UI terminal y orquestación de modos en consola |
 | [`Grafico/`](Grafico/README.md) | Interfaz pygame (ratón; teclado solo para texto) |
-| [`Informes/`](Informes/README.md) | Informes `.txt` de partidas (local, gitignored) |
-| [`Feedback/`](Feedback/README.md) | Copias locales de avisos al creador (local, gitignored) |
+| [`Data/Banco/`](../Data/README.md) | Banco de preguntas y catálogos |
+| [`Data/Juego/`](../Data/README.md) | Estado local del jugador (informes, rankings, preferencias) |
 | [`Tests/`](../Tests/README.md) | Pruebas unitarias (suite unificada en la raíz) |
 | [`build_exe_onefile.ps1`](build_exe_onefile.ps1) | Genera `juego_consola.exe` con PyInstaller |
 
@@ -59,7 +59,7 @@ Al arrancar, el lanzador muestra un **tutorial breve** de foco de teclado (hay q
 | **Historia** | Implementado (v1) | Examen balanceado según histórico de qualificacions |
 | **Historia (gráfico)** | Implementado (v1) | Carrusel de presets — [`Grafico/README.md`](Grafico/README.md) |
 | **Resistencia** | Implementado (v1) | Partida infinita, eventos, objetos, ranking local |
-| **Feedback** | Implementado (v1) | Asistente para enviar bug, sugerencia u otro aviso al creador |
+| **Feedback** | Implementado (v1) | Consola (tecla F) y gráfico (icono 📣); ver [`Grafico/pantalla_feedback.py`](Grafico/pantalla_feedback.py) |
 
 Detalle de bancos de preguntas, puntuación, dificultad progresiva y arquitectura: [`Consola/README.md`](Consola/README.md).
 
@@ -103,7 +103,7 @@ cd Juego
 .\build_exe_onefile.ps1
 ```
 
-Genera `juego_consola.exe` en esta carpeta. Incluye `Data/` del proyecto (preguntas, materias, plantillas, histórico CSV). Los informes se escriben en `Informes/` **junto al `.exe`** al ejecutarlo.
+Genera `juego_consola.exe` en esta carpeta. Incluye `Data/` del proyecto. Los informes y el estado local se escriben en `Data/Juego/` junto al `.exe`.
 
 ### Artefactos de build
 
@@ -119,7 +119,7 @@ Tras un build correcto, `build_exe_onefile.ps1` **borra** `build/`, `juego_conso
 Desde la raíz del TFG:
 
 ```bash
-python borrar_temporales.py
+python utilidades_tfg.py --solo-limpieza
 ```
 
-Borra `__pycache__` en todo el proyecto y `.txt` solo en `Juego/Informes/` y `Juego/Feedback/`.
+Borra `__pycache__` en todo el proyecto y `.txt` generados al jugar en `Data/Juego/`.

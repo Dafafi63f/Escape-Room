@@ -47,6 +47,8 @@ def _es_emoji(cp: int) -> bool:
         or 0x2600 <= cp <= 0x26FF
         or 0x2700 <= cp <= 0x27BF
         or 0xFE00 <= cp <= 0xFE0F
+        # Controles multimedia (⏭️, ⏩, ⏸️…): emoji a color, no Segoe UI Symbol.
+        or 0x23E9 <= cp <= 0x23FA
     )
 
 

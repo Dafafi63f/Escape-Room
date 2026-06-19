@@ -47,7 +47,12 @@ TOOLTIP_CONTINUAR = (
     "Continúa con el preset seleccionado (configuración extra si el reto lo permite)."
 )
 
-TOOLTIP_FEEDBACK = "Modo feedback (próximamente): repaso con explicaciones."
+TOOLTIP_RANKING = (
+    "Info del juego: ranking, contacto y novedades."
+)
+TOOLTIP_FEEDBACK = (
+    "Formulario rápido de avisos al creador (bugs, sugerencias)."
+)
 
 TOOLTIP_MENU_PRINCIPAL: dict[str, str] = {
     "libre": (
@@ -64,7 +69,7 @@ TOOLTIP_MENU_PRINCIPAL: dict[str, str] = {
         "Modos aparte del catálogo de historia: resistencia infinita y futuros retos especiales."
     ),
     "feedback": (
-        "Repaso de errores con explicación (funcionalidad prevista; aún en construcción)."
+        "Envía avisos al creador (bugs, sugerencias) o consulta los contactos alternativos."
     ),
     "salir": "Cierra el juego.",
 }
@@ -95,6 +100,8 @@ TOOLTIP_ABANDONAR_RESISTENCIA = (
     "Termina la partida y registra tu resultado en el ranking local "
     "(preguntas alcanzadas). Si no has respondido ninguna, vuelves al menú."
 )
+TOOLTIP_APUESTA_SI = "Aceptar la apuesta arriesgada."
+TOOLTIP_APUESTA_NO = "Rechazar la apuesta y jugar con las reglas normales."
 
 TOOLTIP_GUARDAR_INFORME = (
     "Guarda un archivo .txt en la carpeta Informes del juego con tus respuestas, "

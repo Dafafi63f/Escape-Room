@@ -67,6 +67,8 @@ from Comun.resistencia_historia import (
 from Comun.reto_dia_resistencia import etiqueta_fecha_reto_dia
 from Grafico.textos_grafico import (
     BTN_ABANDONAR,
+    BTN_APUESTA_NO,
+    BTN_APUESTA_SI,
     BTN_ATRAS,
     BTN_CONTINUAR,
     BTN_EMPEZAR,
@@ -116,6 +118,8 @@ from Grafico.pantallas import (
 from Grafico.tooltips_ui import (
     TOOLTIP_ABANDONAR_HISTORIA,
     TOOLTIP_ABANDONAR_RESISTENCIA,
+    TOOLTIP_APUESTA_NO,
+    TOOLTIP_APUESTA_SI,
     TOOLTIP_ATRAS,
     TOOLTIP_CONTINUAR,
     TOOLTIP_EMPEZAR,
@@ -1529,20 +1533,25 @@ class PartidaResistenciaHistoria(Pantalla):
         self._iniciar_fase_pregunta()
 
     def _reconstruir_botones_apuesta(self) -> None:
-        fuente = self.fuentes["menu"]
-        lbl_si = etiqueta("apuesta_si", "Aceptar apuesta")
-        lbl_no = etiqueta("apuesta_no", "Jugar normal")
-        ancho, alto = tamano_grupo_botones([lbl_si, lbl_no], fuente, alto_min=44)
-        y = ALTO // 2 + 72
+        lbl_si = etiqueta(*BTN_APUESTA_SI)
+        lbl_no = etiqueta(*BTN_APUESTA_NO)
+        tam = 56
+        gap = 20
+        y = ALTO // 2 + 122
+        cx = ANCHO // 2
         self.boton_apuesta_si = Boton(
             lbl_si,
-            pygame.Rect(ANCHO // 2 - ancho - 8, y, ancho, alto),
+            pygame.Rect(cx - tam - gap // 2, y, tam, tam),
             self._aceptar_apuesta,
+            tooltip=TOOLTIP_APUESTA_SI,
+            familia_etiqueta="emoji",
         )
         self.boton_apuesta_no = Boton(
             lbl_no,
-            pygame.Rect(ANCHO // 2 + 8, y, ancho, alto),
+            pygame.Rect(cx + gap // 2, y, tam, tam),
             self._rechazar_apuesta,
+            tooltip=TOOLTIP_APUESTA_NO,
+            familia_etiqueta="emoji",
         )
 
     def _aceptar_apuesta(self) -> None:
@@ -1608,7 +1617,7 @@ class PartidaResistenciaHistoria(Pantalla):
         return ALTO - MARGEN_INF_PARTIDA - altura
 
     def _offset_y_panel(self) -> int:
-        if not self._texto_extra_barra():
+        if not self._texto_extra_layout():
             return 0
         return self.fuentes["pequena"].get_height() + 22
 
@@ -1619,8 +1628,23 @@ class PartidaResistenciaHistoria(Pantalla):
         return self._y_panel_pregunta() + ALTO_PANEL_PREGUNTA + GAP_TRAS_PANEL_PARTIDA + 8
 
     def _y_fin_opciones(self) -> int:
-        n = len(self.botones_opcion)
-        return self._y_inicio_opciones() + n * (ALTO_OPCION_PARTIDA + SEP_OPCIONES_PARTIDA)
+        if self.botones_opcion:
+            return max(boton.rect.bottom for boton in self.botones_opcion)
+        n = 4
+        return (
+            self._y_inicio_opciones()
+            + n * ALTO_OPCION_PARTIDA
+            + max(0, n - 1) * SEP_OPCIONES_PARTIDA
+        )
+
+    def _y_mensaje_feedback(self) -> int:
+        gap = 12
+        y = self._y_fin_opciones() + gap
+        limite = self._y_banda_powerups() - 6
+        alto_est = self.fuentes["subtitulo"].get_height() + 8
+        if y + alto_est > limite:
+            y = max(self._y_fin_opciones() + 4, limite - alto_est)
+        return y
 
     def _linea_estado_actual(self) -> str:
         seg_preg = None
@@ -1955,11 +1979,17 @@ class PartidaResistenciaHistoria(Pantalla):
                 superficie,
                 self.fuentes,
                 mensaje=formatear_aviso_apuesta(self.er.apuesta_oferta),
+                titulo="Apuesta",
+                mostrar_pie_espera=False,
             )
             if self.boton_apuesta_si:
                 self.boton_apuesta_si.dibujar(superficie, fuente)
             if self.boton_apuesta_no:
                 self.boton_apuesta_no.dibujar(superficie, fuente)
+            tips_apuesta = [
+                b for b in (self.boton_apuesta_si, self.boton_apuesta_no) if b
+            ]
+            dibujar_tooltips_botones(superficie, self.fuentes["pequena"], tips_apuesta)
             return
         if self.fase == "aviso" and self.avisos_cola:
             dibujar_contenido_aviso_resistencia(
@@ -1970,15 +2000,18 @@ class PartidaResistenciaHistoria(Pantalla):
                 total=len(self.avisos_cola),
             )
 
-    def _texto_extra_barra(self) -> str:
-        if self.fase != "pregunta":
-            return ""
+    def _texto_extra_layout(self) -> str:
         partes: list[str] = []
         if self.efecto_actual:
             partes.append(self.efecto_actual[:80])
         if self.er.bloque_filtro:
             partes.append(self.er.bloque_filtro.etiqueta[:72])
         return " · ".join(partes)
+
+    def _texto_extra_barra(self) -> str:
+        if self.fase != "pregunta":
+            return ""
+        return self._texto_extra_layout()
 
     def _dibujar_barra_superior(self, superficie: pygame.Surface) -> None:
         fuente = self.fuentes["pequena"]
@@ -2084,7 +2117,7 @@ class PartidaResistenciaHistoria(Pantalla):
         if self.er.escudo_activo:
             meta_partes.append("Escudo activo")
         meta_partes.append(
-            f"{p.materia} · {p.tipo} / {p.dificultad} · Nivel {self.escalada.nivel}"
+            f"{p.materia} · {p.tipo} / {p.dificultad} · Nivel {self.escalada.nivel_visible}"
         )
         meta = self.fuentes["pequena"].render(
             " · ".join(meta_partes),
@@ -2111,7 +2144,7 @@ class PartidaResistenciaHistoria(Pantalla):
                 mensaje=self.feedback_mensaje,
                 solucion=self.feedback_solucion,
                 acierto=self.feedback_ok,
-                y_mensaje=self._y_fin_opciones() + 8,
+                y_mensaje=self._y_mensaje_feedback(),
             )
         tips: list[Boton] = [self.boton_abandonar]
         if self.fase == "pregunta":

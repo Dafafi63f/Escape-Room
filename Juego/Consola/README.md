@@ -15,13 +15,13 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_consola.py`](../juego_c
 | **Resistencia** | Implementado (v1) | `motor_resistencia.py` + `modo_historia.py` — partida infinita y ranking |
 | **Feedback** | Implementado (v1) | `modo_feedback.py` + `envio_feedback.py` — avisos al creador (menú o tecla **F**) |
 
-Los modos comparten la capa de datos (`Data/CSV/Preguntas.csv`, `Data/CSV/listado_materias.csv`, `Data/JSON/plantillas.json`, histórico CSV y JSON de historia/resistencia).
+Los modos comparten la capa de datos: banco en `Data/Banco/`, estado local en `Data/Juego/`.
 
 ## Módulos
 
 | Módulo | Responsabilidad | ¿Sobrevive a migración gráfica? |
 |--------|-----------------|--------------------------------|
-| [`Comun/rutas.py`](../Comun/rutas.py) | Rutas a `Data/`, plantillas, informes, feedback y `Files/Scripts` en `sys.path` | Sí |
+| [`Comun/rutas.py`](../Comun/rutas.py) | Rutas a `Data/`, plantillas, informes, feedback y `Files` en `sys.path` | Sí |
 | `datos.py` | Carga CSV/JSON (consola) y elección de banco en terminal | Parcial* |
 | [`Comun/modelos.py`](../Comun/modelos.py) | `Pregunta`, `BancoPreguntas`, etiquetas | Sí |
 | `consola.py` | Menús, texto, opciones A–D | No (solo terminal) |
@@ -37,7 +37,7 @@ Los modos comparten la capa de datos (`Data/CSV/Preguntas.csv`, `Data/CSV/listad
 | `motor_resistencia.py` | Bucle de partida infinita, eventos y ranking | Parcial* |
 | `modo_feedback.py` | Modo feedback y asistente de avisos al creador | Parcial* |
 | `envio_feedback.py` | Guardado local `.txt` y envío SMTP | Sí |
-| `config_creador.py` | Plantilla de `Data/JSON/creador_privado.json` | Sí |
+| `config_creador.py` | Plantilla de `Data/Banco/creador_privado.json` | Sí |
 | `generador_examen_historia.py` | Generación de exámenes según histórico | Sí |
 | `informe_examen.py` | Informes `.txt` al cerrar partida | Sí |
 
@@ -47,14 +47,8 @@ Los modos comparten la capa de datos (`Data/CSV/Preguntas.csv`, `Data/CSV/listad
 
 El lanzador detecta la ruta base del proyecto para funcionar en ejecución normal o empaquetado con PyInstaller. A partir de esa base localiza (vía [`Comun/rutas.py`](../Comun/rutas.py)):
 
-- `Data/CSV/Preguntas.csv` — dataset principal.
-- `Data/CSV/listado_materias.csv` — metadatos académicos por materia.
-- `Data/JSON/plantillas.json`, `Data/CSV/Historic_qualificacions_MatCAD_completo.csv` — según modo.
-- `Data/JSON/presets_historia.json` — catálogo modo historia.
-- `Data/JSON/preguntas_resistencia.json`, `ranking_resistencia_infinita.json`, `ranking_reto_dia.json` — modo resistencia.
-- `Juego/Informes/` — informes de examen cerrado (`.txt`, gitignored salvo `.gitkeep`).
-- `Juego/Feedback/` — copias locales del modo feedback (gitignored salvo `.gitkeep`).
-- `Data/JSON/creador_privado.json` — datos personales y SMTP (plantilla en `config_creador.py`).
+- `Data/Banco/` — banco cerrado, plantillas, histórico, `creador_privado.json`.
+- `Data/Juego/` — presets, resistencia, rankings, preferencias, informes `.txt`, feedback.
 
 La carga valida que cada pregunta tenga enunciado, cuatro opciones completas y respuesta correcta en `{A, B, C, D}`.
 
@@ -72,11 +66,11 @@ Al iniciar cada partida, el jugador elige el **banco**:
 
 | Opción | Calidad | Fuente |
 |--------|---------|--------|
-| 1 — Dataset | **MODO SEGURO** (por defecto) | `Data/CSV/Preguntas.csv` — **480** preguntas revisadas |
+| 1 — Dataset | **MODO SEGURO** (por defecto) | `Data/Banco/Preguntas.csv` — **480** preguntas revisadas |
 | 2 — Todo | **MODO BETA** | **480 + 960 = 1440** (dataset + pool extra de plantillas) |
 | 3 — Plantillas extra | **MODO BETA** | **960** instancias (**24** por materia; no revisadas) |
 
-Equilibrio del pool extra: `python Files/Scripts/equilibrar_pool_extra_juego.py --inplace`. Si hay duplicados o variantes sintéticas: `python Files/Scripts/dedup_reemplazar_plantillas.py --inplace` y volver a equilibrar.
+Equilibrio del pool extra: `python Files/equilibrar_pool_extra_juego.py --inplace`. Si hay duplicados o variantes sintéticas: `python Files/dedup_reemplazar_plantillas.py --inplace` y volver a equilibrar.
 
 La coincidencia con el dataset usa materia + enunciado + opciones + correcta. Las plantillas con placeholders sin sustituir se omiten.
 
@@ -114,7 +108,7 @@ La partida termina al agotar vidas o al completar el objetivo de preguntas.
 
 ## Informes de partida
 
-En partidas con corrección al final, `informe_examen.py` escribe un `.txt` en `Juego/Informes/` (o `Informes/` junto al `.exe`), con ID de sesión y detalle de respuestas. El modo resistencia registra el ranking en `Data/JSON/ranking_resistencia_infinita.json` o `ranking_reto_dia.json` (este último se reinicia cada día).
+En partidas con corrección al final, `informe_examen.py` escribe un `.txt` en `Data/Juego/`, con ID de sesión y detalle de respuestas. El modo resistencia registra el ranking en `ranking_resistencia_infinita.json` o `ranking_reto_dia.json` (este último se reinicia cada día).
 
 ## Controles de teclado
 
@@ -140,13 +134,13 @@ Dos accesos:
 1. **Menú principal → opción 3** — limpia la pantalla y abre el asistente.
 2. **Tecla F** en cualquier momento — el historial de la pantalla se mantiene visible para redactar el aviso con contexto.
 
-Flujo: categoría → área → mensaje (multilínea) → nombre → contacto. Siempre se guarda copia en `Juego/Feedback/`. Con `feedback_smtp` en `Data/JSON/creador_privado.json`, se intenta envío por correo.
+Flujo: categoría → área → mensaje (multilínea) → nombre → contacto. Siempre se guarda copia en `Data/Juego/`. Con `feedback_smtp` en `creador_privado.json`, se intenta envío por correo.
 
 ## Calidad del banco (2026-06-15)
 
-`python Files/Scripts/duplicados.py revisar` → **0 pares similares** en CSV y plantillas intra-materia. `mantenimiento.py validar` → OK.
+`python Files/duplicados.py revisar` → **0 pares similares** en CSV y plantillas intra-materia. `mantenimiento.py validar` → OK.
 
-Mejoras futuras opcionales: ampliar catálogo de plantillas, repuestos LSTM/Sharpe, dedup al cargar banco beta. Ver [`CHECKLIST.md`](../../CHECKLIST.md).
+Mejoras futuras opcionales: ampliar catálogo de plantillas, repuestos LSTM/Sharpe, dedup al cargar banco beta. Ver [`CHECKLIST.md`](../../Docs/CHECKLIST.md).
 
 ## Dependencias entre capas
 

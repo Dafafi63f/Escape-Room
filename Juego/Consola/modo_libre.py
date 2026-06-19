@@ -234,11 +234,11 @@ def jugar_modo_libre(
         print(f"{campo('opciones_juego', 'Reglas')}: {reglas.describe()}")
         if modo_infinito:
             print("Modo infinito.")
-            print("Al terminar la sesion se guarda informe .txt en Juego/informes/.")
+            print("Al terminar la sesion se guarda informe .txt en Data/Juego/.")
         else:
             print(f"Preguntas previstas: {total_objetivo}")
             print("Sin limpiar entre preguntas.")
-            print("Al terminar se guarda un informe .txt en Juego/informes/.")
+            print("Al terminar se guarda un informe .txt en Data/Juego/.")
 
     limpiar_consola()
     _pantalla_partida()

@@ -6,10 +6,7 @@
 
 Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en consola y en **pygame** (modos libre, historia, resistencia y feedback), y herramientas de mantenimiento del dataset. La capa narrativa escape room queda como evolución futura.
 
-- **Memoria académica (borrador):** [`Memoria_TFG.md`](Memoria_TFG.md)
-- **Memoria para entrega (Word y LaTeX):** [`Entrega/`](Entrega/README.md)
-- **Changelog del proyecto (estado, tutor, historial):** [`CHANGELOG.md`](CHANGELOG.md)
-- **Checklist de pendientes e ideas:** [`CHECKLIST.md`](CHECKLIST.md)
+- **Documentación y entrega del TFG:** [`Docs/`](Docs/README.md) (`Entrega/`, `Figuras/`, changelogs)
 - **Repositorio:** https://github.com/Dafafi63f/Escape-Room.git
 
 ```bash
@@ -25,13 +22,10 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | Esquema del banco, materias, diagramas curriculares | [`Data/README.md`](Data/README.md) |
 | Juego, modos, controles, `.exe` | [`Juego/README.md`](Juego/README.md) |
 | Lógica interna (bancos, puntuación, filtros) | [`Juego/Comun/README.md`](Juego/Comun/README.md) · UI terminal: [`Juego/Consola/README.md`](Juego/Consola/README.md) |
-| Scripts de mantenimiento y balanceo | [`Files/README.md`](Files/README.md) → [`Files/Scripts/README.md`](Files/Scripts/README.md) |
-| Scripts legado de regeneración CSV | [`Files/Archivo/README.md`](Files/Archivo/README.md) |
+| Scripts de mantenimiento y balanceo | [`Files/README.md`](Files/README.md) |
 | Pruebas unitarias | [`Tests/README.md`](Tests/README.md) |
 | Banco de preguntas (480 ítems) | [`Data/README.md`](Data/README.md) |
-| Changelog (estado, tutor, historial) | [`CHANGELOG.md`](CHANGELOG.md) |
-| Checklist de pendientes e ideas | [`CHECKLIST.md`](CHECKLIST.md) |
-| Exportación Word de la memoria | [`Entrega/README.md`](Entrega/README.md) |
+| Documentación y entrega del TFG | [`Docs/README.md`](Docs/README.md) |
 
 ## Estructura
 
@@ -40,24 +34,23 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | [`Juego/`](Juego/README.md) | Lanzadores, [`Comun/`](Juego/Comun/README.md), [`Consola/`](Juego/Consola/README.md), [`Grafico/`](Juego/Grafico/README.md), build opcional del `.exe` |
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
-| [`Entrega/`](Entrega/README.md) | `Memoria/` (LaTeX, Word), `Figuras/`, scripts de exportación |
-| [`Memoria_TFG.md`](Memoria_TFG.md) | Borrador Markdown de la memoria |
-| [`CHANGELOG.md`](CHANGELOG.md) | Estado, feedback del tutor, changelog |
-| [`CHECKLIST.md`](CHECKLIST.md) | Checklist de pendientes e ideas futuras |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias (238 tests) y CI |
-| [`borrar_temporales.py`](borrar_temporales.py) | Limpia `__pycache__` y `.txt` de `Juego/Informes/` y `Juego/Feedback/` |
+| [`Docs/`](Docs/README.md) | Changelogs, `Entrega/` (memoria md/tex/docx), `Figuras/` |
+| [`Tests/`](Tests/README.md) | Pruebas unitarias (**262** tests: 254 en `Tests/` + 8 en `Files/`) y CI |
+| [`utilidades_tfg.py`](utilidades_tfg.py) | Limpieza + exportación Word (por defecto ambas) |
 | [`requirements.txt`](requirements.txt) | Dependencias (pandas, matplotlib, pyinstaller, pygame-ce, mypy, pre-commit) |
 
 ## Memoria — exportar Word
 
-El borrador editable está en [`Memoria_TFG.md`](Memoria_TFG.md). Ficheros de entrega en [`Entrega/Memoria/`](Entrega/README.md); figuras en [`Entrega/Figuras/`](Entrega/Figuras/README.md):
+El borrador editable está en [`Docs/Entrega/Memoria_TFG.md`](Docs/Entrega/Memoria_TFG.md). LaTeX y Word en el mismo directorio [`Docs/Entrega/`](Docs/README.md); figuras en [`Docs/Figuras/`](Docs/Figuras/README.md):
 
 ```bash
-python Entrega/generar_figuras_memoria.py
-python exportar_memoria.py
+python Docs/generar_figuras_memoria.py
+python utilidades_tfg.py
 ```
 
-Genera los `.docx` en `Entrega/Memoria/` (Pandoc). El PDF de entrega lo exportas desde Word tras editar. Detalle en [`Entrega/README.md`](Entrega/README.md).
+Genera los `.docx` en `Docs/Entrega/` (Pandoc). El PDF de entrega lo exportas desde Word tras editar. Detalle en [`Docs/README.md`](Docs/README.md).
+
+Solo una tarea: `python utilidades_tfg.py --solo-limpieza` o `--solo-memoria`.
 
 ## Jugar
 
@@ -67,18 +60,18 @@ Dos versiones en paralelo (ver [`Juego/README.md`](Juego/README.md)):
 # Terminal — completa, solo stdlib
 python Juego/juego_consola.py
 
-# Gráfico — pygame (modo libre, historia, resistencia; feedback en desarrollo)
+# Gráfico — pygame (modo libre, historia, resistencia, feedback)
 pip install -r requirements.txt
 python Juego/juego_grafico.py
 ```
 
-La consola sigue siendo referencia para feedback SMTP y entornos sin pantalla; el gráfico es la interfaz principal en desarrollo activo.
+La consola sigue siendo referencia para entornos sin pantalla; el gráfico es la interfaz principal (incluye feedback e info del juego).
 
 ### Datos
 
-Ver [`Data/README.md`](Data/README.md). Imprescindibles: `CSV/Preguntas.csv`, `CSV/listado_materias.csv`. Modo historia: `CSV/Historic_qualificacions_MatCAD_completo.csv`, `JSON/presets_historia.json`. Modo resistencia: `JSON/preguntas_resistencia.json`, `JSON/ranking_resistencia_infinita.json`, `JSON/ranking_reto_dia.json`. Modo con plantillas: `JSON/plantillas.json`.
+Ver [`Data/README.md`](Data/README.md). Imprescindibles: `Data/Banco/Preguntas.csv`, `listado_materias.csv`. Modo historia: `Historic_qualificacions_MatCAD_completo.csv`, `Data/Juego/presets_historia.json`. Modo resistencia: `Data/Juego/preguntas_resistencia.json`, rankings en `Data/Juego/`. Modo con plantillas: `Data/Banco/plantillas.json`.
 
-Configuración privada del creador (SMTP, GitHub, etc.): `Data/JSON/creador_privado.json` (local; plantilla en [`Juego/Consola/config_creador.py`](Juego/Consola/config_creador.py)).
+Configuración privada del creador (SMTP, GitHub, etc.): `Data/Banco/creador_privado.json` (local; plantilla en [`Juego/Consola/config_creador.py`](Juego/Consola/config_creador.py)).
 
 ## Ejecutable (opcional, local)
 
@@ -102,8 +95,8 @@ python -m unittest discover -s Tests -v
 Solo juego o solo scripts:
 
 ```bash
-python -m unittest discover -s Tests/Juego -v
-python -m unittest discover -s Tests/Scripts -v
+python -m unittest discover -s Tests -v
+python -m unittest discover -s Files -p "test_*.py" -v
 ```
 
 Ver [`Tests/README.md`](Tests/README.md).
@@ -124,7 +117,7 @@ Ficheros: `.github/workflows/tests.yml`, `pr_agent.yml`, `sonarcloud.yml`, `.pre
 
 ```bash
 pre-commit run --all-files
-mypy Juego/Consola Files/Scripts
+mypy Juego/Consola Files
 ```
 
 ## Dependencias
@@ -135,15 +128,27 @@ El juego en consola solo necesita Python 3.10+ (stdlib). Para scripts de manteni
 pip install -r requirements.txt
 ```
 
-Pandoc (binario externo) para `exportar_memoria.py`.
+Pandoc (binario externo) para la exportación Word (`utilidades_tfg.py`).
 
-## Limpieza
+## Utilidades locales
+
+Por defecto limpia temporales **y** regenera los Word de la memoria:
 
 ```bash
-python borrar_temporales.py
-python borrar_temporales.py --dry-run
-python borrar_temporales.py --solo-pycache
-python borrar_temporales.py --solo-txt
+python utilidades_tfg.py
+python utilidades_tfg.py --dry-run          # listar limpieza sin borrar; luego exporta
+python utilidades_tfg.py --solo-limpieza
+python utilidades_tfg.py --solo-memoria
 ```
 
-Recorre todo el proyecto para `__pycache__`. Los `.txt` solo en `Juego/Informes/` y `Juego/Feedback/`.
+Limpieza acotada:
+
+```bash
+python utilidades_tfg.py --solo-limpieza --solo-pycache
+python utilidades_tfg.py --solo-limpieza --solo-juego
+python utilidades_tfg.py --solo-limpieza --solo-txt
+```
+
+Recorre todo el proyecto para `__pycache__` y cachés. En `Data/Juego/` **elimina del disco** lo generado al jugar (`preferencias_*.json`, `ranking_*.json`, `*.txt`).
+
+Desde el juego: **borrar** `.txt`; **vaciar** preferencias y rankings (los `.json` se conservan). Presets y pool de resistencia no se tocan en ningún caso.

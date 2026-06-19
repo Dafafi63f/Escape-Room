@@ -14,11 +14,15 @@ __all__ = [
     "EmojiPar",
     "OpcionMenuPrincipal",
     "OPCIONES_MENU_PRINCIPAL",
+    "OPCION_INFO_GRAFICO",
     "BTN_ABANDONAR",
+    "BTN_APUESTA_NO",
+    "BTN_APUESTA_SI",
     "BTN_ATRAS",
     "BTN_CONTINUAR",
     "BTN_CONTINUAR_PARTIDA",
     "BTN_EMPEZAR",
+    "BTN_ENVIAR",
     "BTN_GUARDAR_INFORME",
     "BTN_REPETIR_PARTIDA",
     "BTN_CAMBIAR_OPCIONES",
@@ -28,6 +32,7 @@ __all__ = [
     "BTN_VER_RANKING",
     "BTN_BORRAR_RANKING",
     "BTN_BORRAR_TXT_INFORMES",
+    "BTN_VACIAR_PREFERENCIAS",
     "BTN_VOLVER",
     "BTN_VOLVER_MENU",
     "con_emoji",
@@ -77,8 +82,9 @@ def resolver_emoji(emoji: str | EmojiPar, *, contexto: ContextoUi = "grafico") -
 _EMOJI_ICONO: dict[str, EmojiPar] = {
     "diarios": _p("📅"),
     "feedback": _p("📣"),
+    "info": _p("ℹ️", "📋"),
     "pausa": _p("⏯", "⏸️"),
-    "ranking": _p("🏆"),
+    "ranking": _p("ℹ️", "📋"),
     "opciones": _p("⚙️"),
 }
 
@@ -88,6 +94,7 @@ _EMOJI_TITULO: dict[str, EmojiPar] = {
     "MODO LIBRE": _p("🎮"),
     "MODO HISTORIA": _p("📖", "📕"),
     "MODO FEEDBACK": _p("📣"),
+    "INFO DEL JUEGO": _p("ℹ️", "📋"),
     "PAUSA": _p("⏯", "⏸️"),
     "FIN DE PARTIDA": _p("🏁"),
     "PARTIDA ABANDONADA": _p("⚠️"),
@@ -360,6 +367,8 @@ OPCIONES_MENU_PRINCIPAL: tuple[OpcionMenuPrincipal, ...] = (
     OpcionMenuPrincipal("salir", "Salir", _p("🚪")),
 )
 
+OPCION_INFO_GRAFICO = OpcionMenuPrincipal("info", "Info del juego", _p("ℹ️", "📋"))
+
 # Navegación: mismo emoji por dirección (atrás / adelante).
 _EMOJI_ATRAS = _p("◀️")
 _EMOJI_ADELANTE = _p("▶️")
@@ -369,12 +378,16 @@ BTN_VOLVER_MENU = ("Volver al menú", _EMOJI_ATRAS)
 BTN_ATRAS = ("Atrás", _EMOJI_ATRAS)
 BTN_SIGUIENTE = ("Siguiente", _EMOJI_ADELANTE)
 BTN_EMPEZAR = ("Empezar partida", _EMOJI_ADELANTE)
+BTN_ENVIAR = ("Enviar", _p("📤"))
 BTN_CONTINUAR = ("Continuar", _EMOJI_ADELANTE)
 BTN_CONTINUAR_PARTIDA = ("Continuar la partida", _EMOJI_ADELANTE)
 BTN_ABANDONAR = ("Abandonar", _p("🛑"))
+BTN_APUESTA_SI = ("✅", "")
+BTN_APUESTA_NO = ("❌", "")
 BTN_VER_RANKING = ("Ver ranking", _p("🏆"))
-BTN_BORRAR_RANKING = ("Borrar historial", _p("🗑️"))
+BTN_BORRAR_RANKING = ("Vaciar historial", _p("🗑️"))
 BTN_BORRAR_TXT_INFORMES = ("Borrar informes y feedback", _p("🗑️"))
+BTN_VACIAR_PREFERENCIAS = ("Restablecer preferencias", _p("↺"))
 BTN_GUARDAR_INFORME = ("Guardar informe y volver", _p("💾"))
 BTN_REPETIR_PARTIDA = ("Repetir partida", _p("🔁"))
 BTN_CAMBIAR_OPCIONES = ("Cambiar opciones", _p("⚙️"))
