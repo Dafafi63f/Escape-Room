@@ -267,7 +267,7 @@ Balance estructural del CSV & \texttt{mantenimiento.py validar} \\
 Revisión manual del contenido & 480/480 ítems revisados; validación automatizada \\
 Auditoría de distractores & \texttt{mantenimiento.py auditar-distractores} (terminal; \texttt{--json} opcional) \\
 Duplicados semánticos & \texttt{duplicados.py revisar} (0 pares similares en CSV y plantillas intra-materia, 2026-06-15) \\
-Pruebas de regresión & \texttt{python -m unittest discover -s Tests -v} (\textbf{246} tests: 238 + 8 en \texttt{Files/}) \\
+Pruebas de regresión & \texttt{python -m unittest discover -s Tests -v} (\textbf{258} tests: 250 + 8 en \texttt{Files/}) \\
 Integración continua & GitHub Actions (\texttt{.github/workflows/tests.yml}) \\
 Revisión con profesorado & Identificación de solapamiento temático y prerrequisitos (véase §6.2) \\
 Simulación Monte Carlo (respuestas al azar) & \texttt{Files/simulacion\_evaluacion\_azar.py} (véase §5.7) \\
@@ -370,7 +370,7 @@ Diagrama detallado (40 materias con posición curricular): \texttt{Data/README.m
 
 \subsection{Herramientas de mantenimiento}
 
-Se desarrolló un conjunto de scripts en \texttt{Files/} con punto de entrada unificado (\texttt{mantenimiento.py}): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en \texttt{utils\_plantillas\_core.py}, compartida con \texttt{Juego/Comun/datos.py}. Los datos del juego se organizan en \texttt{Data/Banco/} (banco y catálogos) y \texttt{Data/Juego/} (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en \texttt{Tests/} (\textbf{246} tests) con CI en GitHub Actions. Catálogo de comandos: \texttt{Files/README.md}.
+Se desarrolló un conjunto de scripts en \texttt{Files/} con punto de entrada unificado (\texttt{mantenimiento.py}): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en \texttt{utils\_plantillas\_core.py}, compartida con \texttt{Juego/Comun/datos.py}. Los datos del juego se organizan en \texttt{Data/Banco/} (banco y catálogos) y \texttt{Data/Juego/} (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en \texttt{Tests/} (\textbf{258} tests) con CI en GitHub Actions. Catálogo de comandos: \texttt{Files/README.md}.
 
 \subsection{Síntesis cuantitativa}
 
@@ -382,7 +382,7 @@ Preguntas en banco de producción & 480 \\
 Materias cubiertas & 40 \\
 Módulos Python del juego (\texttt{Comun/} + \texttt{Grafico/}) & $\sim$35 \\
 Modos de juego operativos & 4 \\
-Pruebas automatizadas & 246 \\
+Pruebas automatizadas & 258 \\
 Grupos temáticos modelados & 10 \\
 \bottomrule
 \end{tabular}
@@ -478,7 +478,7 @@ OE1 & Narrativa interactiva & Pendiente (futuro) & Sin guion de escenas/salas im
 OE2 & Retos por materias & \textbf{Cumplido} & Banco 480 ítems, Teoría/Cálculo, tres dificultades \\
 OE3 & Validación de respuestas & \textbf{Cumplido} & Motor A--D, puntuación, vidas, informes \\
 OE4 & Interfaz gráfica & \textbf{Cumplido} & \texttt{juego\_grafico.py} con libre, historia, resistencia y feedback; tooltips y barra superior \\
-OE5 & Valor formativo & \textbf{Parcialmente cumplido} & Banco validado, 246 tests + CI; sin estudio con usuarios \\
+OE5 & Valor formativo & \textbf{Parcialmente cumplido} & Banco validado, 258 tests + CI; sin estudio con usuarios \\
 \bottomrule
 \end{tabular}
 \fintabla

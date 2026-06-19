@@ -35,7 +35,7 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
 | [`Docs/`](Docs/README.md) | Changelogs, `Entrega/` (memoria md/tex/docx), `Figuras/` |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias (**246** tests: 238 en `Tests/` + 8 en `Files/`) y CI |
+| [`Tests/`](Tests/README.md) | Pruebas unitarias (**258** tests: 250 en `Tests/` + 8 en `Files/`) y CI |
 | [`utilidades_tfg.py`](utilidades_tfg.py) | Limpieza + exportación Word (por defecto ambas) |
 | [`requirements.txt`](requirements.txt) | Dependencias (pandas, matplotlib, pyinstaller, pygame-ce, mypy, pre-commit) |
 

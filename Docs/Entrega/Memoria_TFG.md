@@ -186,7 +186,7 @@ La arquitectura del software se organiza en capas desacopladas (figura 1): el la
 | Revisión manual del contenido | 480/480 ítems revisados; validación automatizada |
 | Auditoría de distractores | `mantenimiento.py auditar-distractores` (terminal; `--json` opcional) |
 | Duplicados semánticos | `duplicados.py revisar` (0 pares similares en CSV y plantillas intra-materia, 2026-06-15) |
-| Pruebas de regresión | `python -m unittest discover -s Tests -v` (**246** tests: 238 + 8 en `Files/`) |
+| Pruebas de regresión | `python -m unittest discover -s Tests -v` (**258** tests: 250 + 8 en `Files/`) |
 | Integración continua | GitHub Actions (`.github/workflows/tests.yml`) |
 | Revisión con profesorado | Identificación de solapamiento temático y prerrequisitos (véase §6.2) |
 | Simulación Monte Carlo (respuestas al azar) | `Files/simulacion_evaluacion_azar.py` (véase §5.7) |
@@ -269,7 +269,7 @@ Diagrama detallado (40 materias con posición curricular): [`Data/README.md`](..
 
 ### 5.4 Herramientas de mantenimiento
 
-Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en `utils_plantillas_core.py`, compartida con `Juego/Comun/datos.py`. Los datos del juego se organizan en `Data/Banco/` (banco y catálogos) y `Data/Juego/` (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en `Tests/` (**246** tests) con CI en GitHub Actions. Catálogo de comandos: [`Files/README.md`](../../Files/README.md).
+Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en `utils_plantillas_core.py`, compartida con `Juego/Comun/datos.py`. Los datos del juego se organizan en `Data/Banco/` (banco y catálogos) y `Data/Juego/` (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en `Tests/` (**258** tests) con CI en GitHub Actions. Catálogo de comandos: [`Files/README.md`](../../Files/README.md).
 
 ### 5.5 Síntesis cuantitativa
 
@@ -279,7 +279,7 @@ Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado
 | Materias cubiertas | 40 |
 | Módulos Python del juego (`Comun/` + `Grafico/`) | ~35 |
 | Modos de juego operativos | 4 |
-| Pruebas automatizadas | 246 |
+| Pruebas automatizadas | 258 |
 | Grupos temáticos modelados | 10 |
 
 ### 5.6 Validación analítica del modo historia (H3)
@@ -353,7 +353,7 @@ El **objetivo general** se cumple de forma parcial: existe un juego educativo in
 | OE2 | Retos por materias | **Cumplido** | Banco 480 ítems, Teoría/Cálculo, tres dificultades |
 | OE3 | Validación de respuestas | **Cumplido** | Motor A–D, puntuación, vidas, informes |
 | OE4 | Interfaz gráfica | **Cumplido** | `juego_grafico.py` con libre, historia, resistencia y feedback; tooltips y barra superior |
-| OE5 | Valor formativo | **Parcialmente cumplido** | Banco validado, 246 tests + CI; sin estudio con usuarios |
+| OE5 | Valor formativo | **Parcialmente cumplido** | Banco validado, 258 tests + CI; sin estudio con usuarios |
 
 Los **objetivos específicos** OE2, OE3, OE4 y OE5 están cubiertos en la versión pygame. OE1 (narrativa gráfica completa tipo escape room) queda como trabajo futuro. El enfoque incremental —primero validar el núcleo evaluable, después la capa visual— permitió concentrar el esfuerzo en un único lanzador mantenible.
 

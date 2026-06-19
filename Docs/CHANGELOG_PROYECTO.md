@@ -28,7 +28,7 @@ Regenerar figuras: `python Docs/generar_figuras_memoria.py` · Word: `python uti
 | **Banco de preguntas** | Cerrado | 480/480 revisadas; `Preguntas.csv` protegido (`TFG_PERMITIR_CSV=1` para escribir) |
 | **Juego (pygame)** | Operativo | 4 modos: libre, historia, resistencia, feedback |
 | **Scripts mantenimiento** | Operativo | `Files/mantenimiento.py` (scripts en `Files/`) |
-| **CI / pruebas** | Operativo | GitHub Actions; **246 tests** (238 + 8) |
+| **CI / pruebas** | Operativo | GitHub Actions; **258 tests** (250 + 8) |
 | **Interfaz gráfica / narrativa** | En desarrollo | Pygame operativo; narrativa escape room pendiente |
 | **Piloto con usuarios** | No realizado | Ver [`CHECKLIST.md`](CHECKLIST.md) |
 
@@ -202,11 +202,12 @@ Síntesis de **41 commits** en git (mayo–junio 2026) más el trabajo reciente 
 
 | Fecha | Ámbito | Cambio |
 |-------|--------|--------|
-| 2026-06-19 | Migración | Solo pygame: eliminado `Juego/Consola/`, módulos a `Comun/`, 246 tests |
+| 2026-06-19 | Entrega | Prep. informe: figuras y Word regenerados, limpieza, merge en `main` |
+| 2026-06-19 | Migración | Solo pygame: eliminado `Juego/Consola/`, módulos a `Comun/`, 258 tests |
 | 2026-06-19 | Build | PyInstaller: empaqueta `utils_plantillas_core` (`--paths Files`, hidden-import) |
 | 2026-06-19 | Build | PyInstaller: `build_exe_onefile.ps1` → `juego_grafico.exe` |
 | 2026-06-19 | Gráfico | Feedback, info, barra superior, contacto solo correo, changelogs separados |
-| 2026-06-19 | Docs | Documentación alineada: `Docs/`, `utilidades_tfg.py`, 246 tests |
+| 2026-06-19 | Docs | Documentación alineada: `Docs/`, `utilidades_tfg.py`, 258 tests |
 | 2026-06-18 | Gráfico | Barra de estado: chips emoji; resistencia con #N y racha |
 | 2026-06-18 | Juego | Resistencia: reto del día, apuestas, maldiciones, bloques |
 | 2026-06-18 | Repo | Limpieza `Revision/`; `BITACORA`→`CHANGELOG`, `TAREAS`→`CHECKLIST` |

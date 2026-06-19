@@ -14,6 +14,9 @@ Checklist **único** de trabajo pendiente e ideas futuras. El historial y el est
 
 ## Memoria y entrega
 
+- [x] Regenerar figuras (`Docs/generar_figuras_memoria.py`) y Word (`utilidades_tfg.py --solo-memoria`)
+- [x] Limpieza de temporales del repo (`utilidades_tfg.py --solo-limpieza`)
+- [x] Merge de la migración «solo pygame» en `main`
 - [ ] Editar maquetación en Word y exportar PDF de entrega
 - [ ] Releer el PDF final completo antes de entregar
 - [ ] Confirmar con el tutor si la estructura actual de la memoria es aceptable antes de pulir redacción
@@ -31,7 +34,7 @@ Checklist **único** de trabajo pendiente e ideas futuras. El historial y el est
 
 - [ ] Capa gráfica / narrativa escape room (OE1, OE4)
 - [ ] Piloto de usabilidad con estudiantes del grado (SUS, motivación, validez predictiva)
-- [x] Retirar consola — migración «solo pygame» completada en `feature/migracion`
+- [x] Retirar consola — migración «solo pygame» integrada en `main`
 
 ---
 

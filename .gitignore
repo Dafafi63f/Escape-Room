@@ -15,6 +15,7 @@ Juego/build/
 Juego/dist/
 Juego/*.spec
 Juego/juego_grafico.exe
+Juego/Data/
 
 # --- Compilación LaTeX (si compilas Docs/Entrega/Memoria_TFG.tex a mano) ---
 Docs/Entrega/*.aux
