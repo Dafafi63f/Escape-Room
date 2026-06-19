@@ -362,5 +362,3 @@ def resumen_estadisticas(
             f"n={st.n_registros}"
         )
     return "\n".join(lineas)
-
-

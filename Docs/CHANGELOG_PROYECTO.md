@@ -2,7 +2,7 @@
 
 Registro **vivo** del proyecto: snapshot de estado, feedback del tutor y changelog por sesiones. Las tareas abiertas están en [`CHECKLIST.md`](CHECKLIST.md).
 
-**Última actualización:** 2026-06-19  
+**Última actualización:** 2026-06-19
 **Alumno:** Daniel Fageda Figueredo · **Tutor:** Víctor Navas Portella
 
 En [`Docs/`](README.md): changelogs, checklist y memoria borrador. El repositorio no versiona PDFs.
