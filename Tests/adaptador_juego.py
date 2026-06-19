@@ -143,22 +143,22 @@ class BackendGrafico:
         self._opciones_reglas_libre = opciones_reglas_libre
         self._contexto_partida = contexto_partida
         self._reglas_desde_combinacion = reglas_desde_combinacion
-        self._DatosJuego = DatosJuego
+        self._datos_juego = DatosJuego
         self._cargar_materias = cargar_materias
         self._cargar_preguntas = cargar_preguntas
         self._path_materias = PATH_MATERIAS
         self._path_preguntas = PATH_PREGUNTAS
         self._resolver_plantillas = resolver_plantillas
         self._pregunta = Pregunta
-        self._EstadoPartida = EstadoPartida
-        self._ResultadoRespuesta = ResultadoRespuesta
+        self._estado_partida = EstadoPartida
+        self._resultado_respuesta = ResultadoRespuesta
         self._evaluar_respuesta = evaluar_respuesta
         self._linea_estado = linea_estado
 
     def cargar_datos(self) -> ResumenDatosJuego:
         materias_meta = self._cargar_materias(self._path_materias)
         preguntas_dataset = self._cargar_preguntas(self._path_preguntas, materias_meta)
-        datos = self._DatosJuego(
+        datos = self._datos_juego(
             num_preguntas=len(preguntas_dataset),
             num_materias=len(materias_meta),
             preguntas=preguntas_dataset,
@@ -221,12 +221,12 @@ class BackendGrafico:
         letra: str = "B",
         tiempo_agotado: bool = False,
     ) -> ResultadoEvaluacion:
-        estado = self._EstadoPartida(
+        estado = self._estado_partida(
             nombre="Test",
             reglas=reglas,
             vidas_restantes=reglas.vidas,
         )
-        resultado = self._ResultadoRespuesta(
+        resultado = self._resultado_respuesta(
             acierto=acierto,
             respuesta=letra,
             tiempo_agotado=tiempo_agotado,
@@ -252,7 +252,7 @@ class BackendGrafico:
         vidas: int | None = None,
         segundos_pregunta: int | None = None,
     ) -> str:
-        estado = self._EstadoPartida(
+        estado = self._estado_partida(
             nombre="Test",
             reglas=reglas,
             vidas_restantes=vidas if vidas is not None else reglas.vidas,

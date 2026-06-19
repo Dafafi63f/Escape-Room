@@ -160,6 +160,34 @@ def _onerror_rmtree(
     raise exc
 
 
+def _intentar_rmdir_vacio(carpeta: Path) -> tuple[int, int]:
+    try:
+        if not carpeta.is_dir() or any(carpeta.iterdir()):
+            return 0, 0
+        carpeta.rmdir()
+        return 1, 0
+    except OSError:
+        return 0, 1
+
+
+def _descendientes_vacios_ordenados(carpeta: Path) -> list[Path]:
+    return sorted(
+        (p for p in carpeta.rglob("*") if p.is_dir()),
+        key=lambda p: len(p.parts),
+        reverse=True,
+    )
+
+
+def _eliminar_directorios_vacios_lista(directorios: list[Path]) -> tuple[int, int]:
+    borradas = 0
+    errores = 0
+    for actual in directorios:
+        ok, err = _intentar_rmdir_vacio(actual)
+        borradas += ok
+        errores += err
+    return borradas, errores
+
+
 def _limpiar_arbol_vacios(carpeta: Path) -> tuple[int, int]:
     """Elimina ``carpeta`` y descendientes vacíos (varias pasadas, de hoja a raíz)."""
     if not carpeta.is_dir():
@@ -168,27 +196,16 @@ def _limpiar_arbol_vacios(carpeta: Path) -> tuple[int, int]:
     errores = 0
     while True:
         eliminadas_paso = 0
-        descendientes = sorted(
-            (p for p in carpeta.rglob("*") if p.is_dir()),
-            key=lambda p: len(p.parts),
-            reverse=True,
-        )
-        for actual in descendientes:
-            try:
-                if not any(actual.iterdir()):
-                    actual.rmdir()
-                    borradas += 1
-                    eliminadas_paso += 1
-            except OSError:
-                errores += 1
-        if carpeta.is_dir() and not any(carpeta.iterdir()):
-            try:
-                carpeta.rmdir()
-                borradas += 1
-                eliminadas_paso += 1
-            except OSError:
-                errores += 1
-                break
+        ok, err = _eliminar_directorios_vacios_lista(_descendientes_vacios_ordenados(carpeta))
+        borradas += ok
+        errores += err
+        eliminadas_paso += ok
+        ok, err = _intentar_rmdir_vacio(carpeta)
+        borradas += ok
+        errores += err
+        eliminadas_paso += ok
+        if err:
+            break
         if eliminadas_paso == 0:
             break
     return borradas, errores
@@ -219,23 +236,29 @@ def _alcanzo_limite(actual: Path, limite: Path) -> bool:
         return actual == limite
 
 
+def _intentar_rmdir_cadena_vacia(actual: Path) -> tuple[bool, int, int]:
+    """Devuelve ``(continuar, borradas, errores)`` al subir por ancestros vacíos."""
+    if not actual.is_dir():
+        return False, 0, 0
+    try:
+        if any(actual.iterdir()):
+            return False, 0, 0
+        actual.rmdir()
+        return True, 1, 0
+    except OSError:
+        return False, 0, 1
+
+
 def _eliminar_carpetas_vacias_hacia_arriba(hoja: Path, limite: Path) -> tuple[int, int]:
     """Elimina ``hoja`` y ancestros vacíos hasta ``limite`` (sin borrar ``limite``)."""
     borradas = 0
     errores = 0
     actual = hoja
-    while not _alcanzo_limite(actual, limite):
-        if actual == actual.parent:
-            break
-        if not actual.is_dir():
-            break
-        try:
-            if any(actual.iterdir()):
-                break
-            actual.rmdir()
-            borradas += 1
-        except OSError:
-            errores += 1
+    while not _alcanzo_limite(actual, limite) and actual != actual.parent:
+        continuar, ok, err = _intentar_rmdir_cadena_vacia(actual)
+        borradas += ok
+        errores += err
+        if not continuar:
             break
         actual = actual.parent
     return borradas, errores
@@ -251,26 +274,30 @@ def _limpiar_carpetas_data_juego_vacias(raiz: Path) -> tuple[int, int]:
     return total_borradas, total_errores
 
 
+def _es_limite_limpieza(carpeta: Path, limite: Path) -> bool:
+    try:
+        return carpeta.resolve() == limite.resolve()
+    except OSError:
+        return carpeta == limite
+
+
+def _entrada_bloquea_removible(entrada: Path, limite: Path) -> bool:
+    if entrada.is_file():
+        return True
+    return entrada.is_dir() and not _carpeta_removible_tras_limpieza(entrada, limite)
+
+
 def _carpeta_removible_tras_limpieza(carpeta: Path, limite: Path) -> bool:
     """True si la carpeta está vacía o solo contiene subcarpetas también removibles."""
-    try:
-        if carpeta.resolve() == limite.resolve():
-            return False
-    except OSError:
-        if carpeta == limite:
-            return False
+    if _es_limite_limpieza(carpeta, limite):
+        return False
     if not carpeta.is_dir():
         return False
     try:
         entradas = list(carpeta.iterdir())
     except OSError:
         return False
-    for entrada in entradas:
-        if entrada.is_file():
-            return False
-        if entrada.is_dir() and not _carpeta_removible_tras_limpieza(entrada, limite):
-            return False
-    return True
+    return not any(_entrada_bloquea_removible(entrada, limite) for entrada in entradas)
 
 
 def _registrar_carpeta_listada(

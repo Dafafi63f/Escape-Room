@@ -57,8 +57,7 @@ def _data_root() -> Path:
     return _JUEGO_DIR.parent / "Data"
 
 
-def _asegurar_directorio(carpeta: Path) -> Path:
-    """Crea ``carpeta`` y corrige ficheros anómalos en la ruta (p. ej. tras limpieza parcial)."""
+def _ancestros_desde_hoja(carpeta: Path) -> list[Path]:
     partes: list[Path] = []
     actual = carpeta
     while True:
@@ -66,20 +65,27 @@ def _asegurar_directorio(carpeta: Path) -> Path:
         if actual.parent == actual:
             break
         actual = actual.parent
+    return list(reversed(partes))
 
-    for ruta in reversed(partes):
-        if ruta.is_file():
-            ruta.unlink()
-        if ruta.is_dir():
-            continue
-        try:
-            ruta.mkdir(exist_ok=True)
-        except OSError as exc:
-            winerror = getattr(exc, "winerror", None)
-            if winerror == 183 or isinstance(exc, FileExistsError):
-                if ruta.is_dir():
-                    continue
-            raise
+
+def _crear_directorio_si_falta(ruta: Path) -> None:
+    if ruta.is_file():
+        ruta.unlink()
+    if ruta.is_dir():
+        return
+    try:
+        ruta.mkdir(exist_ok=True)
+    except OSError as exc:
+        winerror = getattr(exc, "winerror", None)
+        if (winerror == 183 or isinstance(exc, FileExistsError)) and ruta.is_dir():
+            return
+        raise
+
+
+def _asegurar_directorio(carpeta: Path) -> Path:
+    """Crea ``carpeta`` y corrige ficheros anómalos en la ruta (p. ej. tras limpieza parcial)."""
+    for ruta in _ancestros_desde_hoja(carpeta):
+        _crear_directorio_si_falta(ruta)
     return carpeta
 
 
