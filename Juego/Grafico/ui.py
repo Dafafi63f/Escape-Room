@@ -340,7 +340,6 @@ def cuadricula_rects(
     if cantidad <= 0:
         return []
     columnas = max(1, columnas)
-    filas = (cantidad + columnas - 1) // columnas
     ancho_fila = columnas * ancho_item + max(0, columnas - 1) * separacion_x
     x0 = (ancho_pantalla - ancho_fila) // 2
     rects: list[pygame.Rect] = []

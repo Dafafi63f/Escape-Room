@@ -85,7 +85,7 @@ def resolver_changelog() -> Path | None:
     return resolver_changelog_proyecto()
 
 
-def _añadir_parrafo_vacio(salida: list[str]) -> None:
+def _anadir_parrafo_vacio(salida: list[str]) -> None:
     if salida and salida[-1] != "":
         salida.append("")
 
@@ -94,7 +94,7 @@ def _procesar_titulo_md(limpia: str, salida: list[str]) -> None:
     titulo = re.sub(r"^#+\s*", "", limpia).strip()
     if not titulo:
         return
-    _añadir_parrafo_vacio(salida)
+    _anadir_parrafo_vacio(salida)
     salida.append(titulo)
 
 
@@ -117,7 +117,7 @@ def simplificar_changelog_para_ui(texto: str) -> str:
         if en_bloque_codigo:
             continue
         if not limpia:
-            _añadir_parrafo_vacio(salida)
+            _anadir_parrafo_vacio(salida)
             continue
         if limpia.startswith("|"):
             continue

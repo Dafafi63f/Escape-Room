@@ -69,9 +69,10 @@ def listar_ficheros_runtime_juego() -> tuple[list[Path], list[Path], list[Path]]
     carpeta = dir_data_juego()
     if not carpeta.is_dir():
         return [], [], []
-    preferencias = sorted(p for p in carpeta.glob("preferencias_grafico.json") if p.is_file())
-    legado = sorted(p for p in carpeta.glob("preferencias_ranking.json") if p.is_file())
-    preferencias = sorted(set(preferencias) | set(legado))
+    preferencias = sorted(
+        {p for p in carpeta.glob("preferencias_grafico.json") if p.is_file()}
+        | {p for p in carpeta.glob("preferencias_ranking.json") if p.is_file()}
+    )
     rankings = sorted(p for p in carpeta.glob("ranking_*.json") if p.is_file())
     txt = sorted(p for p in carpeta.glob("*.txt") if p.is_file())
     return preferencias, rankings, txt

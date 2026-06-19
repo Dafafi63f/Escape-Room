@@ -746,7 +746,7 @@ class ConfigFiltrosLibre(Pantalla):
         self.ir_a = ir_a
         self.salir_app = salir_app
         self.estado = estado
-        self.reglas = estado.reglas
+        self.reglas: ReglasPartida = estado.reglas
         self.modo_infinito = estado.modo_infinito
         self.total_elegido = estado.total_elegido
         self.mensaje = ""
@@ -1073,14 +1073,15 @@ class ConfigFiltrosLibre(Pantalla):
                 boton.seleccionado = clave in seleccion
 
     def _construir_reglas_finales(self) -> ReglasPartida:
-        reglas = replace(
+        reglas: ReglasPartida = replace(
             self.reglas,
             mostrar_solucion_tras_fallo=False,
             mostrar_aciertos_en_curso=False,
         )
+        ctx: ContextoPartida = self._contexto()
         return validar_reglas(
             reglas,
-            self._contexto(),
+            ctx,
             modo_infinito=self.modo_infinito,
             n_preguntas=self._n_preguntas_efectivas(),
         )
@@ -1161,7 +1162,6 @@ class ConfigFiltrosLibre(Pantalla):
         reglas = self._construir_reglas_finales()
         return PartidaModoLibre(
             nombre=self.estado.nombre,
-            preguntas=pool,
             pool=pool,
             reglas=reglas,
             ir_a=self.ir_a,

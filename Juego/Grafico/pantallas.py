@@ -18,6 +18,7 @@ from Comun.dificultad import (
     techo_complejidad_partida,
 )
 from Comun.modelos import Pregunta
+from Comun.reglas_partida import ReglasPartida
 from Comun.motor_nucleo import (
     EstadoPartida,
     ResultadoRespuesta,
@@ -280,12 +281,11 @@ class PartidaModoLibre(Pantalla):
         self,
         *,
         nombre: str,
-        preguntas: list[Pregunta],
-        reglas,
+        pool: list[Pregunta],
+        reglas: ReglasPartida,
         ir_a: Callable[[Pantalla], None],
         datos: DatosJuego,
         salir_app: Callable[[], None],
-        pool: list[Pregunta] | None = None,
         infinito: bool = False,
         total_previsto: int | None = None,
         complejidad_min: int = 1,
@@ -295,7 +295,7 @@ class PartidaModoLibre(Pantalla):
         navegacion_fin: NavegacionFinPartida | None = None,
     ) -> None:
         self.nombre = nombre
-        self.pool = list(pool or preguntas)
+        self.pool = list(pool)
         self.infinito = infinito
         self.total = None if infinito else (total_previsto or len(self.pool))
         if niveles_complejidad is not None:

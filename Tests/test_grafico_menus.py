@@ -633,7 +633,7 @@ class TestHoverTooltipsGrafico(unittest.TestCase):
         )
         self.app.actual = PartidaModoLibre(
             nombre="Test",
-            preguntas=[p],
+            pool=[p],
             reglas=reglas,
             ir_a=self.ir_a,
             datos=self.datos,
