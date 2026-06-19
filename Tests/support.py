@@ -24,3 +24,11 @@ def ensure_root_on_path() -> None:
 def ensure_juego_path() -> None:
     ensure_root_on_path()
     _prepend(JUEGO_DIR)
+
+
+def emoji_font_disponible() -> bool:
+    """True si el runner tiene fuente emoji (p. ej. Noto Color Emoji en CI)."""
+    ensure_juego_path()
+    from Grafico.fuentes import fuente_disponible
+
+    return fuente_disponible("emoji")

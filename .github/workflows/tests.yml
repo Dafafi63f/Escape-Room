@@ -6,7 +6,7 @@ on:
   pull_request:
 
 env:
-  PYTHONPATH: Juego
+  PYTHONPATH: ${{ github.workspace }}/Juego
   SDL_VIDEODRIVER: dummy
   SDL_AUDIODRIVER: dummy
 
@@ -37,8 +37,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Install fonts for pygame emoji tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fonts-noto-color-emoji fontconfig
+          fc-cache -f
+
       - name: Tests juego
-        run: python -m unittest discover -s Tests -v
+        run: python -m unittest discover -s Tests -t . -v
 
       - name: Tests Files
         run: python -m unittest discover -s Files -p "test_*.py" -v
@@ -56,8 +62,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Install fonts for pygame emoji tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fonts-noto-color-emoji fontconfig
+          fc-cache -f
+
       - name: Suite juego
-        run: python -m unittest discover -s Tests -v
+        run: python -m unittest discover -s Tests -t . -v
 
       - name: Suite Files
         run: python -m unittest discover -s Files -p "test_*.py" -v

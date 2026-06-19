@@ -29,7 +29,9 @@ if str(_FILES) not in sys.path:
 ROOT = _FILES.parent
 
 if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if callable(reconfigure):
+        reconfigure(encoding="utf-8", errors="replace")
 
 from utils_dataset_csv import borrar_pycache_en_proyecto  # noqa: E402
 

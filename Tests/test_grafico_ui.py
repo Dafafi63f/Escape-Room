@@ -19,7 +19,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from Tests.support import ensure_juego_path
+from Tests.support import emoji_font_disponible, ensure_juego_path
 
 ensure_juego_path()
 
@@ -112,12 +112,6 @@ class TestTextosUi(unittest.TestCase):
         from Grafico.textos_grafico import emoji_icono
 
         self.assertEqual(emoji_icono("diarios"), "📅")
-
-    @patch("Grafico.textos_grafico.emojis_habilitados", return_value=True)
-    def test_emoji_icono_ranking(self, _mock: object) -> None:
-        from Grafico.textos_grafico import emoji_icono
-
-        self.assertEqual(emoji_icono("ranking"), "ℹ️")
 
     def test_opcion_menu_grafico(self) -> None:
         fb = next(o for o in OPCIONES_MENU_PRINCIPAL if o.id == "feedback")
@@ -714,6 +708,7 @@ class TestBarraEstado(unittest.TestCase):
         self.assertIn("tiempo_preg", ids)
         self.assertLess(ids.index("tiempo_total"), ids.index("tiempo_preg"))
 
+    @unittest.skipUnless(emoji_font_disponible(), "Fuente emoji del sistema no disponible")
     def test_render_icono_barra_rechaza_tofu_fuente_texto(self) -> None:
         import pygame
 

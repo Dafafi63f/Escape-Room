@@ -9,13 +9,19 @@ Pruebas en directorio plano `Tests/` (juego, gráfico, consola). Tests de manten
 Desde la raíz del TFG:
 
 ```bash
-python -m unittest discover -s Tests -v
+python -m unittest discover -s Tests -t . -v
 python -m unittest discover -s Files -p "test_*.py" -v
 ```
 
 `Tests/support.py` configura `sys.path` hacia `Juego/`. Cada módulo `test_*.py` debe llamar a `ensure_juego_path()` antes de importar `Comun` o `Grafico`.
 
-En CI (`.github/workflows/tests.yml`) se fijan `PYTHONPATH=Juego` y `SDL_VIDEODRIVER=dummy` para pygame sin pantalla.
+```bash
+python -m unittest discover -s Tests -t . -v
+python -m unittest discover -s Files -p "test_*.py" -v
+python Files/mantenimiento.py validar
+```
+
+En CI (`.github/workflows/tests.yml`): `PYTHONPATH` absoluto a `Juego/`, `SDL_VIDEODRIVER=dummy` y fuentes Noto Color Emoji para tests de renderizado.
 
 ## CI
 
