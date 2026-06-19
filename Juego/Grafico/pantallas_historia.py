@@ -836,32 +836,38 @@ class ConfigOpcionesHistoria(Pantalla):
             )
         self._reposicionar_botones_navegacion()
 
+    def _items_opcion_curso(self, op: OpcionPreset) -> list[tuple[str, str]]:
+        items = [(c, f"Curso {c}") for c in cursos_disponibles(self.datos.materias_meta)]
+        if not op.obligatorio:
+            return [("", "Todo el grado")] + items
+        return items
+
+    def _items_opcion_semestre(self, op: OpcionPreset) -> list[tuple[str, str]]:
+        curso = self.config.valores.get("curso")
+        if not curso:
+            return []
+        items = [
+            (s, f"Semestre {s}")
+            for s in semestres_para_curso(self.datos.materias_meta, str(curso))
+        ]
+        if not op.obligatorio:
+            return [("", "Todo el curso")] + items
+        return items
+
     def _items_opcion(self, op_id: str) -> list[tuple[str, str]]:
-        for op in self.preset.opciones:
-            if op.id != op_id:
-                continue
-            if op.tipo == "curso":
-                items = [(c, f"Curso {c}") for c in cursos_disponibles(self.datos.materias_meta)]
-                if not op.obligatorio:
-                    return [("", "Todo el grado")] + items
-                return items
-            if op.tipo == "semestre":
-                curso = self.config.valores.get("curso")
-                if not curso:
-                    return []
-                items = [
-                    (s, f"Semestre {s}")
-                    for s in semestres_para_curso(self.datos.materias_meta, str(curso))
-                ]
-                if not op.obligatorio:
-                    return [("", "Todo el curso")] + items
-                return items
-            if op.tipo == "grupo":
-                return list(GRUPOS_TEMATICOS.items())
-            if op.tipo == "materia":
-                return [(m, m) for m in self.orden_materias]
-            if op.tipo == "eleccion":
-                return list(op.valores)
+        op = self._opcion_preset(op_id)
+        if op is None:
+            return []
+        if op.tipo == "curso":
+            return self._items_opcion_curso(op)
+        if op.tipo == "semestre":
+            return self._items_opcion_semestre(op)
+        if op.tipo == "grupo":
+            return list(GRUPOS_TEMATICOS.items())
+        if op.tipo == "materia":
+            return [(m, m) for m in self.orden_materias]
+        if op.tipo == "eleccion":
+            return list(op.valores)
         return []
 
     def _texto_valor_vacio(self, op: OpcionPreset) -> str:

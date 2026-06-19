@@ -593,20 +593,27 @@ class PartidaModoLibre(Pantalla):
     def titulo_pausa(self) -> str:
         return f"{self.nombre} · {self._linea_estado_actual()}"
 
+    def _actualizar_hover_partida_libre(self, pos: tuple[int, int]) -> None:
+        self.boton_abandonar.actualizar_hover(pos)
+        if self.fase != "pregunta":
+            return
+        for boton in self.botones_opcion:
+            boton.actualizar_hover(pos)
+
+    def _manejar_clic_partida_libre(self, pos: tuple[int, int], boton: int) -> bool:
+        if self.boton_abandonar.manejar_clic(pos, boton):
+            self._abandonar()
+            return True
+        if self.fase != "pregunta":
+            return False
+        return any(b.manejar_clic(pos, boton) for b in self.botones_opcion)
+
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
         if evento.type == pygame.MOUSEMOTION:
-            self.boton_abandonar.actualizar_hover(evento.pos)
-            if self.fase == "pregunta":
-                for boton in self.botones_opcion:
-                    boton.actualizar_hover(evento.pos)
+            self._actualizar_hover_partida_libre(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
-            if self.boton_abandonar.manejar_clic(evento.pos, evento.button):
-                self._abandonar()
+            if self._manejar_clic_partida_libre(evento.pos, evento.button):
                 return None
-            if self.fase == "pregunta":
-                for boton in self.botones_opcion:
-                    if boton.manejar_clic(evento.pos, evento.button):
-                        break
         return None
 
     def _dibujar_feedback(self, superficie: pygame.Surface) -> None:

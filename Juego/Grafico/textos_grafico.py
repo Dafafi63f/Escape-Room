@@ -127,11 +127,11 @@ def titulo_pantalla(texto: str) -> str:
     return texto.strip()
 
 
-def subtitulo(texto: str, emoji: str | EmojiPar = "📋") -> str:
+def subtitulo(texto: str, _emoji: str | EmojiPar = "📋") -> str:
     return texto.strip()
 
 
-def etiqueta_campo(clave: str, texto: str) -> str:
+def etiqueta_campo(_clave: str, texto: str) -> str:
     return texto
 
 

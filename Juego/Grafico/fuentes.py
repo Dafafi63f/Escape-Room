@@ -25,14 +25,17 @@ def _windir() -> Path:
     return Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts"
 
 
+_LINUX_LIBERATION_SANS = Path(
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+)
 _LINUX_DEJAVU_TEXTO = [
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
     Path("/usr/share/fonts/TTF/DejaVuSans.ttf"),
-    Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
+    _LINUX_LIBERATION_SANS,
 ]
 _LINUX_DEJAVU_MATH_SIM = [
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-    Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
+    _LINUX_LIBERATION_SANS,
 ]
 _LINUX_NOTO_EMOJI = [
     Path("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"),
