@@ -361,9 +361,10 @@ def procesar_turno_resistencia(
         fallo=fallo,
         numero_pregunta=indice_pregunta,
     )
-    if fallo and estado.reglas.tiene_vidas() and (estado.vidas_restantes or 0) <= 0:
-        feedback = replace(feedback, sin_vidas=True)
-    elif fallo and _fin_apuesta:
+    if fallo and (
+        (estado.reglas.tiene_vidas() and (estado.vidas_restantes or 0) <= 0)
+        or _fin_apuesta
+    ):
         feedback = replace(feedback, sin_vidas=True)
 
     avisos_post: list[str] = list(avisos_apuesta_fallo)

@@ -157,6 +157,30 @@ def tooltips_menu_pausa(*, en_partida: bool) -> tuple[str, str, str]:
     )
 
 
+def _tooltip_historia_eleccion(
+    op_id: str,
+    clave: str,
+    etiqueta_opcion: str,
+) -> str | None:
+    por_op = _TOOLTIP_ELECCION_HISTORIA.get(op_id, {})
+    if clave in por_op:
+        return por_op[clave]
+    return etiqueta_opcion or None
+
+
+def _tooltip_historia_entero(
+    op_id: str,
+    clave: str,
+    etiqueta_opcion: str,
+) -> str | None:
+    base = _TOOLTIP_OPCION_HISTORIA_ID.get(op_id)
+    if op_id == "tiempo_total_min" and clave in ("", "0"):
+        return "Sin límite de tiempo para completar el examen."
+    if base:
+        return base
+    return etiqueta_opcion or None
+
+
 def tooltip_opcion_ciclo_historia(
     op_id: str,
     tipo: str,
@@ -166,10 +190,7 @@ def tooltip_opcion_ciclo_historia(
 ) -> str | None:
     """Ayuda en la caja central ◀ valor ▶ del configurador de preset historia."""
     if tipo == "eleccion":
-        por_op = _TOOLTIP_ELECCION_HISTORIA.get(op_id, {})
-        if clave in por_op:
-            return por_op[clave]
-        return etiqueta_opcion or None
+        return _tooltip_historia_eleccion(op_id, clave, etiqueta_opcion)
     if tipo == "curso":
         if not clave:
             return "Sin filtro de curso: el preset puede abarcar todo el grado."
@@ -183,12 +204,7 @@ def tooltip_opcion_ciclo_historia(
     if tipo == "materia" and clave:
         return f"Preguntas centradas en {clave}."
     if tipo == "entero":
-        base = _TOOLTIP_OPCION_HISTORIA_ID.get(op_id)
-        if op_id == "tiempo_total_min" and clave in ("", "0"):
-            return "Sin límite de tiempo para completar el examen."
-        if base:
-            return base
-        return etiqueta_opcion or None
+        return _tooltip_historia_entero(op_id, clave, etiqueta_opcion)
     return _TOOLTIP_OPCION_HISTORIA_ID.get(op_id) or (etiqueta_opcion or None)
 
 

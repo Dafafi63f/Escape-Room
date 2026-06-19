@@ -43,16 +43,22 @@ _LINUX_NOTO_EMOJI = [
 ]
 
 
+_WIN_CAMBRIA_BOLD = "cambriab.ttf"
+_WIN_CAMBRIA = "cambria.ttc"
+
+
 def _candidatos_win32(familia: FamiliaFuente, bold: bool) -> list[Path]:
     fonts = _windir()
+    cambria_b = fonts / _WIN_CAMBRIA_BOLD
+    cambria = fonts / _WIN_CAMBRIA
     if familia == "texto":
         if bold:
-            return [fonts / "cambriab.ttf", fonts / "cambria.ttc"]
-        return [fonts / "cambria.ttc", fonts / "segoeuisymbol.ttf"]
+            return [cambria_b, cambria]
+        return [cambria, fonts / "segoeuisymbol.ttf"]
     if familia == "matematicas":
         if bold:
-            return [fonts / "cambriab.ttf", fonts / "cambria.ttc"]
-        return [fonts / "cambria.ttc", fonts / "cambriab.ttf"]
+            return [cambria_b, cambria]
+        return [cambria, cambria_b]
     if familia == "simbolos":
         return [fonts / "seguisym.ttf", fonts / "segoeuisymbol.ttf", fonts / "symbol.ttf"]
     return [fonts / "seguiemj.ttf", fonts / "segoeuiemoji.ttf"]
