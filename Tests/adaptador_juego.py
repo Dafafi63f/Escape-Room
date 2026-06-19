@@ -149,7 +149,7 @@ class BackendGrafico:
         self._path_materias = PATH_MATERIAS
         self._path_preguntas = PATH_PREGUNTAS
         self._resolver_plantillas = resolver_plantillas
-        self._Pregunta = Pregunta
+        self._pregunta = Pregunta
         self._EstadoPartida = EstadoPartida
         self._ResultadoRespuesta = ResultadoRespuesta
         self._evaluar_respuesta = evaluar_respuesta
@@ -267,7 +267,7 @@ class BackendGrafico:
         )
 
     def pregunta_ejemplo(self) -> Any:
-        return self._Pregunta(
+        return self._pregunta(
             texto="¿Cuál es 2+2?",
             materia="Test",
             tematica="T",

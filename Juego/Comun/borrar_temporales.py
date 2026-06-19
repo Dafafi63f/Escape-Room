@@ -25,6 +25,7 @@ import os
 import shutil
 import stat
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -143,7 +144,7 @@ def _rutas_limpieza_data_juego(raiz: Path) -> list[tuple[Path, Path]]:
 
 
 def _onerror_rmtree(
-    func: object,
+    func: Callable[[str], object],
     path: str,
     exc_info: tuple[type[BaseException], BaseException, object],
 ) -> None:
@@ -154,8 +155,7 @@ def _onerror_rmtree(
         isinstance(exc, OSError) and getattr(exc, "errno", None) in {13, 1}
     ):
         os.chmod(path, stat.S_IWRITE)
-        if callable(func):
-            func(path)
+        func(path)
         return
     raise exc
 
@@ -212,23 +212,19 @@ def _eliminar_data_junto_al_exe(raiz: Path) -> tuple[int, int]:
     return borradas, errores
 
 
+def _alcanzo_limite(actual: Path, limite: Path) -> bool:
+    try:
+        return actual.resolve() == limite.resolve()
+    except OSError:
+        return actual == limite
+
+
 def _eliminar_carpetas_vacias_hacia_arriba(hoja: Path, limite: Path) -> tuple[int, int]:
     """Elimina ``hoja`` y ancestros vacíos hasta ``limite`` (sin borrar ``limite``)."""
     borradas = 0
     errores = 0
-    try:
-        limite_resuelto = limite.resolve()
-    except OSError:
-        limite_resuelto = limite
-
     actual = hoja
-    while True:
-        try:
-            if actual.resolve() == limite_resuelto:
-                break
-        except OSError:
-            if actual == limite:
-                break
+    while not _alcanzo_limite(actual, limite):
         if actual == actual.parent:
             break
         if not actual.is_dir():
@@ -277,32 +273,41 @@ def _carpeta_removible_tras_limpieza(carpeta: Path, limite: Path) -> bool:
     return True
 
 
+def _registrar_carpeta_listada(
+    carpeta: Path,
+    resultado: list[Path],
+    vistos: set[Path],
+) -> None:
+    try:
+        clave = carpeta.resolve()
+    except OSError:
+        clave = carpeta
+    if clave in vistos:
+        return
+    vistos.add(clave)
+    resultado.append(carpeta)
+
+
+def _carpetas_data_juego_vacias_hacia_limite(hoja: Path, limite: Path) -> list[Path]:
+    resultado: list[Path] = []
+    vistos: set[Path] = set()
+    actual = hoja
+    while not _alcanzo_limite(actual, limite):
+        if actual == actual.parent:
+            break
+        if not _carpeta_removible_tras_limpieza(actual, limite):
+            break
+        _registrar_carpeta_listada(actual, resultado, vistos)
+        actual = actual.parent
+    return resultado
+
+
 def listar_carpetas_data_juego_vacias(raiz: Path | None = None) -> list[Path]:
     """Carpetas en ``Data/Juego/`` (raíz y junto al ``.exe``) que se eliminarían."""
     base = raiz or raiz_proyecto()
     resultado: list[Path] = []
-    vistos: set[Path] = set()
     for hoja, limite in _rutas_limpieza_data_juego(base):
-        actual = hoja
-        while True:
-            try:
-                if actual.resolve() == limite.resolve():
-                    break
-            except OSError:
-                if actual == limite:
-                    break
-            if actual == actual.parent:
-                break
-            if not _carpeta_removible_tras_limpieza(actual, limite):
-                break
-            try:
-                clave = actual.resolve()
-            except OSError:
-                clave = actual
-            if clave not in vistos:
-                vistos.add(clave)
-                resultado.append(actual)
-            actual = actual.parent
+        resultado.extend(_carpetas_data_juego_vacias_hacia_limite(hoja, limite))
     return resultado
 
 
@@ -416,6 +421,22 @@ def _es_data_exe(carpeta: Path, raiz: Path) -> bool:
         return False
 
 
+def _es_directorio_vacio_eliminable(carpeta: Path, eliminables: set[Path]) -> bool:
+    try:
+        entradas = list(carpeta.iterdir())
+    except OSError:
+        return False
+    if not entradas:
+        return True
+    if any(entrada.is_file() for entrada in entradas):
+        return False
+    return all(
+        _clave_ruta(entrada) in eliminables
+        for entrada in entradas
+        if entrada.is_dir()
+    )
+
+
 def listar_directorios_vacios(
     raiz: Path | None = None,
     *,
@@ -449,21 +470,7 @@ def listar_directorios_vacios(
         for carpeta in sorted(candidatos, key=lambda p: len(p.parts), reverse=True):
             if _clave_ruta(carpeta) in eliminables:
                 continue
-            try:
-                entradas = list(carpeta.iterdir())
-            except OSError:
-                continue
-            if not entradas:
-                vacio = True
-            elif any(entrada.is_file() for entrada in entradas):
-                vacio = False
-            else:
-                vacio = all(
-                    _clave_ruta(entrada) in eliminables
-                    for entrada in entradas
-                    if entrada.is_dir()
-                )
-            if vacio:
+            if _es_directorio_vacio_eliminable(carpeta, eliminables):
                 eliminables.add(_clave_ruta(carpeta))
                 changed = True
     return sorted(
@@ -616,6 +623,41 @@ def _imprimir_rutas(titulo: str, rutas: list[Path]) -> bool:
     return True
 
 
+def _imprimir_ficheros_txt(txt: list[Path]) -> None:
+    bytes_total = sum(p.stat().st_size for p in txt)
+    print(f".txt: {len(txt)} ficheros ({_formatear_tamano(bytes_total)})")
+    for p in txt:
+        print(f" - {p}")
+
+
+def _imprimir_ficheros_json(preferencias: list[Path], rankings: list[Path]) -> None:
+    json_locales = [*preferencias, *rankings]
+    bytes_total = sum(p.stat().st_size for p in json_locales)
+    print(
+        f"JSON runtime (se eliminarán): {len(json_locales)} ficheros "
+        f"({_formatear_tamano(bytes_total)})"
+    )
+    for p in json_locales:
+        print(f" - {p}")
+
+
+def _imprimir_carpetas_data_juego_vacias(carpetas_vacias: list[Path]) -> None:
+    print(f"carpetas vacías en Data/Juego/ (raíz): {len(carpetas_vacias)}")
+    for p in carpetas_vacias:
+        print(f" - {p}")
+
+
+def _imprimir_data_exe(data_junto_al_exe: Path) -> None:
+    print("Juego/Data/ (árbol del .exe, se eliminará entero):")
+    print(f" - {data_junto_al_exe}")
+
+
+def _imprimir_directorios_vacios_repo(directorios_vacios: list[Path]) -> None:
+    print(f"directorios vacíos en el repo: {len(directorios_vacios)}")
+    for p in directorios_vacios:
+        print(f" - {p}")
+
+
 def _imprimir_listado(
     *,
     pycache: list[Path],
@@ -638,38 +680,23 @@ def _imprimir_listado(
 
     if incluir_txt and txt:
         hay_algo = True
-        bytes_total = sum(p.stat().st_size for p in txt)
-        print(f".txt: {len(txt)} ficheros ({_formatear_tamano(bytes_total)})")
-        for p in txt:
-            print(f" - {p}")
+        _imprimir_ficheros_txt(txt)
 
     if incluir_json and (preferencias or rankings):
         hay_algo = True
-        json_locales = [*preferencias, *rankings]
-        bytes_total = sum(p.stat().st_size for p in json_locales)
-        print(
-            f"JSON runtime (se eliminarán): {len(json_locales)} ficheros "
-            f"({_formatear_tamano(bytes_total)})"
-        )
-        for p in json_locales:
-            print(f" - {p}")
+        _imprimir_ficheros_json(preferencias, rankings)
 
     if (incluir_txt or incluir_json) and carpetas_vacias:
         hay_algo = True
-        print(f"carpetas vacías en Data/Juego/ (raíz): {len(carpetas_vacias)}")
-        for p in carpetas_vacias:
-            print(f" - {p}")
+        _imprimir_carpetas_data_juego_vacias(carpetas_vacias)
 
     if (incluir_txt or incluir_json) and data_junto_al_exe is not None:
         hay_algo = True
-        print("Juego/Data/ (árbol del .exe, se eliminará entero):")
-        print(f" - {data_junto_al_exe}")
+        _imprimir_data_exe(data_junto_al_exe)
 
     if incluir_pycache and directorios_vacios:
         hay_algo = True
-        print(f"directorios vacíos en el repo: {len(directorios_vacios)}")
-        for p in directorios_vacios:
-            print(f" - {p}")
+        _imprimir_directorios_vacios_repo(directorios_vacios)
 
     return hay_algo
 
@@ -756,48 +783,83 @@ def _imprimir_resumen_post_borrado(
         )
 
 
+@dataclass(frozen=True)
+class _ArtefactosLimpieza:
+    preferencias: list[Path]
+    rankings: list[Path]
+    txt: list[Path]
+    pycache: list[Path]
+    cache_herramientas: list[Path]
+    carpetas_vacias: list[Path]
+    data_junto_al_exe: Path | None
+    directorios_vacios: list[Path]
+    incluir_pycache: bool
+    incluir_txt: bool
+    incluir_json: bool
+
+
+def _recolectar_artefactos_limpieza(
+    raiz: Path,
+    *,
+    incluir_pycache: bool,
+    incluir_txt: bool,
+    incluir_json: bool,
+) -> _ArtefactosLimpieza:
+    preferencias, rankings, txt = listar_ficheros_runtime_juego()
+    data_exe = dir_data_junto_al_exe(raiz)
+    return _ArtefactosLimpieza(
+        preferencias=preferencias if incluir_json else [],
+        rankings=rankings if incluir_json else [],
+        txt=txt if incluir_txt else [],
+        pycache=listar_pycache(raiz) if incluir_pycache else [],
+        cache_herramientas=listar_cache_herramientas(raiz) if incluir_pycache else [],
+        carpetas_vacias=(
+            listar_carpetas_data_juego_vacias(raiz) if (incluir_txt or incluir_json) else []
+        ),
+        data_junto_al_exe=data_exe if (incluir_txt or incluir_json) and data_exe.is_dir() else None,
+        directorios_vacios=(
+            listar_directorios_vacios(raiz, omitir_data_exe=incluir_txt or incluir_json)
+            if incluir_pycache
+            else []
+        ),
+        incluir_pycache=incluir_pycache,
+        incluir_txt=incluir_txt,
+        incluir_json=incluir_json,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     _configurar_stdout_utf8()
     args = _parser_borrar_temporales().parse_args(argv)
     incluir_pycache, incluir_txt, incluir_json = _alcance_borrado(args)
 
     raiz = raiz_proyecto()
-    preferencias, rankings, txt = listar_ficheros_runtime_juego()
-    pycache = listar_pycache(raiz) if incluir_pycache else []
-    cache_herramientas = listar_cache_herramientas(raiz) if incluir_pycache else []
-    carpetas_vacias = (
-        listar_carpetas_data_juego_vacias(raiz) if (incluir_txt or incluir_json) else []
-    )
-    data_exe = (
-        dir_data_junto_al_exe(raiz)
-        if (incluir_txt or incluir_json) and dir_data_junto_al_exe(raiz).is_dir()
-        else None
-    )
-    directorios_vacios = (
-        listar_directorios_vacios(raiz, omitir_data_exe=incluir_txt or incluir_json)
-        if incluir_pycache
-        else []
-    )
-
-    if not _imprimir_listado(
-        pycache=pycache,
-        cache_herramientas=cache_herramientas,
-        preferencias=preferencias if incluir_json else [],
-        rankings=rankings if incluir_json else [],
-        txt=txt if incluir_txt else [],
-        carpetas_vacias=carpetas_vacias,
-        data_junto_al_exe=data_exe,
-        directorios_vacios=directorios_vacios,
+    artefactos = _recolectar_artefactos_limpieza(
+        raiz,
         incluir_pycache=incluir_pycache,
         incluir_txt=incluir_txt,
         incluir_json=incluir_json,
+    )
+
+    if not _imprimir_listado(
+        pycache=artefactos.pycache,
+        cache_herramientas=artefactos.cache_herramientas,
+        preferencias=artefactos.preferencias,
+        rankings=artefactos.rankings,
+        txt=artefactos.txt,
+        carpetas_vacias=artefactos.carpetas_vacias,
+        data_junto_al_exe=artefactos.data_junto_al_exe,
+        directorios_vacios=artefactos.directorios_vacios,
+        incluir_pycache=artefactos.incluir_pycache,
+        incluir_txt=artefactos.incluir_txt,
+        incluir_json=artefactos.incluir_json,
     ):
         print("No se encontraron artefactos temporales en el proyecto.")
         return 0
 
     if args.dry_run:
         print("\nDry-run: no se ha borrado nada.")
-        if incluir_json and (preferencias or rankings):
+        if incluir_json and (artefactos.preferencias or artefactos.rankings):
             print("Nota: al abrir el juego se recrearán los JSON de runtime.")
         return 0
 
