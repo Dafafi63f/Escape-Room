@@ -14,6 +14,7 @@ from Comun.modelos import Pregunta
 from Comun.motor_nucleo import (
     EstadoPartida,
     ResultadoRespuesta,
+    evaluar_respuesta,
     linea_estado,
 )
 from Comun.motor_resistencia_comun import (
@@ -145,6 +146,7 @@ from Grafico.ui import (
     Boton,
     BotonOpcion,
     _fuente_ajustada,
+    capturar,
     dibujar_caja_valor_ciclo,
     dibujar_panel,
     dibujar_texto_multilinea,
@@ -829,8 +831,8 @@ class ConfigOpcionesHistoria(Pantalla):
         for op in self.preset.opciones:
             rect_izq, _, rect_der = self._rects_control_fila(op.id)
             self.botones_ciclo[op.id] = (
-                Boton("◀", rect_izq, lambda oid=op.id: self._ciclar_opcion(oid, -1)),
-                Boton("▶", rect_der, lambda oid=op.id: self._ciclar_opcion(oid, 1)),
+                Boton("◀", rect_izq, capturar(self._ciclar_opcion, op.id, -1)),
+                Boton("▶", rect_der, capturar(self._ciclar_opcion, op.id, 1)),
             )
         self._reposicionar_botones_navegacion()
 
@@ -1162,7 +1164,7 @@ class PartidaModoHistoria(Pantalla):
                 letra,
                 p.opciones.get(letra, ""),
                 rect,
-                lambda l=letra: self._responder(l),
+                capturar(self._responder, letra),
             )
             self.botones_opcion.append(boton)
             y += ALTO_OPCION_PARTIDA + SEP_OPCIONES_PARTIDA
@@ -1682,7 +1684,7 @@ class PartidaResistenciaHistoria(Pantalla):
                 Boton(
                     etiqueta_btn,
                     rect,
-                    lambda p=pid: self._usar_powerup(p),
+                    capturar(self._usar_powerup, pid),
                     tooltip=descripcion_powerup(pid),
                 )
             )
@@ -1703,7 +1705,7 @@ class PartidaResistenciaHistoria(Pantalla):
                 letra,
                 p.opciones.get(letra, ""),
                 rect,
-                lambda l=letra: self._responder(l),
+                capturar(self._responder, letra),
             )
             self.botones_opcion.append(boton)
             y += ALTO_OPCION_PARTIDA + SEP_OPCIONES_PARTIDA
@@ -2135,8 +2137,8 @@ class PartidaResistenciaHistoria(Pantalla):
         for boton in self.botones_opcion:
             boton.dibujar(superficie, self.fuentes["opcion"])
         if self.fase == "pregunta":
-            for boton in self.botones_powerup:
-                boton.dibujar(superficie, self.fuentes["pequena"])
+            for boton_pw in self.botones_powerup:
+                boton_pw.dibujar(superficie, self.fuentes["pequena"])
         if self.fase == "feedback":
             dibujar_feedback_partida(
                 superficie,

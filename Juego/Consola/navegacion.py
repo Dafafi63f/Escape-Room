@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -348,8 +348,10 @@ class AsistentePasos:
         )
         self._reimprimir_paso()
 
-    def ejecutar(self, pasos: list[tuple[str, Callable[["AsistentePasos"], None]]]) -> None:
-        self._pasos = pasos
+    def ejecutar(
+        self, pasos: Sequence[tuple[str, Callable[["AsistentePasos"], None]]]
+    ) -> None:
+        self._pasos = list(pasos)
         total = len(pasos)
         while self._indice < total:
             self._registrar_contexto_paso()

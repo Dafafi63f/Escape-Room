@@ -36,6 +36,7 @@ from Grafico.ui import (
     CampoTexto,
     COLOR_CAMPO_ACTIVO,
     COLOR_CAMPO_FONDO,
+    capturar,
     dibujar_caja_valor_ciclo,
     dibujar_panel,
     dibujar_texto_multilinea,
@@ -218,8 +219,8 @@ class PantallaFeedback(Pantalla):
                 _ANCHO_BTN_CICLO,
                 _ALTO_CTRL,
             )
-            menos = Boton("◀", rect_izq, lambda d=-1, k=clave: self._ciclar(k, d))
-            mas = Boton("▶", rect_der, lambda d=1, k=clave: self._ciclar(k, d))
+            menos = Boton("◀", rect_izq, capturar(self._ciclar, clave, -1))
+            mas = Boton("▶", rect_der, capturar(self._ciclar, clave, 1))
             self._botones_ciclo[clave] = (menos, mas)
             self._rects_valor[clave] = pygame.Rect(
                 x_campo + _ANCHO_BTN_CICLO + _GAP_CICLO,

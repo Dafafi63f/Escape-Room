@@ -36,6 +36,7 @@ from Grafico.textos_grafico import (
 from Grafico.ui import (
     Boton,
     CampoTexto,
+    capturar,
     dibujar_caja_valor_ciclo,
     dibujar_panel,
     dibujar_tooltips_botones,
@@ -134,8 +135,8 @@ class OverlayOpcionesGrafico:
                 self.ANCHO_BTN_CICLO,
                 self.ALTO_CTRL,
             )
-            menos = Boton("◀", rect_izq, lambda d=-1, k=clave: self._ciclar(k, d))
-            mas = Boton("▶", rect_der, lambda d=1, k=clave: self._ciclar(k, d))
+            menos = Boton("◀", rect_izq, capturar(self._ciclar, clave, -1))
+            mas = Boton("▶", rect_der, capturar(self._ciclar, clave, 1))
             self._botones_ciclo[clave] = (menos, mas)
         self._rects_valor = {
             clave: pygame.Rect(

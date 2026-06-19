@@ -30,6 +30,7 @@ from Comun.textos_ui import (
     BTN_VACIAR_PREFERENCIAS,
     BTN_VOLVER,
     BTN_VOLVER_MENU,
+    ContextoUi,
     EmojiPar,
     PosicionEmoji,
     con_emoji as _con_emoji,
@@ -40,7 +41,7 @@ from Comun.textos_ui import (
     OpcionMenuPrincipal,
 )
 
-_CONTEXTO = "grafico"
+_CONTEXTO: ContextoUi = "grafico"
 
 __all__ = [
     "BTN_ABANDONAR",

@@ -18,7 +18,9 @@ from Comun.textos_ui import (
     BTN_VER_RANKING,
     BTN_VOLVER,
     BTN_VOLVER_MENU,
+    ContextoUi,
     EmojiPar,
+    PosicionEmoji,
     con_emoji as _con_emoji,
     etiqueta as _etiqueta,
     etiqueta_campo as _etiqueta_campo,
@@ -33,7 +35,7 @@ from Comun.textos_ui import (
     resolver_emoji,
 )
 
-_CONTEXTO = "consola"
+_CONTEXTO: ContextoUi = "consola"
 
 __all__ = [
     "BTN_ABANDONAR",
@@ -67,7 +69,7 @@ def usar_emojis() -> bool:
     return consola_soporta_emoji()
 
 
-def _posicion_etiqueta(emoji: str | EmojiPar) -> str:
+def _posicion_etiqueta(emoji: str | EmojiPar) -> PosicionEmoji:
     pos = posicion_emoji_navegacion(emoji, contexto=_CONTEXTO)
     return "inicio" if pos == "simetrico" else pos
 

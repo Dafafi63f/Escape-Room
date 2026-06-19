@@ -30,6 +30,7 @@ from Grafico.texto import dibujar_texto_centro
 from Grafico.textos_grafico import BTN_VOLVER, etiqueta, titulo_pantalla
 from Grafico.ui import (
     Boton,
+    capturar,
     dibujar_panel,
     dibujar_tooltips_botones,
     partir_texto,
@@ -234,7 +235,7 @@ class PantallaInfoHub(Pantalla):
                 Boton(
                     _etiqueta_seccion(seccion),
                     rect,
-                    lambda sid=seccion.id: self._al_pulsar(sid),
+                    capturar(self._al_pulsar, seccion.id),
                     tooltip=seccion.tooltip,
                 )
             )

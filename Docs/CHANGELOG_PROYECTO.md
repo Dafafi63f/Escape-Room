@@ -11,8 +11,8 @@ En [`Docs/`](README.md): changelogs, checklist y memoria borrador. El repositori
 |--------|-----|
 | [`CHANGELOG_JUEGO.md`](CHANGELOG_JUEGO.md) | Novedades visibles para el jugador |
 | [`CHECKLIST.md`](CHECKLIST.md) | Checklist de pendientes e ideas futuras |
-| [`Memoria_TFG.md`](Entrega/Memoria_TFG.md) | Borrador Markdown de la memoria |
-| [`Entrega/`](Entrega/) | Markdown, LaTeX y Word de la memoria |
+| [`Memoria_TFG.md`](Entrega/Memoria_TFG.md) | Borrador Markdown (`Docs/Entrega/`) |
+| [`Entrega/`](Entrega/) | LaTeX y Word de la memoria (`Docs/Entrega/`) |
 | [`Figuras/`](Figuras/) | Imágenes de la memoria |
 | [`Data/README.md`](Data/README.md) | Banco 480 ítems, plantillas beta, esquema curricular |
 

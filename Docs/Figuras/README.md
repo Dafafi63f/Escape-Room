@@ -1,6 +1,6 @@
 # Figuras de la memoria
 
-Imágenes usadas en [`Entrega/Memoria_TFG.md`](../Entrega/Memoria_TFG.md) y [`Entrega/Memoria_TFG.tex`](../Entrega/Memoria_TFG.tex).
+Imágenes usadas en [`Memoria_TFG.md`](../Entrega/Memoria_TFG.md) y [`Memoria_TFG.tex`](../Entrega/Memoria_TFG.tex) (`Docs/Entrega/`).
 
 Regenerar (desde la raíz del proyecto):
 

@@ -282,7 +282,9 @@ def _imprimir_listado(
 
 def main(argv: list[str] | None = None) -> int:
     if sys.platform == "win32":
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        reconfigure = getattr(sys.stdout, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8", errors="replace")
 
     parser = argparse.ArgumentParser(
         description=(

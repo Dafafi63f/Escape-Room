@@ -17,11 +17,11 @@ Juego/build/
 Juego/dist/
 Juego/*.spec
 
-# --- Compilación LaTeX (si compilas Memoria/Memoria_TFG.tex a mano) ---
-Entrega/Memoria/*.aux
-Entrega/Memoria/*.log
-Entrega/Memoria/*.out
-Entrega/Memoria/*.toc
-Entrega/Memoria/*.fls
-Entrega/Memoria/*.fdb_latexmk
-Entrega/Memoria/*.synctex.gz
+# --- Compilación LaTeX (si compilas Docs/Entrega/Memoria_TFG.tex a mano) ---
+Docs/Entrega/*.aux
+Docs/Entrega/*.log
+Docs/Entrega/*.out
+Docs/Entrega/*.toc
+Docs/Entrega/*.fls
+Docs/Entrega/*.fdb_latexmk
+Docs/Entrega/*.synctex.gz

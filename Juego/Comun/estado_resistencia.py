@@ -5,6 +5,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from Comun.mecanicas_resistencia import (
+        ApuestaRiesgo,
+        BloqueFiltroActivo,
+        MaldicionActiva,
+    )
 
 VIDAS_MAX_INICIAL = 5
 VIDAS_MAX_ABSOLUTO = 9
@@ -27,10 +35,10 @@ class EstadoResistencia:
     ultimo_evento: str = ""
     semilla_partida: int | None = None
     reto_dia: bool = False
-    bloque_filtro: object | None = None
-    apuesta_oferta: object | None = None
-    apuesta_activa: object | None = None
-    maldicion: object | None = None
+    bloque_filtro: BloqueFiltroActivo | None = None
+    apuesta_oferta: ApuestaRiesgo | None = None
+    apuesta_activa: ApuestaRiesgo | None = None
+    maldicion: MaldicionActiva | None = None
     ventana_resultados: list[bool] = field(default_factory=list)
     tiradas_recompensa: int = 0
     objetos_bloqueados: bool = False

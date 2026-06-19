@@ -36,6 +36,7 @@ from Grafico.ui import (
     Boton,
     BotonOpcion,
     _fuente_ajustada,
+    capturar,
     dibujar_panel,
     dibujar_texto_multilinea,
     dibujar_tooltips_botones,
@@ -183,7 +184,7 @@ class MenuPrincipal(Pantalla):
                 Boton(
                     etiq,
                     rect,
-                    lambda oid=opcion.id: self._al_pulsar(oid),
+                    capturar(self._al_pulsar, opcion.id),
                     tooltip=tooltip_menu_principal(opcion.id),
                 )
             )
@@ -470,7 +471,7 @@ class PartidaModoLibre(Pantalla):
                 letra,
                 p.opciones.get(letra, ""),
                 rect,
-                lambda l=letra: self._responder(l),
+                capturar(self._responder, letra),
             )
             self.botones_opcion.append(boton)
             y += ALTO_OPCION_PARTIDA + SEP_OPCIONES_PARTIDA

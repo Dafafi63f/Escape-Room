@@ -74,6 +74,7 @@ from Grafico.ui import (
     Boton,
     BotonMarcable,
     _fuente_ajustada,
+    capturar,
     cuadricula_rects,
     dibujar_caja_valor_ciclo,
     dibujar_panel,
@@ -455,8 +456,8 @@ class ConfigOpcionesLibre(Pantalla):
         for op_id in visibles:
             rect_izq, _, rect_der = self._rects_control_fila(op_id)
             self.botones_ciclo[op_id] = (
-                Boton("◀", rect_izq, lambda oid=op_id: self._ciclar_opcion(oid, -1)),
-                Boton("▶", rect_der, lambda oid=op_id: self._ciclar_opcion(oid, 1)),
+                Boton("◀", rect_izq, capturar(self._ciclar_opcion, op_id, -1)),
+                Boton("▶", rect_der, capturar(self._ciclar_opcion, op_id, 1)),
             )
         self._actualizar_toggle_dificultad()
         self._reposicionar_botones_navegacion()
@@ -485,20 +486,20 @@ class ConfigOpcionesLibre(Pantalla):
         if op_id == "banco":
             return [(b.value, etq) for b, etq in OPCIONES_BANCO]
         if op_id == "n_preguntas":
-            items = [("infinito", "Infinito (sin límite)")]
-            items.extend((str(n), str(n)) for n in PRESETS_PREGUNTAS)
-            return items
+            items_np: list[tuple[str, str]] = [("infinito", "Infinito (sin límite)")]
+            items_np.extend((str(n), str(n)) for n in PRESETS_PREGUNTAS)
+            return items_np
         if op_id == "vidas":
-            items: list[tuple[str, str]] = []
+            items_vidas: list[tuple[str, str]] = []
             opts = self._opciones_compat()
             if opts.permitir_sin_vidas:
-                items.append(("sin", "Sin vidas"))
+                items_vidas.append(("sin", "Sin vidas"))
             if opts.permitir_con_vidas:
                 alc = self._alcance()
                 min_v = alc.min_vidas if alc else 1
                 max_v = alc.max_vidas if alc else 10
-                items.extend((str(n), str(n)) for n in range(min_v, max_v + 1))
-            return items
+                items_vidas.extend((str(n), str(n)) for n in range(min_v, max_v + 1))
+            return items_vidas
         if op_id == "tiempo_modo":
             items = [(TIEMPO_NINGUNO, "Sin límite")]
             alc = self._alcance()
@@ -761,7 +762,7 @@ class ConfigFiltrosLibre(Pantalla):
             btn = BotonMarcable(
                 texto_filtro,
                 rect,
-                lambda c=codigo: self._elegir_modo_filtro(c),
+                capturar(self._elegir_modo_filtro, codigo),
                 tooltip=tooltip_filtro_principal(codigo),
             )
             btn.codigo_filtro = codigo  # type: ignore[attr-defined]
@@ -941,7 +942,7 @@ class ConfigFiltrosLibre(Pantalla):
             btn = BotonMarcable(
                 str(nivel),
                 rect,
-                lambda n=nivel: self._toggle_nivel(n),
+                capturar(self._toggle_nivel, nivel),
             )
             btn.nivel_valor = nivel  # type: ignore[attr-defined]
             self.botones_nivel.append(btn)
@@ -1027,7 +1028,7 @@ class ConfigFiltrosLibre(Pantalla):
             btn = BotonMarcable(
                 texto_btn,
                 rect,
-                lambda k=clave: self._elegir_subfiltro(k),
+                capturar(self._elegir_subfiltro, clave),
             )
             btn.clave_subfiltro = clave  # type: ignore[attr-defined]
             if clave == "__todas__":

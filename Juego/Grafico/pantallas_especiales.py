@@ -42,6 +42,7 @@ from Grafico.tema import (
 from Grafico.texto import dibujar_texto_centro
 from Grafico.ui import (
     Boton,
+    capturar,
     dibujar_tooltips_botones,
     posicionar_pila_inferior,
     rect_boton_etiqueta,
@@ -101,7 +102,7 @@ class ConfigModosEspeciales(Pantalla):
                 Boton(
                     etiq,
                     rect,
-                    lambda pid=preset.id: self._iniciar_modo(pid),
+                    capturar(self._iniciar_modo, preset.id),
                     tooltip=recortar_tooltip(preset.descripcion),
                 )
             )

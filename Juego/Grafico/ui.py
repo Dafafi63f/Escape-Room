@@ -371,6 +371,20 @@ def _fuente_ajustada(
     return fuente_base
 
 
+def capturar(
+    al_pulsar: Callable[..., None],
+    /,
+    *args: object,
+    **kwargs: object,
+) -> Callable[[], None]:
+    """Callback sin argumentos con valores fijados (bucles de botones)."""
+
+    def _envuelto() -> None:
+        al_pulsar(*args, **kwargs)
+
+    return _envuelto
+
+
 class Boton:
     """Botón rectangular activable con clic del ratón."""
 
