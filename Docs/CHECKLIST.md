@@ -31,7 +31,7 @@ Checklist **único** de trabajo pendiente e ideas futuras. El historial y el est
 
 - [ ] Capa gráfica / narrativa escape room (OE1, OE4)
 - [ ] Piloto de usabilidad con estudiantes del grado (SUS, motivación, validez predictiva)
-- [ ] Retirar consola cuando la paridad gráfica esté completa (migración «solo pygame»)
+- [x] Retirar consola — migración «solo pygame» completada en `feature/migracion`
 
 ---
 

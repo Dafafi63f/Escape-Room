@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 
 from Comun.modelos import Pregunta
-from .motor_partida import EstadoPartida
+from Comun.motor_nucleo import EstadoPartida
 from Comun.reglas_partida import (
     SistemaPuntuacion,
     formatear_resultado_puntuacion,
@@ -137,8 +137,8 @@ def _feedback_pregunta(reg: RegistroRespuesta) -> str:
     )
 
 
-def mostrar_correccion_en_consola(registros: list[RegistroRespuesta]) -> None:
-    """Corrección pregunta a pregunta tras un examen cerrado (sin pistas durante)."""
+def imprimir_correccion_post_examen(registros: list[RegistroRespuesta]) -> None:
+    """Corrección pregunta a pregunta tras un examen cerrado (salida por stdout)."""
     print("\n" + "=" * 60)
     print("CORRECCIÓN DEL EXAMEN")
     print("=" * 60)
@@ -297,14 +297,14 @@ def publicar_informe_partida(
     meta: dict | None = None,
     stats_historicas: dict | None = None,
     prefijo: str = "examen",
-    mostrar_en_consola: bool = True,
+    imprimir_aviso_terminal: bool = True,
 ) -> Path | None:
-    """Guarda el .txt y, si procede, muestra corrección en consola."""
+    """Guarda el .txt y, si procede, imprime corrección y aviso por stdout."""
     if not registros:
         return None
 
-    if mostrar_en_consola and estado.reglas.correccion_al_final:
-        mostrar_correccion_en_consola(registros)
+    if imprimir_aviso_terminal and estado.reglas.correccion_al_final:
+        imprimir_correccion_post_examen(registros)
 
     id_sesion = generar_id_sesion()
     meta_completa = {
@@ -334,17 +334,17 @@ def publicar_informe_partida(
     try:
         ruta = guardar_informe_examen(texto, nombre_archivo=nombre_archivo)
     except OSError:
-        if mostrar_en_consola:
+        if imprimir_aviso_terminal:
             print("\nNo se pudo guardar el informe en disco (permisos o ruta).")
         return None
 
-    if mostrar_en_consola:
+    if imprimir_aviso_terminal:
         _imprimir_aviso_informe_guardado(ruta)
     return ruta
 
 
 def _imprimir_aviso_informe_guardado(ruta: Path) -> None:
-    """Mensaje en consola (evita rutas absolutas con Unicode en Windows cp1252)."""
+    """Mensaje por stdout (evita rutas absolutas con Unicode en Windows cp1252)."""
     import sys
 
     rel = ruta_informe_para_usuario(ruta)

@@ -1,6 +1,6 @@
 # Files — mantenimiento del banco
 
-Scripts y utilidades de **mantenimiento del banco**. No son necesarios para jugar; el jugador solo necesita `Juego/juego_consola.py` o `Juego/juego_grafico.py` y `Data/`.
+Scripts y utilidades de **mantenimiento del banco**. No son necesarios para jugar; el jugador solo necesita `Juego/juego_grafico.py` y `Data/`.
 
 Limpieza de artefactos temporales: [`../utilidades_tfg.py`](../utilidades_tfg.py) (`--solo-limpieza`).
 
@@ -52,7 +52,7 @@ python Files/simulacion_evaluacion_azar.py --iteraciones 50000 --preguntas 20
 
 | Script | Uso |
 |--------|-----|
-| `cli_examen_historia.py` | Previsualizar plan de examen en consola |
+| `cli_examen_historia.py` | Previsualizar plan de examen (salida por terminal) |
 | `clasificar_pregunta.py` | Clasificar una pregunta concreta (solo lectura) |
 | `auditoria.py` | Auditorías del dataset y plantillas |
 | `duplicados.py` + `duplicados_lib.py` | `revisar`, `plantillas`, `todo`, `exacto`, `enunciado` |
@@ -97,7 +97,7 @@ Tests de mantenimiento en este directorio (plano):
 python -m unittest discover -s Files -p "test_*.py" -v
 ```
 
-Tests del juego: [`Tests/`](../Tests/README.md) (**262** tests en total). CI: `.github/workflows/tests.yml`.
+Tests del juego: [`Tests/`](../Tests/README.md) (**246** tests en total). CI: `.github/workflows/tests.yml`.
 
 ## Limpieza de temporales
 

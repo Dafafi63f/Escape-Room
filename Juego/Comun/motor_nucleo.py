@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Núcleo del motor de partida (sin E/S de consola ni pygame)."""
+"""Núcleo del motor de partida (sin E/S de pygame ni terminal)."""
 
 from __future__ import annotations
 

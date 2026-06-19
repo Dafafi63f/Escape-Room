@@ -28,6 +28,13 @@ _LEGACY_CHANGELOG_JUEGO = "CHANGELOG_JUEGO_GRAFICO.md"
 
 
 def _raiz_repo() -> Path:
+    import sys
+
+    if getattr(sys, "frozen", False):
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            return Path(meipass)
+        return Path(sys.executable).resolve().parent
     return juego_dir().parent
 
 

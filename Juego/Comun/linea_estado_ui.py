@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Línea de estado de partida con iconos (texto/emoji; compartido consola y gráfico)."""
+"""Línea de estado de partida con iconos (texto/emoji; UI gráfica)."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ __all__ = [
     "EMOJI_TIEMPO_TOTAL",
     "SegmentoEstado",
     "ascii_icono_segmento",
-    "consola_soporta_emoji",
+    "stdout_soporta_emoji",
     "emoji_candidatos_segmento",
     "formatear_linea_estado",
     "segmentos_linea_estado",
@@ -61,7 +61,7 @@ class SegmentoEstado:
     texto: str
 
 
-def consola_soporta_emoji() -> bool:
+def stdout_soporta_emoji() -> bool:
     enc = (getattr(sys.stdout, "encoding", None) or "").lower()
     return enc in {"utf-8", "utf8", "cp65001", "cp_utf8"}
 
@@ -152,7 +152,7 @@ def segmentos_linea_estado(
 
 
 def ascii_icono_segmento(seg_id: str) -> str:
-    """Sustituto textual del icono (consola o emojis desactivados en gráfico)."""
+    """Sustituto textual del icono (emojis desactivados o terminal sin Unicode)."""
     return _ASCII_POR_ID.get(seg_id, "·")
 
 

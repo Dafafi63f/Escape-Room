@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Configura stdout/stderr en UTF-8 (emojis en consola Windows)."""
+"""Configura stdout/stderr en UTF-8 (emojis en terminal Windows)."""
 
 from __future__ import annotations
 

@@ -3,8 +3,6 @@ Data/Banco/creador_privado.json
 Data/Juego/preferencias_*.json
 Data/Juego/ranking_*.json
 Data/Juego/*.txt
-Juego/juego_consola.exe
-
 # --- Temporales (limpiar con borrar_temporales.py) ---
 __pycache__/
 .mypy_cache/
@@ -12,10 +10,11 @@ __pycache__/
 .pytest_cache/
 .scannerwork/
 
-# --- Build PyInstaller (Juego/build_exe_onefile.ps1) ---
+# --- Build PyInstaller (opcional) ---
 Juego/build/
 Juego/dist/
 Juego/*.spec
+Juego/juego_grafico.exe
 
 # --- Compilación LaTeX (si compilas Docs/Entrega/Memoria_TFG.tex a mano) ---
 Docs/Entrega/*.aux

@@ -22,7 +22,7 @@ from Comun.presets_historia import (
 from Comun.reglas_partida import ReglasPartida
 from Comun.resistencia_historia import construir_banco_resistencia, es_preset_resistencia
 from Comun.rutas import PATH_MATERIAS, resolver_presets_especiales, resolver_presets_historia
-from Consola.generador_examen_historia import (
+from Comun.generador_examen_historia import (
     PlanExamen,
     cargar_estadisticas_historicas,
     generar_examen,

@@ -1089,7 +1089,7 @@ class ConfigOpcionesHistoria(Pantalla):
 
 
 class PartidaModoHistoria(Pantalla):
-    """Partida con lista fija de preguntas (como en consola)."""
+    """Partida con lista fija de preguntas (preset historia o examen del día)."""
 
     def __init__(
         self,
@@ -1190,7 +1190,7 @@ class PartidaModoHistoria(Pantalla):
             y += ALTO_OPCION_PARTIDA + SEP_OPCIONES_PARTIDA
 
     def _registrar_respuesta(self, p: Pregunta, resultado: ResultadoRespuesta) -> None:
-        from Consola.informe_examen import RegistroRespuesta
+        from Comun.informe_examen import RegistroRespuesta
 
         self.registros.append(
             RegistroRespuesta(
@@ -1209,7 +1209,7 @@ class PartidaModoHistoria(Pantalla):
         self.ir_a(MenuPrincipal(self.datos, self.ir_a, self.salir_app))
 
     def _fin_partida(self, *, abandonado: bool = False) -> None:
-        from Consola.generador_examen_historia import cargar_estadisticas_historicas
+        from Comun.generador_examen_historia import cargar_estadisticas_historicas
 
         cierre = None
         if self.registros:
@@ -1790,7 +1790,7 @@ class PartidaResistenciaHistoria(Pantalla):
         self._reconstruir_powerups()
 
     def _registrar_respuesta(self, p: Pregunta, resultado: ResultadoRespuesta) -> None:
-        from Consola.informe_examen import RegistroRespuesta
+        from Comun.informe_examen import RegistroRespuesta
 
         self.registros.append(
             RegistroRespuesta(
@@ -1815,7 +1815,7 @@ class PartidaResistenciaHistoria(Pantalla):
         )
 
     def _fin_partida(self, *, abandonado: bool = False) -> None:
-        from Consola.generador_examen_historia import cargar_estadisticas_historicas
+        from Comun.generador_examen_historia import cargar_estadisticas_historicas
 
         posicion_ranking: int | None = None
         if self.registros and not abandonado:

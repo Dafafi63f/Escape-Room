@@ -3,7 +3,7 @@
 """
 Punto de entrada del cuestionario MATCAD en pygame.
 
-Prototipo: menú principal, modo libre y modo historia (presets fijos).
+Cuatro modos: libre, historia, resistencia y feedback.
 Controles: ratón para navegar; teclado solo para escribir texto cuando haga falta.
 
 Uso:

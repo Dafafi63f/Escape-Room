@@ -1,8 +1,8 @@
 # Comun — lógica compartida del juego
 
-Paquete **`Comun`** (`Juego/Comun/`). Contiene todo lo que funciona **igual** en consola y gráfico: modelos, datos, reglas, motor de partida (sin E/S), pool del modo libre, historia, resistencia y rutas a `Data/`.
+Paquete **`Comun`** (`Juego/Comun/`). Dominio del juego: modelos, datos, reglas, motor de partida (sin E/S), pool del modo libre, historia, resistencia, informes, feedback y rutas a `Data/`.
 
-Se importa con `Juego/` en el `sys.path` (véase [`juego_consola.py`](../juego_consola.py) o [`juego_grafico.py`](../juego_grafico.py)).
+Se importa con `Juego/` en el `sys.path` (véase [`juego_grafico.py`](../juego_grafico.py)).
 
 ## Módulos — núcleo
 
@@ -20,9 +20,9 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_consola.py`](../juego_c
 | `pool_libre.py` | Pool, filtros, elección de siguiente pregunta |
 | `motor_nucleo.py` | `EstadoPartida`, evaluación de respuestas (sin E/S) |
 | `jugador.py` | Nombre efectivo y anonimato |
-| `textos_ui.py` | Etiquetas, emojis y textos compartidos consola/gráfico |
+| `textos_ui.py` | Etiquetas, emojis y textos compartidos (UI gráfica) |
 | `cierre_informe.py` | Metadatos al cerrar partida con informe |
-| `stdio_utf8.py` | Consola UTF-8 en Windows |
+| `stdio_utf8.py` | UTF-8 en stdout/stderr (Windows) |
 
 ## Módulos — modo historia y resistencia
 
@@ -50,17 +50,19 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_consola.py`](../juego_c
 | `contacto_creador.py` | Canales de contacto públicos (sin credenciales SMTP) |
 | `feedback_opciones.py` | Categorías y zonas del formulario de feedback |
 | `iconos_resistencia.py` | Emojis y descripciones de eventos/objetos |
-| `linea_estado_ui.py` | Segmentos de barra de estado (chips emoji; consola y gráfico) |
+| `generador_examen_historia.py` | Plan de examen balanceado (modo historia) |
+| `informe_examen.py` | Informes `.txt` al cerrar partida |
+| `envio_feedback.py` | Guardado local y envío SMTP del feedback |
+| `config_creador.py` | Plantilla `creador_privado.json` |
 
 ## Qué no está aquí
 
 | Ubicación | Contenido específico de UI |
 |-----------|--------------------------|
-| [`Consola/`](../Consola/README.md) | Menús por teclado, E/S terminal, orquestación consola |
 | [`Grafico/`](../Grafico/README.md) | Pantallas pygame, widgets, tema, tooltips |
 
-`Consola/datos.py` solo añade `elegir_banco_preguntas` (menú terminal). El gráfico elige banco en [`Grafico/pantallas_libre.py`](../Grafico/pantallas_libre.py).
+El gráfico elige banco en [`Grafico/pantallas_libre.py`](../Grafico/pantallas_libre.py).
 
-## Pruebas de paridad
+## Pruebas de dominio
 
-Los tests en [`Tests/test_consola_paridad.py`](../../Tests/test_consola_paridad.py) comprueban que consola y gráfico producen el mismo resultado de dominio para las mismas operaciones.
+Los tests en [`Tests/test_dominio_juego.py`](../../Tests/test_dominio_juego.py) comprueban datos, reglas y evaluación vía el adaptador en [`Tests/adaptador_juego.py`](../../Tests/adaptador_juego.py).

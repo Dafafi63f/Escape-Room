@@ -28,7 +28,7 @@ from Tests.support import ensure_juego_path
 ensure_juego_path()
 
 from Comun.jugador import NOMBRE_JUGADOR_DEFECTO
-from Consola.informe_examen import (
+from Comun.informe_examen import (
     RegistroRespuesta,
     construir_nombre_archivo_informe,
     formatear_informe_examen,
@@ -36,7 +36,7 @@ from Consola.informe_examen import (
     publicar_informe_partida,
 )
 from Comun.modelos import Pregunta
-from Consola.motor_partida import EstadoPartida, aplicar_respuesta, ResultadoRespuesta
+from Comun.motor_nucleo import EstadoPartida, ResultadoRespuesta, evaluar_respuesta
 from Comun.reglas_partida import preset_historia_examen, preset_libre_arcade
 
 
@@ -134,7 +134,7 @@ class TestInformeExamen(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             dir_tmp = Path(tmp)
             with patch(
-                "Consola.informe_examen.resolver_dir_informes",
+                "Comun.informe_examen.resolver_dir_informes",
                 return_value=dir_tmp,
             ):
                 estado_libre = EstadoPartida("Ana", preset_libre_arcade(), vidas_restantes=3)
@@ -152,7 +152,7 @@ class TestInformeExamen(unittest.TestCase):
                         "etiqueta_sesion": "Partida modo libre",
                     },
                     prefijo="partida_libre",
-                    mostrar_en_consola=False,
+                    imprimir_aviso_terminal=False,
                 )
 
                 estado_hist = EstadoPartida("Ana", reglas, vidas_restantes=None)
@@ -172,7 +172,7 @@ class TestInformeExamen(unittest.TestCase):
                         "etiqueta_sesion": "Historia — Simulacro",
                     },
                     prefijo="examen_historia",
-                    mostrar_en_consola=False,
+                    imprimir_aviso_terminal=False,
                 )
 
                 self.assertIsNotNone(ruta1)
@@ -186,33 +186,25 @@ class TestInformeExamen(unittest.TestCase):
         self.assertFalse(reglas.mostrar_solucion_tras_fallo)
 
     def test_examen_cerrado_sin_mensajes_inmediatos(self) -> None:
-        from io import StringIO
-        from unittest.mock import patch
-
         reglas = preset_historia_examen()
         estado = EstadoPartida("T", reglas, vidas_restantes=None)
         p = _pregunta_simple()
-        buf = StringIO()
-        with patch("sys.stdout", buf):
-            aplicar_respuesta(p, estado, ResultadoRespuesta(acierto=False, respuesta="A"))
-            aplicar_respuesta(p, estado, ResultadoRespuesta(acierto=True, respuesta="B"))
-        salida = buf.getvalue()
-        self.assertNotIn("[OK]", salida)
-        self.assertNotIn("[X]", salida)
-        self.assertNotIn("Correcta:", salida)
+        fb1 = evaluar_respuesta(p, estado, ResultadoRespuesta(acierto=False, respuesta="A"))
+        fb2 = evaluar_respuesta(p, estado, ResultadoRespuesta(acierto=True, respuesta="B"))
+        self.assertEqual(fb1.mensaje, "Respuesta registrada.")
+        self.assertEqual(fb2.mensaje, "Respuesta registrada.")
         self.assertEqual(estado.aciertos, 1)
         self.assertEqual(estado.respondidas, 2)
 
-    def test_arcade_sigue_mostrando_feedback(self) -> None:
-        from io import StringIO
-        from unittest.mock import patch
-
+    def test_arcade_muestra_feedback_inmediato(self) -> None:
         reglas = preset_libre_arcade()
         estado = EstadoPartida("T", reglas, vidas_restantes=3)
-        buf = StringIO()
-        with patch("sys.stdout", buf):
-            aplicar_respuesta(_pregunta_simple(), estado, ResultadoRespuesta(acierto=True, respuesta="B"))
-        self.assertIn("[OK]", buf.getvalue())
+        fb = evaluar_respuesta(
+            _pregunta_simple(),
+            estado,
+            ResultadoRespuesta(acierto=True, respuesta="B"),
+        )
+        self.assertTrue(fb.mensaje.startswith("Correcto"))
 
 # --- test_feedback.py ---
 
@@ -229,7 +221,7 @@ from Tests.support import ensure_juego_path
 
 ensure_juego_path()
 
-from Consola.envio_feedback import (
+from Comun.envio_feedback import (
     CategoriaFeedback,
     ReporteFeedback,
     _cargar_config,
@@ -250,7 +242,7 @@ class TestFeedback(unittest.TestCase):
             id_reporte="FB-TEST-001",
         )
         with tempfile.TemporaryDirectory() as tmp:
-            with patch("Consola.envio_feedback.resolver_dir_feedback", return_value=Path(tmp)):
+            with patch("Comun.envio_feedback.resolver_dir_feedback", return_value=Path(tmp)):
                 path = guardar_reporte_local(reporte)
             texto = path.read_text(encoding="utf-8")
         self.assertIn("FB-TEST-001", texto)
@@ -288,7 +280,7 @@ class TestFeedback(unittest.TestCase):
                 encoding="utf-8",
             )
             with patch(
-                "Consola.envio_feedback.resolver_config_creador_privado",
+                "Comun.envio_feedback.resolver_config_creador_privado",
                 return_value=privado,
             ):
                 config = _cargar_config()
@@ -296,12 +288,12 @@ class TestFeedback(unittest.TestCase):
 
     def test_cargar_config_vacio_sin_fichero(self) -> None:
         with patch(
-            "Consola.envio_feedback.resolver_config_creador_privado",
+            "Comun.envio_feedback.resolver_config_creador_privado",
             return_value=None,
         ):
             self.assertEqual(_cargar_config(), {})
 
-    @patch("Consola.envio_feedback._cargar_config")
+    @patch("Comun.envio_feedback._cargar_config")
     def test_sin_envio_si_falta_password_smtp(self, mock_cfg) -> None:
         mock_cfg.return_value = {
             "habilitar_smtp": True,
@@ -316,13 +308,13 @@ class TestFeedback(unittest.TestCase):
             id_reporte="FB-NOMAIL",
         )
         with tempfile.TemporaryDirectory() as tmp:
-            with patch("Consola.envio_feedback.resolver_dir_feedback", return_value=Path(tmp)):
+            with patch("Comun.envio_feedback.resolver_dir_feedback", return_value=Path(tmp)):
                 resultado = enviar_feedback(reporte)
         self.assertFalse(resultado.smtp_enviado)
         self.assertIn("Faltan datos SMTP", resultado.smtp_error or "")
 
-    @patch("Consola.envio_feedback.smtplib.SMTP")
-    @patch("Consola.envio_feedback._cargar_config")
+    @patch("Comun.envio_feedback.smtplib.SMTP")
+    @patch("Comun.envio_feedback._cargar_config")
     def test_enviar_smtp_si_configurado(self, mock_cfg, mock_smtp_cls) -> None:
         mock_cfg.return_value = {
             "habilitar_smtp": True,
@@ -340,7 +332,7 @@ class TestFeedback(unittest.TestCase):
             id_reporte="FB-SMTP",
         )
         with tempfile.TemporaryDirectory() as tmp:
-            with patch("Consola.envio_feedback.resolver_dir_feedback", return_value=Path(tmp)):
+            with patch("Comun.envio_feedback.resolver_dir_feedback", return_value=Path(tmp)):
                 resultado = enviar_feedback(reporte)
         self.assertTrue(resultado.smtp_enviado)
         self.assertEqual(resultado.smtp_destino, "destino@gmail.com")
@@ -404,7 +396,7 @@ class TestContactoCreador(unittest.TestCase):
 
     def test_describir_resultado_incluye_contacto(self) -> None:
         import json
-        from Consola.envio_feedback import ResultadoEnvioFeedback, describir_resultado_envio
+        from Comun.envio_feedback import ResultadoEnvioFeedback, describir_resultado_envio
 
         privado = {"creador": {"correo": "autor@uab.cat"}}
         with tempfile.TemporaryDirectory() as tmp:

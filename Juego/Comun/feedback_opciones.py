@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Categorías y áreas del modo feedback (consola y gráfico)."""
+"""Categorías y áreas del modo feedback."""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ def etiqueta_area(area_id: str) -> str:
 
 
 def indice_area_defecto() -> int:
-    """Índice de «general» (equivalente al defecto 6 en consola, base 1)."""
+    """Índice de «general» en AREAS_FEEDBACK (base 0)."""
     for i, (aid, _) in enumerate(AREAS_FEEDBACK):
         if aid == "general":
             return i

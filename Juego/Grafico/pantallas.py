@@ -479,7 +479,7 @@ class PartidaModoLibre(Pantalla):
     def _aplicar_resultado(self, resultado: ResultadoRespuesta) -> None:
         p = self._pregunta_actual()
         feedback = evaluar_respuesta(p, self.estado, resultado)
-        from Consola.informe_examen import RegistroRespuesta
+        from Comun.informe_examen import RegistroRespuesta
 
         self.registros.append(
             RegistroRespuesta(

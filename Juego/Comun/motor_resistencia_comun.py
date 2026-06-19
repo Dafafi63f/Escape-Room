@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Lógica compartida del modo resistencia (consola y gráfico)."""
+"""Lógica del modo resistencia (dominio compartido con la UI pygame)."""
 
 from __future__ import annotations
 

@@ -64,8 +64,8 @@ def fig_arquitectura_sistema() -> Path:
     ax.axis("off")
 
     capas = [
-        (4.8, 5.0, "Lanzadores", "juego_consola.py · juego_grafico.py"),
-        (4.8, 3.85, "Modos de juego", "libre · historia · feedback"),
+        (4.8, 5.0, "Lanzador", "juego_grafico.py"),
+        (4.8, 3.85, "Modos de juego", "libre · historia · resistencia · feedback"),
         (4.8, 2.7, "Motor de partida", "Comun/ — reglas · vidas · puntuación"),
         (4.8, 1.55, "Capa de datos", "Preguntas.csv · listado_materias.csv · plantillas.json"),
         (4.8, 0.35, "Mantenimiento", "validación · auditoría · Monte Carlo"),

@@ -2,9 +2,9 @@
 # pyright: reportMissingImports=false
 # -*- coding: utf-8 -*-
 """
-CLI de desarrollo: previsualiza un plan de examen (modo historia v1) en consola.
+CLI de desarrollo: previsualiza un plan de examen (modo historia v1) en terminal.
 
-No es el motor del juego; la lógica está en Juego/Consola/generador_examen_historia.py.
+No es el motor del juego; la lógica está en Juego/Comun/generador_examen_historia.py.
 
 Ejemplo:
   python Files/cli_examen_historia.py --perfil refuerzo --materias 6
@@ -31,7 +31,7 @@ from Comun.datos import cargar_materias, cargar_orden_materias, cargar_preguntas
 from Comun.perfiles_historia import PerfilPedagogico, describir_perfil  # noqa: E402
 from Comun.config_historia import validar_config  # noqa: E402
 from Comun.presets_historia import argumentos_generador, cargar_presets_historia, config_defecto  # noqa: E402
-from Consola.generador_examen_historia import (  # noqa: E402
+from Comun.generador_examen_historia import (  # noqa: E402
     cargar_estadisticas_historicas,
     generar_examen,
     resumen_estadisticas,
@@ -40,8 +40,8 @@ from Comun.modelos import BancoPreguntas  # noqa: E402
 from Comun.rutas import resolver_dataset, resolver_listado_materias, resolver_presets_historia  # noqa: E402
 
 
-def _consola(texto: str) -> str:
-    """Evita fallos de codificación en consolas Windows (cp1252)."""
+def _texto_stdout_seguro(texto: str) -> str:
+    """Evita fallos de codificación en terminales Windows (cp1252)."""
     enc = getattr(sys.stdout, "encoding", None) or "utf-8"
     return texto.encode(enc, errors="replace").decode(enc)
 
@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
     p = argparse.ArgumentParser(
-        description="Previsualizar examen balanceado (usa Juego/Consola/generador_examen_historia.py)",
+        description="Previsualizar examen balanceado (usa Juego/Comun/generador_examen_historia.py)",
     )
     p.add_argument(
         "--perfil",
@@ -131,7 +131,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     if args.resumen_historico:
-        print(_consola(resumen_estadisticas(stats, orden_materias)))
+        print(_texto_stdout_seguro(resumen_estadisticas(stats, orden_materias)))
         print()
 
     try:
@@ -156,16 +156,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"No se pudo generar el examen: {e}", file=sys.stderr)
         return 1
 
-    print(_consola(f"Perfil: {titulo_perfil}"))
+    print(_texto_stdout_seguro(f"Perfil: {titulo_perfil}"))
     print(f"Banco: {BancoPreguntas.DATASET.value} ({len(preguntas)} preguntas)")
-    print(_consola(f"Materias ({len(plan.materias)}): {', '.join(plan.materias)}"))
+    print(_texto_stdout_seguro(f"Materias ({len(plan.materias)}): {', '.join(plan.materias)}"))
     print(f"Slots por materia ({len(plan.slots_por_materia)}): {plan.slots_por_materia}")
     print(f"Total preguntas: {len(plan.preguntas)}")
     print("\nOrden del examen:")
     for i, pr in enumerate(plan.preguntas, 1):
         snippet = pr.texto[:70] + ("…" if len(pr.texto) > 70 else "")
         print(
-            _consola(
+            _texto_stdout_seguro(
                 f"  {i:>2}. [{pr.materia}] {pr.tipo}/{pr.dificultad} — {snippet}"
             )
         )

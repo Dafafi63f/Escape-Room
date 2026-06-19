@@ -110,7 +110,7 @@ class AplicacionGrafica:
         self.ejecutando = False
 
     def _restaurar_vista_actual(self) -> None:
-        """Vista completa de la pantalla en curso (como reimprimir_contexto en consola)."""
+        """Vista completa de la pantalla en curso (redibujado integral)."""
         self.actual.restaurar_vista_completa()
 
     def _pantalla_en_contexto(self) -> Pantalla:

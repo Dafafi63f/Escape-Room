@@ -91,7 +91,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run MyPy
-        run: mypy Juego/Comun Juego/Consola Juego/Grafico Files
+        run: mypy Juego/Comun Juego/Grafico Files
 
   tests-summary:
     name: tests-summary

@@ -349,7 +349,7 @@ def resumen_estadisticas(
     materias: list[str],
     top_n: int = 8,
 ) -> str:
-    """Texto breve para consola: materias más exigentes según histórico."""
+    """Texto breve para CLI: materias más exigentes según histórico."""
     ordenadas = sorted(
         (stats[m] for m in materias if m in stats),
         key=lambda s: s.indice_dificultad,

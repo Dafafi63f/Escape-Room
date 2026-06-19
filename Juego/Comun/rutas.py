@@ -57,18 +57,40 @@ def _data_root() -> Path:
     return _JUEGO_DIR.parent / "Data"
 
 
+def _asegurar_directorio(carpeta: Path) -> Path:
+    """Crea ``carpeta`` y corrige ficheros anómalos en la ruta (p. ej. tras limpieza parcial)."""
+    partes: list[Path] = []
+    actual = carpeta
+    while True:
+        partes.append(actual)
+        if actual.parent == actual:
+            break
+        actual = actual.parent
+
+    for ruta in reversed(partes):
+        if ruta.is_file():
+            ruta.unlink()
+        if ruta.is_dir():
+            continue
+        try:
+            ruta.mkdir(exist_ok=True)
+        except OSError as exc:
+            winerror = getattr(exc, "winerror", None)
+            if winerror == 183 or isinstance(exc, FileExistsError):
+                if ruta.is_dir():
+                    continue
+            raise
+    return carpeta
+
+
 def _dir_banco() -> Path:
     """Directorio plano ``Data/Banco/`` (banco de preguntas y catálogos)."""
-    base = _data_root() / "Banco"
-    base.mkdir(parents=True, exist_ok=True)
-    return base
+    return _asegurar_directorio(_data_root() / "Banco")
 
 
 def _dir_juego_datos() -> Path:
     """Directorio plano ``Data/Juego/`` (estado local del jugador)."""
-    base = _data_root() / "Juego"
-    base.mkdir(parents=True, exist_ok=True)
-    return base
+    return _asegurar_directorio(_data_root() / "Juego")
 
 
 def _dir_data_escritura() -> Path:
@@ -224,7 +246,7 @@ def resolver_dir_informes() -> Path:
 
 
 def ruta_informe_para_usuario(archivo: Path) -> str:
-    """Ruta corta sin caracteres problemáticos para la consola de Windows."""
+    """Ruta corta sin caracteres problemáticos para la terminal de Windows."""
     return f"Data/Juego/{archivo.name}"
 
 

@@ -26,16 +26,9 @@ Versión gráfica del juego. Reutiliza [`Comun/`](../Comun/README.md) (datos, re
 | [`aviso_resistencia.py`](aviso_resistencia.py) | Popups de eventos y recompensas (resistencia) |
 | [`informe_partida.py`](informe_partida.py) | Resumen breve y guardado de informes `.txt` en `Data/Juego/` |
 
-## Estrategia de migración
+## Estado
 
-| Fase | Qué ocurre |
-|------|------------|
-| **Actual** | Terminal y gráfico **coexisten**. El gráfico tiene paridad en libre, historia, resistencia y feedback. |
-| **Futura** | Cuando el gráfico sea **estable y completo**, se elimina la UI terminal y solo queda `juego_grafico.py` + `Grafico/`. |
-
-**Se conservará:** dominio en [`Comun/`](../Comun/README.md).
-
-**Se eliminará:** `juego_consola.py`, menús por teclado, build `.exe` de consola, etc.
+La migración «solo pygame» está completada: el dominio vive en [`Comun/`](../Comun/README.md) y la única interfaz de juego es esta carpeta `Grafico/` con el lanzador [`juego_grafico.py`](../juego_grafico.py).
 
 ## Principio de controles
 
@@ -79,4 +72,4 @@ Textos en [`tooltips_ui.py`](tooltips_ui.py). Cobertura: iconos de barra, menús
 
 ## Pruebas
 
-[`Tests/test_grafico_menus.py`](../../Tests/test_grafico_menus.py), [`Tests/test_grafico_ui.py`](../../Tests/test_grafico_ui.py), paridad en [`Tests/test_consola_paridad.py`](../../Tests/test_consola_paridad.py).
+[`Tests/test_grafico_menus.py`](../../Tests/test_grafico_menus.py), [`Tests/test_grafico_ui.py`](../../Tests/test_grafico_ui.py), dominio en [`Tests/test_dominio_juego.py`](../../Tests/test_dominio_juego.py).

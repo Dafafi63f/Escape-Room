@@ -68,7 +68,7 @@ def filtrar_pool_asistente(
     semestre: str | None = None,
     tipo: str | None = None,
 ) -> list[Pregunta]:
-    """Filtro de un solo valor por eje (asistente de consola)."""
+    """Filtro de un solo valor por eje (asistente de configuración)."""
     return [
         p
         for p in preguntas

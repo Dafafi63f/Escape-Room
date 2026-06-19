@@ -49,7 +49,7 @@
 \begin{document}
 \maketitle
 
-\noindent\textit{Nota sobre el título:} el documento de proyecto inicial planteaba un escape room con interfaz gráfica. El \textbf{entregable de este TFG} es el cuestionario (banco + modos de juego en consola y gráfico pygame) descrito en esta memoria; la capa narrativa escape room completa queda como evolución futura del mismo proyecto.
+\noindent\textit{Nota sobre el título:} el documento de proyecto inicial planteaba un escape room con interfaz gráfica. El \textbf{entregable de este TFG} es el cuestionario (banco + juego en \textbf{pygame}) descrito en esta memoria; la capa narrativa escape room completa queda como evolución futura del mismo proyecto.
 
 \smallskip
 \noindent El detalle técnico del repositorio (esquema del banco, scripts, arquitectura del juego) se documenta en los \texttt{README.md} del proyecto y se cita en los apéndices al final de esta memoria.
@@ -58,7 +58,7 @@
 \noindent\textbf{Versión de entrega:} dos Word en \texttt{Docs/Entrega/} (\texttt{Memoria\_TFG\_markdown.docx}, \texttt{Memoria\_TFG\_latex.docx}); figuras en \texttt{Docs/Figuras/}. Regenerar figuras: \texttt{python Docs/generar\_figuras\_memoria.py}. Regenerar Word: \texttt{python utilidades\_tfg.py --solo-memoria}. El PDF de entrega lo exportas desde Word tras editar.
 
 \begin{abstract}
-\noindent Se presenta el diseño e implementación de un cuestionario educativo alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos (MatCAD). El entregable incluye un banco cerrado de \textbf{480 preguntas} con metadatos curriculares, un juego en consola con tres modos (libre, historia y feedback) y herramientas de validación del dataset. El documento de proyecto inicial planteaba un escape room con interfaz gráfica; se adoptó un enfoque incremental que prioriza el contenido evaluable y el motor de juego antes de la capa narrativa visual. Los resultados muestran un sistema funcional, documentado y extensible; la validación con usuarios y la interfaz gráfica quedan como trabajo futuro.
+\noindent Se presenta el diseño e implementación de un cuestionario educativo alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos (MatCAD). El entregable incluye un banco cerrado de \textbf{480 preguntas} con metadatos curriculares, un juego en \textbf{pygame} con cuatro modos (libre, historia, resistencia y feedback), y herramientas de validación del dataset. El desarrollo siguió un enfoque incremental: primero un prototipo en terminal para validar el motor de evaluación y, después, una interfaz gráfica que concentra toda la experiencia de juego. Los resultados muestran un sistema funcional, documentado y extensible; la validación con usuarios y la narrativa gráfica quedan como trabajo futuro.
 
 \medskip
 \noindent\textbf{Palabras clave:} cuestionario educativo, gamificación, banco de preguntas, autoevaluación, MatCAD, serious games.
@@ -76,13 +76,13 @@ Paralelamente, la gamificación y los \textit{serious games} (Michael y Chen, 20
 
 Este Trabajo de Fin de Grado surge de la necesidad de disponer de una herramienta de autoevaluación alineada con las asignaturas del grado. El sistema debe gestionar un banco de preguntas \textbf{estructurado y auditable} ---mediante reglas automatizadas, revisión manual documentada y scripts de mantenimiento reproducibles---, ofrecer una experiencia de juego que incentive la práctica repetida, permitir analizar la calidad del contenido (distractores, duplicados, coherencia curricular) y sentar las bases para modelos pedagógicos más ricos.
 
-En este contexto, \textbf{gamificación} designa el uso de elementos de diseño de juego (puntos, vidas, retos, progresión) en un contexto formativo no recreativo (Deterding et al., 2011); en este TFG se aplica al cuestionario en consola sin interfaz gráfica. Un \textbf{banco de preguntas auditable} es un conjunto de ítems cuya calidad puede revisarse de forma sistemática mediante \texttt{mantenimiento.py validar}, la revisión manual del banco de producción (480 ítems, cerrada) y scripts de auditoría. Los \textbf{distractores plausibles} son opciones incorrectas creíbles para quien no domina el concepto (Haladyna et al., 2002). La \textbf{narrativa} (capa pendiente) sería la secuencia ficcional de escenas que contextualiza los retos; el entregable actual funciona sin ella. Por \textbf{multiasignatura} y \textbf{prerrequisitos} se entiende el solapamiento entre materias y los conocimientos previos que un ítem da por asumidos.
+En este contexto, \textbf{gamificación} designa el uso de elementos de diseño de juego (puntos, vidas, retos, progresión) en un contexto formativo no recreativo (Deterding et al., 2011); en este TFG se aplica al cuestionario interactivo con retroalimentación inmediata en pantalla. Un \textbf{banco de preguntas auditable} es un conjunto de ítems cuya calidad y estructura pueden revisarse de forma sistemática mediante \texttt{mantenimiento.py validar}, la revisión manual del banco de producción (480 ítems, cerrada) y scripts de auditoría. Los \textbf{distractores plausibles} son opciones incorrectas creíbles para quien no domina el concepto (Haladyna et al., 2002). La \textbf{narrativa} (capa pendiente) sería la secuencia ficcional de escenas que contextualiza los retos; el entregable actual funciona sin ella. Por \textbf{multiasignatura} y \textbf{prerrequisitos} se entiende el solapamiento entre materias y los conocimientos previos que un ítem da por asumidos.
 
 La motivación principal es combinar programación, matemáticas y diseño interactivo en una aplicación práctica que consolide conocimientos del grado y que pueda ser extendida por el propio autor o por el profesorado.
 
 \subsection{Alcance del entregable}
 
-El documento de proyecto inicial planteaba un juego interactivo tipo escape room con interfaz gráfica. Durante el desarrollo se priorizó la \textbf{calidad y estructura del banco de preguntas} y un \textbf{prototipo jugable en consola}, decisión metodológica coherente con un enfoque incremental: primero validar el contenido y la lógica de evaluación; después añadir la capa narrativa y gráfica.
+El documento de proyecto inicial planteaba un juego interactivo tipo escape room con interfaz gráfica. Durante el desarrollo se priorizó la \textbf{calidad y estructura del banco de preguntas} y un \textbf{prototipo jugable} (primero en terminal, después en pygame), decisión metodológica coherente con un enfoque incremental: validar el contenido y la lógica de evaluación antes de la capa narrativa visual. En junio de 2026 el código se unificó en una \textbf{única interfaz gráfica} (\texttt{juego\_grafico.py}).
 
 \subsection{Objetivos derivados del desarrollo}
 
@@ -92,15 +92,29 @@ Durante el proyecto surgieron objetivos técnicos no recogidos en el documento i
 
 \subsubsection{Aprendizaje activo y evaluación formativa}
 
-El aprendizaje universitario de calidad se asocia a estrategias centradas en el estudiante (Biggs, Tang y Kennedy, 2022). La \textbf{evaluación formativa} orienta el aprendizaje (Nicol y Macfarlane-Dick, 2006). Los cuestionarios de opción múltiple exigen distractores plausibles (Haladyna et al., 2002).
+El aprendizaje universitario de calidad se asocia a estrategias que sitúan al estudiante en el centro del proceso: resolver problemas, recibir retroalimentación y reflexionar sobre los errores (Biggs, Tang y Kennedy, 2022). La \textbf{evaluación formativa} no tiene como única finalidad calificar, sino orientar el aprendizaje mediante información sobre el desempeño y sobre cómo mejorarlo (Nicol y Macfarlane-Dick, 2006).
 
-\subsubsection{Gamificación, serious games y narrativa}
+Los cuestionarios de opción múltiple, cuando están bien diseñados, permiten cubrir un espectro amplio de contenidos con corrección automática. Su efectividad depende de la calidad del ítem: enunciados claros, distractores plausibles y alineación con los resultados de aprendizaje (Haladyna et al., 2002).
 
-El \textit{game-based learning} ofrece retroalimentación inmediata (Prensky, 2003; Gee, 2003). Los \textit{serious games} (Michael y Chen, 2005) y escape rooms (Veldkamp et al., 2020) aportan narrativa; si no está alineada, puede distraer (Habgood y Ainsworth, 2011). Este TFG separa banco + motor de la narrativa gráfica pendiente.
+\subsubsection{Gamificación y aprendizaje basado en juegos}
+
+El \textbf{aprendizaje basado en juegos digitales} (\textit{game-based learning}) apuesta por experiencias interactivas con reglas claras y retroalimentación inmediata (Prensky, 2003; Gee, 2003). En educación superior \textbf{STEM} (ciencia, tecnología, ingeniería y matemáticas), los \textit{serious games} (Michael y Chen, 2005) han mostrado potencial para reforzar conceptos abstractos, con evidencia dependiente del dominio (Kiili, 2005).
+
+\subsubsection{Serious games, escape rooms y narrativa}
+
+Los \textit{serious games} persiguen un propósito formativo principal (Michael y Chen, 2005). Los escape rooms educativos y las novelas gráficas aportan \textbf{narrativa} envolvente (Veldkamp et al., 2020); si no está alineada con los objetivos de aprendizaje, puede distraer (Habgood y Ainsworth, 2011). Este TFG separa la capa evaluable (banco + motor) de la narrativa gráfica pendiente.
+
+\subsubsection{Bancos de preguntas y tutoría inteligente}
+
+Plataformas como Moodle integran cuestionarios con categorías; los sistemas adaptativos seleccionan ítems según prerrequisitos (Brusilovsky y Peylo, 2003). Este proyecto anticipa esa línea con metadatos curriculares y el modo historia ponderado por calificaciones históricas.
 
 \subsubsection{Posicionamiento}
 
-Contribución: alineación curricular (40 materias, 4×2×5), trazabilidad de calidad del banco y arquitectura extensible. Los distractores \textbf{fuertes} son plausibles; los \textbf{débiles} delatan el ítem (auditoría + revisión manual).
+Pocas herramientas modelan el \textbf{plan completo de un grado} con metadatos curriculares explícitos y código mantenible. La contribución distintiva es triple: alineación curricular (40 materias, 4×2×5), trazabilidad de calidad del banco y arquitectura extensible.
+
+\subsubsection{Ítems, distractores fuertes y débiles}
+
+En un ítem A--D, las tres opciones incorrectas son \textbf{distractores}. Un \textbf{distractor fuerte} es plausible para quien no domina el concepto; un \textbf{distractor débil} delata el ítem (opciones genéricas, longitudes desiguales, etc.). La auditoría automatizada detecta patrones débiles; la revisión manual valora la plausibilidad pedagógica.
 
 \section{Objetivos}
 
@@ -129,14 +143,14 @@ OE5 & Evaluar el funcionamiento y el valor formativo del sistema & Banco validad
 
 Hipótesis formuladas de modo \textbf{contrastable} con datos del sistema:
 
-\textbf{H1.} Un banco estructurado según el plan curricular \textbf{permite autoevaluación segmentada} verificable con los filtros del modo libre.
+\textbf{H1.} Un banco estructurado según el plan curricular (materia, dificultad, tipo, metadatos curso/semestre/grupo/nivel) \textbf{permite autoevaluación segmentada} verificable mediante los filtros implementados en el modo libre.
 
-\textbf{H2.} Un pipeline automatizado \textbf{detecta inconsistencias} (desequilibrios, distractores débiles, duplicados) con conteos reproducibles.
+\textbf{H2.} Un pipeline automatizado de validación y auditoría \textbf{detecta inconsistencias} (desequilibrios, distractores débiles, duplicados) de forma reproducible, con conteos cuantificables en cada ejecución.
 
-\textbf{H3.} El histórico de calificaciones \textbf{pondera materias} en el modo historia de forma coherente con estadísticas agregadas.
+\textbf{H3.} El histórico de calificaciones del grado permite \textbf{ponderar materias} en el modo historia de forma coherente con estadísticas agregadas (media, tasa de suspensos, índice de dificultad por asignatura).
 
 \begin{quote}
-\textbf{Nota:} \textbf{H1}--\textbf{H2} con auditorías; \textbf{H3} con 8818 registros (§5.6). La motivación (gamificación vs.\ listado estático) queda en trabajo futuro (§6.6) por falta de datos de usuario.
+\textbf{Nota metodológica:} \textbf{H1} y \textbf{H2} se contrastan con informes de auditoría y validación estructural. \textbf{H3} se apoya en el análisis de 8818 registros del CSV histórico (véase §5.6). La hipótesis sobre \textbf{motivación} (gamificación vs.\ listado estático) no se incluye por falta de indicadores de usuario en este TFG; se traslada a trabajo futuro (§6.6 y §7).
 \end{quote}
 
 \section{Metodología}
@@ -146,7 +160,7 @@ Hipótesis formuladas de modo \textbf{contrastable} con datos del sistema:
 El desarrollo siguió una \textbf{metodología incremental} en cuatro fases, alineada con el documento de proyecto:
 \begin{enumerate}
   \item \textbf{Análisis y diseño:} definición de materias, esquema del banco, metadatos y modos de juego.
-  \item \textbf{Implementación:} dataset, scripts de mantenimiento, motor de partida en consola.
+  \item \textbf{Implementación:} dataset, scripts de mantenimiento, motor de partida y juego en pygame.
   \item \textbf{Pruebas:} validación estructural, pruebas unitarias, revisión manual del contenido.
   \item \textbf{Evaluación:} análisis del resultado, identificación de limitaciones y líneas futuras.
 \end{enumerate}
@@ -184,9 +198,9 @@ Respuesta correcta & 120 por letra A, B, C y D \\
 
 \textbf{Stack tecnológico:}
 \begin{itemize}
-  \item Lenguaje: Python 3.10+ (biblioteca estándar en el juego; sin dependencias externas obligatorias).
-  \item Persistencia: CSV y JSON para datos; informes y feedback en \texttt{.txt} locales.
-  \item Empaquetado opcional: PyInstaller (Windows), script \texttt{build\_exe\_onefile.ps1}.
+  \item Lenguaje: Python 3.10+; \textbf{pygame-ce} para la interfaz gráfica (\texttt{requirements.txt}).
+  \item Persistencia: CSV y JSON para datos; informes y feedback en \texttt{.txt} locales bajo \texttt{Data/Juego/}.
+  \item Empaquetado opcional: PyInstaller (\texttt{Juego/build\_exe\_onefile.ps1} $\rightarrow$ \texttt{juego\_grafico.exe}).
 \end{itemize}
 
 La arquitectura del software se organiza en capas desacopladas (figura~\ref{fig:arquitectura}): el lanzador orquesta los modos de juego; cada modo delega en el motor de partida la corrección, la puntuación y los informes; la capa de datos abstrae el acceso al banco cerrado y a los metadatos curriculares. Los scripts de mantenimiento operan sobre los mismos ficheros sin formar parte del ejecutable del juego.
@@ -203,12 +217,10 @@ La arquitectura del software se organiza en capas desacopladas (figura~\ref{fig:
 \toprule
 \textbf{Capa} & \textbf{Módulos} & \textbf{Función} \\
 \midrule
-Lanzadores & \texttt{juego\_consola.py}\newline\texttt{juego\_grafico.py} & Terminal y pygame (libre, historia, resistencia, feedback) \\
-Dominio & \texttt{Juego/Comun/} (\texttt{motor\_nucleo.py}, \texttt{reglas\_partida.py}, \texttt{datos.py}, \ldots) & Reglas, puntuación, pool, rutas compartidas \\
-Modos (consola) & \texttt{modo\_libre.py}\newline\texttt{modo\_historia.py}\newline\texttt{modo\_feedback.py} & Flujos pedagógicos en terminal \\
-UI gráfica & \texttt{Juego/Grafico/} (\texttt{pantalla\_feedback.py}, \texttt{pantalla\_info.py}, \ldots) & Pantallas pygame y barra superior fija \\
-Interacción & \texttt{consola.py}\newline\texttt{entrada\_teclas.py}\newline\texttt{entrada\_menu.py}\newline\texttt{navegacion.py} & Teclas (\texttt{msvcrt} en Windows), menús, pausa, ayuda \\
-Historia & \texttt{generador\_examen\_historia.py} & Ponderación según histórico de calificaciones \\
+Lanzador & \texttt{juego\_grafico.py} & Arranque pygame (libre, historia, resistencia, feedback) \\
+Dominio & \texttt{Juego/Comun/} (\texttt{motor\_nucleo.py}, \texttt{reglas\_partida.py}, \texttt{datos.py}, \texttt{informe\_examen.py}, \texttt{envio\_feedback.py}, resistencia, \ldots) & Reglas, puntuación, pool, informes, rutas \\
+Interfaz gráfica & \texttt{Juego/Grafico/} (\texttt{pantallas*.py}, \texttt{ui.py}, \texttt{tooltips\_ui.py}, \ldots) & Menús y partida con ratón (pygame) \\
+Historia & \texttt{Comun/generador\_examen\_historia.py} & Ponderación según histórico de calificaciones \\
 \bottomrule
 \end{tabularx}
 \fintabla
@@ -221,22 +233,25 @@ Historia & \texttt{generador\_examen\_historia.py} & Ponderación según histór
 \midrule
 \textbf{Libre} & Autoevaluación abierta con filtros por curso, semestre, temática, grupo, nivel, materia y dificultad \\
 \textbf{Historia} & Simulación de examen balanceado según histórico de qualificacions del grado \\
+\textbf{Resistencia} & Partida infinita con eventos, objetos y ranking local de preguntas alcanzadas \\
 \textbf{Feedback} & Canal de mejora continua (bugs, sugerencias) hacia el creador \\
 \bottomrule
 \end{tabular}
 \fintabla
 
-\bloquetfg{\textbf{Evaluación del jugador} (\texttt{motor\_partida.py}): cada respuesta A--D se compara con el campo \texttt{Correcta}.}
+\bloquetfg{\textbf{Evaluación del jugador (motor de partida):} el sistema corrige cada respuesta comparando la letra elegida (A--D) con el campo \texttt{Correcta} del ítem (\texttt{motor\_nucleo.py}). Según el preset de reglas:}
 \iniciotabla
 \begin{tabular}{@{}lp{9.5cm}@{}}
 \toprule
 \textbf{Mecanismo} & \textbf{Comportamiento} \\
 \midrule
-Corrección inmediata & Acierto/fallo con feedback; modo examen sin pistas hasta el informe final. \\
-Puntuación arcade & +10/+20/+30 (F/M/D); penalización $\geq 5$ o mitad del valor base. \\
-Nota & $10 \times \text{aciertos}/\text{total}$ en presets NOTA/PORCENTAJE. \\
-Vidas & 3 por defecto; error resta una vida; partida termina a 0. \\
-Progresión & Dificultad global sube cada 3 preguntas (modo libre arcade). \\
+\textbf{Corrección inmediata} & En modo arcade/repaso: acierto $\rightarrow$ mensaje y, si aplica, suma de puntos; fallo $\rightarrow$ resta de vida y/o penalización de puntos, opcionalmente muestra la solución. \\
+\textbf{Corrección al final} & En modo examen (historia): no hay feedback durante el bloque; al cerrar se genera informe con nota y detalle pregunta a pregunta. \\
+\textbf{Puntuación arcade} & +10 / +20 / +30 por acierto (Fácil / Media / Difícil); penalización en fallo: al menos 5 puntos o la mitad del valor base. \\
+\textbf{Nota / porcentaje} & $\mathrm{nota} = 10 \times \text{aciertos}/\text{total}$ o porcentaje equivalente cuando el preset usa sistema NOTA o PORCENTAJE. \\
+\textbf{Vidas} & Por defecto 3; cada error resta una vida; la partida termina al llegar a 0 (antes de completar el objetivo de preguntas). \\
+\textbf{Dificultad progresiva} & En modo libre arcade: la dificultad global del pool sube cada tres preguntas respondidas. \\
+\textbf{Tiempo} & Opcional por pregunta o total; si se agota, la respuesta cuenta como fallo. \\
 \bottomrule
 \end{tabular}
 \fintabla
@@ -250,12 +265,12 @@ Progresión & Dificultad global sube cada 3 preguntas (modo libre arcade). \\
 \midrule
 Balance estructural del CSV & \texttt{mantenimiento.py validar} \\
 Revisión manual del contenido & 480/480 ítems revisados; validación automatizada \\
-Auditoría de distractores & \texttt{mantenimiento.py auditar-distractores} (consola; \texttt{--json} opcional) \\
+Auditoría de distractores & \texttt{mantenimiento.py auditar-distractores} (terminal; \texttt{--json} opcional) \\
 Duplicados semánticos & \texttt{duplicados.py revisar} (0 pares similares en CSV y plantillas intra-materia, 2026-06-15) \\
-Pruebas de regresión & \texttt{python -m unittest discover -s Tests -v} (262 tests) \\
+Pruebas de regresión & \texttt{python -m unittest discover -s Tests -v} (\textbf{246} tests: 238 + 8 en \texttt{Files/}) \\
 Integración continua & GitHub Actions (\texttt{.github/workflows/tests.yml}) \\
-Revisión con profesorado & Identificación de solapamiento temático y prerrequisitos (véase sección 8) \\
-Simulación Monte Carlo (respuestas al azar) & \texttt{simulacion\_evaluacion\_azar.py} (véase \S\,5.7) \\
+Revisión con profesorado & Identificación de solapamiento temático y prerrequisitos (véase §6.2) \\
+Simulación Monte Carlo (respuestas al azar) & \texttt{Files/simulacion\_evaluacion\_azar.py} (véase §5.7) \\
 \bottomrule
 \end{tabular}
 \fintabla
@@ -267,7 +282,7 @@ El banco de producción (\texttt{Preguntas.csv}) se declaró \textbf{cerrado} en
 Se consideró exitoso el entregable si:
 \begin{enumerate}
   \item El banco cumplía el esquema 480 ítems con balance verificado.
-  \item Los tres modos de juego eran ejecutables sin errores en el flujo principal.
+  \item Los modos de juego principales eran ejecutables sin errores en el flujo principal (\texttt{juego\_grafico.py}).
   \item Existía documentación reproducible (README, memoria, scripts de mantenimiento).
   \item El contenido había pasado revisión manual completa.
 \end{enumerate}
@@ -288,22 +303,22 @@ El banco distingue \textbf{modo seguro} (solo dataset revisado) y \textbf{modo b
 
 \subsection{Aplicación de juego}
 
-\textbf{Estado del entregable:} cuestionario en consola y \textbf{versión gráfica} pygame con cuatro modos operativos (libre, historia, resistencia, feedback), banco de \textbf{480 preguntas} revisadas manualmente, herramientas de mantenimiento del dataset y empaquetado opcional en ejecutable Windows. La capa narrativa escape room / novela gráfica completa queda como evolución futura.
+\textbf{Estado del entregable:} cuestionario en \textbf{pygame} con cuatro modos operativos (libre, historia, resistencia, feedback), banco de \textbf{480 preguntas} revisadas manualmente y herramientas de mantenimiento del dataset. La capa narrativa escape room / novela gráfica completa queda como evolución futura.
 
-Se entregó un cuestionario funcional en consola y en pygame:
+El desarrollo siguió un enfoque incremental: un prototipo en terminal validó el motor de evaluación; la interfaz gráfica concentró después toda la experiencia de juego. En junio de 2026 se eliminó la capa de consola y se unificó el código en \texttt{juego\_grafico.py} con dominio en \texttt{Juego/Comun/} e interfaz en \texttt{Juego/Grafico/}.
 
 \begin{tabular}{@{}lp{8cm}@{}}
 \toprule
 \textbf{Componente} & \textbf{Resultado} \\
 \midrule
-Lanzador consola & \texttt{Juego/juego\_consola.py} (tutorial de foco de teclado al inicio) \\
-Lanzador gráfico & \texttt{Juego/juego\_grafico.py} + \texttt{Juego/Grafico/} (libre, historia, resistencia, feedback, info) \\
-Paquete de lógica & \texttt{Juego/Comun/} (dominio) + \texttt{Juego/Consola/} y \texttt{Juego/Grafico/} (UI) \\
+Lanzador & \texttt{Juego/juego\_grafico.py} \\
+Dominio & \texttt{Juego/Comun/} (motor, reglas, datos, informes, feedback, historia, resistencia) \\
+Interfaz & \texttt{Juego/Grafico/} (menús, partida, tooltips, barra superior) \\
 Modo libre & Filtros multidimensionales, informes \texttt{.txt} \\
 Modo historia & Generador de examen según \texttt{Historic\_qualificacions\_MatCAD\_completo.csv} \\
+Modo resistencia & Reto del día, apuestas, maldiciones, power-ups \\
 Modo feedback & Guardado local + envío SMTP opcional \\
-Ejecutable & Build opcional con PyInstaller \\
-Pruebas & Suite en \texttt{Tests/} + \texttt{Files/test\_*.py} --- \textbf{262 tests}; CI en GitHub Actions \\
+Pruebas & Suite en \texttt{Tests/} (juego) y \texttt{Files/test\_*.py} (mantenimiento); CI en GitHub Actions \\
 \bottomrule
 \end{tabular}
 
@@ -351,11 +366,11 @@ G10 & 4 & Modelización física e información \\
 
 Cada pregunta se enriquece al cargar con \texttt{curso}, \texttt{semestre}, \texttt{grupo}, \texttt{nivel} y \texttt{tematica}, lo que habilita filtros de partida alineados con la etapa formativa del estudiante.
 
-Diagrama detallado (40 materias): \texttt{Data/README.md}.
+Diagrama detallado (40 materias con posición curricular): \texttt{Data/README.md\#jerarquía-curricular-40-materias}.
 
 \subsection{Herramientas de mantenimiento}
 
-Se desarrolló un conjunto de scripts en \texttt{Files/} con punto de entrada unificado (\texttt{mantenimiento.py}): validación, revisión, pipeline de plantillas, auditorías (salida en consola), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en \texttt{utils\_plantillas\_core.py}, compartida con \texttt{Juego/Comun/datos.py}. Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en \texttt{Tests/} (262 tests) con CI en GitHub Actions. Catálogo de comandos: \texttt{Files/README.md}.
+Se desarrolló un conjunto de scripts en \texttt{Files/} con punto de entrada unificado (\texttt{mantenimiento.py}): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en \texttt{utils\_plantillas\_core.py}, compartida con \texttt{Juego/Comun/datos.py}. Los datos del juego se organizan en \texttt{Data/Banco/} (banco y catálogos) y \texttt{Data/Juego/} (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en \texttt{Tests/} (\textbf{246} tests) con CI en GitHub Actions. Catálogo de comandos: \texttt{Files/README.md}.
 
 \subsection{Síntesis cuantitativa}
 
@@ -365,9 +380,9 @@ Se desarrolló un conjunto de scripts en \texttt{Files/} con punto de entrada un
 \midrule
 Preguntas en banco de producción & 480 \\
 Materias cubiertas & 40 \\
-Módulos Python del juego (Consola) & 18 \\
-Modos de juego operativos & 3 \\
-Pruebas unitarias & 4 módulos de test \\
+Módulos Python del juego (\texttt{Comun/} + \texttt{Grafico/}) & $\sim$35 \\
+Modos de juego operativos & 4 \\
+Pruebas automatizadas & 246 \\
 Grupos temáticos modelados & 10 \\
 \bottomrule
 \end{tabular}
@@ -385,25 +400,26 @@ El procedimiento, implementado en \texttt{generador\_examen\_historia.py}, sigue
 \label{fig:flujo-historia}
 \end{figure}
 
+La tabla siguiente recoge una muestra ilustrativa de materias con mayor índice de dificultad en el histórico agregado:
+
 \iniciotabla
 \begin{tabular}{@{}lrrrr@{}}
 \toprule
-\textbf{Materia} & \textbf{Índice} & \textbf{Media} & \textbf{\% susp.} & \textbf{Reg.} \\
+\textbf{Materia} & \textbf{Índice} & \textbf{Media} & \textbf{Tasa suspensos} & \textbf{Registros} \\
 \midrule
-Càlcul en Diverses Variables & 0,026 & 5,66 & 22,9 & 341 \\
-Probabilitat & 0,021 & 5,65 & 21,6 & 343 \\
-Anàlisi Complexa i de Fourier & 0,008 & 5,55 & 16,3 & 258 \\
+Càlcul en Diverses Variables & 0,026 & 5,66 & 22,9\,\% & 341 \\
+Probabilitat & 0,021 & 5,65 & 21,6\,\% & 343 \\
+Anàlisi Complexa i de Fourier & 0,008 & 5,55 & 16,3\,\% & 258 \\
 \bottomrule
 \end{tabular}
 \captionof{table}{Materias con mayor índice de dificultad en el histórico agregado (muestra ilustrativa).}
-\label{tab:h4-dificultad}
 \fintabla
 
 Estos valores orientan la ponderación del modo historia; un piloto con estudiantes permitiría contrastar si los exámenes generados se perciben alineados con la exigencia real del grado.
 
-\subsection{Simulación Monte Carlo (respuestas al azar)}
+\subsection{Simulación Monte Carlo de la evaluación (respuestas al azar)}
 
-Para validar que el motor de corrección penaliza el azar como cabría esperar en un examen tipo test, se implementó \texttt{simulacion\_evaluacion\_azar.py} y se formalizó el experimento en términos probabilísticos. En cada ítem, la respuesta del jugador que contesta al azar se modela como una variable de Bernoulli $X_i \sim \mathrm{Bernoulli}(p)$ con $p = 1/4$, al elegir uniformemente entre las cuatro opciones A--D. El número de aciertos en un bloque de $n = 20$ preguntas es entonces
+Para validar que el motor de corrección penaliza el azar como cabría esperar en un examen tipo test, se implementó \texttt{Files/simulacion\_evaluacion\_azar.py} y se formalizó el experimento en términos probabilísticos. En cada ítem, la respuesta del jugador que contesta al azar se modela como una variable de Bernoulli $X_i \sim \mathrm{Bernoulli}(p)$ con $p = 1/4$, al elegir uniformemente entre las cuatro opciones A--D. El número de aciertos en un bloque de $n = 20$ preguntas es entonces
 \[
 Y = \sum_{i=1}^{n} X_i \sim \mathrm{Binomial}(n,\, p),
 \]
@@ -413,7 +429,7 @@ El estimador Monte Carlo de la fracción de aciertos tras $N$ réplicas independ
 \[
 \hat{p}_N = \frac{1}{N}\sum_{k=1}^{N}\frac{Y^{(k)}}{n},
 \]
-es insesgado ($\mathbb{E}[\hat{p}_N] = p$) y su error estándar decrece como $\mathcal{O}(1/\sqrt{N})$. Con $N = 50\,000$ y semilla 42, la simulación arroja una fracción media de \textbf{24,98\,\%}, próxima al valor teórico (figura~\ref{fig:mc-convergencia}). La figura~\ref{fig:mc-histograma} contrasta el histograma empírico de notas con la masa de probabilidad binomial.
+es insesgado ($\mathbb{E}[\hat{p}_N] = p$) y su error estándar decrece como $\mathcal{O}(1/\sqrt{N})$. Con $N = 50\,000$ y semilla 42, la simulación arroja una fracción media de \textbf{24,98\,\%}, próxima al valor teórico (figura~\ref{fig:mc-convergencia}). La figura~\ref{fig:mc-histograma} contrasta el histograma empírico de notas con la masa de probabilidad binomial; la coincidencia visual confirma que la implementación reproduce el modelo probabilístico.
 
 \begin{figure}[htbp]
 \centering
@@ -432,19 +448,17 @@ es insesgado ($\mathbb{E}[\hat{p}_N] = p$) y su error estándar decrece como $\m
 En el \textbf{modo arcade} con tres vidas, cada fallo consume una vida y la probabilidad de error por pregunta es $q = 3/4$. El número de preguntas respondidas hasta agotar las vidas coincide, en ausencia de límite superior, con el número de ensayos hasta observar $r = 3$ fallos en ensayos de Bernoulli con probabilidad de «éxito» $q$; dicha variable sigue una ley binomial negativa con valor esperado $\mathbb{E}[T] = r/q = 4$, lo que explica la media empírica de \textbf{4,0} preguntas por partida. La probabilidad de completar las 20 preguntas sin perder las tres vidas es $\mathbb{P}(Y_{20} \geq 18) = \sum_{j=18}^{20}\binom{20}{j}(1/4)^j(3/4)^{20-j}$, prácticamente nula; de ahí que el \textbf{100\,\%} de partidas simuladas agoten vidas antes del objetivo.
 
 \iniciotabla
-\begin{tabular}{@{}ll@{}}
+\begin{tabular}{@{}lll@{}}
 \toprule
-\textbf{Escenario} & \textbf{Resultado} \\
+\textbf{Escenario} & \textbf{Métrica} & \textbf{Resultado} \\
 \midrule
-Modo examen: fracción media de aciertos & \textbf{24,98\,\%} \\
-Modo examen: nota media /10 & \textbf{2,5} \\
-Modo arcade: partidas que agotan vidas & \textbf{100\,\%} \\
-Modo arcade: preguntas respondidas de media & \textbf{4,0} / 20 \\
-Modo arcade: puntos medios & \textbf{$-10$} \\
+Modo examen (sin vidas) & Fracción media de aciertos & \textbf{24,98\,\%} (≈ 25\,\% teórico) \\
+Modo examen & Nota media /10 & \textbf{2,5} \\
+Modo arcade (3 vidas) & Partidas que agotan vidas antes de 20 preguntas & \textbf{100\,\%} \\
+Modo arcade & Preguntas respondidas de media & \textbf{4,0} / 20 \\
+Modo arcade & Puntos medios & \textbf{$-10,0$} \\
 \bottomrule
 \end{tabular}
-\captionof{table}{Resumen numérico de la simulación Monte Carlo (semilla 42).}
-\label{tab:mc-resumen}
 \fintabla
 
 En conjunto, el experimento demuestra que el azar produce suspensión sistemática y que, con vidas limitadas, impide completar bloques largos sin conocimiento real. Las figuras se regeneran con \texttt{python Docs/generar\_figuras\_memoria.py}; la simulación numérica, con \texttt{python Files/simulacion\_evaluacion\_azar.py}.
@@ -456,20 +470,20 @@ En conjunto, el experimento demuestra que el azar produce suspensión sistemáti
 El \textbf{objetivo general} se cumple de forma parcial: existe un juego educativo interactivo basado en contenidos del grado, pero la progresión narrativa tipo escape room no está implementada. La progresión actual es ludificada (vidas, puntos, dificultad creciente) y curricular (filtros por etapa del grado).
 
 \iniciotabla
-\begin{tabular}{@{}llp{6.5cm}@{}}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{5.8cm}@{}}
 \toprule
-\textbf{\#} & \textbf{Estado} & \textbf{Comentario} \\
+\textbf{\#} & \textbf{Objetivo} & \textbf{Estado} & \textbf{Comentario} \\
 \midrule
-OE1 & Pendiente (futuro) & Sin guion de escenas/salas implementado \\
-OE2 & \textbf{Cumplido} & Banco 480 ítems, Teoría/Cálculo, tres dificultades \\
-OE3 & \textbf{Cumplido} & Motor A--D, puntuación, vidas, informes \\
-OE4 & \textbf{Parcialmente cumplido} & \texttt{juego\_grafico.py}: libre, historia, resistencia y feedback; falta narrativa escape room \\
-OE5 & \textbf{Parcialmente cumplido} & Banco validado, 262 tests + CI; sin estudio con usuarios \\
+OE1 & Narrativa interactiva & Pendiente (futuro) & Sin guion de escenas/salas implementado \\
+OE2 & Retos por materias & \textbf{Cumplido} & Banco 480 ítems, Teoría/Cálculo, tres dificultades \\
+OE3 & Validación de respuestas & \textbf{Cumplido} & Motor A--D, puntuación, vidas, informes \\
+OE4 & Interfaz gráfica & \textbf{Cumplido} & \texttt{juego\_grafico.py} con libre, historia, resistencia y feedback; tooltips y barra superior \\
+OE5 & Valor formativo & \textbf{Parcialmente cumplido} & Banco validado, 246 tests + CI; sin estudio con usuarios \\
 \bottomrule
 \end{tabular}
 \fintabla
 
-Los \textbf{objetivos específicos} OE2, OE3 y OE5 están cubiertos. OE4 avanza con interfaz gráfica pygame en los cuatro modos principales; OE1 (narrativa gráfica completa tipo escape room) queda como trabajo futuro. La consola y el gráfico comparten dominio en \texttt{Juego/Comun/}.
+Los \textbf{objetivos específicos} OE2, OE3, OE4 y OE5 están cubiertos en la versión pygame. OE1 (narrativa gráfica completa tipo escape room) queda como trabajo futuro. El enfoque incremental ---primero validar el núcleo evaluable, después la capa visual--- permitió concentrar el esfuerzo en un único lanzador mantenible.
 
 \subsection{Validez del banco de preguntas}
 
@@ -492,7 +506,7 @@ El sistema permite al estudiante practicar por \textbf{semestre o temática} aco
 
 Para el profesorado, el banco estructurado y los scripts de auditoría facilitan revisión por materia y detección de ítems problemáticos. El modo feedback cierra un ciclo de mejora continua.
 
-La interfaz en consola limita la accesibilidad para usuarios no familiarizados con terminal; el tutorial de foco de teclado al inicio mitiga parte de esa barrera, pero una GUI sería deseable para despliegue masivo.
+La interfaz pygame facilita el despliegue para usuarios no familiarizados con terminal; requiere instalar \textbf{pygame-ce} (\texttt{requirements.txt}).
 
 \subsection{Relación con las hipótesis}
 
@@ -500,7 +514,7 @@ La hipótesis \textbf{H1} queda apoyada por la operatividad de los filtros curri
 
 \subsection{Limitaciones del estudio}
 
-El estudio no incluye \textbf{evaluación con usuarios}: no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes. La \textbf{interfaz en consola} reduce el atractivo visual respecto al escape room planteado inicialmente. El \textbf{modelo de datos} asigna una sola materia por pregunta y aún no modela prerrequisitos explícitos. El \textbf{idioma del banco} mezcla castellano y catalán según la asignatura, con coherencia terminológica revisada pero mejorable. Por último, el \textbf{modo beta} amplía el pool con plantillas no revisadas y debe distinguirse del banco de producción en cualquier evaluación formal.
+El estudio no incluye \textbf{evaluación con usuarios}: no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes. La \textbf{interfaz gráfica} actual cubre menús y partida, pero aún no implementa la narrativa escape room del documento inicial. El \textbf{modelo de datos} asigna una sola materia por pregunta y aún no modela prerrequisitos explícitos. El \textbf{idioma del banco} mezcla castellano y catalán según la asignatura, con coherencia terminológica revisada pero mejorable. Por último, el \textbf{modo beta} amplía el pool con plantillas no revisadas y debe distinguirse del banco de producción en cualquier evaluación formal.
 
 \subsection{Trabajo futuro}
 
@@ -511,7 +525,7 @@ Entre las líneas futuras inmediatas figuran la implementación de \texttt{Mater
 Este Trabajo de Fin de Grado ha diseñado e implementado un \textbf{sistema de cuestionarios académicos} alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos, integrando:
 \begin{itemize}
   \item un \textbf{banco de 480 preguntas} estructurado, balanceado y revisado manualmente;
-  \item un \textbf{juego en consola} con tres modos (libre, historia, feedback) que gamifica la autoevaluación;
+  \item un \textbf{juego} en pygame con modos libre, historia, resistencia y feedback que gamifica la autoevaluación;
   \item un \textbf{conjunto de herramientas} de validación y mantenimiento del dataset;
   \item y una \textbf{arquitectura extensible} preparada para narrativa gráfica y modelos pedagógicos más ricos.
 \end{itemize}
@@ -520,7 +534,9 @@ La principal contribución académica es pasar de un cuestionario genérico a un
 
 En el plano personal, el proyecto ha consolidado competencias de programación en Python, diseño de datos, ingeniería de software incremental y reflexión pedagógica sobre la evaluación en grados STEM interdisciplinares.
 
-Las líneas futuras más inmediatas son la validación con usuarios reales, el enriquecimiento del modelo de datos con multiasignatura y prerrequisitos, y el desarrollo de la interfaz gráfica prevista en el documento de proyecto.
+Las líneas futuras más inmediatas son la validación con usuarios reales (incluida la motivación frente a un listado estático), el enriquecimiento del modelo de datos con multiasignatura y prerrequisitos, y el desarrollo de la capa narrativa escape room prevista en el documento de proyecto.
+
+La simulación Monte Carlo (§5.7) aporta una primera validación cuantitativa del motor de evaluación: el azar no permite aprobar ni completar partidas largas con vidas limitadas.
 
 \section{Bibliografía}
 
@@ -554,7 +570,7 @@ Veldkamp, A., van de Grint, L., Knippels, M. C. P. J., y van Joolingen, W. R. (2
 \midrule
 A & Esquema del banco y diagramas curriculares & \texttt{Data/README.md} \\
 H & Estado del proyecto y seguimiento & \texttt{Docs/CHANGELOG\_PROYECTO.md}, \texttt{Docs/CHANGELOG\_JUEGO.md}, \texttt{Docs/CHECKLIST.md} \\
-B & Arquitectura del juego, modos, puntuación, bancos beta & \texttt{Juego/Consola/README.md} \\
+B & Arquitectura del juego, modos, puntuación, bancos beta & \texttt{Juego/README.md}, \texttt{Juego/Comun/README.md}, \texttt{Juego/Grafico/README.md} \\
 C & Scripts de mantenimiento, balanceo, auditorías & \texttt{Files/README.md} \\
 E & Pruebas unitarias & \texttt{Tests/README.md} \\
 F & Repositorio y guía rápida & \texttt{README.md} \\

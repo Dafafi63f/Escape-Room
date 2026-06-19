@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Etiquetas de interfaz con emojis (consola: fondo oscuro; gráfico: botones claros)."""
+"""Etiquetas de interfaz con emojis para pygame (variante alterna en pares EmojiPar)."""
 
 from __future__ import annotations
 
@@ -49,27 +49,27 @@ __all__ = [
     "titulo_pantalla",
 ]
 
-ContextoUi = Literal["grafico", "consola"]
+ContextoUi = Literal["grafico", "alterno"]
 PosicionEmoji = Literal["inicio", "fin", "simetrico"]
 
 
 @dataclass(frozen=True)
 class EmojiPar:
-    """Par de emojis: gráfico (botones/fondos claros) y consola (fondo oscuro)."""
+    """Par de emojis: variante principal (pygame) y alterna (p. ej. otro contraste)."""
 
     grafico: str
-    consola: str
+    alterno: str
 
     def elegir(self, contexto: ContextoUi) -> str:
-        return self.consola if contexto == "consola" else self.grafico
+        return self.alterno if contexto == "alterno" else self.grafico
 
     @staticmethod
     def igual(emoji: str) -> EmojiPar:
         return EmojiPar(emoji, emoji)
 
 
-def _p(grafico: str, consola: str | None = None) -> EmojiPar:
-    return EmojiPar(grafico, consola if consola is not None else grafico)
+def _p(grafico: str, alterno: str | None = None) -> EmojiPar:
+    return EmojiPar(grafico, alterno if alterno is not None else grafico)
 
 
 def resolver_emoji(emoji: str | EmojiPar, *, contexto: ContextoUi = "grafico") -> str:

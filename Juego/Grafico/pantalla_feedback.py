@@ -11,7 +11,7 @@ import pygame
 from Comun.feedback_opciones import AREAS_FEEDBACK, CATEGORIAS_FEEDBACK, indice_area_defecto
 from Comun.preferencias_grafico import nombre_jugador_grafico
 from Comun.rutas import resolver_config_creador_privado
-from Consola.envio_feedback import (
+from Comun.envio_feedback import (
     CategoriaFeedback,
     ReporteFeedback,
     describir_resultado_envio,

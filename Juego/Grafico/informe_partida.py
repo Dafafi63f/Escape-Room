@@ -7,7 +7,7 @@ from __future__ import annotations
 from Comun.cierre_informe import CierreInformePartida
 from Comun.preferencias_grafico import guardar_informes_txt_habilitados
 from Comun.reglas_partida import SistemaPuntuacion, formatear_resultado_puntuacion
-from Consola.informe_examen import RegistroRespuesta, publicar_informe_partida
+from Comun.informe_examen import RegistroRespuesta, publicar_informe_partida
 from Comun.motor_nucleo import EstadoPartida
 from Comun.rutas import ruta_informe_para_usuario
 
@@ -82,7 +82,7 @@ def publicar_informe_grafico(
         meta={**(meta or {}), "abandonado": abandonado},
         stats_historicas=stats_historicas,
         prefijo=prefijo,
-        mostrar_en_consola=False,
+        imprimir_aviso_terminal=False,
     )
     if ruta is None:
         return None

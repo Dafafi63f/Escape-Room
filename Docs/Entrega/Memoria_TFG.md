@@ -2,7 +2,7 @@
 
 **Alumno:** Daniel Fageda Figueredo · **NIU:** 1601846 · **Tutor:** Víctor Navas Portella
 
-> *Nota sobre el título:* el documento de proyecto inicial planteaba un escape room con interfaz gráfica. El **entregable de este TFG** es el cuestionario (banco + modos de juego en consola y gráfico pygame) descrito en esta memoria; la capa narrativa escape room completa queda como evolución futura del mismo proyecto.
+> *Nota sobre el título:* el documento de proyecto inicial planteaba un escape room con interfaz gráfica. El **entregable de este TFG** es el cuestionario (banco + juego en **pygame** con cuatro modos) descrito en esta memoria; la capa narrativa escape room completa queda como evolución futura del mismo proyecto.
 
 El detalle técnico del repositorio (esquema del banco, scripts, arquitectura del juego) se documenta en los [`README.md`](../../README.md) del proyecto y se cita en los apéndices al final de esta memoria.
 
@@ -11,7 +11,7 @@ El detalle técnico del repositorio (esquema del banco, scripts, arquitectura de
 
 ## Resumen
 
-Se presenta el diseño e implementación de un cuestionario educativo alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos (MatCAD). El entregable incluye un banco cerrado de **480 preguntas** con metadatos curriculares, un juego en consola con cuatro modos (libre, historia, resistencia y feedback), una versión gráfica en pygame (libre, historia y resistencia) y herramientas de validación del dataset. El documento de proyecto inicial planteaba un escape room con interfaz gráfica; se adoptó un enfoque incremental que prioriza el contenido evaluable y el motor de juego antes de la capa narrativa visual. Los resultados muestran un sistema funcional, documentado y extensible; la validación con usuarios y la narrativa gráfica quedan como trabajo futuro.
+Se presenta el diseño e implementación de un cuestionario educativo alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos (MatCAD). El entregable incluye un banco cerrado de **480 preguntas** con metadatos curriculares, un juego en **pygame** con cuatro modos (libre, historia, resistencia y feedback), y herramientas de validación del dataset. El desarrollo siguió un enfoque incremental: primero un prototipo en terminal para validar el motor de evaluación y, después, una interfaz gráfica que concentra toda la experiencia de juego. Los resultados muestran un sistema funcional, documentado y extensible; la validación con usuarios y la narrativa gráfica quedan como trabajo futuro.
 
 **Palabras clave:** cuestionario educativo, gamificación, banco de preguntas, autoevaluación, MatCAD, serious games.
 
@@ -28,13 +28,13 @@ Paralelamente, la gamificación y los *serious games* (Michael y Chen, 2005) han
 
 Este Trabajo de Fin de Grado surge de la necesidad de disponer de una herramienta de autoevaluación alineada con las asignaturas del grado. El sistema debe gestionar un banco de preguntas **estructurado y auditable** —mediante reglas automatizadas, revisión manual documentada y scripts de mantenimiento reproducibles—, ofrecer una experiencia de juego que incentive la práctica repetida, permitir analizar la calidad del contenido (distractores, duplicados, coherencia curricular) y sentar las bases para modelos pedagógicos más ricos.
 
-En este contexto, **gamificación** designa el uso de elementos de diseño de juego (puntos, vidas, retos, progresión) en un contexto formativo no recreativo (Deterding et al., 2011); en este TFG se aplica al cuestionario en consola sin interfaz gráfica. Un **banco de preguntas auditable** es un conjunto de ítems cuya calidad y estructura pueden revisarse de forma sistemática mediante `mantenimiento.py validar`, la revisión manual del banco de producción (480 ítems, cerrada) y scripts de auditoría. Los **distractores plausibles** son opciones incorrectas creíbles para quien no domina el concepto (Haladyna et al., 2002). La **narrativa** (capa pendiente) sería la secuencia ficcional de escenas que contextualiza los retos; el entregable actual funciona sin ella. Por **multiasignatura** y **prerrequisitos** se entiende el solapamiento entre materias y los conocimientos previos que un ítem da por asumidos.
+En este contexto, **gamificación** designa el uso de elementos de diseño de juego (puntos, vidas, retos, progresión) en un contexto formativo no recreativo (Deterding et al., 2011); en este TFG se aplica al cuestionario interactivo con retroalimentación inmediata en pantalla. Un **banco de preguntas auditable** es un conjunto de ítems cuya calidad y estructura pueden revisarse de forma sistemática mediante `mantenimiento.py validar`, la revisión manual del banco de producción (480 ítems, cerrada) y scripts de auditoría. Los **distractores plausibles** son opciones incorrectas creíbles para quien no domina el concepto (Haladyna et al., 2002). La **narrativa** (capa pendiente) sería la secuencia ficcional de escenas que contextualiza los retos; el entregable actual funciona sin ella. Por **multiasignatura** y **prerrequisitos** se entiende el solapamiento entre materias y los conocimientos previos que un ítem da por asumidos.
 
 La motivación principal es combinar programación, matemáticas y diseño interactivo en una aplicación práctica que consolide conocimientos del grado y que pueda ser extendida por el propio autor o por el profesorado.
 
 ### 1.3 Alcance del entregable
 
-El documento de proyecto inicial planteaba un juego interactivo tipo escape room con interfaz gráfica. Durante el desarrollo se priorizó la **calidad y estructura del banco de preguntas** y un **prototipo jugable en consola**, decisión metodológica coherente con un enfoque incremental: primero validar el contenido y la lógica de evaluación; después añadir la capa narrativa y gráfica.
+El documento de proyecto inicial planteaba un juego interactivo tipo escape room con interfaz gráfica. Durante el desarrollo se priorizó la **calidad y estructura del banco de preguntas** y un **prototipo jugable** (primero en terminal, después en pygame), decisión metodológica coherente con un enfoque incremental: validar el contenido y la lógica de evaluación antes de la capa narrativa visual. En junio de 2026 el código se unificó en una **única interfaz gráfica** (`juego_grafico.py`).
 
 ### 1.4 Objetivos derivados del desarrollo
 
@@ -108,7 +108,7 @@ A partir del marco teórico y del diseño del sistema, se formulan las siguiente
 El desarrollo siguió una **metodología incremental** en cuatro fases, alineada con el documento de proyecto:
 
 1. **Análisis y diseño:** definición de materias, esquema del banco, metadatos y modos de juego.
-2. **Implementación:** dataset, scripts de mantenimiento, motor de partida en consola.
+2. **Implementación:** dataset, scripts de mantenimiento, motor de partida y juego en pygame.
 3. **Pruebas:** validación estructural, pruebas unitarias, revisión manual del contenido.
 4. **Evaluación:** análisis del resultado, identificación de limitaciones y líneas futuras.
 
@@ -140,9 +140,9 @@ Detalle técnico: [`Data/README.md`](../../Data/README.md).
 
 **Stack tecnológico:**
 
-- Lenguaje: Python 3.10+ (biblioteca estándar en el juego; sin dependencias externas obligatorias).
-- Persistencia: CSV y JSON para datos; informes y feedback en `.txt` locales.
-- Empaquetado opcional: PyInstaller (Windows), script `build_exe_onefile.ps1`.
+- Lenguaje: Python 3.10+; **pygame-ce** para la interfaz gráfica (`requirements.txt`).
+- Persistencia: CSV y JSON para datos; informes y feedback en `.txt` locales bajo `Data/Juego/`.
+- Empaquetado opcional: PyInstaller (`Juego/build_exe_onefile.ps1` → `juego_grafico.exe`).
 
 La arquitectura del software se organiza en capas desacopladas (figura 1): el lanzador orquesta los modos de juego; cada modo delega en el motor de partida la corrección, la puntuación y los informes; la capa de datos abstrae el acceso al banco cerrado y a los metadatos curriculares. Los scripts de mantenimiento operan sobre los mismos ficheros sin formar parte del ejecutable del juego.
 
@@ -152,12 +152,10 @@ La arquitectura del software se organiza en capas desacopladas (figura 1): el la
 
 | Capa | Módulos principales | Función |
 |------|---------------------|---------|
-| Lanzadores | `juego_consola.py`<br>`juego_grafico.py` | Terminal y pygame (libre, historia, resistencia) |
-| Dominio | `Juego/Comun/` (`motor_nucleo.py`, `reglas_partida.py`, `datos.py`, resistencia, …) | Reglas, puntuación, pool, rutas — compartido |
-| Modos (consola) | `modo_libre.py`<br>`modo_historia.py`<br>`motor_resistencia.py`<br>`modo_feedback.py` | Flujos pedagógicos en terminal |
+| Lanzador | `juego_grafico.py` | Arranque pygame (libre, historia, resistencia, feedback) |
+| Dominio | `Juego/Comun/` (`motor_nucleo.py`, `reglas_partida.py`, `datos.py`, `informe_examen.py`, `envio_feedback.py`, resistencia, …) | Reglas, puntuación, pool, informes, rutas |
 | Interfaz gráfica | `Juego/Grafico/` (`pantallas*.py`, `ui.py`, `tooltips_ui.py`, …) | Menús y partida con ratón (pygame) |
-| Interacción (consola) | `consola.py`<br>`entrada_teclas.py`<br>`entrada_menu.py`<br>`navegacion.py` | Teclas (`msvcrt` en Windows), menús, pausa, ayuda |
-| Historia | `generador_examen_historia.py` | Ponderación según histórico de calificaciones |
+| Historia | `Comun/generador_examen_historia.py` | Ponderación según histórico de calificaciones |
 
 **Modos implementados:**
 
@@ -168,7 +166,7 @@ La arquitectura del software se organiza en capas desacopladas (figura 1): el la
 | **Resistencia** | Partida infinita con eventos, objetos y ranking local de preguntas alcanzadas |
 | **Feedback** | Canal de mejora continua (bugs, sugerencias) hacia el creador |
 
-**Evaluación del jugador (motor de partida):** el sistema corrige cada respuesta comparando la letra elegida (A–D) con el campo `Correcta` del ítem (`motor_partida.py`). Según el preset de reglas:
+**Evaluación del jugador (motor de partida):** el sistema corrige cada respuesta comparando la letra elegida (A–D) con el campo `Correcta` del ítem (`motor_nucleo.py`). Según el preset de reglas:
 
 | Mecanismo | Comportamiento |
 |-----------|----------------|
@@ -186,12 +184,12 @@ La arquitectura del software se organiza en capas desacopladas (figura 1): el la
 |-----------|---------------------|
 | Balance estructural del CSV | `mantenimiento.py validar` |
 | Revisión manual del contenido | 480/480 ítems revisados; validación automatizada |
-| Auditoría de distractores | `mantenimiento.py auditar-distractores` (consola; `--json` opcional) |
+| Auditoría de distractores | `mantenimiento.py auditar-distractores` (terminal; `--json` opcional) |
 | Duplicados semánticos | `duplicados.py revisar` (0 pares similares en CSV y plantillas intra-materia, 2026-06-15) |
-| Pruebas de regresión | `python -m unittest discover -s Tests -v` (**262** tests: 254 + 8 en `Files/`) |
+| Pruebas de regresión | `python -m unittest discover -s Tests -v` (**246** tests: 238 + 8 en `Files/`) |
 | Integración continua | GitHub Actions (`.github/workflows/tests.yml`) |
-| Revisión con profesorado | Identificación de solapamiento temático y prerrequisitos (véase sección 7) |
-| Simulación Monte Carlo (respuestas al azar) | `simulacion_evaluacion_azar.py` (véase §5.7) |
+| Revisión con profesorado | Identificación de solapamiento temático y prerrequisitos (véase §6.2) |
+| Simulación Monte Carlo (respuestas al azar) | `Files/simulacion_evaluacion_azar.py` (véase §5.7) |
 
 El banco de producción (`Preguntas.csv`) se declaró **cerrado** en junio de 2026; las escrituras en el CSV requieren `TFG_PERMITIR_CSV=1` para evitar modificaciones accidentales.
 
@@ -200,7 +198,7 @@ El banco de producción (`Preguntas.csv`) se declaró **cerrado** en junio de 20
 Se consideró exitoso el entregable si:
 
 1. El banco cumplía el esquema 480 ítems con balance verificado.
-2. Los modos de juego principales eran ejecutables sin errores en el flujo principal (consola y gráfico).
+2. Los modos de juego principales eran ejecutables sin errores en el flujo principal (`juego_grafico.py`).
 3. Existía documentación reproducible (README, memoria, scripts de mantenimiento).
 4. El contenido había pasado revisión manual completa.
 
@@ -220,18 +218,19 @@ El banco distingue **modo seguro** (solo dataset revisado) y **modo beta** (pool
 
 ### 5.2 Aplicación de juego
 
-**Estado del entregable:** cuestionario en consola y **versión gráfica** pygame con cuatro modos operativos (libre, historia, resistencia, feedback), banco de **480 preguntas** revisadas manualmente, herramientas de mantenimiento del dataset y empaquetado opcional en ejecutable Windows. La capa narrativa escape room / novela gráfica completa queda como evolución futura.
+**Estado del entregable:** cuestionario en **pygame** con cuatro modos operativos (libre, historia, resistencia, feedback), banco de **480 preguntas** revisadas manualmente y herramientas de mantenimiento del dataset. La capa narrativa escape room / novela gráfica completa queda como evolución futura.
 
-Se entregó un cuestionario en consola funcional:
+El desarrollo siguió un enfoque incremental: un prototipo en terminal validó el motor de evaluación; la interfaz gráfica concentró después toda la experiencia de juego. En junio de 2026 se eliminó la capa de consola y se unificó el código en `juego_grafico.py` con dominio en `Juego/Comun/` e interfaz en `Juego/Grafico/`.
 
 | Componente | Resultado |
 |------------|-----------|
-| Lanzador | `Juego/juego_consola.py` (tutorial de foco de teclado al inicio) |
-| Paquete de lógica | `Juego/Comun/` (dominio compartido) + `Juego/Consola/` (UI terminal) |
+| Lanzador | `Juego/juego_grafico.py` |
+| Dominio | `Juego/Comun/` (motor, reglas, datos, informes, feedback, historia, resistencia) |
+| Interfaz | `Juego/Grafico/` (menús, partida, tooltips, barra superior) |
 | Modo libre | Filtros multidimensionales, informes `.txt` |
 | Modo historia | Generador de examen según `Historic_qualificacions_MatCAD_completo.csv` |
+| Modo resistencia | Reto del día, apuestas, maldiciones, power-ups |
 | Modo feedback | Guardado local + envío SMTP opcional |
-| Ejecutable | Build opcional con PyInstaller |
 | Pruebas | Suite en `Tests/` (juego) y `Files/test_*.py` (mantenimiento); CI en GitHub Actions |
 
 ### 5.3 Organización curricular modelada
@@ -270,7 +269,7 @@ Diagrama detallado (40 materias con posición curricular): [`Data/README.md`](..
 
 ### 5.4 Herramientas de mantenimiento
 
-Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida en consola), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en `utils_plantillas_core.py`, compartida con `Juego/Comun/datos.py`. Los datos del juego se organizan en `Data/Banco/` (banco y catálogos) y `Data/Juego/` (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en `Tests/` (**262** tests) con CI en GitHub Actions. Catálogo de comandos: [`Files/README.md`](../../Files/README.md).
+Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en `utils_plantillas_core.py`, compartida con `Juego/Comun/datos.py`. Los datos del juego se organizan en `Data/Banco/` (banco y catálogos) y `Data/Juego/` (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en `Tests/` (**246** tests) con CI en GitHub Actions. Catálogo de comandos: [`Files/README.md`](../../Files/README.md).
 
 ### 5.5 Síntesis cuantitativa
 
@@ -278,9 +277,9 @@ Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado
 |---------|-------|
 | Preguntas en banco de producción | 480 |
 | Materias cubiertas | 40 |
-| Módulos Python del juego (Consola) | 18 |
-| Modos de juego operativos | 3 |
-| Pruebas unitarias | 4 módulos de test |
+| Módulos Python del juego (`Comun/` + `Grafico/`) | ~35 |
+| Modos de juego operativos | 4 |
+| Pruebas automatizadas | 246 |
 | Grupos temáticos modelados | 10 |
 
 ### 5.6 Validación analítica del modo historia (H3)
@@ -353,10 +352,10 @@ El **objetivo general** se cumple de forma parcial: existe un juego educativo in
 | OE1 | Narrativa interactiva | Pendiente (futuro) | Sin guion de escenas/salas implementado |
 | OE2 | Retos por materias | **Cumplido** | Banco 480 ítems, Teoría/Cálculo, tres dificultades |
 | OE3 | Validación de respuestas | **Cumplido** | Motor A–D, puntuación, vidas, informes |
-| OE4 | Interfaz gráfica | Parcial (avanzado) | `juego_grafico.py` + libre, historia y resistencia en pygame; tooltips; consola sigue siendo referencia para feedback SMTP |
-| OE5 | Valor formativo | **Parcialmente cumplido** | Banco validado, 262 tests + CI; sin estudio con usuarios |
+| OE4 | Interfaz gráfica | **Cumplido** | `juego_grafico.py` con libre, historia, resistencia y feedback; tooltips y barra superior |
+| OE5 | Valor formativo | **Parcialmente cumplido** | Banco validado, 246 tests + CI; sin estudio con usuarios |
 
-Los **objetivos específicos** OE2, OE3 y OE5 están cubiertos en su versión de consola. OE4 avanza con una interfaz gráfica en pygame (modos libre, historia y resistencia); OE1 (narrativa gráfica completa) queda como trabajo futuro. Esta decisión es defendible: el prototipo valida el núcleo evaluable antes del coste de la capa narrativa visual, en línea con el principio de prototipado incremental en ingeniería del software.
+Los **objetivos específicos** OE2, OE3, OE4 y OE5 están cubiertos en la versión pygame. OE1 (narrativa gráfica completa tipo escape room) queda como trabajo futuro. El enfoque incremental —primero validar el núcleo evaluable, después la capa visual— permitió concentrar el esfuerzo en un único lanzador mantenible.
 
 ### 6.2 Validez del banco de preguntas
 
@@ -377,7 +376,7 @@ El sistema permite al estudiante practicar por **semestre o temática** acorde a
 
 Para el profesorado, el banco estructurado y los scripts de auditoría facilitan revisión por materia y detección de ítems problemáticos. El modo feedback cierra un ciclo de mejora continua.
 
-La interfaz en consola limita la accesibilidad para usuarios no familiarizados con terminal; el tutorial de foco de teclado al inicio mitiga parte de esa barrera, pero una GUI sería deseable para despliegue masivo.
+La interfaz pygame facilita el despliegue para usuarios no familiarizados con terminal; requiere instalar **pygame-ce** (`requirements.txt`).
 
 ### 6.4 Relación con las hipótesis
 
@@ -385,7 +384,7 @@ La hipótesis **H1** queda apoyada por la operatividad de los filtros curricular
 
 ### 6.5 Limitaciones del estudio
 
-El estudio no incluye **evaluación con usuarios**: no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes. La **interfaz en consola** reduce el atractivo visual respecto al escape room planteado inicialmente. El **modelo de datos** asigna una sola materia por pregunta y aún no modela prerrequisitos explícitos. El **idioma del banco** mezcla castellano y catalán según la asignatura, con coherencia terminológica revisada pero mejorable. Por último, el **modo beta** amplía el pool con plantillas no revisadas y debe distinguirse del banco de producción en cualquier evaluación formal.
+El estudio no incluye **evaluación con usuarios**: no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes. La **interfaz gráfica** actual cubre menús y partida, pero aún no implementa la narrativa escape room del documento inicial. El **modelo de datos** asigna una sola materia por pregunta y aún no modela prerrequisitos explícitos. El **idioma del banco** mezcla castellano y catalán según la asignatura, con coherencia terminológica revisada pero mejorable. Por último, el **modo beta** amplía el pool con plantillas no revisadas y debe distinguirse del banco de producción en cualquier evaluación formal.
 
 ### 6.6 Trabajo futuro
 
@@ -397,7 +396,7 @@ Entre las líneas futuras inmediatas figuran la implementación de `Materias_rel
 Este Trabajo de Fin de Grado ha diseñado e implementado un **sistema de cuestionarios académicos** alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos, integrando:
 
 - un **banco de 480 preguntas** estructurado, balanceado y revisado manualmente;
-- un **juego** en consola y gráfico con modos libre, historia, resistencia y feedback que gamifica la autoevaluación;
+- un **juego** en pygame con modos libre, historia, resistencia y feedback que gamifica la autoevaluación;
 - un **conjunto de herramientas** de validación y mantenimiento del dataset;
 - y una **arquitectura extensible** preparada para narrativa gráfica y modelos pedagógicos más ricos.
 
@@ -405,7 +404,7 @@ La principal contribución académica es pasar de un cuestionario genérico a un
 
 En el plano personal, el proyecto ha consolidado competencias de programación en Python, diseño de datos, ingeniería de software incremental y reflexión pedagógica sobre la evaluación en grados STEM interdisciplinares.
 
-Las líneas futuras más inmediatas son la validación con usuarios reales (incluida la motivación frente a un listado estático), el enriquecimiento del modelo de datos con multiasignatura y prerrequisitos, y el desarrollo de la interfaz gráfica prevista en el documento de proyecto.
+Las líneas futuras más inmediatas son la validación con usuarios reales (incluida la motivación frente a un listado estático), el enriquecimiento del modelo de datos con multiasignatura y prerrequisitos, y el desarrollo de la capa narrativa escape room prevista en el documento de proyecto.
 
 La simulación Monte Carlo (§5.7) aporta una primera validación cuantitativa del motor de evaluación: el azar no permite aprobar ni completar partidas largas con vidas limitadas.
 
@@ -441,7 +440,7 @@ Veldkamp, A., van de Grint, L., Knippels, M. C. P. J., y van Joolingen, W. R. (2
 |----------|-----------|--------|
 | A | Esquema del banco y diagramas curriculares | [`Data/README.md`](../../Data/README.md) |
 | H | Estado del proyecto y seguimiento | [`CHANGELOG_PROYECTO.md`](../CHANGELOG_PROYECTO.md), [`CHANGELOG_JUEGO.md`](../CHANGELOG_JUEGO.md), [`CHECKLIST.md`](../CHECKLIST.md) |
-| B | Arquitectura del juego, modos, puntuación, bancos beta | [`Juego/Comun/README.md`](../../Juego/Comun/README.md) · [`Juego/Consola/README.md`](../../Juego/Consola/README.md) |
+| B | Arquitectura del juego, modos, puntuación, bancos beta | [`Juego/README.md`](../../Juego/README.md) · [`Juego/Comun/README.md`](../../Juego/Comun/README.md) · [`Juego/Grafico/README.md`](../../Juego/Grafico/README.md) |
 | C | Scripts de mantenimiento, balanceo, auditorías | [`Files/README.md`](../../Files/README.md) |
 | E | Pruebas unitarias | [`Tests/README.md`](../../Tests/README.md) |
 | F | Repositorio y guía rápida | [`README.md`](../../README.md) |

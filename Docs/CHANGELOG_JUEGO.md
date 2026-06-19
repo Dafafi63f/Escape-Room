@@ -1,10 +1,16 @@
 # Novedades del juego
 
-Cambios **visibles o relevantes para quien juega** (consola y, sobre todo, interfaz gráfica pygame). El historial técnico del TFG está en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
+Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygame. El historial técnico del TFG está en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
 
 **Última actualización:** 2026-06-19
 
 ---
+
+## 2026-06-19 (migración solo pygame)
+
+- Eliminada la versión en terminal; **único lanzador:** `python Juego/juego_grafico.py`.
+- Informes, feedback y generador de historia viven en `Juego/Comun/`.
+- Suite de tests reorientada al backend gráfico (**246** tests).
 
 ## 2026-06-19 (interfaz gráfica)
 
@@ -24,7 +30,7 @@ Cambios **visibles o relevantes para quien juega** (consola y, sobre todo, inter
 
 ## 2026-06-17
 
-- **Modo historia** y **resistencia** en pygame (además de consola).
+- **Modo historia** y **resistencia** en pygame.
 - **Modo libre** gráfico: asistente en dos pasos (opciones y filtros).
 - Tooltips configurables y emojis opcionales en menús.
 - Reorganización de datos del jugador bajo `Data/Juego/`.
@@ -32,12 +38,12 @@ Cambios **visibles o relevantes para quien juega** (consola y, sobre todo, inter
 ## 2026-06-16
 
 - Primera versión de la **interfaz gráfica** (`juego_grafico.py`): menú principal y modo libre.
-- Misma lógica de partida que la consola gracias al paquete compartido `Comun/`.
+- Misma lógica de partida que el prototipo terminal gracias al paquete compartido `Comun/`.
 
 ## 2026-06-05
 
-- **Modo feedback** en consola (menú o tecla **F** durante partida): avisos al creador con copia local.
-- Controles de teclado ampliados en consola.
+- **Modo feedback** (menú o atajo durante partida): avisos al creador con copia local.
+- Controles de teclado ampliados en el prototipo terminal (retirado en junio 2026).
 
 ## 2026-06-03
 
@@ -45,7 +51,7 @@ Cambios **visibles o relevantes para quien juega** (consola y, sobre todo, inter
 - Tres capas de preguntas en partida: revisadas → plantillas → exclusivas (modo resistencia).
 - Catálogo de **presets historia** y modos **especiales**.
 
-## 2026-05-12 — Inicio del juego (consola)
+## 2026-05-12 — Inicio del juego (prototipo terminal)
 
 - **Modo libre:** partida personalizable (filtros, vidas, tiempo, puntuación).
 - **Modo historia:** simulacros de examen con datos históricos MatCAD.

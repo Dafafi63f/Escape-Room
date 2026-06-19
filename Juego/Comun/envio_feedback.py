@@ -13,7 +13,7 @@ from email.mime.text import MIMEText
 from enum import Enum
 from pathlib import Path
 
-from .config_creador import mensaje_crear_creador_privado
+from Comun.config_creador import mensaje_crear_creador_privado
 from Comun.contacto_creador import lineas_contacto_alternativo
 from Comun.jugador import NOMBRE_JUGADOR_DEFECTO, nombre_jugador_efectivo
 from Comun.rutas import (

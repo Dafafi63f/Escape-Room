@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from Consola.informe_examen import RegistroRespuesta
+    from Comun.informe_examen import RegistroRespuesta
 
 
 @dataclass

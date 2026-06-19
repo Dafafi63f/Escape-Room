@@ -63,26 +63,30 @@ class TestTextosUi(unittest.TestCase):
     def test_sin_emoji(self) -> None:
         self.assertEqual(con_emoji("Modo libre", "🎮", usar_emojis=False), "Modo libre")
 
-    def test_titulo_pantalla_grafico(self) -> None:
+    def test_titulo_pantalla_alterno(self) -> None:
+        self.assertEqual(
+            titulo_pantalla("MODO HISTORIA", simetrico=False, contexto="alterno"),
+            "📕 MODO HISTORIA",
+        )
+
+    def test_info_dataset_alterno(self) -> None:
+        self.assertTrue(
+            info_dataset(480, 40, simetrico=False, contexto="alterno").startswith("📕")
+        )
+
+    def test_titulo_pantalla_grafico_por_defecto(self) -> None:
         self.assertEqual(
             titulo_pantalla("MODO HISTORIA"),
             "📖 MODO HISTORIA 📖",
         )
-
-    def test_titulo_pantalla_consola(self) -> None:
         self.assertEqual(
-            titulo_pantalla("MODO HISTORIA", simetrico=False, contexto="consola"),
-            "📕 MODO HISTORIA",
+            titulo_pantalla("MODO LIBRE"),
+            "🎮 MODO LIBRE 🎮",
         )
 
     def test_info_dataset_grafico(self) -> None:
         self.assertIn("480 preguntas", info_dataset(480, 40))
         self.assertTrue(info_dataset(480, 40).startswith("📚"))
-
-    def test_info_dataset_consola(self) -> None:
-        self.assertTrue(
-            info_dataset(480, 40, simetrico=False, contexto="consola").startswith("📕")
-        )
 
     def test_mensaje_feedback(self) -> None:
         self.assertIn("✅", mensaje_feedback("Correcto (+10 puntos)"))
@@ -169,25 +173,8 @@ class TestTextosUi(unittest.TestCase):
             self.assertEqual(etiqueta_gfx(*BTN_ATRAS), "Atrás")
             self.assertEqual(etiqueta_menu(*BTN_CONTINUAR), "Continuar")
 
-    def test_etiqueta_navegacion_consola(self) -> None:
-        from Comun.textos_ui import BTN_ATRAS, BTN_SIGUIENTE
-        from Consola.textos_consola import etiqueta as etiqueta_cli
-
-        with patch("Consola.textos_consola.usar_emojis", return_value=True):
-            self.assertEqual(etiqueta_cli(*BTN_ATRAS), "◀️ Atrás")
-            self.assertEqual(etiqueta_cli(*BTN_SIGUIENTE), "Siguiente ▶️")
-
     def test_titulo_flexible_prefijo(self) -> None:
         self.assertIn("🔥", titulo_flexible("FIN RACHA — Resistencia"))
-
-    @patch("Consola.textos_consola.usar_emojis", return_value=True)
-    def test_etiqueta_opcion_menu_consola(self, _mock: object) -> None:
-        from Consola.textos_consola import etiqueta_opcion_menu
-
-        fb = next(o for o in OPCIONES_MENU_PRINCIPAL if o.id == "feedback")
-        self.assertEqual(etiqueta_opcion_menu(fb), "📣 Modo feedback")
-        historia = next(o for o in OPCIONES_MENU_PRINCIPAL if o.id == "historia")
-        self.assertEqual(etiqueta_opcion_menu(historia), "📕 Modo historia")
 
 # --- test_preferencias_grafico.py ---
 
@@ -303,6 +290,9 @@ from Comun.ranking_resistencia import top_records, vaciar_ranking_variante  # no
 from Comun.borrar_temporales import (  # noqa: E402
     borrar_temporales,
     dir_data_juego,
+    dirs_data_juego,
+    listar_carpetas_data_juego_vacias,
+    listar_directorios_vacios,
     listar_ficheros_runtime_juego,
 )
 
@@ -327,6 +317,191 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
     def test_dir_data_juego(self) -> None:
         with patch("Comun.borrar_temporales.raiz_proyecto", return_value=Path("/proyecto")):
             self.assertEqual(dir_data_juego(), Path("/proyecto") / "Data" / "Juego")
+
+    def test_dirs_data_juego_solo_canonica(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            canon = raiz / "Data" / "Juego"
+            exe = raiz / "Juego" / "Data" / "Juego"
+            canon.mkdir(parents=True)
+            exe.mkdir(parents=True)
+            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+                self.assertEqual(dirs_data_juego(), [canon])
+
+    def test_elimina_runtime_junto_al_exe(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            juego_exe = raiz / "Juego" / "Data" / "Juego"
+            juego_exe.mkdir(parents=True)
+            (juego_exe / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
+            (juego_exe / "ranking_reto_dia.json").write_text("{}", encoding="utf-8")
+
+            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+                self.assertEqual(len(listar_ficheros_runtime_juego()[0]), 0)
+                resumen = borrar_temporales(raiz, incluir_pycache=False)
+                self.assertEqual(resumen.json_preferencias_borrados, 0)
+                self.assertFalse((raiz / "Juego" / "Data").exists())
+                self.assertGreaterEqual(resumen.carpetas_vacias_borradas, 1)
+
+    def test_elimina_arbol_data_exe_con_banco(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            data_exe = raiz / "Juego" / "Data"
+            (data_exe / "Banco").mkdir(parents=True)
+            (data_exe / "Banco" / "creador_privado.json").write_text("{}", encoding="utf-8")
+            (data_exe / "Juego").mkdir(parents=True)
+            (data_exe / "Juego" / "ranking_reto_dia.json").write_text("{}", encoding="utf-8")
+
+            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+                resumen = borrar_temporales(raiz, incluir_pycache=False)
+                self.assertFalse(data_exe.exists())
+                self.assertGreaterEqual(resumen.carpetas_vacias_borradas, 1)
+
+    def test_elimina_carpetas_vacias_sin_ficheros_runtime(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            vacia = raiz / "Juego" / "Data" / "Juego"
+            vacia.mkdir(parents=True)
+
+            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+                resumen = borrar_temporales(raiz, incluir_pycache=False)
+                self.assertGreaterEqual(resumen.carpetas_vacias_borradas, 1)
+                self.assertFalse((raiz / "Juego" / "Data").exists())
+
+    def test_elimina_data_exe_si_rmtree_falla(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            (raiz / "Juego" / "Data" / "Juego").mkdir(parents=True)
+
+            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+                with patch(
+                    "Comun.borrar_temporales.shutil.rmtree",
+                    side_effect=OSError("bloqueado"),
+                ):
+                    resumen = borrar_temporales(raiz, incluir_pycache=False)
+                self.assertFalse((raiz / "Juego" / "Data").exists())
+                self.assertGreaterEqual(resumen.carpetas_vacias_borradas, 1)
+                self.assertEqual(resumen.carpetas_vacias_errores, 0)
+
+    def test_solo_pycache_elimina_data_exe_vacio(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            (raiz / "Juego" / "Data" / "Juego").mkdir(parents=True)
+
+            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+                resumen = borrar_temporales(
+                    raiz,
+                    incluir_pycache=True,
+                    incluir_txt=False,
+                    incluir_json=False,
+                )
+                self.assertFalse((raiz / "Juego" / "Data").exists())
+                self.assertGreaterEqual(resumen.carpetas_vacias_borradas, 2)
+
+    def test_no_borra_data_juego_si_quedan_presets(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            juego = raiz / "Data" / "Juego"
+            juego.mkdir(parents=True)
+            (juego / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
+            (juego / "presets_historia.json").write_text("{}", encoding="utf-8")
+
+            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+                resumen = borrar_temporales(raiz, incluir_pycache=False)
+                self.assertEqual(resumen.json_preferencias_borrados, 1)
+                self.assertEqual(resumen.carpetas_vacias_borradas, 0)
+                self.assertTrue(juego.is_dir())
+                self.assertTrue((juego / "presets_historia.json").is_file())
+
+    def test_elimina_directorios_vacios_anidados(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            hoja = raiz / "test" / "a" / "b" / "z"
+            hoja.mkdir(parents=True)
+
+            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+                previstos = listar_directorios_vacios(raiz)
+                self.assertIn(hoja, previstos)
+                self.assertIn(hoja.parent, previstos)
+                self.assertIn(raiz / "test", previstos)
+                resumen = borrar_temporales(raiz, incluir_txt=False, incluir_json=False)
+                self.assertFalse((raiz / "test").exists())
+                self.assertGreaterEqual(resumen.carpetas_vacias_borradas, 4)
+
+    def test_conserva_ancestro_con_contenido_en_rama_vacia(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            a = raiz / "test" / "a"
+            a.mkdir(parents=True)
+            (a / "datos.txt").write_text("x", encoding="utf-8")
+            (a / "b" / "z").mkdir(parents=True)
+
+            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+                previstos = listar_directorios_vacios(raiz)
+                self.assertIn(a / "b" / "z", previstos)
+                self.assertIn(a / "b", previstos)
+                self.assertNotIn(raiz / "test", previstos)
+                self.assertNotIn(a, previstos)
+
+                resumen = borrar_temporales(raiz, incluir_txt=False, incluir_json=False)
+                self.assertEqual(resumen.carpetas_vacias_borradas, 2)
+                self.assertTrue((raiz / "test").is_dir())
+                self.assertTrue(a.is_dir())
+                self.assertTrue((a / "datos.txt").is_file())
+                self.assertFalse((a / "b").exists())
+
+    def test_solo_borra_hoja_vacia_si_padre_intermedio_tiene_archivos(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            b = raiz / "test" / "a" / "b"
+            b.mkdir(parents=True)
+            (b / "f.txt").write_text("x", encoding="utf-8")
+            (b / "z").mkdir()
+
+            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+                previstos = listar_directorios_vacios(raiz)
+                self.assertEqual(previstos, [b / "z"])
+
+                borrar_temporales(raiz, incluir_txt=False, incluir_json=False)
+                self.assertTrue((raiz / "test").is_dir())
+                self.assertTrue(b.is_dir())
+                self.assertTrue((b / "f.txt").is_file())
+                self.assertFalse((b / "z").exists())
+
+    def test_elimina_ramas_vacias_hermanas_bajo_mismo_padre(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            a = raiz / "test" / "a"
+            (a / "b" / "z").mkdir(parents=True)
+            (a / "c").mkdir(parents=True)
+
+            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+                previstos = listar_directorios_vacios(raiz)
+                self.assertIn(a / "b" / "z", previstos)
+                self.assertIn(a / "b", previstos)
+                self.assertIn(a / "c", previstos)
+                self.assertIn(a, previstos)
+                self.assertIn(raiz / "test", previstos)
+
+                resumen = borrar_temporales(raiz, incluir_txt=False, incluir_json=False)
+                self.assertEqual(resumen.carpetas_vacias_borradas, 5)
+                self.assertFalse((raiz / "test").exists())
+
+
+class TestRutasDataEscritura(unittest.TestCase):
+    def test_dir_juego_datos_repara_fichero_en_ruta(self) -> None:
+        from Comun.rutas import _dir_juego_datos
+
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            data = raiz / "Data"
+            data.mkdir()
+            (data / "Juego").write_text("bloqueo", encoding="utf-8")
+
+            with patch("Comun.rutas._data_root", return_value=data):
+                carpeta = _dir_juego_datos()
+                self.assertTrue(carpeta.is_dir())
+                self.assertEqual(carpeta, data / "Juego")
 
 
 class TestDatosLocalesJuego(unittest.TestCase):

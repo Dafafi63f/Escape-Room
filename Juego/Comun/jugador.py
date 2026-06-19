@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Nombre de jugador por defecto (consola y gráfico)."""
+"""Nombre de jugador por defecto."""
 
 from __future__ import annotations
 

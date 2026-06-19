@@ -26,14 +26,13 @@ Regenerar figuras: `python Docs/generar_figuras_memoria.py` · Word: `python uti
 |------|--------|-------|
 | **Memoria** | En revisión con tutor | Estructura académica; Word desde MD/LaTeX; PDF de entrega manual |
 | **Banco de preguntas** | Cerrado | 480/480 revisadas; `Preguntas.csv` protegido (`TFG_PERMITIR_CSV=1` para escribir) |
-| **Juego (consola)** | Operativo | 4 modos: libre, historia, resistencia, feedback |
-| **Juego (gráfico)** | En desarrollo avanzado | Libre, historia, resistencia; feedback e info integrados; barra superior |
+| **Juego (pygame)** | Operativo | 4 modos: libre, historia, resistencia, feedback |
 | **Scripts mantenimiento** | Operativo | `Files/mantenimiento.py` (scripts en `Files/`) |
-| **CI / pruebas** | Operativo | GitHub Actions; **262 tests** (254 + 8) |
-| **Interfaz gráfica / narrativa** | En desarrollo | Pygame; migración futura: solo gráfico |
+| **CI / pruebas** | Operativo | GitHub Actions; **246 tests** (238 + 8) |
+| **Interfaz gráfica / narrativa** | En desarrollo | Pygame operativo; narrativa escape room pendiente |
 | **Piloto con usuarios** | No realizado | Ver [`CHECKLIST.md`](CHECKLIST.md) |
 
-**Entregable actual:** juego consola + gráfico pygame + banco 480 preguntas + herramientas de validación.
+**Entregable actual:** juego pygame + banco 480 preguntas + herramientas de validación.
 
 ---
 
@@ -52,10 +51,10 @@ Regenerar figuras: `python Docs/generar_figuras_memoria.py` · Word: `python uti
 
 | Elemento | Estado | Notas |
 |----------|--------|-------|
-| Lanzador consola | OK | `Juego/juego_consola.py` |
-| Lanzador gráfico | Avanzado | `Juego/juego_grafico.py` + `Juego/Grafico/` |
-| Paquete `Comun/` | OK | Dominio compartido + historia/resistencia/ranking |
-| Paquete `Consola/` | OK | UI terminal, modos, informes, feedback |
+| Lanzador gráfico | OK | `Juego/juego_grafico.py` + `Juego/Grafico/` |
+| Paquete `Comun/` | OK | Dominio: reglas, datos, informes, feedback, historia, resistencia |
+| Paquete `Grafico/` | OK | UI pygame, cuatro modos |
+| Ejecutable Windows | Opcional | `Juego/build_exe_onefile.ps1` → `juego_grafico.exe` |
 | Tests + CI | OK | `python -m unittest discover -s Tests -q` |
 
 ### 2.3 Datos y mantenimiento
@@ -203,8 +202,11 @@ Síntesis de **41 commits** en git (mayo–junio 2026) más el trabajo reciente 
 
 | Fecha | Ámbito | Cambio |
 |-------|--------|--------|
+| 2026-06-19 | Migración | Solo pygame: eliminado `Juego/Consola/`, módulos a `Comun/`, 246 tests |
+| 2026-06-19 | Build | PyInstaller: empaqueta `utils_plantillas_core` (`--paths Files`, hidden-import) |
+| 2026-06-19 | Build | PyInstaller: `build_exe_onefile.ps1` → `juego_grafico.exe` |
 | 2026-06-19 | Gráfico | Feedback, info, barra superior, contacto solo correo, changelogs separados |
-| 2026-06-19 | Docs | Documentación alineada: `Docs/`, `utilidades_tfg.py`, 262 tests |
+| 2026-06-19 | Docs | Documentación alineada: `Docs/`, `utilidades_tfg.py`, 246 tests |
 | 2026-06-18 | Gráfico | Barra de estado: chips emoji; resistencia con #N y racha |
 | 2026-06-18 | Juego | Resistencia: reto del día, apuestas, maldiciones, bloques |
 | 2026-06-18 | Repo | Limpieza `Revision/`; `BITACORA`→`CHANGELOG`, `TAREAS`→`CHECKLIST` |

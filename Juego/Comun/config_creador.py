@@ -78,7 +78,7 @@ def escribir_plantilla_creador_privado(
 def mensaje_crear_creador_privado() -> str:
     return (
         "Crea Data/Banco/creador_privado.json con la plantilla del modulo "
-        "(python -m Consola.config_creador desde Juego/)."
+        "(python -m Comun.config_creador desde Juego/)."
     )
 
 

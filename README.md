@@ -4,7 +4,7 @@
 
 **Alumno:** Daniel Fageda Figueredo · **NIU:** 1601846 · **Tutor:** Víctor Navas Portella
 
-Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en consola y en **pygame** (modos libre, historia, resistencia y feedback), y herramientas de mantenimiento del dataset. La capa narrativa escape room queda como evolución futura.
+Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en **pygame** (modos libre, historia, resistencia y feedback), y herramientas de mantenimiento del dataset. La capa narrativa escape room queda como evolución futura.
 
 - **Documentación y entrega del TFG:** [`Docs/`](Docs/README.md) (`Entrega/`, `Figuras/`, changelogs)
 - **Repositorio:** https://github.com/Dafafi63f/Escape-Room.git
@@ -20,8 +20,8 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | Tema | Dónde |
 |------|-------|
 | Esquema del banco, materias, diagramas curriculares | [`Data/README.md`](Data/README.md) |
-| Juego, modos, controles, `.exe` | [`Juego/README.md`](Juego/README.md) |
-| Lógica interna (bancos, puntuación, filtros) | [`Juego/Comun/README.md`](Juego/Comun/README.md) · UI terminal: [`Juego/Consola/README.md`](Juego/Consola/README.md) |
+| Juego, modos y controles | [`Juego/README.md`](Juego/README.md) |
+| Lógica interna (bancos, puntuación, filtros) | [`Juego/Comun/README.md`](Juego/Comun/README.md) · UI gráfica: [`Juego/Grafico/README.md`](Juego/Grafico/README.md) |
 | Scripts de mantenimiento y balanceo | [`Files/README.md`](Files/README.md) |
 | Pruebas unitarias | [`Tests/README.md`](Tests/README.md) |
 | Banco de preguntas (480 ítems) | [`Data/README.md`](Data/README.md) |
@@ -31,11 +31,11 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 
 | Carpeta / fichero | Rol |
 |------------------|-----|
-| [`Juego/`](Juego/README.md) | Lanzadores, [`Comun/`](Juego/Comun/README.md), [`Consola/`](Juego/Consola/README.md), [`Grafico/`](Juego/Grafico/README.md), build opcional del `.exe` |
+| [`Juego/`](Juego/README.md) | Lanzador, [`Comun/`](Juego/Comun/README.md), [`Grafico/`](Juego/Grafico/README.md) |
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
 | [`Docs/`](Docs/README.md) | Changelogs, `Entrega/` (memoria md/tex/docx), `Figuras/` |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias (**262** tests: 254 en `Tests/` + 8 en `Files/`) y CI |
+| [`Tests/`](Tests/README.md) | Pruebas unitarias (**246** tests: 238 en `Tests/` + 8 en `Files/`) y CI |
 | [`utilidades_tfg.py`](utilidades_tfg.py) | Limpieza + exportación Word (por defecto ambas) |
 | [`requirements.txt`](requirements.txt) | Dependencias (pandas, matplotlib, pyinstaller, pygame-ce, mypy, pre-commit) |
 
@@ -54,37 +54,25 @@ Solo una tarea: `python utilidades_tfg.py --solo-limpieza` o `--solo-memoria`.
 
 ## Jugar
 
-Dos versiones en paralelo (ver [`Juego/README.md`](Juego/README.md)):
-
 ```bash
-# Terminal — completa, solo stdlib
-python Juego/juego_consola.py
-
-# Gráfico — pygame (modo libre, historia, resistencia, feedback)
 pip install -r requirements.txt
 python Juego/juego_grafico.py
 ```
 
-La consola sigue siendo referencia para entornos sin pantalla; el gráfico es la interfaz principal (incluye feedback e info del juego).
+### Ejecutable Windows (opcional)
+
+```powershell
+pip install -r requirements.txt
+.\Juego\build_exe_onefile.ps1
+```
+
+Salida: `Juego/juego_grafico.exe`. Detalle en [`Juego/README.md`](Juego/README.md).
 
 ### Datos
 
 Ver [`Data/README.md`](Data/README.md). Imprescindibles: `Data/Banco/Preguntas.csv`, `listado_materias.csv`. Modo historia: `Historic_qualificacions_MatCAD_completo.csv`, `Data/Juego/presets_historia.json`. Modo resistencia: `Data/Juego/preguntas_resistencia.json`, rankings en `Data/Juego/`. Modo con plantillas: `Data/Banco/plantillas.json`.
 
-Configuración privada del creador (SMTP, GitHub, etc.): `Data/Banco/creador_privado.json` (local; plantilla en [`Juego/Consola/config_creador.py`](Juego/Consola/config_creador.py)).
-
-## Ejecutable (opcional, local)
-
-Requisitos: **Windows**, Python 3.10+ con `pip`, carpeta [`Data/`](Data/README.md) en la raíz (el script la empaqueta dentro del `.exe`).
-
-```powershell
-cd Juego
-.\build_exe_onefile.ps1
-```
-
-Salida: `Juego/juego_consola.exe` (ignorado en git). Al terminar, el script elimina `Juego/build/` y `juego_consola.spec`.
-
-Detalle: [`Juego/README.md`](Juego/README.md#ejecutable-opcional).
+Configuración privada del creador (SMTP, GitHub, etc.): `Data/Banco/creador_privado.json` (local; plantilla en [`Juego/Comun/config_creador.py`](Juego/Comun/config_creador.py)).
 
 ## Pruebas
 
@@ -117,12 +105,12 @@ Ficheros: `.github/workflows/tests.yml`, `pr_agent.yml`, `sonarcloud.yml`, `.pre
 
 ```bash
 pre-commit run --all-files
-mypy Juego/Consola Files
+mypy Juego/Comun Juego/Grafico Files
 ```
 
 ## Dependencias
 
-El juego en consola solo necesita Python 3.10+ (stdlib). Para scripts de mantenimiento, figuras de la memoria, build del `.exe` y la versión gráfica (pygame):
+El juego necesita Python 3.10+ y las dependencias de `requirements.txt` (pygame-ce, etc.). Para scripts de mantenimiento y figuras de la memoria:
 
 ```bash
 pip install -r requirements.txt

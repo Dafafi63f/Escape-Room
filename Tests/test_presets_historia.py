@@ -41,7 +41,7 @@ from Comun.rutas import (  # noqa: E402
     resolver_presets_historia,
 )
 from Comun.examen_dia_historia import semilla_examen_dia  # noqa: E402
-from Consola.generador_examen_historia import cargar_estadisticas_historicas, generar_examen  # noqa: E402
+from Comun.generador_examen_historia import cargar_estadisticas_historicas, generar_examen  # noqa: E402
 
 
 class TestPresetsHistoria(unittest.TestCase):

@@ -58,7 +58,7 @@ Los metadatos curriculares (`curso`, `semestre`, `grupo`, `nivel`, `tematica`) *
 
 Validación: `python Files/mantenimiento.py validar`
 
-Auditoría de distractores (consola; `--json` opcional): `python Files/mantenimiento.py auditar-distractores`
+Auditoría de distractores (salida por terminal; `--json` opcional): `python Files/mantenimiento.py auditar-distractores`
 
 Duplicados semánticos: `python Files/duplicados.py revisar` → **0 pares similares** en CSV y plantillas intra-materia (2026-06-15).
 
@@ -225,20 +225,16 @@ flowchart LR
 - Secretos de GitHub (`github`: usuario, repo, token).
 - SMTP del modo feedback (`feedback_smtp`).
 
-La plantilla por defecto está en código: [`Juego/Consola/config_creador.py`](../Juego/Consola/config_creador.py).
+La plantilla por defecto está en código: [`Juego/Comun/config_creador.py`](../Juego/Comun/config_creador.py).
 
 ```bash
 cd Juego
-python -m Consola.config_creador
+python -m Comun.config_creador
 ```
 
 Rellena tus datos reales en el fichero generado. En Gmail, `smtp_password` es una contraseña de aplicación de 16 caracteres.
 
-## Empaquetado en el `.exe`
-
-Al ejecutar `Juego/build_exe_onefile.ps1`, se incluye esta carpeta (salvo que copies datos solo en `Juego/Data/`). Conviene tener aquí al menos los CSV/JSON que uses en todos los modos.
-
-`creador_privado.json` **no** se empaqueta en el `.exe`; configúralo en la máquina donde generes o distribuyas el ejecutable si necesitas SMTP.
+Los informes y el feedback del jugador se guardan en `Data/Juego/` en tiempo de ejecución (`.txt` generados por [`Comun/informe_examen.py`](../Comun/informe_examen.py) y [`Comun/envio_feedback.py`](../Comun/envio_feedback.py)).
 
 ## Limpieza de datos locales
 

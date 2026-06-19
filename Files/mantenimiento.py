@@ -138,7 +138,7 @@ def main(argv: list[str] | None = None) -> int:
     p_ds.add_argument("--variedad", action="store_true")
     p_ds.set_defaults(func=cmd_dataset)
 
-    p_ad = sub.add_parser("auditar-distractores", help="Auditoría de distractores (salida en consola)")
+    p_ad = sub.add_parser("auditar-distractores", help="Auditoría de distractores (salida por terminal)")
     p_ad.add_argument("--json", type=str, default="")
     p_ad.add_argument("--solo-dataset", action="store_true")
     p_ad.set_defaults(func=cmd_auditar_distractores)

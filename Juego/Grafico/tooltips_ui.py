@@ -104,7 +104,7 @@ TOOLTIP_APUESTA_SI = "Aceptar la apuesta arriesgada."
 TOOLTIP_APUESTA_NO = "Rechazar la apuesta y jugar con las reglas normales."
 
 TOOLTIP_GUARDAR_INFORME = (
-    "Guarda un archivo .txt en la carpeta Informes del juego con tus respuestas, "
+    "Guarda un archivo .txt en Data/Juego/ con tus respuestas, "
     "aciertos y corrección pregunta a pregunta."
 )
 

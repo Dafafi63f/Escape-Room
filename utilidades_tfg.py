@@ -170,7 +170,7 @@ def main(argv: list[str] | None = None) -> int:
     modo.add_argument(
         "--solo-limpieza",
         action="store_true",
-        help="Solo limpieza (__pycache__, datos locales en Data/Juego/)",
+        help="Solo limpieza (__pycache__, Data/Juego/ en raíz y Juego/Data/ del .exe)",
     )
     modo.add_argument(
         "--solo-memoria",
@@ -185,7 +185,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     grupo_limpieza = parser.add_mutually_exclusive_group()
     grupo_limpieza.add_argument("--solo-pycache", action="store_true", help="Limpieza: solo __pycache__")
-    grupo_limpieza.add_argument("--solo-juego", action="store_true", help="Limpieza: solo JSON en Data/Juego/")
+    grupo_limpieza.add_argument("--solo-juego", action="store_true", help="Limpieza: solo JSON runtime en Data/Juego/")
     grupo_limpieza.add_argument("--solo-txt", action="store_true", help="Limpieza: solo .txt en Data/Juego/")
 
     grupo_memoria = parser.add_mutually_exclusive_group()
