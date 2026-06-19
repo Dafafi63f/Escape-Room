@@ -85,6 +85,25 @@ def resolver_changelog() -> Path | None:
     return resolver_changelog_proyecto()
 
 
+def _añadir_parrafo_vacio(salida: list[str]) -> None:
+    if salida and salida[-1] != "":
+        salida.append("")
+
+
+def _procesar_titulo_md(limpia: str, salida: list[str]) -> None:
+    titulo = re.sub(r"^#+\s*", "", limpia).strip()
+    if not titulo:
+        return
+    _añadir_parrafo_vacio(salida)
+    salida.append(titulo)
+
+
+def _procesar_linea_texto(bruta: str, salida: list[str]) -> None:
+    texto_linea = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", bruta)
+    texto_linea = texto_linea.replace("`", "")
+    salida.append(texto_linea.strip())
+
+
 def simplificar_changelog_para_ui(texto: str) -> str:
     """Quita tablas y marcado pesado; conserva títulos y párrafos legibles."""
     salida: list[str] = []
@@ -98,8 +117,7 @@ def simplificar_changelog_para_ui(texto: str) -> str:
         if en_bloque_codigo:
             continue
         if not limpia:
-            if salida and salida[-1] != "":
-                salida.append("")
+            _añadir_parrafo_vacio(salida)
             continue
         if limpia.startswith("|"):
             continue
@@ -107,15 +125,9 @@ def simplificar_changelog_para_ui(texto: str) -> str:
             salida.append("")
             continue
         if limpia.startswith("#"):
-            titulo = re.sub(r"^#+\s*", "", limpia).strip()
-            if titulo:
-                if salida and salida[-1] != "":
-                    salida.append("")
-                salida.append(titulo)
+            _procesar_titulo_md(limpia, salida)
             continue
-        texto_linea = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", bruta)
-        texto_linea = texto_linea.replace("`", "")
-        salida.append(texto_linea.strip())
+        _procesar_linea_texto(bruta, salida)
     return "\n".join(salida).strip()
 
 

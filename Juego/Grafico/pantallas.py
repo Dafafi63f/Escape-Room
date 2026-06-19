@@ -819,7 +819,7 @@ class ResumenPartida(Pantalla):
         superficie.blit(nombre, nombre.get_rect(center=(ANCHO // 2, y_nombre)))
         y = y_nombre + 52
         for i, linea in enumerate(self.lineas):
-            if linea.startswith("Cada partida") or linea.startswith("Los informes"):
+            if linea.startswith(("Cada partida", "Los informes")):
                 fuente = self.fuentes["pequena"]
             elif i == 0 and self.subtitulo:
                 fuente = self.fuentes["subtitulo"]

@@ -25,87 +25,74 @@ def _windir() -> Path:
     return Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts"
 
 
+_LINUX_DEJAVU_TEXTO = [
+    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+    Path("/usr/share/fonts/TTF/DejaVuSans.ttf"),
+    Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
+]
+_LINUX_DEJAVU_MATH_SIM = [
+    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+    Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
+]
+_LINUX_NOTO_EMOJI = [
+    Path("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"),
+    Path("/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf"),
+]
+
+
+def _candidatos_win32(familia: FamiliaFuente, bold: bool) -> list[Path]:
+    fonts = _windir()
+    if familia == "texto":
+        if bold:
+            return [fonts / "cambriab.ttf", fonts / "cambria.ttc"]
+        return [fonts / "cambria.ttc", fonts / "segoeuisymbol.ttf"]
+    if familia == "matematicas":
+        if bold:
+            return [fonts / "cambriab.ttf", fonts / "cambria.ttc"]
+        return [fonts / "cambria.ttc", fonts / "cambriab.ttf"]
+    if familia == "simbolos":
+        return [fonts / "seguisym.ttf", fonts / "segoeuisymbol.ttf", fonts / "symbol.ttf"]
+    return [fonts / "seguiemj.ttf", fonts / "segoeuiemoji.ttf"]
+
+
+def _candidatos_darwin(familia: FamiliaFuente) -> list[Path]:
+    if familia == "texto":
+        return [
+            Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
+            Path("/System/Library/Fonts/Helvetica.ttc"),
+        ]
+    if familia == "matematicas":
+        return [Path("/System/Library/Fonts/Supplemental/Cambria.ttc")]
+    if familia == "simbolos":
+        return [Path("/System/Library/Fonts/Supplemental/Arial Unicode.ttf")]
+    return [Path("/System/Library/Fonts/Apple Color Emoji.ttc")]
+
+
+def _candidatos_linux(familia: FamiliaFuente) -> list[Path]:
+    if familia == "texto":
+        return list(_LINUX_DEJAVU_TEXTO)
+    if familia in ("matematicas", "simbolos"):
+        return list(_LINUX_DEJAVU_MATH_SIM)
+    return list(_LINUX_NOTO_EMOJI)
+
+
 def _candidatos(familia: FamiliaFuente, bold: bool) -> list[Path]:
-    rutas: list[Path] = []
     if sys.platform == "win32":
-        fonts = _windir()
-        if familia == "texto":
-            if bold:
-                # Mantiene el estilo anterior (Cambria para texto normal).
-                rutas.extend([fonts / "cambriab.ttf", fonts / "cambria.ttc"])
-            else:
-                rutas.extend([fonts / "cambria.ttc", fonts / "segoeuisymbol.ttf"])
-        elif familia == "matematicas":
-            if bold:
-                rutas.extend([fonts / "cambriab.ttf", fonts / "cambria.ttc"])
-            else:
-                rutas.extend([fonts / "cambria.ttc", fonts / "cambriab.ttf"])
-        elif familia == "simbolos":
-            rutas.extend(
-                [
-                    fonts / "seguisym.ttf",
-                    fonts / "segoeuisymbol.ttf",
-                    fonts / "symbol.ttf",
-                ]
-            )
-        elif familia == "emoji":
-            rutas.extend([fonts / "seguiemj.ttf", fonts / "segoeuiemoji.ttf"])
-    elif sys.platform == "darwin":
-        if familia == "texto":
-            rutas.extend(
-                [
-                    Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
-                    Path("/System/Library/Fonts/Helvetica.ttc"),
-                ]
-            )
-        elif familia == "matematicas":
-            rutas.extend([Path("/System/Library/Fonts/Supplemental/Cambria.ttc")])
-        elif familia == "simbolos":
-            rutas.extend([Path("/System/Library/Fonts/Supplemental/Arial Unicode.ttf")])
-        elif familia == "emoji":
-            rutas.extend([Path("/System/Library/Fonts/Apple Color Emoji.ttc")])
-    else:
-        if familia == "texto":
-            rutas.extend(
-                [
-                    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-                    Path("/usr/share/fonts/TTF/DejaVuSans.ttf"),
-                    Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
-                ]
-            )
-        elif familia == "matematicas":
-            rutas.extend(
-                [
-                    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-                    Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
-                ]
-            )
-        elif familia == "simbolos":
-            rutas.extend(
-                [
-                    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-                    Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
-                ]
-            )
-        elif familia == "emoji":
-            rutas.extend(
-                [
-                    Path("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"),
-                    Path("/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf"),
-                ]
-            )
-    return rutas
+        return _candidatos_win32(familia, bold)
+    if sys.platform == "darwin":
+        return _candidatos_darwin(familia)
+    return _candidatos_linux(familia)
 
 
 def _resolver_ruta(familia: FamiliaFuente, bold: bool = False) -> Path | None:
-    if not bold:
-        if familia in _RUTAS_RESUELTAS:
-            return _RUTAS_RESUELTAS[familia]
+    if not bold and familia in _RUTAS_RESUELTAS:
+        return _RUTAS_RESUELTAS[familia]
     for ruta in _candidatos(familia, bold):
-        if ruta.is_file():
-            if not bold:
-                _RUTAS_RESUELTAS[familia] = ruta
-            return ruta
+        if not ruta.is_file():
+            continue
+        if not bold:
+            _RUTAS_RESUELTAS[familia] = ruta
+        return ruta
     if not bold:
         _RUTAS_RESUELTAS[familia] = None
     return None
