@@ -13,7 +13,9 @@ python -m unittest discover -s Tests -v
 python -m unittest discover -s Files -p "test_*.py" -v
 ```
 
-`Tests/support.py` configura `sys.path` hacia `Juego/`.
+`Tests/support.py` configura `sys.path` hacia `Juego/`. Cada módulo `test_*.py` debe llamar a `ensure_juego_path()` antes de importar `Comun` o `Grafico`.
+
+En CI (`.github/workflows/tests.yml`) se fijan `PYTHONPATH=Juego` y `SDL_VIDEODRIVER=dummy` para pygame sin pantalla.
 
 ## CI
 

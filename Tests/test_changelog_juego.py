@@ -6,6 +6,10 @@ from __future__ import annotations
 
 import unittest
 
+from Tests.support import ensure_juego_path
+
+ensure_juego_path()
+
 from Comun.changelog_juego import (
     cargar_changelog_juego,
     cargar_changelog_juego_grafico,

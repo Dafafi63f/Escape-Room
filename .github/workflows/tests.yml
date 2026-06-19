@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  PYTHONPATH: Juego
+  SDL_VIDEODRIVER: dummy
+  SDL_AUDIODRIVER: dummy
+
 jobs:
   pre-commits:
     name: Pre-Commits
