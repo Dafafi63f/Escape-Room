@@ -93,7 +93,7 @@ class Pantalla:
     def titulo_pausa(self) -> str:
         return "Pantalla actual"
 
-    def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
+    def manejar_evento(self, _evento: pygame.event.Event) -> Pantalla | None:
         return None
 
     def actualizar(self) -> Pantalla | None:

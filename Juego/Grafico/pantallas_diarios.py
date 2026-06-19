@@ -166,7 +166,6 @@ class ConfigModosDiarios(Pantalla):
                     lambda _cfg: self.ir_a(self._pantalla_actual()),
                 )
             )
-            return
 
     def _iniciar_reto(self) -> None:
         nombre = nombre_jugador_grafico()

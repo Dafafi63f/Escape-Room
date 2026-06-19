@@ -1502,7 +1502,7 @@ class PartidaResistenciaHistoria(Pantalla):
             self._abandonar,
             tooltip=TOOLTIP_ABANDONAR_RESISTENCIA,
         )
-        if not self._cargar_siguiente_pregunta(inicial=True):
+        if not self._cargar_siguiente_pregunta():
             raise ValueError("Sin preguntas para resistencia.")
         self._entrar_pregunta_o_avisos()
 
@@ -1595,7 +1595,7 @@ class PartidaResistenciaHistoria(Pantalla):
         self.estado.reglas = aplicar_escalada_a_reglas(self.reglas_base, self.escalada)
         self.efecto_actual = texto_efectos_escalada(self.escalada)
 
-    def _cargar_siguiente_pregunta(self, *, inicial: bool = False) -> bool:
+    def _cargar_siguiente_pregunta(self) -> bool:
         self.er.reset_pregunta()
         numero = self._numero_pregunta()
         self._aplicar_escalada(numero)
@@ -2082,38 +2082,49 @@ class PartidaResistenciaHistoria(Pantalla):
         )
         self.boton_abandonar.dibujar(superficie, fuente)
 
+    def _actualizar_hover_resistencia(self, pos: tuple[int, int]) -> None:
+        self.boton_abandonar.actualizar_hover(pos)
+        if self.fase == "apuesta":
+            if self.boton_apuesta_si:
+                self.boton_apuesta_si.actualizar_hover(pos)
+            if self.boton_apuesta_no:
+                self.boton_apuesta_no.actualizar_hover(pos)
+            return
+        if self.fase != "pregunta":
+            return
+        for boton in self.botones_powerup:
+            boton.actualizar_hover(pos)
+        for boton in self.botones_opcion:
+            boton.actualizar_hover(pos)
+
+    def _manejar_clic_apuesta(self, pos: tuple[int, int], boton: int) -> bool:
+        if self.boton_apuesta_si and self.boton_apuesta_si.manejar_clic(pos, boton):
+            return True
+        return bool(
+            self.boton_apuesta_no and self.boton_apuesta_no.manejar_clic(pos, boton)
+        )
+
+    def _manejar_clic_pregunta_resistencia(self, pos: tuple[int, int], boton: int) -> bool:
+        for btn in self.botones_powerup:
+            if btn.manejar_clic(pos, boton):
+                return True
+        return any(b.manejar_clic(pos, boton) for b in self.botones_opcion)
+
+    def _manejar_clic_resistencia(self, pos: tuple[int, int], boton: int) -> bool:
+        if self.boton_abandonar.manejar_clic(pos, boton):
+            return True
+        if self.fase == "apuesta":
+            return self._manejar_clic_apuesta(pos, boton)
+        if self.fase == "pregunta":
+            return self._manejar_clic_pregunta_resistencia(pos, boton)
+        return False
+
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
         if evento.type == pygame.MOUSEMOTION:
-            self.boton_abandonar.actualizar_hover(evento.pos)
-            if self.fase == "apuesta":
-                if self.boton_apuesta_si:
-                    self.boton_apuesta_si.actualizar_hover(evento.pos)
-                if self.boton_apuesta_no:
-                    self.boton_apuesta_no.actualizar_hover(evento.pos)
-            elif self.fase == "pregunta":
-                for boton in self.botones_powerup:
-                    boton.actualizar_hover(evento.pos)
-                for boton in self.botones_opcion:
-                    boton.actualizar_hover(evento.pos)
+            self._actualizar_hover_resistencia(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
-            if self.boton_abandonar.manejar_clic(evento.pos, evento.button):
+            if self._manejar_clic_resistencia(evento.pos, evento.button):
                 return None
-            if self.fase == "apuesta":
-                if self.boton_apuesta_si and self.boton_apuesta_si.manejar_clic(
-                    evento.pos, evento.button
-                ):
-                    return None
-                if self.boton_apuesta_no and self.boton_apuesta_no.manejar_clic(
-                    evento.pos, evento.button
-                ):
-                    return None
-            elif self.fase == "pregunta":
-                for boton in self.botones_powerup:
-                    if boton.manejar_clic(evento.pos, evento.button):
-                        return None
-                for boton in self.botones_opcion:
-                    if boton.manejar_clic(evento.pos, evento.button):
-                        break
         return None
 
     def dibujar(self, superficie: pygame.Surface) -> None:

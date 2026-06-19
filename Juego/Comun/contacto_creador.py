@@ -115,9 +115,11 @@ def _canal_desde_item(item: dict, privado: dict) -> tuple[str, str] | None:
     if not etiqueta or _es_canal_github(etiqueta):
         return None
     valor = str(item.get("valor", "")).strip()
-    if not valor:
-        valor = _resolver_autovalor(etiqueta, privado)
-    elif _es_placeholder_correo(valor) or _es_placeholder_github(valor):
+    if (
+        not valor
+        or _es_placeholder_correo(valor)
+        or _es_placeholder_github(valor)
+    ):
         valor = _resolver_autovalor(etiqueta, privado)
     if not valor or _es_canal_github(etiqueta, valor):
         return None
