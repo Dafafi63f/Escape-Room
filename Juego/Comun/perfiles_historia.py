@@ -19,10 +19,10 @@ class PerfilPedagogico(str, Enum):
 
 def describir_perfil(perfil: PerfilPedagogico) -> str:
     textos = {
-        PerfilPedagogico.BALANCEADO: "Reparto equitativo; el histórico solo informa.",
-        PerfilPedagogico.REFUERZO: "Prioriza materias con más suspensos en el histórico.",
-        PerfilPedagogico.DESAFIO: "Prioriza materias con mejores medias históricas.",
-        PerfilPedagogico.POR_CURSO: "Las materias de un curso (10 asignaturas); balance por slots.",
+        PerfilPedagogico.BALANCEADO: "Preferencia histórica suave al repartir preguntas entre materias.",
+        PerfilPedagogico.REFUERZO: "Más preguntas en materias con más suspensos del ámbito.",
+        PerfilPedagogico.DESAFIO: "Más preguntas en materias con mejores medias del ámbito.",
+        PerfilPedagogico.POR_CURSO: "Cobertura del ámbito curricular; más preguntas en las más exigentes.",
         PerfilPedagogico.SIMULACRO: "Una pregunta por materia del ámbito (repaso global).",
     }
     return textos.get(perfil, perfil.value)

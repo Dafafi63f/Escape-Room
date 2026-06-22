@@ -51,10 +51,10 @@ python Juego/juego_grafico.py
 | Modo | Gráfico | Notas |
 |------|---------|-------|
 | **Libre** | Implementado | Wizard dos pasos; filtros; tooltips |
-| **Historia** | Implementado (v1) | Carrusel de presets (`Data/Juego/presets_historia.json`) |
-| **Resistencia** | Implementado (v1) | Eventos, objetos, ranking local, reto del día |
-| **Feedback** | Implementado (v1) | Icono 📣 en barra; envío SMTP si hay config en `Data/Banco/creador_privado.json` |
-| **Info** | Implementado (v1) | Icono ℹ️: ranking, contacto del creador, changelog del juego |
+| **Historia** | Implementado | Carrusel de 5 presets (`Data/Juego/presets_historia.json`) |
+| **Resistencia** | Implementado | Eventos, objetos, ranking local, reto del día |
+| **Feedback** | Implementado | Icono 📣 en barra; envío SMTP si hay config en `Data/Banco/creador_privado.json` |
+| **Info** | Implementado | Icono ℹ️: ranking, contacto del creador, changelog del juego |
 
 ## Barra superior fija (fuera de partida y en pausa)
 

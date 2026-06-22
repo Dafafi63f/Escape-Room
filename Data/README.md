@@ -26,7 +26,7 @@ Data/
 
 | Fichero | Uso |
 |---------|-----|
-| `presets_historia.json` | Catálogo modo historia |
+| `presets_historia.json` | Catálogo modo historia (5 modos en carrusel, v27) |
 | `presets_especiales.json` | Catálogo modos especiales |
 | `preguntas_resistencia.json` | Pool modo resistencia |
 | `preferencias_grafico.json` | Nombre, emojis, tooltips (menú opciones) |
@@ -35,6 +35,29 @@ Data/
 | `*.txt` | Informes de partida y copias de feedback |
 
 El juego resuelve rutas con [`Juego/Comun/rutas.py`](../Juego/Comun/rutas.py): banco en `Data/Banco/`, estado local en `Data/Juego/` (con compatibilidad hacia rutas legadas).
+
+### Catálogo `presets_historia.json` (v27)
+
+Modos activos en el carrusel de historia:
+
+| ID | Rol |
+|----|-----|
+| `repaso` | Repaso flexible por ámbito (N asignaturas, histórico opcional) |
+| `repaso_area` | Todas las materias de un bloque G1–G10 |
+| `simulacro` | Ronda de exámenes (semestre o curso completo; tipo de preguntas teórico/cálculo) |
+| `examen_asignatura` | Simulacro de una materia (N preguntas por plantilla; tipo de preguntas teórico/cálculo) |
+| `examen_fijo` | Plantilla 4×6 (24 preguntas): diario, aleatorio o semilla numérica (sin histórico) |
+
+**Presets retirados** (ya no están en el JSON; la lógica se unificó):
+
+| ID antiguo | Sustituto |
+|------------|-----------|
+| `examen_dia_historia` | `examen_fijo` con `origen_semilla: diario` (atajo en Retos del día 📅) |
+| `examen_aleatorio_historia` | `examen_fijo` con `origen_semilla: aleatorio` (atajo en Retos del día 📅) |
+| `repaso_historico`, `repaso_integral`, `vuelta_grado`, `repaso_express` | Unificados en `repaso` |
+| `semana_examenes`, `simulacro_curso` | Unificados en `simulacro` |
+
+Semilla diaria compartida (`DDMMYYYY`, p. ej. `22062026`; en UI siempre 8 dígitos): [`modos_diarios.py`](../Juego/Comun/modos_diarios.py). Examen fijo: [`examen_fijo_historia.py`](../Juego/Comun/examen_fijo_historia.py).
 
 ## Esquema de `Preguntas.csv`
 

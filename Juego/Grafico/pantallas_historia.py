@@ -40,6 +40,17 @@ from Comun.config_historia import (
     ConfigPresetHistoria,
     OpcionPreset,
     cursos_disponibles,
+    limites_n_materias,
+    limites_n_preguntas,
+    ajustar_n_preguntas_examen_asignatura,
+    max_tiempo_total_min,
+    paso_entero_opcion_historia,
+    siguiente_entero_ciclo,
+    aplicar_exclusion_al_cambiar_ambito,
+    filtro_ambito_bloqueado,
+    opciones_config_historia,
+    periodos_academicos,
+    semestres_disponibles,
     semestres_para_curso,
     validar_config,
 )
@@ -145,6 +156,7 @@ from Grafico.tema import (
 from Grafico.ui import (
     Boton,
     BotonOpcion,
+    CampoEntero,
     _fuente_ajustada,
     capturar,
     dibujar_caja_valor_ciclo,
@@ -556,18 +568,17 @@ class ConfigModoHistoria(Pantalla):
         cat = self.fuentes["pequena"].render(f"[{preset.categoria}]", True, COLOR_ACENTO)
         superficie.blit(cat, cat.get_rect(midtop=(tarjeta.centerx, tarjeta.y + 16)))
 
-        if preset.usa_analisis_historico:
-            badge = self.fuentes["pequena"].render(
-                etiqueta_campo("datos_historicos", "Datos históricos MatCAD"), True, (20, 110, 70)
-            )
-            superficie.blit(badge, badge.get_rect(midtop=(tarjeta.centerx, tarjeta.y + 34)))
+        badge = self.fuentes["pequena"].render(
+            etiqueta_campo("estrategia_materias", "Prioridad histórica MatCAD"), True, (20, 110, 70)
+        )
+        superficie.blit(badge, badge.get_rect(midtop=(tarjeta.centerx, tarjeta.y + 34)))
 
         nombre = self.fuentes["subtitulo"].render(
             preparar_texto_ui(preset.nombre),
             True,
             (25, 35, 50),
         )
-        y_nombre = tarjeta.y + (58 if preset.usa_analisis_historico else 44)
+        y_nombre = tarjeta.y + 58
         superficie.blit(nombre, nombre.get_rect(midtop=(tarjeta.centerx, y_nombre)))
 
         reserva_pie = self._reserva_pie_tarjeta()
@@ -616,7 +627,7 @@ class ConfigModoHistoria(Pantalla):
         _dibujar_cabecera_historia(
             superficie,
             self.fuentes,
-            "Los primeros modos usan qualificacions históricas del grado",
+            "Ajusta la prioridad histórica MatCAD en cada modo (donde aplique)",
         )
 
         preset_lbl = self.fuentes["menu"].render(
@@ -698,6 +709,7 @@ class ConfigOpcionesHistoria(Pantalla):
             materias_orden=self.orden_materias,
         )
         self.botones_ciclo: dict[str, tuple[Boton, Boton]] = {}
+        self.campos_entero: dict[str, CampoEntero] = {}
         self._y_opcion: dict[str, int] = {}
         self._y_fin_opciones = self.Y_OPCIONES
         self._hover_opcion_valor: str | None = None
@@ -739,8 +751,11 @@ class ConfigOpcionesHistoria(Pantalla):
         )
         self._reposicionar_botones_navegacion()
 
+    def _opciones_ui(self) -> tuple[OpcionPreset, ...]:
+        return opciones_config_historia(self.preset)
+
     def _opcion_preset(self, op_id: str) -> OpcionPreset | None:
-        for op in self.preset.opciones:
+        for op in self._opciones_ui():
             if op.id == op_id:
                 return op
         return None
@@ -783,7 +798,78 @@ class ConfigOpcionesHistoria(Pantalla):
         _, rect_val, _ = self._rects_control_fila(op_id)
         dibujar_tooltip(superficie, self.fuentes["pequena"], rect_val, tip)
 
+    def _opcion_campo_teclado(self, op: OpcionPreset) -> bool:
+        return op.id == "semilla" and self.preset.id == "examen_fijo"
+
+    def _rect_campo_teclado(self, op_id: str) -> pygame.Rect:
+        fila_y = self._y_opcion[op_id]
+        y = fila_y + 10
+        return pygame.Rect(self.X_CONTROLES, y, self._ancho_zona_controles(), 36)
+
+    def _sync_campo_semilla_desde_config(self) -> None:
+        campo = self.campos_entero.get("semilla")
+        op = self._opcion_preset("semilla")
+        if campo is None or op is None:
+            return
+        habilitado = not self._filtro_ambito_bloqueado("semilla")
+        campo.establecer_habilitado(habilitado)
+        min_v = int(op.min) if op.min is not None else 1
+        max_v = int(op.max) if op.max is not None else 2147483646
+        campo.actualizar_limites(min_v, max_v)
+        if not habilitado:
+            return
+        from Comun.examen_fijo_historia import semilla_defecto_examen_fijo
+        from Comun.modos_diarios import formatear_semilla_diaria
+
+        raw = self.config.valores.get("semilla")
+        if raw is not None and raw != "":
+            campo.texto = formatear_semilla_diaria(int(raw))
+        elif not campo.activo and not campo.texto:
+            campo.texto = formatear_semilla_diaria(semilla_defecto_examen_fijo())
+
+    def _aplicar_campos_teclado_a_config(self) -> None:
+        if "semilla" not in self.campos_entero:
+            return
+        if self._filtro_ambito_bloqueado("semilla"):
+            self.config.valores.pop("semilla", None)
+            return
+        op = self._opcion_preset("semilla")
+        if op is None:
+            return
+        from Comun.examen_fijo_historia import semilla_defecto_examen_fijo
+
+        min_v = int(op.min) if op.min is not None else 1
+        max_v = int(op.max) if op.max is not None else 2147483646
+        valor = self.campos_entero["semilla"].valor_entero(
+            defecto=semilla_defecto_examen_fijo()
+        )
+        if valor is None:
+            raise ValueError(f"Semilla numérica: valor entre {min_v} y {max_v}.")
+        self.config.valores["semilla"] = valor
+
+    def _asegurar_campo_semilla(self) -> None:
+        op = self._opcion_preset("semilla")
+        if op is None or not self._opcion_campo_teclado(op):
+            return
+        rect = self._rect_campo_teclado("semilla")
+        min_v = int(op.min) if op.min is not None else 1
+        max_v = int(op.max) if op.max is not None else 2147483646
+        if "semilla" not in self.campos_entero:
+            self.campos_entero["semilla"] = CampoEntero(
+                rect,
+                placeholder="Introduce semilla…",
+                minimo=min_v,
+                maximo=max_v,
+            )
+        else:
+            self.campos_entero["semilla"].rect = rect
+        self._sync_campo_semilla_desde_config()
+
     def _volver(self) -> None:
+        try:
+            self._aplicar_campos_teclado_a_config()
+        except ValueError:
+            pass
         self.volver(self.config)
 
     def _y_preferida_botones_navegacion(self) -> int:
@@ -830,19 +916,30 @@ class ConfigOpcionesHistoria(Pantalla):
     def _reconstruir_layout(self) -> None:
         self._y_opcion.clear()
         y = self.Y_OPCIONES
-        for op in self.preset.opciones:
+        for op in self._opciones_ui():
             self._y_opcion[op.id] = y
             y += self.ALTO_FILA + self.GAP_FILA
         self._y_fin_opciones = y
 
         self.botones_ciclo.clear()
-        for op in self.preset.opciones:
+        for op in self._opciones_ui():
+            if self._opcion_campo_teclado(op):
+                continue
             rect_izq, _, rect_der = self._rects_control_fila(op.id)
             self.botones_ciclo[op.id] = (
                 Boton("◀", rect_izq, capturar(self._ciclar_opcion, op.id, -1)),
                 Boton("▶", rect_der, capturar(self._ciclar_opcion, op.id, 1)),
             )
+        self._asegurar_campo_semilla()
         self._reposicionar_botones_navegacion()
+
+    def _filtro_ambito_bloqueado(self, op_id: str) -> bool:
+        return filtro_ambito_bloqueado(
+            op_id,
+            self.config.valores,
+            self._opciones_ui(),
+            preset_id=self.preset.id,
+        )
 
     def _items_opcion_curso(self, op: OpcionPreset) -> list[tuple[str, str]]:
         items = [(c, f"Curso {c}") for c in cursos_disponibles(self.datos.materias_meta)]
@@ -852,14 +949,23 @@ class ConfigOpcionesHistoria(Pantalla):
 
     def _items_opcion_semestre(self, op: OpcionPreset) -> list[tuple[str, str]]:
         curso = self.config.valores.get("curso")
-        if not curso:
-            return []
-        items = [
-            (s, f"Semestre {s}")
-            for s in semestres_para_curso(self.datos.materias_meta, str(curso))
-        ]
+        if curso:
+            items = [
+                (s, f"Semestre {s}")
+                for s in semestres_para_curso(self.datos.materias_meta, str(curso))
+            ]
+            if not op.obligatorio:
+                return [("", "Todo el curso")] + items
+            return items
+        items = [(s, f"Semestre {s}") for s in semestres_disponibles(self.datos.materias_meta)]
         if not op.obligatorio:
-            return [("", "Todo el curso")] + items
+            return [("", "Cualquier semestre")] + items
+        return items
+
+    def _items_opcion_periodo(self, op: OpcionPreset) -> list[tuple[str, str]]:
+        items = [(clave, clave) for clave, _, _ in periodos_academicos(self.datos.materias_meta)]
+        if not op.obligatorio:
+            return [("", "Sin especificar")] + items
         return items
 
     def _items_opcion(self, op_id: str) -> list[tuple[str, str]]:
@@ -870,6 +976,8 @@ class ConfigOpcionesHistoria(Pantalla):
             return self._items_opcion_curso(op)
         if op.tipo == "semestre":
             return self._items_opcion_semestre(op)
+        if op.tipo == "periodo":
+            return self._items_opcion_periodo(op)
         if op.tipo == "grupo":
             return list(GRUPOS_TEMATICOS.items())
         if op.tipo == "materia":
@@ -882,8 +990,23 @@ class ConfigOpcionesHistoria(Pantalla):
         if op.tipo == "curso" and not op.obligatorio:
             return "Todo el grado"
         if op.tipo == "semestre" and not op.obligatorio:
-            return "Todo el curso"
+            if self.config.valores.get("curso"):
+                return "Todo el curso"
+            return "Cualquier semestre"
+        if op.tipo == "periodo" and not op.obligatorio:
+            return "Sin especificar"
         return "—"
+
+    def _semestre_valido_en_config(self, semestre: str) -> bool:
+        curso = self.config.valores.get("curso")
+        if curso:
+            return semestre in semestres_para_curso(self.datos.materias_meta, str(curso))
+        return semestre in semestres_disponibles(self.datos.materias_meta)
+
+    def _ajustar_semestre_al_curso(self) -> None:
+        semestre = self.config.valores.get("semestre")
+        if semestre and not self._semestre_valido_en_config(str(semestre)):
+            self.config.valores.pop("semestre", None)
 
     def _texto_valor_con_dato(self, op: OpcionPreset, raw: object) -> str:
         if op.tipo == "grupo":
@@ -897,13 +1020,21 @@ class ConfigOpcionesHistoria(Pantalla):
             return f"Curso {raw}"
         if op.tipo == "semestre":
             return f"Semestre {raw}"
+        if op.tipo == "periodo":
+            return str(raw)
         if op.tipo == "entero":
             if op.id == "tiempo_total_min" and int(str(raw)) == 0:
                 return "Sin límite"
+            if op.id == "semilla":
+                from Comun.modos_diarios import formatear_semilla_diaria
+
+                return formatear_semilla_diaria(int(raw))
             return str(raw)
         return str(raw)
 
     def _texto_valor(self, op_id: str) -> str:
+        if self._filtro_ambito_bloqueado(op_id):
+            return "Bloqueado"
         op = self._opcion_preset(op_id)
         if op is None:
             return ""
@@ -913,7 +1044,7 @@ class ConfigOpcionesHistoria(Pantalla):
         return self._texto_valor_con_dato(op, raw)
 
     def _ciclar_opcion(self, op_id: str, delta: int) -> None:
-        for op in self.preset.opciones:
+        for op in self._opciones_ui():
             if op.id != op_id:
                 continue
             if op.tipo == "entero":
@@ -922,20 +1053,125 @@ class ConfigOpcionesHistoria(Pantalla):
                 self._ciclar_lista(op_id, delta)
             return
 
+    def _kwargs_exclusion_ambito(self) -> dict[str, object]:
+        op_nm = self._opcion_preset("n_materias")
+        n_max = op_nm.max if op_nm and op_nm.max is not None else 40
+        return {
+            "preset_id": self.preset.id,
+            "materias_meta": self.datos.materias_meta,
+            "n_materias_max": n_max,
+        }
+
+    def _limites_n_materias(self) -> tuple[int, int] | None:
+        op = self._opcion_preset("n_materias")
+        if op is None:
+            return None
+        return limites_n_materias(
+            op,
+            self.config.valores,
+            materias_meta=self.datos.materias_meta,
+            preset_id=self.preset.id,
+        )
+
+    def _plantillas_materia_config(self) -> list[dict]:
+        materia = self.config.valores.get("materia")
+        if not materia:
+            return []
+        from Comun.datos import cargar_plantillas_materia
+        from Comun.rutas import resolver_plantillas
+
+        return cargar_plantillas_materia(resolver_plantillas(), str(materia))
+
+    def _limites_n_preguntas(self) -> tuple[int, int] | None:
+        op = self._opcion_preset("n_preguntas")
+        if op is None:
+            return None
+        plantillas = self._plantillas_materia_config()
+        return limites_n_preguntas(
+            op,
+            self.config.valores,
+            plantillas_materia=plantillas or None,
+        )
+
+    def _max_entero_opcion(self, op: OpcionPreset) -> int:
+        if op.id == "n_materias":
+            limites = self._limites_n_materias()
+            if limites is not None:
+                return limites[1]
+        if op.id == "n_preguntas":
+            limites = self._limites_n_preguntas()
+            if limites is not None:
+                return limites[1]
+        if op.id == "tiempo_total_min":
+            return max_tiempo_total_min(
+                op,
+                self.config.valores,
+                preset_id=self.preset.id,
+            )
+        return op.max if op.max is not None else 9999
+
+    def _min_entero_opcion(self, op: OpcionPreset) -> int:
+        if op.id == "n_materias":
+            limites = self._limites_n_materias()
+            if limites is not None:
+                return limites[0]
+        if op.id == "n_preguntas":
+            limites = self._limites_n_preguntas()
+            if limites is not None:
+                return limites[0]
+        return op.min if op.min is not None else 0
+
+    def _ajustar_n_materias_al_ambito(self) -> None:
+        op = self._opcion_preset("n_materias")
+        if op is None:
+            return
+        limites = self._limites_n_materias()
+        if limites is None:
+            return
+        min_v, max_v = limites
+        if max_v <= 0:
+            self.config.valores.pop("n_materias", None)
+            return
+        defecto = int(op.defecto if op.defecto is not None else min_v)
+        actual = int(self.config.valores.get("n_materias", defecto))
+        self.config.valores["n_materias"] = min(max(actual, min_v), max_v)
+
+    def _ajustar_n_preguntas_al_ambito(self) -> None:
+        op = self._opcion_preset("n_preguntas")
+        if op is None:
+            return
+        plantillas = self._plantillas_materia_config()
+        if not plantillas:
+            return
+        ajustar_n_preguntas_examen_asignatura(
+            self.config.valores,
+            self._opciones_ui(),
+            plantillas,
+        )
+
     def _ciclar_entero(self, op: OpcionPreset, delta: int) -> None:
-        min_v = op.min if op.min is not None else 0
-        max_v = op.max if op.max is not None else 9999
+        min_v = self._min_entero_opcion(op)
+        max_v = self._max_entero_opcion(op)
         defecto = int(op.defecto if op.defecto is not None else min_v)
         actual = int(self.config.valores.get(op.id, defecto))
         actual = min(max(actual, min_v), max_v)
-        rango = max_v - min_v + 1
-        if rango <= 1:
+        if max_v <= min_v:
             self.config.valores[op.id] = min_v
         else:
-            self.config.valores[op.id] = min_v + (actual - min_v + delta) % rango
+            paso = paso_entero_opcion_historia(op.id)
+            self.config.valores[op.id] = siguiente_entero_ciclo(
+                actual,
+                delta,
+                min_v=min_v,
+                max_v=max_v,
+                paso=paso,
+            )
         self.mensaje = ""
 
     def _ciclar_lista(self, op_id: str, delta: int) -> None:
+        if self._filtro_ambito_bloqueado(op_id):
+            self.mensaje = "Desactiva el otro filtro de ámbito primero."
+            return
         items = self._items_opcion(op_id)
         if not items:
             self.mensaje = "Completa las opciones previas primero."
@@ -955,8 +1191,22 @@ class ConfigOpcionesHistoria(Pantalla):
             self.config.valores.pop(op_id, None)
         else:
             self.config.valores[op_id] = elegido
+        aplicar_exclusion_al_cambiar_ambito(
+            self.config.valores, op_id, **self._kwargs_exclusion_ambito()
+        )
         if op_id == "curso":
-            self.config.valores.pop("semestre", None)
+            self._ajustar_semestre_al_curso()
+            self._ajustar_n_materias_al_ambito()
+            self._reconstruir_layout()
+        elif op_id in ("semestre", "grupo", "periodo"):
+            self._ajustar_n_materias_al_ambito()
+        elif op_id in ("materia", "enfoque"):
+            self._ajustar_n_preguntas_al_ambito()
+        elif op_id == "origen_semilla":
+            aplicar_exclusion_al_cambiar_ambito(
+                self.config.valores, op_id, **self._kwargs_exclusion_ambito()
+            )
+            self._sync_campo_semilla_desde_config()
             self._reconstruir_layout()
         self.mensaje = ""
 
@@ -967,10 +1217,18 @@ class ConfigOpcionesHistoria(Pantalla):
         return rect_val
 
     def _leer_config(self) -> ConfigPresetHistoria:
+        self._aplicar_campos_teclado_a_config()
+        plantillas = (
+            self._plantillas_materia_config()
+            if self._opcion_preset("n_preguntas") is not None
+            else None
+        )
         return validar_config(
-            self.preset.opciones,
+            self._opciones_ui(),
             ConfigPresetHistoria(valores=dict(self.config.valores)),
             materias_meta=self.datos.materias_meta,
+            preset_id=self.preset.id,
+            plantillas_materia=plantillas or None,
         )
 
     def _empezar(self) -> None:
@@ -1023,6 +1281,13 @@ class ConfigOpcionesHistoria(Pantalla):
         return botones
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
+        for campo in self.campos_entero.values():
+            if campo.manejar_evento(evento):
+                return None
+        if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+            for campo in self.campos_entero.values():
+                if not campo.rect.collidepoint(evento.pos):
+                    campo.activo = False
         if evento.type == pygame.MOUSEMOTION:
             for boton in self._botones_ui():
                 boton.actualizar_hover(evento.pos)
@@ -1034,9 +1299,17 @@ class ConfigOpcionesHistoria(Pantalla):
         return None
 
     def _dibujar_fila_opcion(self, superficie: pygame.Surface, op, y: int) -> None:
+        bloqueado = self._filtro_ambito_bloqueado(op.id)
+        color_lbl = (140, 140, 140) if bloqueado else COLOR_ETIQUETA_PANEL_CLARO
         etiqueta = op.etiqueta.rstrip(":")
-        lbl = self.fuentes["menu"].render(etiqueta + ":", True, COLOR_ETIQUETA_PANEL_CLARO)
+        lbl = self.fuentes["menu"].render(etiqueta + ":", True, color_lbl)
         superficie.blit(lbl, (self.X_ETIQUETA, y + 16))
+
+        if self._opcion_campo_teclado(op):
+            campo = self.campos_entero.get(op.id)
+            if campo is not None:
+                campo.dibujar(superficie, self.fuentes["cuerpo"])
+            return
 
         if op.id not in self.botones_ciclo:
             return
@@ -1064,7 +1337,7 @@ class ConfigOpcionesHistoria(Pantalla):
 
         dibujar_panel(superficie, self._rect_panel_opciones(), color=(255, 255, 255))
 
-        for op in self.preset.opciones:
+        for op in self._opciones_ui():
             y = self._y_opcion.get(op.id, self.Y_OPCIONES)
             self._dibujar_fila_opcion(superficie, op, y)
 
@@ -1078,6 +1351,17 @@ class ConfigOpcionesHistoria(Pantalla):
         self.boton_empezar.dibujar(superficie, self.fuentes["menu"])
         self.boton_atras.dibujar(superficie, self.fuentes["menu"])
         self._dibujar_tooltip_opcion_valor(superficie)
+        for campo in self.campos_entero.values():
+            if campo.activo and campo.habilitado:
+                tip = tooltip_opcion_ciclo_historia(
+                    "semilla",
+                    "entero",
+                    campo.texto,
+                    etiqueta_opcion="Semilla numérica",
+                )
+                if tip:
+                    dibujar_tooltip(superficie, self.fuentes["pequena"], campo.rect, tip)
+                    break
         dibujar_tooltips_botones(
             superficie,
             self.fuentes["pequena"],
@@ -1150,7 +1434,7 @@ class PartidaModoHistoria(Pantalla):
         return self._y_inicio_opciones() + 4 * (ALTO_OPCION_PARTIDA + SEP_OPCIONES_PARTIDA)
 
     def _texto_progreso(self) -> str:
-        return f"Escena {self.indice + 1}/{self.total}"
+        return f"Pregunta {self.indice + 1}/{self.total}"
 
     def _linea_estado_actual(self) -> str:
         seg_preg = None
@@ -1343,7 +1627,8 @@ class PartidaModoHistoria(Pantalla):
         )
         x_centro_min = x_min_centro_barra_partida(self.fuentes["menu"])
         x_centro_max = self.boton_abandonar.rect.x - 12
-        ancho_centro = max(80, x_centro_max - x_centro_min)
+        altura_fuente = fuente.get_height()
+        y_estado = (ALTURA_BARRA_PARTIDA - altura_fuente) // 2
         seg_preg = None
         if self.fase == "pregunta":
             seg_preg = _segundos_pregunta_restantes(
@@ -1357,11 +1642,9 @@ class PartidaModoHistoria(Pantalla):
             fuentes=self.fuentes,
             x_centro_min=x_centro_min,
             x_centro_max=x_centro_max,
+            y=y_estado,
             segundos_pregunta_restantes=seg_preg,
         )
-        titulo = fuente.render(preparar_texto_ui(self.preset.nombre), True, COLOR_ACENTO)
-        if titulo.get_width() <= ancho_centro:
-            superficie.blit(titulo, titulo.get_rect(midtop=(ANCHO // 2, 36)))
         pygame.draw.line(
             superficie,
             (50, 72, 110),

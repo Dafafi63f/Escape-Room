@@ -31,7 +31,7 @@ from Comun.navegacion_fin_partida import NavegacionFinPartida
 from Comun.pool_libre import crear_estado_seleccion, elegir_indice_siguiente
 from Comun.preferencias_grafico import guardar_informes_txt_habilitados
 from Grafico.informe_partida import guardar_informe_cierre, lineas_resumen_breve
-from Grafico.tema import ALTO, ANCHO, COLOR_ACENTO, COLOR_AVISO, COLOR_ERROR, COLOR_FONDO, COLOR_OK, COLOR_TEXTO, COLOR_TEXTO_PANEL, COLOR_TITULO, MARGEN, crear_fuentes, x_min_centro_barra_partida
+from Grafico.tema import ALTO, ANCHO, COLOR_ACENTO, COLOR_AVISO, COLOR_ERROR, COLOR_FONDO, COLOR_OK, COLOR_TEXTO, COLOR_TITULO, MARGEN, crear_fuentes, x_min_centro_barra_partida
 from Grafico.texto import dibujar_texto_centro, preparar_texto_ui
 from Grafico.ui import (
     Boton,
@@ -68,7 +68,6 @@ from Grafico.textos_grafico import (
     BTN_VOLVER,
     BTN_VOLVER_MENU,
     etiqueta,
-    emoji_icono,
     titulo_pantalla,
 )
 
@@ -216,16 +215,6 @@ class MenuPrincipal(Pantalla):
             return
         self.mensaje = f"«{opcion_id}» — disponible próximamente."
 
-    @staticmethod
-    def _texto_barra_superior() -> str:
-        return (
-            f"{emoji_icono('pausa')} Pausa · "
-            f"{emoji_icono('diarios')} Retos del día · "
-            f"{emoji_icono('ranking')} Info del juego · "
-            f"{emoji_icono('feedback')} Avisos · "
-            f"{emoji_icono('opciones')} Opciones"
-        )
-
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
         if evento.type == pygame.MOUSEMOTION:
             for boton in self.botones:
@@ -255,9 +244,6 @@ class MenuPrincipal(Pantalla):
         for boton in self.botones:
             boton.dibujar(superficie, self.fuentes["menu"])
         dibujar_tooltips_botones(superficie, self.fuentes["pequena"], self.botones)
-        fuente_pie = self.fuentes["pequena"]
-        barra = fuente_pie.render(self._texto_barra_superior(), True, COLOR_TEXTO_PANEL)
-        superficie.blit(barra, barra.get_rect(center=(ANCHO // 2, ALTO - 72)))
         dibujar_texto_centro(
             superficie,
             "Haz clic en una opción",

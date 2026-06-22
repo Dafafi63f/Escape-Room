@@ -213,11 +213,6 @@ def resolver_ranking_reto_dia() -> Path:
     return base
 
 
-def resolver_ranking_resistencia() -> Path:
-    """Compatibilidad: ranking de resistencia infinita."""
-    return resolver_ranking_resistencia_infinita()
-
-
 def resolver_historico_qualificacions() -> Path:
     return _buscar_archivo(
         "Historic_qualificacions_MatCAD_completo.csv",

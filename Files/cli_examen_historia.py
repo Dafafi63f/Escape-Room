@@ -2,7 +2,7 @@
 # pyright: reportMissingImports=false
 # -*- coding: utf-8 -*-
 """
-CLI de desarrollo: previsualiza un plan de examen (modo historia v1) en terminal.
+CLI de desarrollo: previsualiza un plan de examen balanceado (modo historia) en terminal.
 
 No es el motor del juego; la lógica está en Juego/Comun/generador_examen_historia.py.
 
@@ -106,11 +106,11 @@ def main(argv: list[str] | None = None) -> int:
         curso_filtro = gen_kwargs["curso_filtro"]
         semestre_filtro = gen_kwargs["semestre_filtro"]
         grupo_filtro = gen_kwargs["grupo_filtro"]
-        slots = gen_kwargs["slots"]
+        preguntas_por_materia = gen_kwargs.get("preguntas_por_materia")
+        tipos_permitidos = gen_kwargs.get("tipos_permitidos")
         usar_todas = gen_kwargs["usar_todas_materias_ambito"]
         seleccion_det = gen_kwargs["seleccion_determinista"]
         materia_fija = gen_kwargs.get("materia_fija")
-        orden_historico = gen_kwargs.get("orden_por_historico")
         titulo_perfil = f"{preset.nombre} ({preset.id})"
     else:
         perfil_val = args.perfil or PerfilPedagogico.BALANCEADO.value
@@ -119,7 +119,8 @@ def main(argv: list[str] | None = None) -> int:
         curso_filtro = args.curso
         semestre_filtro = args.semestre
         grupo_filtro = None
-        slots = None
+        preguntas_por_materia = None
+        tipos_permitidos = None
         usar_todas = False
         titulo_perfil = f"{perfil.value} — {describir_perfil(perfil)}"
 
@@ -145,11 +146,11 @@ def main(argv: list[str] | None = None) -> int:
             curso_filtro=curso_filtro,
             semestre_filtro=semestre_filtro,
             grupo_filtro=grupo_filtro,
-            slots=slots,
+            preguntas_por_materia=preguntas_por_materia,
+            tipos_permitidos=tipos_permitidos,
             usar_todas_materias_ambito=usar_todas,
             seleccion_determinista=seleccion_det,
             materia_fija=materia_fija,
-            orden_por_historico=orden_historico,
             semilla=args.semilla,
         )
     except ValueError as e:
@@ -159,7 +160,8 @@ def main(argv: list[str] | None = None) -> int:
     print(_texto_stdout_seguro(f"Perfil: {titulo_perfil}"))
     print(f"Banco: {BancoPreguntas.DATASET.value} ({len(preguntas)} preguntas)")
     print(_texto_stdout_seguro(f"Materias ({len(plan.materias)}): {', '.join(plan.materias)}"))
-    print(f"Slots por materia ({len(plan.slots_por_materia)}): {plan.slots_por_materia}")
+    tipos_txt = "/".join(sorted(plan.tipos_permitidos))
+    print(f"Preguntas por materia: {plan.preguntas_por_materia} (tipos: {tipos_txt})")
     print(f"Total preguntas: {len(plan.preguntas)}")
     print("\nOrden del examen:")
     for i, pr in enumerate(plan.preguntas, 1):

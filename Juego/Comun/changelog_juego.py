@@ -99,15 +99,27 @@ def _anadir_parrafo_vacio(salida: list[str]) -> None:
 
 def _procesar_titulo_md(limpia: str, salida: list[str]) -> None:
     titulo = re.sub(r"^#+\s*", "", limpia).strip()
+    titulo = _limpiar_marcado_inline(titulo)
     if not titulo:
         return
     _anadir_parrafo_vacio(salida)
     salida.append(titulo)
 
 
+def _limpiar_marcado_inline(texto: str) -> str:
+    """Quita negrita/cursiva markdown residual para lectura en pygame."""
+    previo = None
+    while previo != texto:
+        previo = texto
+        texto = re.sub(r"\*\*([^*]+)\*\*", r"\1", texto)
+        texto = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"\1", texto)
+    return texto
+
+
 def _procesar_linea_texto(bruta: str, salida: list[str]) -> None:
     texto_linea = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", bruta)
     texto_linea = texto_linea.replace("`", "")
+    texto_linea = _limpiar_marcado_inline(texto_linea)
     salida.append(texto_linea.strip())
 
 

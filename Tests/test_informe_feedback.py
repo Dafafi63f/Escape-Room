@@ -167,7 +167,7 @@ class TestInformeExamen(unittest.TestCase):
                     meta={
                         "modo": "historia",
                         "tipo_actividad": "historia",
-                        "preset": "simulacro_examen",
+                        "preset": "simulacro",
                         "perfil": "simulacro",
                         "etiqueta_sesion": "Historia — Simulacro",
                     },

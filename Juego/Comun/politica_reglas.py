@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from Comun.compatibilidad_reglas_libre import sanitizar_reglas_libre
+from Comun.limites_partida import MIN_PREGUNTAS_PARTIDA
 from Comun.reglas_partida import (
     ReglasPartida,
     preset_historia_examen,
@@ -21,7 +22,6 @@ class ContextoPartida(str, Enum):
     HISTORIA_RETO = "historia_reto"
     HISTORIA_RESISTENCIA = "historia_resistencia"
     LIBRE_INFINITO = "libre_infinito"
-    LIBRE_UNA_PREGUNTA = "libre_una_pregunta"
     LIBRE_BLOQUE_CORTO = "libre_bloque_corto"
     LIBRE_BLOQUE_NORMAL = "libre_bloque_normal"
     FEEDBACK = "feedback"
@@ -38,9 +38,11 @@ class PoliticaReglas:
 def clasificar_libre(*, modo_infinito: bool, n_preguntas: int) -> ContextoPartida:
     if modo_infinito:
         return ContextoPartida.LIBRE_INFINITO
-    if n_preguntas <= 1:
-        return ContextoPartida.LIBRE_UNA_PREGUNTA
-    if n_preguntas <= 5:
+    if n_preguntas < MIN_PREGUNTAS_PARTIDA:
+        raise ValueError(
+            f"El modo libre finito requiere al menos {MIN_PREGUNTAS_PARTIDA} preguntas."
+        )
+    if n_preguntas <= MIN_PREGUNTAS_PARTIDA:
         return ContextoPartida.LIBRE_BLOQUE_CORTO
     return ContextoPartida.LIBRE_BLOQUE_NORMAL
 
@@ -114,7 +116,6 @@ def validar_reglas(
         return preset_historia_resistencia()
     if contexto in {
         ContextoPartida.LIBRE_INFINITO,
-        ContextoPartida.LIBRE_UNA_PREGUNTA,
         ContextoPartida.LIBRE_BLOQUE_CORTO,
         ContextoPartida.LIBRE_BLOQUE_NORMAL,
     }:

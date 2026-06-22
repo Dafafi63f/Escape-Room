@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Atajo del menú principal a los modos con semilla diaria."""
+"""Atajos del menú principal: examen del día, examen aleatorio y reto del día."""
 
 from __future__ import annotations
 
@@ -10,9 +10,14 @@ from typing import TYPE_CHECKING
 import pygame
 
 from Comun.config_historia import ConfigPresetHistoria
-from Comun.examen_dia_historia import ID_PRESET_EXAMEN_DIA, etiqueta_fecha_examen_dia
+from Comun.examen_dia_historia import etiqueta_fecha_examen_dia
+from Comun.examen_fijo_historia import (
+    ID_PRESET_EXAMEN_FIJO,
+    config_atajo_aleatorio,
+    config_atajo_diario,
+)
 from Comun.modos_diarios import ID_PRESET_RETO_DIA
-from Comun.presets_historia import buscar_preset
+from Comun.presets_historia import PresetHistoria, buscar_preset
 from Comun.preferencias_grafico import nombre_jugador_grafico
 from Comun.reto_dia_resistencia import etiqueta_fecha_reto_dia
 from Comun.textos_ui import EmojiPar, _p
@@ -54,14 +59,22 @@ Y_TITULO = Y_INICIO_TITULO
 Y_DESC_INICIO = Y_TITULO + 54
 ALTURA_LINEA_DESC = 22
 DESCRIPCIONES = (
-    "Misma secuencia para todos hoy. El ranking del reto es comparable entre jugadores.",
-    "El examen del día también usa semilla diaria.",
+    "Examen del día: misma semilla para todos hoy (comparable entre jugadores).",
+    "Examen aleatorio: nueva semilla cada vez que empiezas o repites.",
+    "Reto del día: resistencia con ranking diario.",
 )
-GAP_TRAS_DESC = 32
+GAP_TRAS_DESC = 28
 Y_BOTONES_MODOS = Y_DESC_INICIO + len(DESCRIPCIONES) * ALTURA_LINEA_DESC + GAP_TRAS_DESC
-MARGEN_INF = 22
+    "Mismo examen para todos hoy: 4 asignaturas, 24 preguntas balanceadas. "
+    "El orden cambia en cada partida."
+)
+_TOOLTIP_EXAMEN_ALEATORIO = (
+    "Misma plantilla balanceada (4 materias, 24 preguntas), "
+    "con contenido nuevo cada partida y orden fijo por dificultad (F→M→D)."
+)
 
 _EMOJI_EXAMEN_DIA = _p("📕")
+_EMOJI_EXAMEN_ALEATORIO = _p("🎲")
 _EMOJI_RETO_DIA = _p("🔥")
 
 
@@ -74,7 +87,7 @@ def _etiqueta_modo_diario(prefijo: str, fecha: str, emoji: EmojiPar) -> str:
 
 
 class ConfigModosDiarios(Pantalla):
-    """Examen del día y reto del día desde el menú principal."""
+    """Examen del día, examen aleatorio y reto del día desde el menú principal."""
 
     def __init__(
         self,
@@ -87,7 +100,9 @@ class ConfigModosDiarios(Pantalla):
         self.salir_app = salir_app
         self.fuentes = crear_fuentes()
         self.mensaje = ""
-        self.preset_examen = buscar_preset(ID_PRESET_EXAMEN_DIA)
+        self.preset_examen_fijo = buscar_preset(ID_PRESET_EXAMEN_FIJO)
+        self.config_examen_dia = config_atajo_diario()
+        self.config_examen_aleatorio = config_atajo_aleatorio()
         self.preset_reto = buscar_preset(ID_PRESET_RETO_DIA)
 
         fuente_menu = self.fuentes["menu"]
@@ -97,6 +112,7 @@ class ConfigModosDiarios(Pantalla):
                 etiqueta_fecha_examen_dia(),
                 _EMOJI_EXAMEN_DIA,
             ),
+            con_emoji("Examen aleatorio", _EMOJI_EXAMEN_ALEATORIO, posicion="inicio"),
             _etiqueta_modo_diario(
                 "Reto del día",
                 etiqueta_fecha_reto_dia(),
@@ -108,20 +124,26 @@ class ConfigModosDiarios(Pantalla):
             fuente_menu,
             x_centro=ANCHO // 2,
             y0=Y_BOTONES_MODOS,
-            gap=12,
+            gap=10,
             ancho_min=460,
-            alto_min=52,
+            alto_min=48,
             margen_inferior=MARGEN_INF + 72,
         )
         self.boton_examen = Boton(
             etiquetas[0],
             rects_modos[0],
             self._iniciar_examen,
-            tooltip=self.preset_examen.descripcion,
+            tooltip=_TOOLTIP_EXAMEN_DIA,
         )
-        self.boton_reto = Boton(
+        self.boton_examen_aleatorio = Boton(
             etiquetas[1],
             rects_modos[1],
+            self._iniciar_examen_aleatorio,
+            tooltip=_TOOLTIP_EXAMEN_ALEATORIO,
+        )
+        self.boton_reto = Boton(
+            etiquetas[2],
+            rects_modos[2],
             self._iniciar_reto,
             tooltip=self.preset_reto.descripcion,
         )
@@ -146,34 +168,15 @@ class ConfigModosDiarios(Pantalla):
             margen_inferior=MARGEN_INF,
         )
 
-    def _pantalla_actual(self) -> ConfigModosDiarios:
-        return ConfigModosDiarios(self.datos, self.ir_a, self.salir_app)
-
-    def _iniciar_examen(self) -> None:
-        from Grafico.pantallas_historia import ConfigOpcionesHistoria
-
+    def _iniciar_partida_diaria(
+        self,
+        preset: PresetHistoria,
+        config: ConfigPresetHistoria,
+    ) -> None:
         nombre = nombre_jugador_grafico()
-        preset = self.preset_examen
-
-        if preset.tiene_opciones():
-            self.ir_a(
-                ConfigOpcionesHistoria(
-                    self.datos,
-                    preset,
-                    nombre,
-                    self.ir_a,
-                    self.salir_app,
-                    lambda _cfg: self.ir_a(self._pantalla_actual()),
-                )
-            )
-
-    def _iniciar_reto(self) -> None:
-        nombre = nombre_jugador_grafico()
-        preset = self.preset_reto
-        config = ConfigPresetHistoria()
 
         def _pantalla_configuracion():
-            return ConfigModosDiarios(self.datos, self.ir_a, self.salir_app)
+            return ConfigModosDiarios(self.datos, self.ir_a, self.salir)
 
         navegacion = construir_navegacion_fin_partida_historia(
             self.datos,
@@ -200,9 +203,22 @@ class ConfigModosDiarios(Pantalla):
         self.mensaje = ""
         self.ir_a(pantalla)
 
+    def _iniciar_examen(self) -> None:
+        self._iniciar_partida_diaria(self.preset_examen_fijo, self.config_examen_dia)
+
+    def _iniciar_examen_aleatorio(self) -> None:
+        self._iniciar_partida_diaria(
+            self.preset_examen_fijo,
+            self.config_examen_aleatorio,
+        )
+
+    def _iniciar_reto(self) -> None:
+        self._iniciar_partida_diaria(self.preset_reto, ConfigPresetHistoria())
+
     def _botones_ui(self) -> list[Boton]:
         return [
             self.boton_examen,
+            self.boton_examen_aleatorio,
             self.boton_reto,
             self.boton_volver,
         ]

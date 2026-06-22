@@ -20,7 +20,7 @@ _JUEGO = Path(__file__).resolve().parent
 if str(_JUEGO) not in sys.path:
     sys.path.insert(0, str(_JUEGO))
 
-from Comun.datos import cargar_materias, cargar_preguntas
+from Comun.datos import cargar_banco_todo, cargar_materias
 from Comun.stdio_utf8 import configurar_stdio_utf8
 from Comun.rutas import PATH_MATERIAS, PATH_PREGUNTAS, resolver_plantillas
 from Grafico.app import AplicacionGrafica, DatosJuego
@@ -37,15 +37,19 @@ def main() -> None:
 
     try:
         materias_meta = cargar_materias(PATH_MATERIAS)
-        preguntas_dataset = cargar_preguntas(PATH_PREGUNTAS, materias_meta)
+        preguntas = cargar_banco_todo(
+            PATH_PREGUNTAS,
+            resolver_plantillas(),
+            materias_meta,
+        )
     except FileNotFoundError as e:
         print(str(e))
         return
 
     datos = DatosJuego(
-        num_preguntas=len(preguntas_dataset),
+        num_preguntas=len(preguntas),
         num_materias=len(materias_meta),
-        preguntas=preguntas_dataset,
+        preguntas=preguntas,
         materias_meta=materias_meta,
         path_preguntas_csv=PATH_PREGUNTAS,
         path_plantillas_json=resolver_plantillas(),

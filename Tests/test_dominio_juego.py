@@ -51,8 +51,10 @@ class TestDominioJuego(unittest.TestCase):
     def test_contexto_libre_infinito(self) -> None:
         self._backend.contexto_libre(modo_infinito=True, n_preguntas=10)
 
-    def test_contexto_libre_una_pregunta(self) -> None:
-        self._backend.contexto_libre(modo_infinito=False, n_preguntas=1)
+    def test_contexto_libre_minimo_cinco_preguntas(self) -> None:
+        self._backend.contexto_libre(modo_infinito=False, n_preguntas=5)
+        with self.assertRaises(ValueError):
+            self._backend.contexto_libre(modo_infinito=False, n_preguntas=4)
 
     def test_reglas_arcade_sin_vidas_bloque_10(self) -> None:
         from Comun.reglas_partida import SistemaPuntuacion
@@ -114,17 +116,17 @@ class TestDominioJuego(unittest.TestCase):
         reglas = self._backend.reglas_libre(cfg)
         self.assertEqual(reglas.sistema_puntuacion, SistemaPuntuacion.ARCADE)
 
-    def test_reglas_pocas_preguntas_sin_nota(self) -> None:
+    def test_reglas_pocas_preguntas_rechaza_partida_corta(self) -> None:
         from Comun.reglas_partida import SistemaPuntuacion
 
         cfg = ConfigReglasLibre(
             modo_infinito=False,
-            n_preguntas=3,
+            n_preguntas=4,
             vidas=None,
             sistema=SistemaPuntuacion.NOTA,
         )
-        reglas = self._backend.reglas_libre(cfg)
-        self.assertEqual(reglas.sistema_puntuacion, SistemaPuntuacion.ARCADE)
+        with self.assertRaises(ValueError):
+            self._backend.reglas_libre(cfg)
 
     def test_opciones_con_vidas_bloquean_nota(self) -> None:
         from Comun.reglas_partida import SistemaPuntuacion
@@ -255,10 +257,10 @@ class TestDominioJuego(unittest.TestCase):
 
     def test_catalogo_historia_ids(self) -> None:
         ids = self._backend.catalogo_historia_ids()
-        self.assertIn("simulacro_examen", ids)
+        self.assertIn("simulacro", ids)
 
     def test_reglas_historia_simulacro(self) -> None:
-        t = self._backend.reglas_historia_preset("simulacro_examen")
+        t = self._backend.reglas_historia_preset("simulacro")
         self.assertIsNone(t[0])  # examen sin vidas
         self.assertTrue(t[6])  # correccion_al_final
 

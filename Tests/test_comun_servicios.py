@@ -116,9 +116,11 @@ class TestImportsModulosMigrados(unittest.TestCase):
         self.assertTrue(reporte.id_reporte.startswith("FB-"))
 
     def test_generador_examen_desde_comun(self) -> None:
-        from Comun.generador_examen_historia import SLOTS_CANONICOS_12
+        from Comun.generador_examen_historia import PREGUNTAS_POR_MATERIA_DEFECTO
+        from Comun.limites_partida import MIN_PREGUNTAS_PARTIDA
 
-        self.assertEqual(len(SLOTS_CANONICOS_12), 12)
+        self.assertEqual(PREGUNTAS_POR_MATERIA_DEFECTO, 4)
+        self.assertGreaterEqual(MIN_PREGUNTAS_PARTIDA, 5)
 
 
 if __name__ == "__main__":

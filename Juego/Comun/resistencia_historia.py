@@ -59,7 +59,6 @@ _EVENTOS_MALOS = (
 )
 
 # Hasta aquí el techo de complejidad suele dejar solo fácil/medio; eventos solo modifican la pregunta actual.
-_PREGUNTA_MAX_SORPRESA_DIFICIL = 49  # reservado; ya no se usa sorpresa_dificil
 
 
 @dataclass(frozen=True)

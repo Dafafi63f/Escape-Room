@@ -1,62 +1,61 @@
 {
-  "version": 7,
+  "version": 27,
   "presets": [
     {
-      "id": "refuerzo_historico",
+      "id": "repaso",
       "orden": 1,
       "categoria": "Repasos",
-      "nombre": "Refuerzo (histórico del grado)",
-      "descripcion": "Prioriza materias con más suspensos según qualificacions MatCAD. Por defecto cubre un semestre (5 asignaturas); con curso sin semestre, hasta las 10 del año.",
-      "usa_analisis_historico": true,
-      "perfil": "refuerzo",
-      "contexto_reglas": "historia_simulacro",
-      "seleccion_determinista": false,
-      "n_materias": 5,
-      "opciones": [
-        {"id": "curso", "tipo": "curso", "etiqueta": "Limitar a curso (opcional)", "obligatorio": false},
-        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre (opcional)", "obligatorio": false},
-        {"id": "n_materias", "tipo": "entero", "etiqueta": "Materias a reforzar", "min": 1, "max": 10, "defecto": 5}
-      ]
-    },
-    {
-      "id": "desafio_historico",
-      "orden": 2,
-      "categoria": "Repasos",
-      "nombre": "Desafío (histórico del grado)",
-      "descripcion": "Prioriza materias con mejores medias históricas. Por defecto un semestre (5 asignaturas); con curso completo, hasta 10.",
-      "usa_analisis_historico": true,
-      "perfil": "desafio",
-      "contexto_reglas": "historia_simulacro",
-      "seleccion_determinista": false,
-      "n_materias": 5,
-      "opciones": [
-        {"id": "curso", "tipo": "curso", "etiqueta": "Limitar a curso (opcional)", "obligatorio": false},
-        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre (opcional)", "obligatorio": false},
-        {"id": "n_materias", "tipo": "entero", "etiqueta": "Materias en el examen", "min": 1, "max": 10, "defecto": 5}
-      ]
-    },
-    {
-      "id": "simulacro_examen",
-      "orden": 4,
-      "categoria": "Simulacros",
-      "nombre": "Simulacro de parcial",
-      "descripcion": "Simula la ronda de parciales del semestre: 5 asignaturas (una por materia), como a mitad de cuatrimestre. Elige curso y semestre; puedes reducir a 1 materia para un solo parcial.",
+      "nombre": "Repaso",
+      "descripcion": "Repaso flexible por semestre académico, curso o semestre: elige cuántas asignaturas entran y con qué prioridad histórica.",
       "usa_analisis_historico": true,
       "perfil": "balanceado",
       "contexto_reglas": "historia_simulacro",
-      "seleccion_determinista": true,
+      "seleccion_determinista": false,
+      "orden_preguntas": "aleatorio",
       "n_materias": 5,
       "opciones": [
-        {"id": "curso", "tipo": "curso", "etiqueta": "Curso", "obligatorio": true, "defecto": "1"},
-        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre", "obligatorio": true, "defecto": "1"},
-        {"id": "estrategia_materias", "tipo": "eleccion", "etiqueta": "Selección de materias", "defecto": "debilidades", "valores": [
-          {"valor": "debilidades", "etiqueta": "Debilidades históricas (recomendado)"},
-          {"valor": "fortalezas", "etiqueta": "Fortalezas históricas"},
-          {"valor": "curricular", "etiqueta": "Orden del plan de estudios"}
-        ]},
-        {"id": "n_materias", "tipo": "entero", "etiqueta": "Materias en el parcial", "min": 1, "max": 5, "defecto": 5},
-        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 180, "defecto": 90},
-        {"id": "enfoque", "tipo": "eleccion", "etiqueta": "Contenido del parcial", "defecto": "mixto", "valores": [
+        {"id": "periodo", "tipo": "periodo", "etiqueta": "Semestre académico", "obligatorio": false},
+        {"id": "curso", "tipo": "curso", "etiqueta": "Curso (opcional)", "obligatorio": false},
+        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre (opcional)", "obligatorio": false},
+        {"id": "n_materias", "tipo": "entero", "etiqueta": "Asignaturas en el examen", "min": 2, "max": 40, "defecto": 5}
+      ]
+    },
+    {
+      "id": "repaso_area",
+      "orden": 2,
+      "categoria": "Repasos",
+      "nombre": "Repaso por área",
+      "descripcion": "Todas las asignaturas de un bloque temático G1–G10 del plan; la prioridad histórica reparte más preguntas en las más exigentes.",
+      "usa_analisis_historico": true,
+      "perfil": "por_curso",
+      "contexto_reglas": "historia_simulacro",
+      "seleccion_determinista": true,
+      "orden_preguntas": "aleatorio",
+      "n_materias": null,
+      "grupo_filtro": null,
+      "opciones": [
+        {"id": "grupo", "tipo": "grupo", "etiqueta": "Grupo temático", "obligatorio": true, "defecto": "1"}
+      ]
+    },
+    {
+      "id": "simulacro",
+      "orden": 3,
+      "categoria": "Simulacros",
+      "nombre": "Simulacro",
+      "descripcion": "Simula una ronda de exámenes: un bloque por asignatura (orden del plan). Elige semestre académico o curso completo; prioridad histórica, tiempo total y tipo de preguntas (teoría/cálculo).",
+      "usa_analisis_historico": true,
+      "perfil": "balanceado",
+      "contexto_reglas": "historia_simulacro",
+      "seleccion_determinista": false,
+      "orden_preguntas": "materia",
+      "n_materias": 5,
+      "opciones": [
+        {"id": "periodo", "tipo": "periodo", "etiqueta": "Semestre académico", "obligatorio": false, "defecto": "1-1"},
+        {"id": "curso", "tipo": "curso", "etiqueta": "Curso", "obligatorio": false},
+        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre", "obligatorio": false},
+        {"id": "n_materias", "tipo": "entero", "etiqueta": "Asignaturas en la ronda", "min": 2, "max": 40, "defecto": 5},
+        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 240, "defecto": 90},
+        {"id": "enfoque", "tipo": "eleccion", "etiqueta": "Tipo de preguntas", "defecto": "mixto", "valores": [
           {"valor": "mixto", "etiqueta": "Teoría y cálculo"},
           {"valor": "teoria", "etiqueta": "Solo teoría"},
           {"valor": "calculo", "etiqueta": "Solo cálculo"}
@@ -64,133 +63,50 @@
       ]
     },
     {
-      "id": "sesion_pre_entrega",
-      "orden": 3,
-      "categoria": "Repasos",
-      "nombre": "Sesión pre-parcial",
-      "descripcion": "Antes de los 5 parciales del semestre: repaso focalizado en las 3 materias más débiles según el histórico (4 preguntas por asignatura).",
-      "usa_analisis_historico": true,
-      "perfil": "refuerzo",
+      "id": "examen_asignatura",
+      "orden": 4,
+      "categoria": "Simulacros",
+      "nombre": "Examen de asignatura",
+      "descripcion": "Simulacro de una asignatura: elige cuántas preguntas incluir (hasta una por plantilla del banco), materia, tipo de preguntas (teoría/cálculo) y tiempo total.",
+      "usa_analisis_historico": false,
+      "usar_plantillas_materia": true,
+      "perfil": "balanceado",
       "contexto_reglas": "historia_simulacro",
       "seleccion_determinista": false,
-      "n_materias": 3,
-      "opciones": [
-        {"id": "curso", "tipo": "curso", "etiqueta": "Curso", "obligatorio": true, "defecto": "1"},
-        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre", "obligatorio": true, "defecto": "1"}
-      ]
-    },
-    {
-      "id": "repaso_curso",
-      "orden": 8,
-      "categoria": "Repasos",
-      "nombre": "Repaso de curso",
-      "descripcion": "Las 10 materias del curso (2 semestres × 5 asignaturas); ordenadas por dificultad histórica (más exigentes primero). Equivale a repasar parciales y finales del año.",
-      "usa_analisis_historico": true,
-      "perfil": "por_curso",
-      "contexto_reglas": "historia_simulacro",
-      "seleccion_determinista": true,
-      "orden_por_historico": "desc",
-      "n_materias": null,
-      "opciones": [
-        {"id": "curso", "tipo": "curso", "etiqueta": "Curso", "obligatorio": true, "defecto": "1"},
-        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 240, "defecto": 0}
-      ]
-    },
-    {
-      "id": "parcial_grupo",
-      "orden": 9,
-      "categoria": "Simulacros",
-      "nombre": "Parcial por bloque temático",
-      "descripcion": "Examen de todas las materias de un grupo G1–G10; ordenadas por dificultad según el histórico agregado.",
-      "usa_analisis_historico": true,
-      "perfil": "balanceado",
-      "contexto_reglas": "historia_simulacro",
-      "seleccion_determinista": true,
-      "orden_por_historico": "desc",
-      "n_materias": null,
-      "grupo_filtro": null,
-      "opciones": [
-        {"id": "grupo", "tipo": "grupo", "etiqueta": "Grupo temático", "obligatorio": true, "defecto": "2"},
-        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 180, "defecto": 0}
-      ]
-    },
-    {
-      "id": "parcial_materia",
-      "orden": 6,
-      "categoria": "Simulacros",
-      "nombre": "Examen de una materia",
-      "descripcion": "Simulacro de un solo examen (parcial o final) de una asignatura concreta: 12 preguntas balanceadas.",
-      "usa_analisis_historico": false,
-      "perfil": "balanceado",
-      "contexto_reglas": "historia_simulacro",
-      "seleccion_determinista": true,
+      "orden_preguntas": "plantilla",
       "n_materias": 1,
       "opciones": [
         {"id": "materia", "tipo": "materia", "etiqueta": "Materia", "obligatorio": true},
-        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 120, "defecto": 60}
-      ]
-    },
-    {
-      "id": "repaso_semestre",
-      "orden": 7,
-      "categoria": "Repasos",
-      "nombre": "Repaso de semestre",
-      "descripcion": "Las 5 asignaturas del semestre; ordenadas por dificultad histórica (más exigentes primero). Equivale a repasar parciales y finales del cuatrimestre.",
-      "usa_analisis_historico": true,
-      "perfil": "por_curso",
-      "contexto_reglas": "historia_simulacro",
-      "seleccion_determinista": true,
-      "orden_por_historico": "desc",
-      "n_materias": null,
-      "opciones": [
-        {"id": "curso", "tipo": "curso", "etiqueta": "Curso", "obligatorio": true, "defecto": "1"},
-        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre", "obligatorio": true, "defecto": "1"},
-        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 180, "defecto": 0}
-      ]
-    },
-    {
-      "id": "simulacro_solo_teoria",
-      "orden": 5,
-      "categoria": "Simulacros",
-      "nombre": "Simulacro solo teoría",
-      "descripcion": "Parcial del semestre con preguntas exclusivamente de teoría (4 por asignatura). Misma estructura que el simulacro de parcial, sin cálculo.",
-      "usa_analisis_historico": true,
-      "perfil": "balanceado",
-      "contexto_reglas": "historia_simulacro",
-      "seleccion_determinista": true,
-      "n_materias": 5,
-      "slots": [
-        ["Teoria", "Facil"],
-        ["Teoria", "Facil"],
-        ["Teoria", "Media"],
-        ["Teoria", "Media"]
-      ],
-      "opciones": [
-        {"id": "curso", "tipo": "curso", "etiqueta": "Curso", "obligatorio": true, "defecto": "1"},
-        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre", "obligatorio": true, "defecto": "1"},
-        {"id": "estrategia_materias", "tipo": "eleccion", "etiqueta": "Selección de materias", "defecto": "debilidades", "valores": [
-          {"valor": "debilidades", "etiqueta": "Debilidades históricas (recomendado)"},
-          {"valor": "fortalezas", "etiqueta": "Fortalezas históricas"},
-          {"valor": "curricular", "etiqueta": "Orden del plan de estudios"}
+        {"id": "enfoque", "tipo": "eleccion", "etiqueta": "Tipo de preguntas", "defecto": "mixto", "valores": [
+          {"valor": "mixto", "etiqueta": "Teoría y cálculo"},
+          {"valor": "teoria", "etiqueta": "Solo teoría"},
+          {"valor": "calculo", "etiqueta": "Solo cálculo"}
         ]},
-        {"id": "n_materias", "tipo": "entero", "etiqueta": "Materias en el parcial", "min": 1, "max": 5, "defecto": 5},
-        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 180, "defecto": 90}
+        {"id": "n_preguntas", "tipo": "entero", "etiqueta": "Preguntas en el examen", "min": 5, "max": 999, "defecto": 12},
+        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 180, "defecto": 60}
       ]
     },
     {
-      "id": "examen_dia_historia",
-      "orden": 0,
-      "categoria": "Diario",
-      "nombre": "Examen del día",
-      "descripcion": "Mismo examen para todos hoy: 5 asignaturas del semestre elegido, balanceadas con semilla diaria. Ideal para comparar resultados con compañeros.",
-      "usa_analisis_historico": true,
+      "id": "examen_fijo",
+      "orden": 5,
+      "categoria": "Exámenes",
+      "nombre": "Examen fijo",
+      "descripcion": "Plantilla balanceada (4 materias, 24 preguntas): examen del día, aleatorio o reproducible con semilla numérica.",
+      "usa_analisis_historico": false,
       "perfil": "balanceado",
       "contexto_reglas": "historia_simulacro",
-      "seleccion_determinista": true,
-      "n_materias": 5,
+      "seleccion_determinista": false,
+      "orden_preguntas": "dificultad",
+      "exigir_balance_completo": true,
+      "n_materias": 4,
+      "preguntas_por_materia": 6,
       "opciones": [
-        {"id": "curso", "tipo": "curso", "etiqueta": "Curso", "obligatorio": true, "defecto": "1"},
-        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre", "obligatorio": true, "defecto": "1"}
+        {"id": "origen_semilla", "tipo": "eleccion", "etiqueta": "Contenido del examen", "defecto": "diario", "valores": [
+          {"valor": "diario", "etiqueta": "Examen del día"},
+          {"valor": "aleatorio", "etiqueta": "Aleatorio"},
+          {"valor": "semilla", "etiqueta": "Semilla fija"}
+        ]},
+        {"id": "semilla", "tipo": "entero", "etiqueta": "Semilla numérica", "min": 1, "max": 2147483646}
       ]
     }
   ]

@@ -16,6 +16,7 @@ from Comun.compatibilidad_reglas_libre import (
     normalizar_vidas_y_sistema,
     opciones_reglas_libre,
 )
+from Comun.limites_partida import MIN_PREGUNTAS_PARTIDA
 from Comun.dificultad import (
     complejidad_pregunta,
     max_complejidad_pool,
@@ -131,6 +132,10 @@ PRESETS_PREGUNTAS = (5, 10, 15, 20, 25, 30, 40, 50, 75, 100)
 PRESETS_TIEMPO_PREG = (30, 45, 60, 90, 120, 180, 300)
 PRESETS_TIEMPO_TOTAL = (300, 600, 900, 1200, 1800, 3600)
 
+_PASO_CICLO_LIBRE: dict[str, int] = {
+    "vidas": 2,
+}
+
 ETIQUETAS_FILA_PASO1: dict[str, str] = {
     "banco": "Banco de datos",
     "n_preguntas": "Preguntas en la partida",
@@ -192,7 +197,9 @@ def _dibujar_cabecera_libre(
 
 
 def _n_preguntas_efectivas(modo_infinito: bool, total_elegido: int) -> int:
-    return 10 if modo_infinito else total_elegido
+    if modo_infinito:
+        return 10
+    return max(total_elegido, MIN_PREGUNTAS_PARTIDA)
 
 
 def _construir_reglas_paso1(
@@ -270,7 +277,9 @@ class ConfigOpcionesLibre(Pantalla):
 
         self.banco_elegido = banco_inicial
         self.modo_infinito = modo_infinito_inicial
-        self.total_elegido = total_inicial
+        self.total_elegido = (
+            total_inicial if modo_infinito_inicial else max(total_inicial, MIN_PREGUNTAS_PARTIDA)
+        )
         self.sin_vidas = sin_vidas_inicial
         self.vidas_count = vidas_count_inicial
         self.modo_tiempo = modo_tiempo_inicial
@@ -558,7 +567,7 @@ class ConfigOpcionesLibre(Pantalla):
                 self.modo_infinito = True
             else:
                 self.modo_infinito = False
-                self.total_elegido = int(clave)
+                self.total_elegido = max(int(clave), MIN_PREGUNTAS_PARTIDA)
         elif op_id == "vidas":
             if clave == "sin":
                 self.sin_vidas = True
@@ -590,7 +599,8 @@ class ConfigOpcionesLibre(Pantalla):
             idx = claves.index(self._clave_actual(op_id))
         except ValueError:
             idx = 0
-        self._asignar_clave(op_id, claves[(idx + delta) % len(claves)])
+        paso = _PASO_CICLO_LIBRE.get(op_id, 1)
+        self._asignar_clave(op_id, claves[(idx + delta * paso) % len(claves)])
         self.mensaje = ""
         self._reconstruir_layout()
 

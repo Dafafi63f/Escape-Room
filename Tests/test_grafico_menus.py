@@ -682,7 +682,7 @@ class TestHoverTooltipsGrafico(unittest.TestCase):
         from Grafico.tooltips_ui import TOOLTIP_ATRAS, TOOLTIP_CONTINUAR, TOOLTIP_EMPEZAR
 
         presets = cargar_presets_historia(resolver_presets_historia())
-        preset = next(p for p in presets if p.id == "simulacro_examen")
+        preset = next(p for p in presets if p.id == "simulacro")
 
         carrusel = ConfigModoHistoria(self.datos, self.ir_a, self.salir)
         self.assertEqual(carrusel.boton_empezar.tooltip, TOOLTIP_CONTINUAR)

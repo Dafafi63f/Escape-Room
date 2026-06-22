@@ -26,7 +26,7 @@ from Grafico.tema import (
     Y_INICIO_TITULO,
     crear_fuentes,
 )
-from Grafico.texto import dibujar_texto_centro
+from Grafico.texto import dibujar_texto_centro, preparar_texto_ui, renderizar_texto_mixto, texto_requiere_fuentes_mixtas
 from Grafico.textos_grafico import BTN_VOLVER, etiqueta, titulo_pantalla
 from Grafico.ui import (
     Boton,
@@ -44,6 +44,11 @@ _MARGEN_SCROLL = 14
 _GAP_TRAS_SUBTITULO = 18
 _PAD_CONTACTO = 14
 _GAP_CONTACTO_BOTONES = 16
+_Y_PANEL_TEXTO = Y_INICIO_TITULO + 36
+_MARGEN_INF_VOLVER = 24
+_ALTO_MIN_VOLVER = 48
+_GAP_PANEL_VOLVER = 12
+_ESPACIO_HINT_SCROLL = 36
 
 
 def _texto_contacto_hub() -> str:
@@ -97,7 +102,6 @@ class PantallaInfoTexto(Pantalla):
         self.volver_a = volver_a
         self.fuentes = crear_fuentes()
         self.scroll = 0
-        self._panel = pygame.Rect(MARGEN, Y_INICIO_TITULO + 36, ANCHO - 2 * MARGEN, ALTO - 168)
         self.boton_volver = Boton(
             etiqueta(*BTN_VOLVER),
             rect_boton_etiqueta(
@@ -105,11 +109,23 @@ class PantallaInfoTexto(Pantalla):
                 self.fuentes["menu"],
                 x_centro=ANCHO // 2,
                 y=0,
-                alto_min=48,
+                alto_min=_ALTO_MIN_VOLVER,
             ),
             self.volver_a,
         )
-        posicionar_pila_inferior([self.boton_volver], x_centro=ANCHO // 2, gap=0, margen_inferior=24)
+        posicionar_pila_inferior(
+            [self.boton_volver],
+            x_centro=ANCHO // 2,
+            gap=0,
+            margen_inferior=_MARGEN_INF_VOLVER,
+        )
+        y_panel_inf = self.boton_volver.rect.top - _GAP_PANEL_VOLVER - _ESPACIO_HINT_SCROLL
+        self._panel = pygame.Rect(
+            MARGEN,
+            _Y_PANEL_TEXTO,
+            ANCHO - 2 * MARGEN,
+            max(120, y_panel_inf - _Y_PANEL_TEXTO),
+        )
         self._lineas = self._construir_lineas()
 
     def _construir_lineas(self) -> list[str]:
@@ -152,19 +168,40 @@ class PantallaInfoTexto(Pantalla):
         fuente = self.fuentes["pequena"]
         alto_linea = fuente.get_linesize() + 4
         y = self._panel.y + 12 - self.scroll
+        tamano = fuente.get_height()
         for linea in self._lineas:
             if y + alto_linea >= self._panel.y and y <= self._panel.bottom:
                 if linea:
-                    txt = fuente.render(linea, True, _COLOR_TEXTO_INFO)
-                    superficie.blit(txt, (self._panel.x + 12, y))
+                    linea_ui = preparar_texto_ui(linea)
+                    x = self._panel.x + 12
+                    if texto_requiere_fuentes_mixtas(linea_ui):
+                        renderizar_texto_mixto(
+                            superficie,
+                            linea_ui,
+                            (x, y),
+                            _COLOR_TEXTO_INFO,
+                            tamano,
+                        )
+                    else:
+                        txt = fuente.render(linea_ui, True, _COLOR_TEXTO_INFO)
+                        superficie.blit(txt, (x, y))
             y += alto_linea
             if y > self._panel.bottom + alto_linea:
                 break
         if self._max_scroll() > 0:
-            hint = fuente.render("Rueda del ratón para desplazarte", True, COLOR_TEXTO_PANEL)
+            hint = fuente.render(
+                preparar_texto_ui("Rueda del ratón para desplazarte"),
+                True,
+                COLOR_TEXTO_PANEL,
+            )
             superficie.blit(
                 hint,
-                hint.get_rect(center=(ANCHO // 2, self._panel.bottom + 14)),
+                hint.get_rect(
+                    midbottom=(
+                        ANCHO // 2,
+                        self.boton_volver.rect.top - _GAP_PANEL_VOLVER,
+                    ),
+                ),
             )
         self.boton_volver.dibujar(superficie, self.fuentes["menu"])
         dibujar_tooltips_botones(superficie, self.fuentes["pequena"], [self.boton_volver])

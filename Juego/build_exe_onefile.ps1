@@ -1,3 +1,7 @@
+param(
+    [switch]$Force
+)
+
 $ErrorActionPreference = "Stop"
 
 $gameDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -21,11 +25,15 @@ if (-not $pyiOk) {
 $buildDir = Join-Path $gameDir "build"
 $specDir = $gameDir
 $exeName = "juego_grafico"
+$exePath = Join-Path $gameDir "$exeName.exe"
 
-Write-Host "==> Limpiando build anterior..."
-if (Test-Path $buildDir) { Remove-Item $buildDir -Recurse -Force }
-if (Test-Path (Join-Path $gameDir "$exeName.exe")) {
-    Remove-Item (Join-Path $gameDir "$exeName.exe") -Force
+if ($Force) {
+    Write-Host "==> Reconstrucción forzada: limpiando caché de PyInstaller..."
+    if (Test-Path $buildDir) { Remove-Item $buildDir -Recurse -Force }
+}
+
+if (Test-Path $exePath) {
+    Remove-Item $exePath -Force
 }
 if (Test-Path (Join-Path $gameDir "dist")) {
     Remove-Item (Join-Path $gameDir "dist") -Recurse -Force
@@ -72,6 +80,7 @@ python -m PyInstaller `
   --workpath "$buildDir" `
   --distpath "$gameDir" `
   --specpath "$specDir" `
+  --noconfirm `
   @addDataArgs `
   "$gameDir\juego_grafico.py"
 
@@ -79,8 +88,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "Fallo al generar el ejecutable."
 }
 
-Write-Host "==> Limpiando artefactos de build (build/, .spec)..."
-if (Test-Path $buildDir) { Remove-Item $buildDir -Recurse -Force }
+Write-Host "==> Limpiando artefactos temporales (.spec, dist/)..."
 $specFile = Join-Path $gameDir "$exeName.spec"
 if (Test-Path $specFile) { Remove-Item $specFile -Force }
 if (Test-Path (Join-Path $gameDir "dist")) {
@@ -89,7 +97,8 @@ if (Test-Path (Join-Path $gameDir "dist")) {
 
 Write-Host ""
 Write-Host "Listo. Ejecutable generado en:"
-Write-Host "  $gameDir\$exeName.exe"
+Write-Host "  $exePath"
+Write-Host "  (Juego/build/ se borra en la limpieza final para ahorrar espacio; --conservar-cache-exe para conservarla)"
 Write-Host ""
 Write-Host "Distribución recomendada:"
 Write-Host "  - Copia $exeName.exe"

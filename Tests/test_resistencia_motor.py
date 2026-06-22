@@ -48,7 +48,7 @@ from Comun.resistencia_historia import (  # noqa: E402
 class TestMecanicasResistencia(unittest.TestCase):
     def test_semilla_reto_dia_estable(self) -> None:
         d = date(2026, 6, 18)
-        self.assertEqual(semilla_reto_dia(d), 20260618)
+        self.assertEqual(semilla_reto_dia(d), 18_06_2026)
         self.assertIn("2026", etiqueta_fecha_reto_dia(d))
 
     def test_texto_progreso_resistencia(self) -> None:

@@ -14,7 +14,6 @@ __pycache__/
 Juego/build/
 Juego/dist/
 Juego/*.spec
-Juego/juego_grafico.exe
 Juego/Data/
 
 # --- Compilación LaTeX (si compilas Docs/Entrega/Memoria_TFG.tex a mano) ---
@@ -25,3 +24,7 @@ Docs/Entrega/*.toc
 Docs/Entrega/*.fls
 Docs/Entrega/*.fdb_latexmk
 Docs/Entrega/*.synctex.gz
+# --- Plantilla Pandoc (regenerable con utilidades_tfg.py --solo-memoria) ---
+Docs/Entrega/pandoc_reference.docx
+Docs/Entrega/pandoc_reference_default.docx
+Docs/Entrega/pandoc_reference.tmp.docx

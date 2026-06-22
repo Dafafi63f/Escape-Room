@@ -21,9 +21,10 @@ def es_id_reto_dia(preset_id: str) -> bool:
 
 
 def semilla_reto_dia(d: date | None = None) -> int:
-    """Entero estable por día civil (UTC)."""
-    d = d or datetime.now(timezone.utc).date()
-    return d.year * 10000 + d.month * 100 + d.day
+    """Entero estable por día civil (UTC); mismo criterio que el examen del día."""
+    from Comun.modos_diarios import semilla_diaria
+
+    return semilla_diaria(d)
 
 
 def etiqueta_fecha_reto_dia(d: date | None = None) -> str:

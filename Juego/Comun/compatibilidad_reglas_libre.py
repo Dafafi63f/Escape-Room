@@ -8,7 +8,9 @@ from dataclasses import dataclass
 
 from Comun.reglas_partida import ReglasPartida, SistemaPuntuacion
 
-MIN_PREGUNTAS_CALIFICACION = 4
+from Comun.limites_partida import MIN_PREGUNTAS_PARTIDA
+
+MIN_PREGUNTAS_CALIFICACION = MIN_PREGUNTAS_PARTIDA
 
 
 @dataclass(frozen=True)
@@ -84,7 +86,7 @@ def opciones_reglas_libre(
     )
     progresiva = (
         sis == SistemaPuntuacion.ARCADE
-        and (modo_infinito or n_preguntas > 1)
+        and (modo_infinito or n_preguntas >= MIN_PREGUNTAS_PARTIDA)
     )
     return OpcionesReglasLibre(
         sistemas=sistemas,

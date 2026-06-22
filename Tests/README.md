@@ -2,7 +2,7 @@
 
 Pruebas en directorio plano `Tests/` (juego y gráfico). Tests de mantenimiento en [`Files/test_*.py`](../Files/README.md#pruebas).
 
-**Suite actual:** **258 tests** (250 en `Tests/` + 8 en `Files/`).
+**Suite actual:** **303 tests** (295 en `Tests/` + 8 en `Files/`).
 
 ## Ejecutar
 

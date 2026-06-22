@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from Comun.compatibilidad_reglas_libre import sanitizar_reglas_libre
+from Comun.limites_partida import MIN_PREGUNTAS_PARTIDA
 from Comun.reglas_partida import ReglasPartida, SistemaPuntuacion
 
 
@@ -24,9 +25,8 @@ def _titulos_libre() -> dict[object, str]:
     if not _TITULOS_LIBRE:
         C = _ctx()
         _TITULOS_LIBRE = {
+            C.LIBRE_BLOQUE_CORTO: f"Bloque mínimo ({MIN_PREGUNTAS_PARTIDA} preguntas)",
             C.LIBRE_BLOQUE_NORMAL: "Bloque amplio (6+ preguntas)",
-            C.LIBRE_BLOQUE_CORTO: "Bloque corto (2-5 preguntas)",
-            C.LIBRE_UNA_PREGUNTA: "Una sola pregunta",
             C.LIBRE_INFINITO: "Modo infinito",
         }
     return _TITULOS_LIBRE

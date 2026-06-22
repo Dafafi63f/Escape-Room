@@ -28,7 +28,8 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_grafico.py`](../juego_g
 
 | Módulo | Responsabilidad |
 |--------|-----------------|
-| `config_historia.py` | Constantes y perfiles de historia |
+| `limites_partida.py` | Mínimos globales (p. ej. 5 preguntas por partida) |
+| `config_historia.py` | Opciones y validación de presets historia (v27) |
 | `presets_historia.py` | Carga de `presets_historia.json` |
 | `perfiles_historia.py` | Perfiles de examen (refuerzo, simulacro, etc.) |
 | `resistencia_historia.py` | Eventos aleatorios y escalada de dificultad |
@@ -39,8 +40,9 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_grafico.py`](../juego_g
 | `motor_resistencia_comun.py` | Turnos, racha, multiplicadores, objetos |
 | `powerups_resistencia.py` | Comodines (50/50, bomba, escudo, skip, tiempo extra) |
 | `preguntas_resistencia.py` | Pool exclusivo de preguntas resistencia |
-| `modos_diarios.py` | Identificación y orden de presets con semilla diaria |
-| `examen_dia_historia.py` | Semilla del examen del día (historia) |
+| `modos_diarios.py` | Semilla diaria compartida (`DDMMYYYY`) y orden de presets diarios |
+| `examen_dia_historia.py` | Alias de semilla diaria para el examen balanceado |
+| `examen_fijo_historia.py` | Preset `examen_fijo` (diario / aleatorio / semilla) |
 | `ranking_resistencia.py` | Rankings locales (`ranking_resistencia_infinita.json`, `ranking_reto_dia.json`) |
 | `preferencias_grafico.py` | Opciones globales gráficas (nombre, feedback, tooltips) |
 | `preferencias_ranking.py` | Retención interna del ranking (sin fichero ni UI) |

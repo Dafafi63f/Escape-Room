@@ -28,8 +28,8 @@ TOOLTIP_N_PREGUNTAS_INFINITO = (
 
 TOOLTIP_PAUSA = "Menú de pausa: continuar, ir al título o salir del juego."
 TOOLTIP_DIARIOS = (
-    "Retos del día: examen del día (historia) y reto del día (resistencia). "
-    "Misma secuencia para todos hoy."
+    "Examen del día (semilla diaria), examen aleatorio (semilla nueva cada vez) "
+    "y reto del día (resistencia)."
 )
 TOOLTIP_OPCIONES = (
     "Opciones globales: nombre por defecto, ayudas al ratón, emojis y borrado de datos locales."
@@ -59,8 +59,8 @@ TOOLTIP_MENU_PRINCIPAL: dict[str, str] = {
         "Partida personalizada: eliges banco, vidas, tiempo, filtros y número de preguntas."
     ),
     "diarios": (
-        "Acceso rápido al examen del día (historia) y al reto del día (resistencia). "
-        "Misma secuencia para todos hoy."
+        "Examen del día (misma semilla hoy), examen aleatorio (cambia cada vez) "
+        "y reto del día (resistencia)."
     ),
     "historia": (
         "Presets guiados: simulacros de examen, repasos y retos con datos históricos."
@@ -119,9 +119,16 @@ TOOLTIP_VER_RANKING = TOOLTIP_RANKING
 # Valores de opciones «eleccion» en presets historia (clave op → valor → texto).
 _TOOLTIP_ELECCION_HISTORIA: dict[str, dict[str, str]] = {
     "estrategia_materias": {
-        "debilidades": "Prioriza materias con peores resultados históricos en el grado.",
-        "fortalezas": "Prioriza materias con mejores medias históricas.",
+        "debilidades": "Prioriza materias con peores resultados históricos dentro del ámbito elegido.",
+        "fortalezas": "Prioriza materias con mejores medias históricas dentro del ámbito elegido.",
+        "equilibrado": "Reparto suave según el histórico, sin priorizar debilidades ni fortalezas.",
         "curricular": "Sigue el orden del plan de estudios, sin ponderar el histórico.",
+        "sin_historico": "Ignora el histórico MatCAD: mismo número de preguntas por asignatura.",
+    },
+    "origen_semilla": {
+        "diario": "Mismo contenido que el examen del día de hoy; el orden varía en cada partida.",
+        "aleatorio": "Contenido nuevo en cada partida; orden fijo por dificultad (F→M→D).",
+        "semilla": "Contenido reproducible con la semilla numérica indicada.",
     },
     "enfoque": {
         "mixto": "Mezcla preguntas de teoría y de cálculo.",
@@ -132,10 +139,16 @@ _TOOLTIP_ELECCION_HISTORIA: dict[str, dict[str, str]] = {
 
 _TOOLTIP_OPCION_HISTORIA_ID: dict[str, str] = {
     "curso": "Limita el ámbito del examen a un curso del grado (vacío = todo el grado).",
-    "semestre": "Acota a un semestre del curso elegido (vacío = curso completo).",
-    "grupo": "Filtra por grupo temático del plan (álgebra, cálculo, IA, etc.).",
+    "semestre": "Acota a un semestre concreto. Vacío: cualquier semestre del grado. Con curso: todo el curso o un semestre (5 asignaturas).",
+    "periodo": "Semestre académico concreto del plan (p. ej. 1-1). Vacío: filtra por curso y semestre por separado.",
+    "grupo": "Elige un bloque G1–G10: entran todas sus asignaturas (sin mezclar con curso ni semestre).",
     "materia": "Concentra el reto en una sola asignatura.",
-    "n_materias": "Cuántas materias entran en el examen o sesión de refuerzo.",
+    "estrategia_materias": "Cómo repartir preguntas entre asignaturas según el histórico MatCAD.",
+    "n_materias": "Cuántas materias entran en el examen (mínimo 2 para alcanzar 5 preguntas).",
+    "n_preguntas": "Cuántas preguntas incluir (mínimo 5; máximo según plantillas de la materia y el tipo de preguntas).",
+    "enfoque": "Filtra si entran preguntas de teoría, de cálculo o ambas.",
+    "origen_semilla": "Diario (semilla de hoy), aleatorio o semilla numérica fija.",
+    "semilla": "Entero que fija el contenido del examen (por defecto, la semilla del día).",
     "tiempo_total_min": "Minutos para todo el examen; 0 significa sin límite de tiempo.",
 }
 
@@ -199,6 +212,10 @@ def tooltip_opcion_ciclo_historia(
         if not clave:
             return "Sin filtro de semestre: se usa el curso completo elegido."
         return f"Acota al semestre {clave} del curso."
+    if tipo == "periodo" and clave:
+        return _TOOLTIP_OPCION_HISTORIA_ID.get("periodo")
+    if tipo in ("curso", "semestre", "periodo") and not clave:
+        return _TOOLTIP_OPCION_HISTORIA_ID.get(tipo)
     if tipo == "grupo" and clave:
         return _TOOLTIP_OPCION_HISTORIA_ID.get("grupo")
     if tipo == "materia" and clave:

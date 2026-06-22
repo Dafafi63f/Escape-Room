@@ -162,6 +162,20 @@ def cargar_materias(path_csv: Path) -> dict[str, dict[str, str]]:
     return materias
 
 
+def cargar_plantillas_materia(path_json: Path, materia: str) -> list[dict]:
+    """Plantillas base de ``plantillas.json`` para una asignatura (sin expandir)."""
+    if not path_json.exists():
+        return []
+    try:
+        data = json.loads(path_json.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Plantillas JSON inválidas ({path_json}): {e}") from e
+    items = data.get(materia)
+    if not isinstance(items, list):
+        return []
+    return list(items)
+
+
 def cargar_preguntas(path_csv: Path, materias_meta: dict[str, dict[str, str]]) -> list[Pregunta]:
     if not path_csv.exists():
         raise FileNotFoundError(f"No se encontró el dataset: {path_csv}")

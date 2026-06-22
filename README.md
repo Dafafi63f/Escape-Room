@@ -35,8 +35,8 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
 | [`Docs/`](Docs/README.md) | Changelogs, `Entrega/` (memoria md/tex/docx), `Figuras/` |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias (**258** tests: 250 en `Tests/` + 8 en `Files/`) y CI |
-| [`utilidades_tfg.py`](utilidades_tfg.py) | Limpieza + exportación Word (por defecto ambas) |
+| [`Tests/`](Tests/README.md) | Pruebas unitarias (**303** tests: 295 en `Tests/` + 8 en `Files/`) y CI |
+| [`utilidades_tfg.py`](utilidades_tfg.py) | Regeneración (memoria + .exe) + limpieza final |
 | [`requirements.txt`](requirements.txt) | Dependencias (pandas, matplotlib, pyinstaller, pygame-ce, mypy, pre-commit) |
 
 ## Memoria — exportar Word
@@ -45,12 +45,13 @@ El borrador editable está en [`Docs/Entrega/Memoria_TFG.md`](Docs/Entrega/Memor
 
 ```bash
 python Docs/generar_figuras_memoria.py
-python utilidades_tfg.py
+python utilidades_tfg.py                 # memoria + .exe → limpieza final
+python utilidades_tfg.py --sin-exe       # memoria sin .exe (más rápido)
 ```
 
 Genera los `.docx` en `Docs/Entrega/` (Pandoc). El PDF de entrega lo exportas desde Word tras editar. Detalle en [`Docs/README.md`](Docs/README.md).
 
-Solo una tarea: `python utilidades_tfg.py --solo-limpieza` o `--solo-memoria`.
+Solo una fase: `--solo-memoria`, `--solo-exe` o `--solo-limpieza`.
 
 ## Jugar
 
@@ -63,10 +64,10 @@ python Juego/juego_grafico.py
 
 ```powershell
 pip install -r requirements.txt
-.\Juego\build_exe_onefile.ps1
+python utilidades_tfg.py --solo-exe      # solo .exe → limpieza
 ```
 
-Salida: `Juego/juego_grafico.exe`. Detalle en [`Juego/README.md`](Juego/README.md).
+También: `.\Juego\build_exe_onefile.ps1`. Salida: `Juego/juego_grafico.exe`. Detalle en [`Juego/README.md`](Juego/README.md).
 
 ### Datos
 
@@ -120,13 +121,16 @@ Pandoc (binario externo) para la exportación Word (`utilidades_tfg.py`).
 
 ## Utilidades locales
 
-Por defecto limpia temporales **y** regenera los Word de la memoria:
+Por defecto **regenera la memoria** y **limpia al final**:
 
 ```bash
 python utilidades_tfg.py
-python utilidades_tfg.py --dry-run          # listar limpieza sin borrar; luego exporta
-python utilidades_tfg.py --solo-limpieza
+python utilidades_tfg.py --sin-exe             # sin juego_grafico.exe
 python utilidades_tfg.py --solo-memoria
+python utilidades_tfg.py --solo-memoria --con-exe
+python utilidades_tfg.py --solo-exe
+python utilidades_tfg.py --solo-limpieza
+python utilidades_tfg.py --dry-run            # listar limpieza sin borrar; luego exporta
 ```
 
 Limpieza acotada:
@@ -135,8 +139,9 @@ Limpieza acotada:
 python utilidades_tfg.py --solo-limpieza --solo-pycache
 python utilidades_tfg.py --solo-limpieza --solo-juego
 python utilidades_tfg.py --solo-limpieza --solo-txt
+python utilidades_tfg.py --solo-limpieza --solo-entrega
 ```
 
-Recorre todo el proyecto para `__pycache__` y cachés. En `Data/Juego/` **elimina del disco** lo generado al jugar (`preferencias_*.json`, `ranking_*.json`, `*.txt`).
+La limpieza final recorre el proyecto (`__pycache__`, runtime en `Data/Juego/`, intermedios de `Docs/Entrega/`, restos de PyInstaller en `Juego/`).
 
 Desde el juego: **borrar** `.txt`; **vaciar** preferencias y rankings (los `.json` se conservan). Presets y pool de resistencia no se tocan en ningún caso.

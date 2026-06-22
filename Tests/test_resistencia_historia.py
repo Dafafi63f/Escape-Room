@@ -21,18 +21,6 @@ from Tests.support import ensure_juego_path
 
 ensure_juego_path()
 
-# --- test_resistencia_historia.py ---
-
-import json
-import sys
-import tempfile
-import unittest
-from pathlib import Path
-
-_JUEGO = Path(__file__).resolve().parents[1] / "Juego"
-if str(_JUEGO) not in sys.path:
-    sys.path.insert(0, str(_JUEGO))
-
 from Comun.datos import cargar_materias, cargar_preguntas  # noqa: E402
 from Comun.politica_reglas import ContextoPartida, validar_reglas  # noqa: E402
 from Comun.presets_historia import aplicar_preset, cargar_presets_especiales, cargar_presets_historia  # noqa: E402

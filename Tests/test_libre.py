@@ -73,7 +73,7 @@ class TestCompatibilidadReglasLibre(unittest.TestCase):
     def test_pocas_preguntas_sin_nota(self) -> None:
         opts = opciones_reglas_libre(
             modo_infinito=False,
-            n_preguntas=2,
+            n_preguntas=4,
             sin_vidas=True,
             sistema=SistemaPuntuacion.NOTA,
         )
@@ -105,7 +105,6 @@ class TestCompatibilidadReglasLibre(unittest.TestCase):
         for ctx in (
             ContextoPartida.LIBRE_BLOQUE_NORMAL,
             ContextoPartida.LIBRE_BLOQUE_CORTO,
-            ContextoPartida.LIBRE_UNA_PREGUNTA,
             ContextoPartida.LIBRE_INFINITO,
         ):
             self.assertIsNotNone(alcance_para_contexto(ctx))

@@ -29,7 +29,7 @@ Datos en [`../Data/README.md`](../Data/README.md).
 | Modo | Descripción |
 |------|-------------|
 | **Libre** | Partida configurable, filtros, informes al cerrar |
-| **Historia** | Examen balanceado según histórico de qualificacions |
+| **Historia** | Examen balanceado según histórico; carrusel de 5 presets (repaso, simulacro, examen por materia, etc.) |
 | **Resistencia** | Partida infinita, eventos, objetos, ranking local |
 | **Feedback** | Formulario en pantalla (icono 📣); ver [`Grafico/pantalla_feedback.py`](Grafico/pantalla_feedback.py) |
 

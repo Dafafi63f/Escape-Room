@@ -12,12 +12,16 @@ from pathlib import Path
 from Comun.config_historia import (
     MATERIAS_POR_SEMESTRE,
     ConfigPresetHistoria,
+    ESTRATEGIA_MATERIAS_DEFECTO,
     OpcionPreset,
-    contar_materias_ambito,
+    curso_semestre_desde_valores,
     defectos_config,
+    estrategia_materias_desde_config,
+    opciones_config_historia,
+    usar_analisis_historico_desde_config,
     max_materias_ambito,
     parse_opciones,
-    slots_desde_enfoque,
+    tipos_desde_enfoque,
     tiempo_total_seg_desde_config,
     validar_config,
 )
@@ -31,6 +35,41 @@ from Comun.politica_reglas import (
     validar_reglas,
 )
 from Comun.reglas_partida import ReglasPartida
+
+
+ORDEN_PREGUNTAS_VALIDOS = frozenset({
+    "aleatorio",
+    "dificultad",
+    "materia",
+    "plantilla",
+    "variar",
+})
+
+
+def resolver_orden_preguntas(
+    preset: PresetHistoria,
+    cfg: ConfigPresetHistoria | None = None,
+) -> str:
+    """Orden explícito de preguntas en partida (independiente del azar de contenido)."""
+    from Comun.examen_fijo_historia import es_id_examen_fijo, orden_preguntas_examen_fijo
+
+    if cfg is not None and es_id_examen_fijo(preset.id):
+        return orden_preguntas_examen_fijo(cfg)
+    raw = preset.orden_preguntas
+    if raw:
+        if raw not in ORDEN_PREGUNTAS_VALIDOS:
+            raise ValueError(
+                f"orden_preguntas inválido en {preset.id!r}: {raw!r} "
+                f"(use: {', '.join(sorted(ORDEN_PREGUNTAS_VALIDOS))})."
+            )
+        return raw
+    if preset.variar_orden_cada_partida:
+        return "variar"
+    if preset.orden_preguntas_por_materia:
+        return "materia"
+    if preset.orden_preguntas_por_dificultad:
+        return "dificultad"
+    return "aleatorio"
 
 
 @dataclass(frozen=True)
@@ -49,12 +88,19 @@ class PresetHistoria:
     curso_filtro: str | None
     semestre_filtro: str | None
     grupo_filtro: str | None
-    slots: tuple[tuple[str, str], ...] | None
+    preguntas_por_materia: int | None
     opciones: tuple[OpcionPreset, ...]
     tiempo_por_pregunta_seg: int | None = None
     tiempo_total_seg: int | None = None
     orden_por_historico: str | None = None
-    usa_analisis_historico: bool = False
+    orden_preguntas: str | None = None
+    orden_preguntas_por_dificultad: bool = False
+    orden_preguntas_por_materia: bool = False
+    variar_orden_cada_partida: bool = False
+    exigir_balance_completo: bool = False
+    usa_analisis_historico: bool = True
+    usar_plantillas_materia: bool = False
+    solo_atajo: bool = False
 
     def contexto(self) -> ContextoPartida:
         return ContextoPartida(self.contexto_reglas)
@@ -63,31 +109,38 @@ class PresetHistoria:
         return bool(self.opciones)
 
 
-def _parse_slots(raw: list | None) -> tuple[tuple[str, str], ...] | None:
-    if not raw:
+def _parse_preguntas_por_materia(raw: int | None) -> int | None:
+    if raw is None:
         return None
-    out: list[tuple[str, str]] = []
-    for par in raw:
-        if not isinstance(par, list) or len(par) != 2:
-            raise ValueError(f"Slot inválido: {par!r}")
-        out.append((str(par[0]), str(par[1])))
-    return tuple(out)
-
+    n = int(raw)
+    if n <= 0:
+        raise ValueError(f"preguntas_por_materia debe ser positivo: {n!r}")
+    return n
 
 _IDS_PRESET_REPASOS: frozenset[str] = frozenset({
-    "refuerzo_historico",
-    "desafio_historico",
-    "sesion_pre_entrega",
-    "repaso_semestre",
-    "repaso_curso",
+    "repaso",
+    "repaso_area",
 })
 
 _IDS_PRESET_SIMULACROS: frozenset[str] = frozenset({
-    "simulacro_examen",
-    "simulacro_solo_teoria",
-    "parcial_materia",
-    "parcial_grupo",
+    "simulacro",
+    "examen_asignatura",
+    "examen_fijo",
 })
+
+# IDs retirados del catálogo activo (solo documentación histórica y tests).
+PRESETS_HISTORIA_RETIRADOS = frozenset({
+    "examen_dia_historia",
+    "examen_aleatorio_historia",
+    "repaso_express",
+    "repaso_historico",
+    "repaso_integral",
+    "vuelta_grado",
+    "semana_examenes",
+    "simulacro_curso",
+})
+
+NUM_MODOS_HISTORIA_CARRUSEL = 5
 
 
 def _grupo_catalogo_historia(preset_id: str) -> int:
@@ -115,6 +168,7 @@ def _cargar_presets_desde_json(
     path: Path,
     *,
     clave_orden: Callable[[PresetHistoria], tuple],
+    catalogo_historia: bool = False,
 ) -> list[PresetHistoria]:
     if not path.exists():
         raise FileNotFoundError(f"No se encontró el catálogo: {path}")
@@ -125,7 +179,7 @@ def _cargar_presets_desde_json(
     items = data.get("presets")
     if not isinstance(items, list) or not items:
         raise ValueError(f"El catálogo {path} no contiene presets.")
-    presets = [_parse_preset(x) for x in items]
+    presets = [_parse_preset(x, catalogo_historia=catalogo_historia) for x in items]
     presets.sort(key=clave_orden)
     ids = [p.id for p in presets]
     if len(ids) != len(set(ids)):
@@ -133,8 +187,24 @@ def _cargar_presets_desde_json(
     return presets
 
 
+def _cargar_presets_historia_archivo(path: Path) -> list[PresetHistoria]:
+    return _cargar_presets_desde_json(
+        path,
+        clave_orden=_clave_orden_catalogo,
+        catalogo_historia=True,
+    )
+
+
 def cargar_presets_historia(path: Path) -> list[PresetHistoria]:
-    return _cargar_presets_desde_json(path, clave_orden=_clave_orden_catalogo)
+    """Catálogo del carrusel (excluye presets marcados como ``solo_atajo``)."""
+    visibles = [p for p in _cargar_presets_historia_archivo(path) if not p.solo_atajo]
+    if len(visibles) != NUM_MODOS_HISTORIA_CARRUSEL:
+        ids = [p.id for p in visibles]
+        raise ValueError(
+            f"El carrusel de historia debe tener exactamente {NUM_MODOS_HISTORIA_CARRUSEL} "
+            f"modos visibles; hay {len(visibles)}: {ids}"
+        )
+    return visibles
 
 
 def cargar_presets_especiales(path: Path) -> list[PresetHistoria]:
@@ -151,26 +221,27 @@ def cargar_presets_especiales(path: Path) -> list[PresetHistoria]:
 
 
 def buscar_preset(preset_id: str) -> PresetHistoria:
-    """Busca un preset en historia o en modos especiales."""
+    """Busca un preset en historia (incl. atajos) o en modos especiales."""
     from Comun.rutas import resolver_presets_especiales, resolver_presets_historia
 
-    for cargar, resolver in (
-        (cargar_presets_historia, resolver_presets_historia),
-        (cargar_presets_especiales, resolver_presets_especiales),
-    ):
-        for preset in cargar(resolver()):
-            if preset.id == preset_id:
-                return preset
+    for preset in _cargar_presets_historia_archivo(resolver_presets_historia()):
+        if preset.id == preset_id:
+            return preset
+    for preset in cargar_presets_especiales(resolver_presets_especiales()):
+        if preset.id == preset_id:
+            return preset
     raise KeyError(f"Preset no encontrado: {preset_id!r}")
 
 
-def _parse_preset(item: dict) -> PresetHistoria:
+def _parse_preset(item: dict, *, catalogo_historia: bool = False) -> PresetHistoria:
     for campo in ("id", "nombre", "descripcion", "perfil", "contexto_reglas"):
         if not item.get(campo):
             raise ValueError(f"Preset sin campo obligatorio {campo!r}: {item!r}")
     contexto = item["contexto_reglas"]
     if contexto not in {c.value for c in ContextoPartida if c.name.startswith("HISTORIA_")}:
         raise ValueError(f"contexto_reglas desconocido: {contexto!r}")
+    # Por defecto el catálogo historia usa MatCAD; un preset puede desactivarlo en JSON.
+    usa_historico = bool(item.get("usa_analisis_historico", catalogo_historia))
     return PresetHistoria(
         id=str(item["id"]),
         nombre=str(item["nombre"]),
@@ -184,12 +255,19 @@ def _parse_preset(item: dict) -> PresetHistoria:
         curso_filtro=item.get("curso_filtro"),
         semestre_filtro=item.get("semestre_filtro"),
         grupo_filtro=item.get("grupo_filtro"),
-        slots=_parse_slots(item.get("slots")),
+        preguntas_por_materia=_parse_preguntas_por_materia(item.get("preguntas_por_materia")),
         opciones=parse_opciones(item.get("opciones")),
         tiempo_por_pregunta_seg=item.get("tiempo_por_pregunta_seg"),
         tiempo_total_seg=item.get("tiempo_total_seg"),
         orden_por_historico=item.get("orden_por_historico"),
-        usa_analisis_historico=bool(item.get("usa_analisis_historico", False)),
+        orden_preguntas=item.get("orden_preguntas"),
+        orden_preguntas_por_dificultad=bool(item.get("orden_preguntas_por_dificultad", False)),
+        orden_preguntas_por_materia=bool(item.get("orden_preguntas_por_materia", False)),
+        variar_orden_cada_partida=bool(item.get("variar_orden_cada_partida", False)),
+        exigir_balance_completo=bool(item.get("exigir_balance_completo", False)),
+        usa_analisis_historico=usa_historico,
+        usar_plantillas_materia=bool(item.get("usar_plantillas_materia", False)),
+        solo_atajo=bool(item.get("solo_atajo", False)),
     )
 
 
@@ -200,7 +278,7 @@ def config_defecto(
     materias_orden: list[str],
 ) -> ConfigPresetHistoria:
     return defectos_config(
-        preset.opciones,
+        opciones_config_historia(preset),
         materias_meta=materias_meta,
         materias_orden=materias_orden,
     )
@@ -269,6 +347,8 @@ _ESTRATEGIA_MATERIAS: dict[str, tuple[PerfilPedagogico, bool]] = {
     "curricular": (PerfilPedagogico.BALANCEADO, True),
     "debilidades": (PerfilPedagogico.REFUERZO, False),
     "fortalezas": (PerfilPedagogico.DESAFIO, False),
+    "equilibrado": (PerfilPedagogico.BALANCEADO, False),
+    "sin_historico": (PerfilPedagogico.BALANCEADO, False),
 }
 
 
@@ -276,19 +356,43 @@ def _resolver_perfil_y_seleccion(
     preset: PresetHistoria,
     cfg: ConfigPresetHistoria,
 ) -> tuple[PerfilPedagogico, bool]:
-    estrategia = cfg.get_str("estrategia_materias")
-    if estrategia and estrategia in _ESTRATEGIA_MATERIAS:
+    if not preset.usa_analisis_historico:
+        return perfil_desde_preset(preset), preset.seleccion_determinista
+    estrategia = estrategia_materias_desde_config(cfg) or ESTRATEGIA_MATERIAS_DEFECTO
+    if estrategia in _ESTRATEGIA_MATERIAS:
         perfil, seleccion_det = _ESTRATEGIA_MATERIAS[estrategia]
         return perfil, seleccion_det
     return perfil_desde_preset(preset), preset.seleccion_determinista
 
 
-def semilla_desde_preset(preset: PresetHistoria) -> int | None:
-    from Comun.examen_dia_historia import es_id_examen_dia, semilla_examen_dia
+def semilla_desde_preset(
+    preset: PresetHistoria,
+    cfg: ConfigPresetHistoria | None = None,
+) -> int | None:
+    from Comun.examen_fijo_historia import es_id_examen_fijo, semilla_contenido_examen_fijo
 
-    if es_id_examen_dia(preset.id):
-        return semilla_examen_dia()
+    if cfg is not None and es_id_examen_fijo(preset.id):
+        return semilla_contenido_examen_fijo(cfg)
     return None
+
+
+def contenido_examen_estable(
+    preset: PresetHistoria,
+    *,
+    cfg: ConfigPresetHistoria | None = None,
+    semilla: int | None = None,
+) -> bool:
+    """True si las preguntas no cambian entre entradas (p. ej. examen del día).
+
+    Solo entonces tiene sentido ``variar_orden_cada_partida``: una sola fuente de azar.
+    """
+    from Comun.examen_fijo_historia import contenido_estable_examen_fijo, es_id_examen_fijo
+
+    if semilla is not None:
+        return True
+    if cfg is not None and es_id_examen_fijo(preset.id):
+        return contenido_estable_examen_fijo(cfg)
+    return False
 
 
 def argumentos_generador(
@@ -299,8 +403,9 @@ def argumentos_generador(
 ) -> dict:
     """Parámetros nombrados para ``generar_examen``."""
     cfg = config or ConfigPresetHistoria()
-    curso = cfg.get_str("curso") or preset.curso_filtro
-    semestre = cfg.get_str("semestre") or preset.semestre_filtro
+    curso, semestre = curso_semestre_desde_valores(cfg.valores)
+    curso = curso or preset.curso_filtro
+    semestre = semestre or preset.semestre_filtro
     grupo = cfg.get_str("grupo") or preset.grupo_filtro
     materia = cfg.get_str("materia")
 
@@ -311,47 +416,38 @@ def argumentos_generador(
                 n_materias = cfg.get_int("n_materias", int(op.defecto or MATERIAS_POR_SEMESTRE))
                 break
 
-    slots = preset.slots
-    enfoque = cfg.get_str("enfoque")
-    if enfoque:
-        slots = slots_desde_enfoque(enfoque)
+    tipos_permitidos = tipos_desde_enfoque(cfg.get_str("enfoque"))
 
-    usar_todas = preset.n_materias is None and "n_materias" not in {o.id for o in preset.opciones}
+    usar_todas = (
+        preset.n_materias is None
+        and "n_materias" not in {o.id for o in preset.opciones}
+    )
     if materia:
         usar_todas = False
         n_materias = 1
 
-    perfil, seleccion_det = _resolver_perfil_y_seleccion(preset, cfg)
+    if usar_todas:
+        estrategia = estrategia_materias_desde_config(cfg) or ESTRATEGIA_MATERIAS_DEFECTO
+        if estrategia in _ESTRATEGIA_MATERIAS:
+            perfil, _ = _ESTRATEGIA_MATERIAS[estrategia]
+        else:
+            perfil = PerfilPedagogico.POR_CURSO
+        seleccion_det = True
+    else:
+        perfil, seleccion_det = _resolver_perfil_y_seleccion(preset, cfg)
 
-    if (
-        not usar_todas
-        and n_materias is not None
-        and materias_meta is not None
-        and semestre
-        and curso
-        and n_materias >= MATERIAS_POR_SEMESTRE
-    ):
-        en_semestre = contar_materias_ambito(
-            materias_meta, curso=curso, semestre=semestre, grupo=None
-        )
-        if en_semestre > 0 and n_materias >= en_semestre:
-            n_materias = en_semestre
-
-    if (
-        not usar_todas
-        and n_materias is not None
-        and materias_meta is not None
-        and curso
-        and not semestre
-        and not grupo
-        and not materia
-        and preset.id in {"refuerzo_historico", "desafio_historico"}
-    ):
+    if not usar_todas and n_materias is not None and materias_meta is not None:
         tope = max_materias_ambito(
-            materias_meta, curso=curso, semestre=None, grupo=None
+            materias_meta, curso=curso, semestre=semestre, grupo=grupo
         )
-        if tope is not None:
+        if tope > 0:
             n_materias = min(n_materias, tope)
+
+    n_preguntas = None
+    for op in preset.opciones:
+        if op.id == "n_preguntas":
+            n_preguntas = cfg.get_int("n_preguntas", int(op.defecto or 12))
+            break
 
     return {
         "perfil": perfil,
@@ -360,8 +456,13 @@ def argumentos_generador(
         "semestre_filtro": semestre,
         "grupo_filtro": grupo,
         "materia_fija": materia,
-        "slots": slots,
+        "preguntas_por_materia": preset.preguntas_por_materia,
+        "tipos_permitidos": tipos_permitidos,
         "usar_todas_materias_ambito": usar_todas,
         "seleccion_determinista": seleccion_det,
-        "orden_por_historico": preset.orden_por_historico,
+        "orden_preguntas": resolver_orden_preguntas(preset, cfg),
+        "exigir_balance_completo": preset.exigir_balance_completo,
+        "usar_analisis_historico": usar_analisis_historico_desde_config(preset, cfg),
+        "usar_plantillas_materia": preset.usar_plantillas_materia,
+        "n_preguntas": n_preguntas,
     }

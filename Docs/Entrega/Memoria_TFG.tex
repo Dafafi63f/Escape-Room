@@ -34,6 +34,10 @@
 \setlength{\parskip}{0.45ex plus 0.1ex minus 0.1ex}
 \titlespacing*{\section}{0pt}{2ex plus 0.25ex minus 0.2ex}{0.9ex plus 0.15ex}
 \titlespacing*{\subsection}{0pt}{1.5ex plus 0.2ex minus 0.2ex}{0.65ex plus 0.12ex}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection.}{0.8em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
+\titlespacing*{\subsubsection}{0pt}{1.2ex plus 0.2ex minus 0.2ex}{0.55ex plus 0.1ex}
 \newcommand{\tfgrepo}{\url{https://github.com/Dafafi63f/Escape-Room.git}}
 \newcommand{\bloquetfg}[1]{\par\smallskip\noindent #1\par}
 \newcommand{\iniciotabla}{\par\medskip\renewcommand{\arraystretch}{1.12}}
@@ -49,6 +53,13 @@
 \begin{document}
 \maketitle
 
+\begin{abstract}
+\noindent Se presenta el diseño e implementación de un cuestionario educativo alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos (MatCAD). El entregable incluye un banco cerrado de \textbf{480 preguntas} con metadatos curriculares, un juego en \textbf{pygame} con cuatro modos (libre, historia, resistencia y feedback), y herramientas de validación del dataset. El desarrollo siguió un enfoque incremental: primero un prototipo en terminal para validar el motor de evaluación y, después, una interfaz gráfica que concentra toda la experiencia de juego. Los resultados muestran un sistema funcional, documentado y extensible; la validación con usuarios y la narrativa gráfica quedan como trabajo futuro.
+
+\medskip
+\noindent\textbf{Palabras clave:} cuestionario educativo, gamificación, banco de preguntas, autoevaluación, MatCAD, serious games.
+\end{abstract}
+
 \noindent\textit{Nota sobre el título:} el documento de proyecto inicial planteaba un escape room con interfaz gráfica. El \textbf{entregable de este TFG} es el cuestionario (banco + juego en \textbf{pygame}) descrito en esta memoria; la capa narrativa escape room completa queda como evolución futura del mismo proyecto.
 
 \smallskip
@@ -57,12 +68,9 @@
 \smallskip
 \noindent\textbf{Versión de entrega:} dos Word en \texttt{Docs/Entrega/} (\texttt{Memoria\_TFG\_markdown.docx}, \texttt{Memoria\_TFG\_latex.docx}); figuras en \texttt{Docs/Figuras/}. Regenerar figuras: \texttt{python Docs/generar\_figuras\_memoria.py}. Regenerar Word: \texttt{python utilidades\_tfg.py --solo-memoria}. El PDF de entrega lo exportas desde Word tras editar.
 
-\begin{abstract}
-\noindent Se presenta el diseño e implementación de un cuestionario educativo alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos (MatCAD). El entregable incluye un banco cerrado de \textbf{480 preguntas} con metadatos curriculares, un juego en \textbf{pygame} con cuatro modos (libre, historia, resistencia y feedback), y herramientas de validación del dataset. El desarrollo siguió un enfoque incremental: primero un prototipo en terminal para validar el motor de evaluación y, después, una interfaz gráfica que concentra toda la experiencia de juego. Los resultados muestran un sistema funcional, documentado y extensible; la validación con usuarios y la narrativa gráfica quedan como trabajo futuro.
-
-\medskip
-\noindent\textbf{Palabras clave:} cuestionario educativo, gamificación, banco de preguntas, autoevaluación, MatCAD, serious games.
-\end{abstract}
+\newpage
+\tableofcontents
+\newpage
 
 \section{Introducción}
 
@@ -270,7 +278,7 @@ Duplicados semánticos & \texttt{duplicados.py revisar} (0 pares similares en CS
 Pruebas de regresión & \texttt{python -m unittest discover -s Tests -v} (\textbf{258} tests: 250 + 8 en \texttt{Files/}) \\
 Integración continua & GitHub Actions (\texttt{.github/workflows/tests.yml}) \\
 Revisión con profesorado & Identificación de solapamiento temático y prerrequisitos (véase §6.2) \\
-Simulación Monte Carlo (respuestas al azar) & \texttt{Files/simulacion\_evaluacion\_azar.py} (véase §5.7) \\
+Simulación Monte Carlo & \texttt{Files/simulacion\_evaluacion\_azar.py} (véase §5.7) \\
 \bottomrule
 \end{tabular}
 \fintabla
@@ -387,7 +395,7 @@ Grupos temáticos modelados & 10 \\
 \bottomrule
 \end{tabular}
 
-\subsection{Validación analítica del modo historia (H3)}
+\subsection{Validación del modo historia (H3)}
 
 La hipótesis H3 se contrasta con el histórico institucional \texttt{Historic\_qualificacions\_MatCAD\_completo.csv} (\textbf{8818} registros de calificaciones), del que se derivan estadísticas agregadas por asignatura para las \textbf{40} materias del listado del grado.
 
@@ -417,19 +425,21 @@ Anàlisi Complexa i de Fourier & 0,008 & 5,55 & 16,3\,\% & 258 \\
 
 Estos valores orientan la ponderación del modo historia; un piloto con estudiantes permitiría contrastar si los exámenes generados se perciben alineados con la exigencia real del grado.
 
-\subsection{Simulación Monte Carlo de la evaluación (respuestas al azar)}
+\subsection{Simulación Monte Carlo}
 
-Para validar que el motor de corrección penaliza el azar como cabría esperar en un examen tipo test, se implementó \texttt{Files/simulacion\_evaluacion\_azar.py} y se formalizó el experimento en términos probabilísticos. En cada ítem, la respuesta del jugador que contesta al azar se modela como una variable de Bernoulli $X_i \sim \mathrm{Bernoulli}(p)$ con $p = 1/4$, al elegir uniformemente entre las cuatro opciones A--D. El número de aciertos en un bloque de $n = 20$ preguntas es entonces
+Para comprobar que el motor de corrección penaliza el azar como en un test de opción múltiple, se implementó \texttt{Files/simulacion\_evaluacion\_azar.py}. En cada réplica se extraen preguntas del banco cerrado y la letra A--D se elige al azar con probabilidad uniforme ($p = 1/4$ por ítem).
+
+\textbf{Modo examen (sin vidas).} Cada acierto se modela como $X_i \sim \mathrm{Bernoulli}(p)$ independiente. En un bloque de $n = 20$ preguntas,
 \[
 Y = \sum_{i=1}^{n} X_i \sim \mathrm{Binomial}(n,\, p),
 \]
-con valor esperado $\mathbb{E}[Y] = np = 5$ y varianza $\mathrm{Var}(Y) = np(1-p) = 3{,}75$. La nota del motor, definida como $\mathrm{nota} = 10\,Y/n$, verifica $\mathbb{E}[\mathrm{nota}] = 2{,}5$, coherente con el umbral de suspensión universitario.
+con $\mathbb{E}[Y] = np = 5$ y $\mathrm{Var}(Y) = np(1-p) = 3{,}75$. La nota del motor, $\mathrm{nota} = 10\,Y/n$, tiene valor esperado $2{,}5$, por debajo del umbral de aprobación universitario.
 
 El estimador Monte Carlo de la fracción de aciertos tras $N$ réplicas independientes,
 \[
 \hat{p}_N = \frac{1}{N}\sum_{k=1}^{N}\frac{Y^{(k)}}{n},
 \]
-es insesgado ($\mathbb{E}[\hat{p}_N] = p$) y su error estándar decrece como $\mathcal{O}(1/\sqrt{N})$. Con $N = 50\,000$ y semilla 42, la simulación arroja una fracción media de \textbf{24,98\,\%}, próxima al valor teórico (figura~\ref{fig:mc-convergencia}). La figura~\ref{fig:mc-histograma} contrasta el histograma empírico de notas con la masa de probabilidad binomial; la coincidencia visual confirma que la implementación reproduce el modelo probabilístico.
+es insesgado ($\mathbb{E}[\hat{p}_N] = p$) y su error estándar decrece como $\mathcal{O}(1/\sqrt{N})$. Con $N = 50\,000$ y semilla 42, la fracción media es \textbf{24,98\,\%}, próxima al 25\,\% teórico. La figura~\ref{fig:mc-histograma} contrasta el histograma empírico de notas con la masa de probabilidad binomial; la figura~\ref{fig:mc-convergencia} muestra la convergencia de $\hat{p}_N$ hacia $p = 1/4$. La coincidencia confirma que la implementación reproduce el modelo probabilístico.
 
 \begin{figure}[htbp]
 \centering
@@ -445,7 +455,7 @@ es insesgado ($\mathbb{E}[\hat{p}_N] = p$) y su error estándar decrece como $\m
 \label{fig:mc-convergencia}
 \end{figure}
 
-En el \textbf{modo arcade} con tres vidas, cada fallo consume una vida y la probabilidad de error por pregunta es $q = 3/4$. El número de preguntas respondidas hasta agotar las vidas coincide, en ausencia de límite superior, con el número de ensayos hasta observar $r = 3$ fallos en ensayos de Bernoulli con probabilidad de «éxito» $q$; dicha variable sigue una ley binomial negativa con valor esperado $\mathbb{E}[T] = r/q = 4$, lo que explica la media empírica de \textbf{4,0} preguntas por partida. La probabilidad de completar las 20 preguntas sin perder las tres vidas es $\mathbb{P}(Y_{20} \geq 18) = \sum_{j=18}^{20}\binom{20}{j}(1/4)^j(3/4)^{20-j}$, prácticamente nula; de ahí que el \textbf{100\,\%} de partidas simuladas agoten vidas antes del objetivo.
+\textbf{Modo libre (preset arcade, 3 vidas).} Se replica el esquema de vidas y puntuación arcade descrito en §4.3 (sin dificultad progresiva ni temporizador, para aislar el efecto del azar). Cada fallo resta una vida; con respuesta al azar, la probabilidad de error por pregunta es $q = 3/4$. El número de preguntas respondidas hasta el tercer fallo sigue una binomial negativa con valor esperado $\mathbb{E}[T] = 3/q = 4$, coherente con la media empírica de \textbf{4,0} preguntas por partida. La probabilidad de completar las 20 preguntas con solo dos fallos como máximo es $\mathbb{P}(Y_{20} \geq 18) = \sum_{j=18}^{20}\binom{20}{j}(1/4)^j(3/4)^{20-j}$, prácticamente nula; de ahí que el \textbf{100\,\%} de partidas simuladas agoten vidas antes del objetivo.
 
 \iniciotabla
 \begin{tabular}{@{}lll@{}}
@@ -454,14 +464,14 @@ En el \textbf{modo arcade} con tres vidas, cada fallo consume una vida y la prob
 \midrule
 Modo examen (sin vidas) & Fracción media de aciertos & \textbf{24,98\,\%} (≈ 25\,\% teórico) \\
 Modo examen & Nota media /10 & \textbf{2,5} \\
-Modo arcade (3 vidas) & Partidas que agotan vidas antes de 20 preguntas & \textbf{100\,\%} \\
-Modo arcade & Preguntas respondidas de media & \textbf{4,0} / 20 \\
-Modo arcade & Puntos medios & \textbf{$-10,0$} \\
+Modo libre (arcade, 3 vidas) & Partidas que agotan vidas antes de 20 preguntas & \textbf{100\,\%} \\
+Modo libre (arcade) & Preguntas respondidas de media & \textbf{4,0} / 20 \\
+Modo libre (arcade) & Puntos medios & \textbf{-10,0} \\
 \bottomrule
 \end{tabular}
 \fintabla
 
-En conjunto, el experimento demuestra que el azar produce suspensión sistemática y que, con vidas limitadas, impide completar bloques largos sin conocimiento real. Las figuras se regeneran con \texttt{python Docs/generar\_figuras\_memoria.py}; la simulación numérica, con \texttt{python Files/simulacion\_evaluacion\_azar.py}.
+En conjunto, el experimento muestra que el azar produce suspensión sistemática y que, con vidas limitadas, impide completar bloques largos sin conocimiento real. Las figuras se regeneran con \texttt{python Docs/generar\_figuras\_memoria.py}; la simulación numérica, con \texttt{python Files/simulacion\_evaluacion\_azar.py}.
 
 \section{Discusión}
 
@@ -487,20 +497,24 @@ Los \textbf{objetivos específicos} OE2, OE3, OE4 y OE5 están cubiertos en la v
 
 \subsection{Validez del banco de preguntas}
 
-La \textbf{validez de contenido} se abordó mediante revisión manual exhaustiva y criterios de redacción acordados. La \textbf{validez estructural} se garantiza con reglas de balance automatizadas. La \textbf{validez semántica} fina se reforzó en junio de 2026 (sustitución de pares similares en CSV y deduplicación del pool de plantillas; \texttt{duplicados.py revisar} $\rightarrow$ 0 pares similares). Queda abierta:
+La calidad del banco se articula en varias capas complementarias:
 \begin{itemize}
-  \item la \textbf{validez predictiva} (relación entre desempeño en el juego y desempeño académico real), no medida en este TFG.
+  \item \textbf{Validez de contenido:} revisión manual de los 480 ítems y criterios de redacción acordados (§4.2): enunciados genéricos, coherencia con el nivel de la materia, distractores plausibles y auditoría automatizada (\texttt{mantenimiento.py auditar-distractores}).
+  \item \textbf{Integridad estructural del esquema:} reglas de balance y orden canónico verificadas con \texttt{mantenimiento.py validar} (distribución por dificultad, tipo, letra correcta y patrón 2FT…2DC por materia).
+  \item \textbf{Unicidad semántica:} en junio de 2026 se sustituyeron pares similares en el CSV y se deduplicó el pool de plantillas; \texttt{duplicados.py revisar} reporta \textbf{0 pares similares} en el banco de producción y en plantillas intra-materia (véase §5.1).
 \end{itemize}
 
-La revisión con profesorado puso de manifiesto limitaciones del modelo de una sola etiqueta \texttt{Materia}:
+La \textbf{validez predictiva} (relación entre desempeño en el juego y rendimiento académico real) no se ha medido en este TFG.
+
+Durante el seguimiento del trabajo, la revisión con el tutor y el profesorado señaló dos limitaciones del modelo de una sola etiqueta \texttt{Materia}:
 \begin{enumerate}
-  \item \textbf{Solapamiento temático:} preguntas que encajan en varias asignaturas (p.\ ej.\ inferencia en Probabilidad y en Modelización e Inferencia).
-  \item \textbf{Prerrequisitos:} preguntas de cursos avanzados que asumen conceptos de materias previas (p.\ ej.\ optimización y cálculo multivariable).
+  \item \textbf{Solapamiento temático:} ítems que encajan en varias asignaturas (p.\ ej.\ inferencia en Probabilidad y en Modelización e Inferencia).
+  \item \textbf{Prerrequisitos:} ítems de cursos avanzados que asumen conceptos de materias previas (p.\ ej.\ optimización y cálculo multivariable).
 \end{enumerate}
 
-Estas observaciones motivan la propuesta de campos \texttt{Materias\_relacionadas} y \texttt{Prerequisitos} en futuras versiones del esquema.
+Estas observaciones motivan los campos \texttt{Materias\_relacionadas} y \texttt{Prerequisitos} propuestos para futuras versiones del esquema (§6.6).
 
-\subsection{Utilidad para autoevaluación y apoyo docente}
+\subsection{Utilidad formativa}
 
 El sistema permite al estudiante practicar por \textbf{semestre o temática} acorde a su momento del grado, simular un \textbf{examen balanceado} mediante el modo historia y recibir un \textbf{informe detallado} al finalizar una partida en modo examen.
 
@@ -514,7 +528,7 @@ La hipótesis \textbf{H1} queda apoyada por la operatividad de los filtros curri
 
 \subsection{Limitaciones del estudio}
 
-El estudio no incluye \textbf{evaluación con usuarios}: no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes. La \textbf{interfaz gráfica} actual cubre menús y partida, pero aún no implementa la narrativa escape room del documento inicial. El \textbf{modelo de datos} asigna una sola materia por pregunta y aún no modela prerrequisitos explícitos. El \textbf{idioma del banco} mezcla castellano y catalán según la asignatura, con coherencia terminológica revisada pero mejorable. Por último, el \textbf{modo beta} amplía el pool con plantillas no revisadas y debe distinguirse del banco de producción en cualquier evaluación formal.
+El estudio no incluye \textbf{evaluación con usuarios}: no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes. La \textbf{interfaz gráfica} actual cubre menús y partida, pero aún no implementa la narrativa escape room del documento inicial. El \textbf{modelo de datos} asigna una sola materia por pregunta y aún no modela prerrequisitos explícitos (véase §6.2). El \textbf{idioma del banco} mezcla castellano y catalán según la asignatura, con coherencia terminológica revisada pero mejorable. Por último, el \textbf{modo beta} amplía el pool con plantillas no revisadas y debe distinguirse del banco de producción en cualquier evaluación formal.
 
 \subsection{Trabajo futuro}
 
@@ -562,19 +576,19 @@ Prensky, M. (2003). Digital game-based learning. \textit{Computers in Entertainm
 
 Veldkamp, A., van de Grint, L., Knippels, M. C. P. J., y van Joolingen, W. R. (2020). Escape education: A systematic review on escape rooms in education. \textit{Educational Research Review}, \textit{31}, 100364. \url{https://doi.org/10.1016/j.edurev.2020.100364}
 
-\section{Apéndices — documentación técnica del repositorio}
+\section{Apéndices}
 \renewcommand{\arraystretch}{1.08}
 \begin{tabularx}{\textwidth}{@{}c>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{4.2cm}@{}}
 \toprule
 \textbf{Apéndice} & \textbf{Contenido} & \textbf{Enlace} \\
 \midrule
 A & Esquema del banco y diagramas curriculares & \texttt{Data/README.md} \\
-H & Estado del proyecto y seguimiento & \texttt{Docs/CHANGELOG\_PROYECTO.md}, \texttt{Docs/CHANGELOG\_JUEGO.md}, \texttt{Docs/CHECKLIST.md} \\
 B & Arquitectura del juego, modos, puntuación, bancos beta & \texttt{Juego/README.md}, \texttt{Juego/Comun/README.md}, \texttt{Juego/Grafico/README.md} \\
 C & Scripts de mantenimiento, balanceo, auditorías & \texttt{Files/README.md} \\
-E & Pruebas unitarias & \texttt{Tests/README.md} \\
-F & Repositorio y guía rápida & \texttt{README.md} \\
-G & LaTeX, Word y exportación & \texttt{Docs/README.md} \\
+D & Pruebas unitarias & \texttt{Tests/README.md} \\
+E & Repositorio y guía rápida & \texttt{README.md} \\
+F & LaTeX, Word y exportación & \texttt{Docs/README.md} \\
+G & Estado del proyecto y seguimiento & \texttt{Docs/CHANGELOG\_PROYECTO.md}, \texttt{Docs/CHANGELOG\_JUEGO.md}, \texttt{Docs/CHECKLIST.md} \\
 \bottomrule
 \end{tabularx}
 

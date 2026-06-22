@@ -4,21 +4,32 @@
 
 from __future__ import annotations
 
-from Comun.examen_dia_historia import ID_PRESET_EXAMEN_DIA, es_id_examen_dia
+from datetime import date, datetime, timezone
+
 from Comun.reto_dia_resistencia import ID_PRESET_RETO_DIA, es_id_reto_dia
 
 __all__ = [
-    "ID_PRESET_EXAMEN_DIA",
     "ID_PRESET_RETO_DIA",
     "es_preset_diario",
+    "formatear_semilla_diaria",
     "prioridad_orden_preset",
+    "semilla_diaria",
 ]
 
-_IDS_DIARIOS = frozenset({ID_PRESET_EXAMEN_DIA, ID_PRESET_RETO_DIA})
+
+def semilla_diaria(d: date | None = None) -> int:
+    """Entero estable por día civil (UTC), formato DDMMYYYY (p. ej. 22062026)."""
+    d = d or datetime.now(timezone.utc).date()
+    return int(d.strftime("%d%m%Y"))
+
+
+def formatear_semilla_diaria(semilla: int) -> str:
+    """Representación de 8 dígitos con ceros a la izquierda (p. ej. 1012026 → 01012026)."""
+    return f"{semilla:08d}"
 
 
 def es_preset_diario(preset_id: str) -> bool:
-    return preset_id in _IDS_DIARIOS or es_id_examen_dia(preset_id) or es_id_reto_dia(preset_id)
+    return es_id_reto_dia(preset_id)
 
 
 def prioridad_orden_preset(preset_id: str) -> int:

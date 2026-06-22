@@ -48,6 +48,14 @@ class TestChangelogJuego(unittest.TestCase):
         self.assertIn("Párrafo", texto)
         self.assertNotIn("| A |", texto)
 
+    def test_simplificar_quita_negrita_markdown(self) -> None:
+        raw = "- **Modo feedback** integrado (icono ℹ️).\n**Última actualización:** hoy."
+        texto = simplificar_changelog_para_ui(raw)
+        self.assertNotIn("**", texto)
+        self.assertIn("Modo feedback", texto)
+        self.assertIn("Última actualización:", texto)
+        self.assertIn("ℹ️", texto)
+
     def test_cargar_proyecto_contiene_resumen(self) -> None:
         texto = cargar_changelog_proyecto()
         self.assertIn("Resumen ejecutivo", texto)

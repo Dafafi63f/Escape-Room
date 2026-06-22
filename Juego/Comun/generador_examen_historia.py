@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Motor de generación de exámenes balanceados (modo historia).
+Motor de generación de exámenes (modo historia).
 
-Usa el histórico de qualificacions (MatCAD) para ponderar materias según el
-perfil pedagógico y el banco de preguntas revisado con slots canónicos
-(Teoria/Calculo × Facil/Media/Dificil).
+Usa el histórico de calificaciones (MatCAD) para ponderar materias según el
+perfil pedagógico y el banco de preguntas. La dificultad no se fija en la
+configuración: emerge del pool al elegir preguntas por tipo (teoría/cálculo).
 
 Importado por modo_historia.py. Para probar sin jugar: Files/cli_examen_historia.py
-
-Versión 1: perfiles agregados (sin expediente individual). Las versiones
-futuras podrán importar notas por alumno.
 """
 
 from __future__ import annotations
@@ -22,40 +19,26 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+from Comun.limites_partida import validar_total_preguntas
 from Comun.perfiles_historia import PerfilPedagogico, describir_perfil
 from Comun.rutas import resolver_historico_qualificacions
 
-# Réplica mínima de objetivos_balanceo (el .exe no incluye Files/).
-SLOTS_CANONICOS_12: tuple[tuple[str, str], ...] = (
-    ("Teoria", "Facil"),
-    ("Teoria", "Facil"),
-    ("Teoria", "Media"),
-    ("Teoria", "Media"),
-    ("Teoria", "Dificil"),
-    ("Teoria", "Dificil"),
-    ("Calculo", "Facil"),
-    ("Calculo", "Facil"),
-    ("Calculo", "Media"),
-    ("Calculo", "Media"),
-    ("Calculo", "Dificil"),
-    ("Calculo", "Dificil"),
-)
+_ORDEN_DIFICULTAD = {"Facil": 0, "Media": 1, "Dificil": 2}
+_ORDEN_TIPO = {"Teoria": 0, "Calculo": 1}
 
-SLOTS_EXAMEN_4: tuple[tuple[str, str], ...] = (
-    ("Teoria", "Facil"),
-    ("Teoria", "Media"),
-    ("Calculo", "Facil"),
-    ("Calculo", "Media"),
-)
+TIPOS_PREGUNTA_MIXTO = frozenset({"Teoria", "Calculo"})
+PREGUNTAS_POR_MATERIA_DEFECTO = 4
 
-SLOTS_EXAMEN_6: tuple[tuple[str, str], ...] = (
-    ("Teoria", "Facil"),
-    ("Teoria", "Media"),
-    ("Teoria", "Dificil"),
-    ("Calculo", "Facil"),
-    ("Calculo", "Media"),
-    ("Calculo", "Dificil"),
-)
+
+def preguntas_por_materia_defecto(
+    *,
+    perfil: PerfilPedagogico,
+    materia_fija: str | None,
+) -> int:
+    if perfil == PerfilPedagogico.SIMULACRO:
+        return 1
+    return PREGUNTAS_POR_MATERIA_DEFECTO
+
 
 # Nombre de asignatura en el CSV histórico (columna «Unnamed: 9») → Materia del listado.
 ALIASES_NOMBRE_HISTORICO: dict[str, str] = {
@@ -81,7 +64,8 @@ class EstadisticaMateria:
 class PlanExamen:
     perfil: PerfilPedagogico
     materias: list[str]
-    slots_por_materia: tuple[tuple[str, str], ...]
+    preguntas_por_materia: int
+    tipos_permitidos: frozenset[str]
     preguntas: list  # list[Pregunta] en runtime
 
 
@@ -131,36 +115,58 @@ def cargar_estadisticas_historicas(
     return stats
 
 
-def slots_para_tamano(preguntas_objetivo: int, n_materias: int) -> tuple[tuple[str, str], ...]:
-    """Elige plantilla de slots según preguntas por materia."""
-    if n_materias <= 0:
-        raise ValueError("n_materias debe ser positivo")
-    por_materia = preguntas_objetivo // n_materias
-    if por_materia >= 12:
-        return SLOTS_CANONICOS_12
-    if por_materia >= 6:
-        return SLOTS_EXAMEN_6
-    if por_materia >= 4:
-        return SLOTS_EXAMEN_4
-    return (("Teoria", "Media"),)
+def indices_dificultad_ambito(
+    candidatas: list[str],
+    stats: dict[str, EstadisticaMateria],
+) -> dict[str, float]:
+    """Índice 0..1 de dificultad relativo al ámbito filtrado (curso/semestre/grupo).
+
+    El histórico global sigue siendo la fuente, pero se reescala dentro de las
+    materias candidatas para que refuerzo/desafío y el orden tengan sentido aunque
+    el ámbito elegido no coincida con las asignaturas más difíciles del grado entero.
+    """
+    if not candidatas:
+        return {}
+    brutos = {
+        m: stats[m].indice_dificultad if m in stats else 0.5 for m in candidatas
+    }
+    if len(candidatas) == 1:
+        return dict(brutos)
+    lo = min(brutos.values())
+    hi = max(brutos.values())
+    if hi <= lo:
+        return {m: 0.5 for m in candidatas}
+    escala = hi - lo
+    return {m: (brutos[m] - lo) / escala for m in candidatas}
 
 
 def calcular_pesos_materia(
     materias: list[str],
     stats: dict[str, EstadisticaMateria],
     perfil: PerfilPedagogico,
+    *,
+    usar_analisis_historico: bool = True,
+    indices_ambito: dict[str, float] | None = None,
 ) -> dict[str, float]:
+    """Pesos de selección: mayor valor ⇒ más probable, pero siempre > 0 (ninguna materia excluida)."""
     pesos: dict[str, float] = {}
     for m in materias:
-        st = stats.get(m)
-        if perfil == PerfilPedagogico.BALANCEADO:
+        if indices_ambito is not None and m in indices_ambito:
+            indice = indices_ambito[m]
+        else:
+            st = stats.get(m)
+            indice = st.indice_dificultad if st else 0.5
+        if not usar_analisis_historico:
             w = 1.0
+        elif perfil == PerfilPedagogico.BALANCEADO:
+            # Preferencia suave: el histórico inclina sin bloquear otras materias.
+            w = 0.75 + 0.50 * indice
         elif perfil == PerfilPedagogico.REFUERZO:
-            w = 0.35 + (st.indice_dificultad if st else 0.5)
+            w = 0.35 + indice
         elif perfil == PerfilPedagogico.DESAFIO:
-            w = 0.35 + (1.0 - (st.indice_dificultad if st else 0.5))
+            w = 0.35 + (1.0 - indice)
         elif perfil in (PerfilPedagogico.POR_CURSO, PerfilPedagogico.SIMULACRO):
-            w = 1.0
+            w = 0.35 + indice if perfil == PerfilPedagogico.POR_CURSO else 1.0
         else:
             w = 1.0
         pesos[m] = max(0.05, w)
@@ -195,33 +201,76 @@ def _indice_pool(
     return pool
 
 
-def _elegir_pregunta_slot(
+def _elegir_pregunta(
     pool: dict[str, dict[tuple[str, str], list]],
     materia: str,
-    tipo: str,
-    dificultad: str,
-    usadas_ids: set[int],
+    tipos_permitidos: frozenset[str],
+    usadas_ids: set,
     rng: random.Random,
     pregunta_key: Callable,
 ) -> object | None:
-    candidatas = pool.get(materia, {}).get((tipo, dificultad), [])
-    candidatas = [p for p in candidatas if pregunta_key(p) not in usadas_ids]
+    candidatas: list = []
+    for (tipo, _dificultad), lista in pool.get(materia, {}).items():
+        if tipo not in tipos_permitidos:
+            continue
+        candidatas.extend(p for p in lista if pregunta_key(p) not in usadas_ids)
     if candidatas:
         return rng.choice(candidatas)
-    # Relajar: mismo tipo, otra dificultad
-    for (_t, _d), lista in pool.get(materia, {}).items():
-        if _t != tipo:
-            continue
-        alt = [p for p in lista if pregunta_key(p) not in usadas_ids]
-        if alt:
-            return rng.choice(alt)
-    # Cualquier pregunta de la materia
-    todas: list = []
-    for lista in pool.get(materia, {}).values():
-        todas.extend(p for p in lista if pregunta_key(p) not in usadas_ids)
-    if todas:
-        return rng.choice(todas)
     return None
+
+
+def _clave_orden_dificultad_pregunta(pregunta: object) -> tuple[int, int, str]:
+    dificultad = getattr(pregunta, "dificultad", "")
+    tipo = getattr(pregunta, "tipo", "")
+    materia = getattr(pregunta, "materia", "")
+    return (
+        _ORDEN_DIFICULTAD.get(dificultad, 99),
+        _ORDEN_TIPO.get(tipo, 99),
+        materia,
+    )
+
+
+def _ordenar_preguntas_por_dificultad(preguntas: list) -> list:
+    """Orden estable: Fácil → Media → Difícil; Teoría antes que Cálculo."""
+    return sorted(preguntas, key=_clave_orden_dificultad_pregunta)
+
+
+def _clave_orden_plantilla(pregunta: object) -> tuple[int, int, str]:
+    tipo = getattr(pregunta, "tipo", "")
+    dificultad = getattr(pregunta, "dificultad", "")
+    materia = getattr(pregunta, "materia", "")
+    return (
+        _ORDEN_TIPO.get(tipo, 99),
+        _ORDEN_DIFICULTAD.get(dificultad, 99),
+        materia,
+    )
+
+
+def _ordenar_preguntas_por_plantilla(preguntas: list) -> list:
+    """Orden canónico del banco: teoría antes que cálculo; F → M → D dentro de cada tipo."""
+    return sorted(preguntas, key=_clave_orden_plantilla)
+
+
+def _ordenar_preguntas_por_materia(
+    preguntas: list,
+    orden_materias: list[str],
+) -> list:
+    """Agrupa por asignatura en el orden del plan (un examen tras otro)."""
+    if len(preguntas) <= 1:
+        return preguntas
+    grupos: dict[str, list] = {}
+    for p in preguntas:
+        grupos.setdefault(p.materia, []).append(p)
+    out: list = []
+    vistos: set[str] = set()
+    for m in orden_materias:
+        if m in grupos:
+            out.extend(grupos[m])
+            vistos.add(m)
+    for m, bloque in grupos.items():
+        if m not in vistos:
+            out.extend(bloque)
+    return out
 
 
 def _filtrar_materias_candidatas(
@@ -245,6 +294,176 @@ def _filtrar_materias_candidatas(
     return candidatas
 
 
+def _materias_unicas_en_orden(seleccion: list) -> list[str]:
+    vistas: list[str] = []
+    for p in seleccion:
+        m = getattr(p, "materia", "")
+        if m and m not in vistas:
+            vistas.append(m)
+    return vistas
+
+
+def _construir_seleccion_equitativa(
+    pool_materias: list[str],
+    preguntas_por_materia: int,
+    tipos_permitidos: frozenset[str],
+    pool_idx: dict[str, dict[tuple[str, str], list]],
+    usadas: set,
+    rng: random.Random,
+    pregunta_key: Callable,
+    *,
+    exigir_balance_completo: bool,
+) -> list:
+    seleccion: list = []
+    for materia in pool_materias:
+        for _ in range(preguntas_por_materia):
+            p = _elegir_pregunta(
+                pool_idx,
+                materia,
+                tipos_permitidos,
+                usadas,
+                rng,
+                pregunta_key,
+            )
+            if p is None:
+                if exigir_balance_completo:
+                    tipos_txt = "/".join(sorted(tipos_permitidos))
+                    raise ValueError(
+                        f"No hay pregunta disponible para {materia!r} "
+                        f"(tipos {tipos_txt}); no se puede completar el examen."
+                    )
+                continue
+            usadas.add(pregunta_key(p))
+            seleccion.append(p)
+    return seleccion
+
+
+def _construir_seleccion_ponderada(
+    pool_materias: list[str],
+    preguntas_por_materia: int,
+    tipos_permitidos: frozenset[str],
+    pesos: dict[str, float],
+    pool_idx: dict[str, dict[tuple[str, str], list]],
+    usadas: set,
+    rng: random.Random,
+    pregunta_key: Callable,
+) -> list:
+    """Reparte preguntas eligiendo materia por peso histórico en cada elección."""
+    if not pool_materias or preguntas_por_materia <= 0:
+        return []
+
+    n_preguntas = len(pool_materias) * preguntas_por_materia
+    seleccion: list = []
+
+    if n_preguntas >= len(pool_materias):
+        for materia in pool_materias:
+            p = _elegir_pregunta(
+                pool_idx,
+                materia,
+                tipos_permitidos,
+                usadas,
+                rng,
+                pregunta_key,
+            )
+            if p is not None:
+                usadas.add(pregunta_key(p))
+                seleccion.append(p)
+
+    ws = [pesos.get(m, 1.0) for m in pool_materias]
+    intentos_fallidos = 0
+    max_intentos = max(n_preguntas * len(pool_materias) * 4, 32)
+    while len(seleccion) < n_preguntas:
+        if intentos_fallidos > max_intentos:
+            break
+        materia = rng.choices(pool_materias, weights=ws, k=1)[0]
+        p = _elegir_pregunta(
+            pool_idx,
+            materia,
+            tipos_permitidos,
+            usadas,
+            rng,
+            pregunta_key,
+        )
+        if p is None:
+            intentos_fallidos += 1
+            continue
+        intentos_fallidos = 0
+        usadas.add(pregunta_key(p))
+        seleccion.append(p)
+
+    return seleccion
+
+
+def _construir_seleccion_plantillas_materia(
+    materia: str,
+    plantillas: list[dict],
+    preguntas: list,
+    tipos_permitidos: frozenset[str],
+    usadas: set,
+    rng: random.Random,
+    pregunta_key: Callable,
+    n_preguntas: int | None = None,
+) -> list:
+    """Una pregunta aleatoria por plantilla del banco (contenido distinto en cada partida)."""
+    from Comun.rutas import registrar_scripts_en_path
+
+    registrar_scripts_en_path()
+    from utils_plantillas_core import clave_contenido, expandir_plantilla_instancias
+
+    pool_materia = [p for p in preguntas if getattr(p, "materia", "") == materia]
+    por_clave: dict[tuple, object] = {}
+    for p in pool_materia:
+        k = clave_contenido(p.materia, p.texto, p.opciones, p.correcta)
+        por_clave[k] = p
+
+    pool_idx = _indice_pool(preguntas)
+    seleccion: list = []
+
+    elegibles: list[dict] = []
+    for plantilla in plantillas:
+        tipo = (plantilla.get("tipo") or "Teoria").strip()
+        if tipo not in tipos_permitidos:
+            continue
+        elegibles.append(plantilla)
+
+    if n_preguntas is not None and n_preguntas < len(elegibles):
+        orden = list(elegibles)
+        rng.shuffle(orden)
+        elegibles = orden[:n_preguntas]
+
+    for plantilla in elegibles:
+        candidatas: list = []
+        for inst in expandir_plantilla_instancias(materia, plantilla):
+            if inst["tipo"] not in tipos_permitidos:
+                continue
+            k = clave_contenido(
+                inst["materia"],
+                inst["pregunta"],
+                inst["opciones"],
+                inst["correcta"],
+            )
+            p = por_clave.get(k)
+            if p is not None and pregunta_key(p) not in usadas:
+                candidatas.append(p)
+        if candidatas:
+            p = rng.choice(candidatas)
+        else:
+            p = _elegir_pregunta(
+                pool_idx,
+                materia,
+                tipos_permitidos,
+                usadas,
+                rng,
+                pregunta_key,
+            )
+            if p is None:
+                continue
+        usadas.add(pregunta_key(p))
+        seleccion.append(p)
+
+    return seleccion
+
+
 def generar_examen(
     preguntas: list,
     *,
@@ -253,19 +472,30 @@ def generar_examen(
     materias_meta: dict[str, dict[str, str]],
     stats: dict[str, EstadisticaMateria] | None = None,
     n_materias: int = 5,
-    slots: tuple[tuple[str, str], ...] | None = None,
+    preguntas_por_materia: int | None = None,
+    tipos_permitidos: frozenset[str] | None = None,
     curso_filtro: str | None = None,
     semestre_filtro: str | None = None,
     grupo_filtro: str | None = None,
     materia_fija: str | None = None,
     usar_todas_materias_ambito: bool = False,
     seleccion_determinista: bool = False,
-    orden_por_historico: str | None = None,
+    orden_preguntas: str = "aleatorio",
+    exigir_balance_completo: bool = False,
+    usar_analisis_historico: bool = True,
+    usar_plantillas_materia: bool = False,
+    plantillas_materia: list[dict] | None = None,
+    n_preguntas: int | None = None,
     semilla: int | None = None,
+    semilla_orden: int | None = None,
     pregunta_key: Callable | None = None,
 ) -> PlanExamen:
     """
-    Construye un examen ordenado: por materia (orden del grado) y slots balanceados.
+    Construye un examen eligiendo N preguntas por materia del pool disponible.
+
+    La dificultad no se impone: sale del banco al sortear. Con histórico activo,
+    el reparto entre materias sigue los pesos del perfil (salvo
+    ``exigir_balance_completo``). Con semilla fija, la selección es reproducible.
     """
     if pregunta_key is None:
         pregunta_key = lambda p: (p.materia, p.texto)
@@ -290,56 +520,152 @@ def generar_examen(
         if not candidatas:
             raise ValueError(f"La materia {materia_fija!r} no está en el ámbito del examen.")
 
+    if tipos_permitidos is None:
+        tipos_permitidos = TIPOS_PREGUNTA_MIXTO
+
+    if usar_plantillas_materia and materia_fija:
+        if not plantillas_materia:
+            raise ValueError(
+                f"No hay plantillas definidas para la asignatura {materia_fija!r}."
+            )
+        usadas: set = set()
+        seleccion = _construir_seleccion_plantillas_materia(
+            materia_fija,
+            plantillas_materia,
+            preguntas,
+            tipos_permitidos,
+            usadas,
+            rng,
+            pregunta_key,
+            n_preguntas=n_preguntas,
+        )
+        if not seleccion:
+            raise ValueError(
+                f"No se pudo construir el examen de {materia_fija!r} "
+                f"con las plantillas y el banco disponibles."
+            )
+        if orden_preguntas == "plantilla":
+            seleccion = _ordenar_preguntas_por_plantilla(seleccion)
+        elif orden_preguntas == "dificultad":
+            seleccion = _ordenar_preguntas_por_dificultad(seleccion)
+        elif orden_preguntas in ("aleatorio", "variar"):
+            if orden_preguntas == "variar" and semilla_orden is not None:
+                random.Random(semilla_orden).shuffle(seleccion)
+            else:
+                rng.shuffle(seleccion)
+        elif orden_preguntas != "materia":
+            raise ValueError(f"orden_preguntas desconocido: {orden_preguntas!r}")
+        validar_total_preguntas(len(seleccion))
+        return PlanExamen(
+            perfil=perfil,
+            materias=[materia_fija],
+            preguntas_por_materia=len(seleccion),
+            tipos_permitidos=tipos_permitidos,
+            preguntas=seleccion,
+        )
+
     todas_en_ambito = usar_todas_materias_ambito or perfil == PerfilPedagogico.SIMULACRO
     n_efectivo = len(candidatas) if todas_en_ambito else n_materias
 
-    if perfil == PerfilPedagogico.SIMULACRO:
-        slots = (("Teoria", "Media"),)
-    elif materia_fija and n_efectivo == 1:
-        slots = SLOTS_CANONICOS_12
-    elif slots is None:
-        total_preg = n_efectivo * 4
-        slots = slots_para_tamano(total_preg, n_efectivo)
+    if tipos_permitidos is None:
+        tipos_permitidos = TIPOS_PREGUNTA_MIXTO
+    if preguntas_por_materia is None:
+        preguntas_por_materia = preguntas_por_materia_defecto(
+            perfil=perfil,
+            materia_fija=materia_fija,
+        )
+    if preguntas_por_materia <= 0:
+        raise ValueError("preguntas_por_materia debe ser positivo.")
 
-    pesos = calcular_pesos_materia(candidatas, stats, perfil)
+    indices_ambito: dict[str, float] = {}
+    if usar_analisis_historico:
+        indices_ambito = indices_dificultad_ambito(candidatas, stats)
+
+    pesos = calcular_pesos_materia(
+        candidatas,
+        stats,
+        perfil,
+        usar_analisis_historico=usar_analisis_historico,
+        indices_ambito=indices_ambito or None,
+    )
     if todas_en_ambito:
-        materias_sel = candidatas
+        pool_materias = list(candidatas)
     elif seleccion_determinista:
-        materias_sel = candidatas[:n_efectivo]
+        pool_materias = candidatas[:n_efectivo]
     else:
-        materias_sel = elegir_materias_ponderadas(candidatas, pesos, n_efectivo, rng)
-        materias_sel.sort(key=lambda m: materias_orden.index(m) if m in materias_orden else 999)
+        pool_materias = elegir_materias_ponderadas(candidatas, pesos, n_efectivo, rng)
+        pool_materias.sort(
+            key=lambda m: materias_orden.index(m) if m in materias_orden else 999
+        )
 
-    if orden_por_historico in ("asc", "desc") and len(materias_sel) > 1:
-        reverse = orden_por_historico == "desc"
+    if not pool_materias:
+        raise ValueError("No hay materias en el pool del examen.")
 
-        def _indice(m: str) -> float:
-            st = stats.get(m)
-            return st.indice_dificultad if st else 0.5
-
-        materias_sel.sort(key=_indice, reverse=reverse)
+    n_preguntas = len(pool_materias) * preguntas_por_materia
+    reparto_equitativo = exigir_balance_completo or not usar_analisis_historico
 
     pool_idx = _indice_pool(preguntas)
-    seleccion: list = []
     usadas: set = set()
 
-    for materia in materias_sel:
-        for tipo, dificultad in slots:
-            p = _elegir_pregunta_slot(
-                pool_idx, materia, tipo, dificultad, usadas, rng, pregunta_key
+    if reparto_equitativo:
+        seleccion = _construir_seleccion_equitativa(
+            pool_materias,
+            preguntas_por_materia,
+            tipos_permitidos,
+            pool_idx,
+            usadas,
+            rng,
+            pregunta_key,
+            exigir_balance_completo=exigir_balance_completo,
+        )
+    else:
+        seleccion = _construir_seleccion_ponderada(
+            pool_materias,
+            preguntas_por_materia,
+            tipos_permitidos,
+            pesos,
+            pool_idx,
+            usadas,
+            rng,
+            pregunta_key,
+        )
+
+    if exigir_balance_completo and pool_materias:
+        esperadas = len(pool_materias) * preguntas_por_materia
+        if len(seleccion) != esperadas:
+            raise ValueError(
+                f"Examen incompleto: {len(seleccion)}/{esperadas} preguntas "
+                f"({len(pool_materias)} materias × {preguntas_por_materia} preg/materia)."
             )
-            if p is None:
-                continue
-            usadas.add(pregunta_key(p))
-            seleccion.append(p)
+
+    if len(seleccion) <= 1:
+        pass
+    elif orden_preguntas == "plantilla":
+        seleccion = _ordenar_preguntas_por_plantilla(seleccion)
+    elif orden_preguntas == "materia":
+        seleccion = _ordenar_preguntas_por_materia(seleccion, pool_materias)
+    elif orden_preguntas == "variar" and semilla_orden is not None:
+        random.Random(semilla_orden).shuffle(seleccion)
+    elif orden_preguntas == "variar":
+        rng.shuffle(seleccion)
+    elif orden_preguntas == "dificultad":
+        seleccion = _ordenar_preguntas_por_dificultad(seleccion)
+    elif orden_preguntas == "aleatorio":
+        rng.shuffle(seleccion)
+    else:
+        raise ValueError(f"orden_preguntas desconocido: {orden_preguntas!r}")
 
     if not seleccion:
         raise ValueError("No se pudo construir el examen con el banco y filtros dados.")
 
+    validar_total_preguntas(len(seleccion))
+    materias_plan = _materias_unicas_en_orden(seleccion)
+
     return PlanExamen(
         perfil=perfil,
-        materias=materias_sel,
-        slots_por_materia=slots,
+        materias=materias_plan,
+        preguntas_por_materia=preguntas_por_materia,
+        tipos_permitidos=tipos_permitidos,
         preguntas=seleccion,
     )
 

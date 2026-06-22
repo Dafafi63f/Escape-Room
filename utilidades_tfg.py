@@ -1,24 +1,34 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Utilidades locales del TFG: limpieza de temporales y exportación de la memoria.
+"""Utilidades locales del TFG: regeneración y limpieza del proyecto.
 
-Por defecto ejecuta **ambas** tareas (desde la raíz del proyecto):
+Flujo por defecto (**regenerar todo → limpiar**):
 
   python utilidades_tfg.py
 
-Solo una tarea:
+1. Exporta la memoria a Word (Markdown y LaTeX → .docx).
+2. Regenera ``Juego/juego_grafico.exe`` (``build_exe_onefile.ps1``).
+3. Limpia temporales (__pycache__, runtime del juego, intermedios de Entrega/, PyInstaller).
 
-  python utilidades_tfg.py --solo-limpieza
+Solo una fase:
+
   python utilidades_tfg.py --solo-memoria
+  python utilidades_tfg.py --solo-exe
+  python utilidades_tfg.py --solo-limpieza
+
+Atajos:
+
+  python utilidades_tfg.py --sin-exe           # memoria sin .exe (más rápido)
+  python utilidades_tfg.py --forzar-exe        # reconstruir .exe aunque no haya cambios
+  python utilidades_tfg.py --conservar-cache-exe  # no borrar Juego/build/ tras el build
+  python utilidades_tfg.py --solo-memoria --con-exe
+  python utilidades_tfg.py --solo-memoria --solo-markdown
 
 Limpieza (ver también ``Juego/Comun/borrar_temporales.py``):
 
   python utilidades_tfg.py --solo-limpieza --dry-run
   python utilidades_tfg.py --solo-limpieza --solo-pycache
-
-Memoria (requiere Pandoc; figuras en ``Docs/Figuras/``):
-
-  python utilidades_tfg.py --solo-memoria --solo-markdown
+  python utilidades_tfg.py --solo-limpieza --solo-entrega
 """
 
 from __future__ import annotations
@@ -41,10 +51,158 @@ from Comun.borrar_temporales import main as main_limpieza  # noqa: E402
 DOCS = _ROOT / "Docs"
 ENTREGA = DOCS / "Entrega"
 FIGURAS = DOCS / "Figuras"
+JUEGO = _ROOT / "Juego"
+BUILD_PS1 = JUEGO / "build_exe_onefile.ps1"
+EXE_SALIDA = JUEGO / "juego_grafico.exe"
+FILES = _ROOT / "Files"
+DATA = _ROOT / "Data"
+CHANGELOG_JUEGO = DOCS / "CHANGELOG_JUEGO.md"
+REQUIREMENTS = _ROOT / "requirements.txt"
 MD = ENTREGA / "Memoria_TFG.md"
 TEX = ENTREGA / "Memoria_TFG.tex"
 DOCX_MD = ENTREGA / "Memoria_TFG_markdown.docx"
 DOCX_LATEX = ENTREGA / "Memoria_TFG_latex.docx"
+DOCX_REF = ENTREGA / "pandoc_reference.docx"
+DOCX_REF_DEFAULT = ENTREGA / "pandoc_reference_default.docx"
+
+_LATEX_TEMP_ENTREGA = (
+    "*.aux",
+    "*.log",
+    "*.out",
+    "*.toc",
+    "*.fls",
+    "*.fdb_latexmk",
+    "*.synctex.gz",
+)
+
+_ARTEFACTOS_ENTREGA_INTERMEDIOS_FIJOS = (
+    DOCX_REF,
+    DOCX_REF_DEFAULT,
+    ENTREGA / "pandoc_reference.tmp.docx",
+)
+
+_ARTEFACTOS_ENTREGA_SALIDA = (
+    DOCX_MD,
+    DOCX_LATEX,
+)
+
+
+def _listar_ficheros_existentes(candidatos: list[Path]) -> list[Path]:
+    vistos: set[Path] = set()
+    existentes: list[Path] = []
+    for ruta in candidatos:
+        resuelta = ruta.resolve()
+        if resuelta in vistos or not ruta.is_file():
+            continue
+        vistos.add(resuelta)
+        existentes.append(ruta)
+    return sorted(existentes, key=lambda p: p.name.lower())
+
+
+def _candidatos_entrega_intermedios() -> list[Path]:
+    candidatos = list(_ARTEFACTOS_ENTREGA_INTERMEDIOS_FIJOS)
+    for patron in _LATEX_TEMP_ENTREGA:
+        candidatos.extend(ENTREGA.glob(patron))
+    return candidatos
+
+
+def _candidatos_entrega_todos_regenerables() -> list[Path]:
+    return [
+        *_ARTEFACTOS_ENTREGA_SALIDA,
+        *_candidatos_entrega_intermedios(),
+    ]
+
+
+def _limpiar_ficheros(
+    candidatos: list[Path],
+    *,
+    dry_run: bool = False,
+    vacio: str | None = "  (nada que borrar)",
+) -> bool:
+    artefactos = _listar_ficheros_existentes(candidatos)
+    for ruta in artefactos:
+        prefijo = "[dry-run] " if dry_run else ""
+        print(f"  {prefijo}{_rel(ruta)}")
+        if not dry_run:
+            ruta.unlink()
+    if not artefactos and vacio is not None:
+        print(vacio)
+    return bool(artefactos)
+
+
+def _limpiar_entrega_pycache(*, dry_run: bool = False) -> bool:
+    cache = ENTREGA / "__pycache__"
+    if not cache.is_dir():
+        return False
+    prefijo = "[dry-run] " if dry_run else ""
+    print(f"  {prefijo}{_rel(cache)}/")
+    if not dry_run:
+        shutil.rmtree(cache)
+    return True
+
+
+def limpiar_artefactos_entrega_intermedios(*, dry_run: bool = False) -> int:
+    """Borra plantilla Pandoc, ``__pycache__`` local y restos LaTeX de ``Docs/Entrega/``."""
+    borrado = _limpiar_ficheros(
+        _candidatos_entrega_intermedios(),
+        dry_run=dry_run,
+        vacio=None,
+    )
+    borrado = _limpiar_entrega_pycache(dry_run=dry_run) or borrado
+    if not borrado:
+        print("  (nada que borrar)")
+    return 0
+
+
+def limpiar_entrega_generada(*, dry_run: bool = False) -> int:
+    """Borra todos los artefactos regenerables de ``Docs/Entrega/`` (incluye los .docx)."""
+    borrado = _limpiar_ficheros(
+        _candidatos_entrega_todos_regenerables(),
+        dry_run=dry_run,
+        vacio=None,
+    )
+    borrado = _limpiar_entrega_pycache(dry_run=dry_run) or borrado
+    if not borrado:
+        print("  (nada que borrar)")
+    return 0
+
+
+def _borrar_cache_pyinstaller(*, dry_run: bool = False) -> bool:
+    """Borra Juego/build/ si existe (caché incremental de PyInstaller)."""
+    build_dir = JUEGO / "build"
+    if not build_dir.is_dir():
+        return False
+    prefijo = "[dry-run] " if dry_run else ""
+    print(f"  {prefijo}{_rel(build_dir)}/")
+    if not dry_run:
+        shutil.rmtree(build_dir)
+    return True
+
+
+def _limpiar_artefactos_pyinstaller(
+    *,
+    dry_run: bool = False,
+    conservar_cache: bool = False,
+) -> bool:
+    borrado = False
+    carpetas: list[Path] = [JUEGO / "build", JUEGO / "dist"] if not conservar_cache else [JUEGO / "dist"]
+    for carpeta in carpetas:
+        if not carpeta.is_dir():
+            continue
+        prefijo = "[dry-run] " if dry_run else ""
+        print(f"  {prefijo}{_rel(carpeta)}/")
+        if not dry_run:
+            shutil.rmtree(carpeta)
+        borrado = True
+    for spec in sorted(JUEGO.glob("*.spec")):
+        prefijo = "[dry-run] " if dry_run else ""
+        print(f"  {prefijo}{_rel(spec)}")
+        if not dry_run:
+            spec.unlink()
+        borrado = True
+    if not borrado:
+        print("  (nada que borrar)")
+    return borrado
 
 
 def _rel(p: Path) -> Path | str:
@@ -54,9 +212,56 @@ def _rel(p: Path) -> Path | str:
         return p
 
 
-def _pandoc(entrada: Path, salida: Path, *, formato_entrada: str) -> None:
-    if not entrada.is_file():
-        raise FileNotFoundError(f"No existe {entrada}")
+def _plantilla_pandoc() -> Path:
+    import importlib.util
+
+    ruta = ENTREGA / "preparar_plantilla_pandoc.py"
+    spec = importlib.util.spec_from_file_location("preparar_plantilla_pandoc", ruta)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"No se pudo cargar {ruta}")
+    mod = importlib.util.module_from_spec(spec)
+    prev_bytecode = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        spec.loader.exec_module(mod)
+        mod.crear_plantilla_memoria(destino=DOCX_REF)
+    finally:
+        sys.dont_write_bytecode = prev_bytecode
+    if not DOCX_REF.is_file():
+        raise RuntimeError(f"No se generó la plantilla Pandoc: {DOCX_REF}")
+    return DOCX_REF
+
+
+def _cargar_ajustar_word():
+    import importlib.util
+
+    ruta = ENTREGA / "ajustar_word_memoria.py"
+    spec = importlib.util.spec_from_file_location("ajustar_word_memoria", ruta)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"No se pudo cargar {ruta}")
+    mod = importlib.util.module_from_spec(spec)
+    prev_bytecode = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        spec.loader.exec_module(mod)
+    finally:
+        sys.dont_write_bytecode = prev_bytecode
+    return mod
+
+
+def _pandoc(
+    entradas: list[Path],
+    salida: Path,
+    *,
+    formato_entrada: str,
+    indice_pandoc: bool = True,
+    reordenar_portada: bool = True,
+) -> None:
+    if not entradas:
+        raise ValueError("Se requiere al menos un fichero de entrada para Pandoc.")
+    for entrada in entradas:
+        if not entrada.is_file():
+            raise FileNotFoundError(f"No existe {entrada}")
     pandoc = shutil.which("pandoc")
     if not pandoc:
         raise RuntimeError(
@@ -66,15 +271,24 @@ def _pandoc(entrada: Path, salida: Path, *, formato_entrada: str) -> None:
     salida.unlink(missing_ok=True)
     cmd = [
         pandoc,
-        str(entrada),
+        *[str(p.resolve().as_posix()) for p in entradas],
         "-o",
         str(salida),
         f"--from={formato_entrada}",
         "--to=docx",
+        "--number-sections",
+        "-M",
+        "toc-title=Índice",
+        "-M",
+        "lang=es",
+        f"--reference-doc={_plantilla_pandoc()}",
     ]
+    if indice_pandoc:
+        idx = cmd.index("--number-sections")
+        cmd[idx:idx] = ["--toc", "--toc-depth=2"]
     resultado = subprocess.run(
         cmd,
-        cwd=entrada.parent,
+        cwd=entradas[0].parent,
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -82,19 +296,34 @@ def _pandoc(entrada: Path, salida: Path, *, formato_entrada: str) -> None:
     )
     if resultado.returncode != 0:
         raise RuntimeError(
-            f"Falló pandoc ({entrada.name} → {salida.name}).\n"
+            f"Falló pandoc ({', '.join(p.name for p in entradas)} → {salida.name}).\n"
             f"{(resultado.stderr or '') + (resultado.stdout or '')}"
         )
     if not salida.is_file():
         raise RuntimeError(f"No se generó el DOCX esperado: {salida}")
+    if reordenar_portada and indice_pandoc:
+        ajustar = _cargar_ajustar_word()
+        if not ajustar.ajustar_portada_indice(salida):
+            print(
+                f"  Aviso: no se pudo reordenar portada/índice en {salida.name}",
+                file=sys.stderr,
+            )
 
 
 def exportar_docx_markdown(destino: Path = DOCX_MD) -> None:
-    _pandoc(MD, destino, formato_entrada="markdown")
+    _pandoc(
+        [MD],
+        destino,
+        formato_entrada="markdown+yaml_metadata_block+tex_math_dollars",
+    )
 
 
 def exportar_docx_latex(destino: Path = DOCX_LATEX) -> None:
-    _pandoc(TEX, destino, formato_entrada="latex")
+    _pandoc(
+        [TEX],
+        destino,
+        formato_entrada="latex",
+    )
 
 
 def _avisar_si_faltan_figuras() -> None:
@@ -149,6 +378,127 @@ def ejecutar_exportacion(
     return 1 if errores else 0
 
 
+def _iterar_entradas_exe() -> list[Path]:
+    """Ficheros que invalidan el .exe si cambian tras la última compilación."""
+    entradas: list[Path] = []
+    fijos = (
+        JUEGO / "juego_grafico.py",
+        BUILD_PS1,
+        REQUIREMENTS,
+        CHANGELOG_JUEGO,
+    )
+    for ruta in fijos:
+        if ruta.is_file():
+            entradas.append(ruta)
+    for carpeta, sufijo in (
+        (JUEGO / "Comun", ".py"),
+        (JUEGO / "Grafico", ".py"),
+        (FILES, ".py"),
+    ):
+        if carpeta.is_dir():
+            entradas.extend(p for p in carpeta.rglob(f"*{sufijo}") if p.is_file())
+    if DATA.is_dir():
+        entradas.extend(p for p in DATA.rglob("*") if p.is_file())
+    return entradas
+
+
+def _exe_necesita_regeneracion() -> tuple[bool, str]:
+    if not EXE_SALIDA.is_file():
+        return True, "aún no existe juego_grafico.exe"
+    exe_mtime = EXE_SALIDA.stat().st_mtime
+    for ruta in _iterar_entradas_exe():
+        try:
+            if ruta.stat().st_mtime > exe_mtime + 1e-6:
+                return True, f"cambió {_rel(ruta)}"
+        except OSError:
+            return True, f"cambió {_rel(ruta)}"
+    return False, ""
+
+
+def _powershell_ejecutable() -> Path:
+    candidatos = (
+        shutil.which("powershell"),
+        shutil.which("powershell.exe"),
+        shutil.which("pwsh"),
+        shutil.which("pwsh.exe"),
+        r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
+    )
+    for candidato in candidatos:
+        if not candidato:
+            continue
+        ruta = Path(candidato)
+        if ruta.is_file():
+            return ruta
+    raise RuntimeError(
+        "No se encontró PowerShell en el PATH.\n"
+        "Instálalo o ejecuta manualmente: .\\Juego\\build_exe_onefile.ps1"
+    )
+
+
+def regenerar_exe(*, force: bool = False) -> None:
+    if sys.platform != "win32":
+        raise RuntimeError(
+            "La generación del .exe solo está soportada en Windows (PyInstaller)."
+        )
+    motivo = ""
+    if not force:
+        necesita, motivo = _exe_necesita_regeneracion()
+        if not necesita:
+            print("PyInstaller → ejecutable")
+            print(f"  Sin cambios relevantes; se reutiliza {_rel(EXE_SALIDA)}")
+            print("  (usa --forzar-exe para reconstruir desde cero)")
+            if _borrar_cache_pyinstaller():
+                print("  Caché PyInstaller (build/) eliminada para ahorrar espacio")
+            return
+    if not BUILD_PS1.is_file():
+        raise FileNotFoundError(f"No existe {BUILD_PS1}")
+    ps1 = BUILD_PS1.resolve()
+    powershell = _powershell_ejecutable()
+    print("PyInstaller → ejecutable")
+    if force:
+        print("  Modo: reconstrucción forzada")
+    elif motivo:
+        print(f"  Motivo: {motivo}")
+    print(f"  Script: {_rel(ps1)}")
+    print(f"  PowerShell: {powershell}")
+    cmd = [
+        str(powershell),
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        str(ps1),
+    ]
+    if force:
+        cmd.append("-Force")
+    try:
+        resultado = subprocess.run(
+            cmd,
+            cwd=JUEGO,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except OSError as exc:
+        raise RuntimeError(
+            f"No se pudo lanzar PowerShell para {ps1.name}: {exc}\n"
+            f"Comando: {' '.join(cmd)}"
+        ) from exc
+    if resultado.returncode != 0:
+        raise RuntimeError(
+            f"Falló {ps1.name} (código {resultado.returncode}).\n"
+            "Cierra juego_grafico.exe si está abierto y vuelve a intentarlo, "
+            "o ejecuta manualmente:\n"
+            f"  .\\Juego\\build_exe_onefile.ps1"
+        )
+    if not EXE_SALIDA.is_file():
+        raise RuntimeError(
+            f"No se generó el ejecutable esperado: {EXE_SALIDA}\n"
+            f"Revisa la salida de {ps1.name}."
+        )
+    print(f"  EXE:    {_rel(EXE_SALIDA)}")
+
+
 def _argv_limpieza(args: argparse.Namespace) -> list[str]:
     argv: list[str] = []
     if args.dry_run:
@@ -162,57 +512,123 @@ def _argv_limpieza(args: argparse.Namespace) -> list[str]:
     return argv
 
 
+def _limpieza_tiene_filtro(argv: list[str]) -> bool:
+    return any(
+        flag in argv
+        for flag in ("--solo-pycache", "--solo-juego", "--solo-txt")
+    )
+
+
+def ejecutar_limpieza_final(args: argparse.Namespace) -> int:
+    if args.solo_entrega:
+        print("=== Limpieza de artefactos regenerables (Docs/Entrega/) ===\n")
+        return limpiar_entrega_generada(dry_run=args.dry_run)
+
+    argv = _argv_limpieza(args)
+    print("=== Limpieza final ===\n")
+    codigo = main_limpieza(argv)
+    if _limpieza_tiene_filtro(argv):
+        return codigo
+
+    print()
+    print("--- Docs/Entrega/ (intermedios) ---\n")
+    limpiar_artefactos_entrega_intermedios(dry_run=args.dry_run)
+    print()
+    print("--- PyInstaller (Juego/) ---\n")
+    _limpiar_artefactos_pyinstaller(
+        dry_run=args.dry_run,
+        conservar_cache=args.conservar_cache_exe,
+    )
+    return codigo
+
+
+def _planificar_tareas(args: argparse.Namespace) -> tuple[bool, bool, bool]:
+    filtros_limpieza = (
+        args.solo_pycache or args.solo_juego or args.solo_txt or args.solo_entrega
+    )
+    solo_limpieza = args.solo_limpieza or filtros_limpieza
+
+    if solo_limpieza:
+        return False, False, True
+    if args.solo_exe:
+        return False, True, True
+    if args.solo_memoria:
+        return True, bool(args.con_exe), True
+    incluir_exe = not args.sin_exe
+    if args.con_exe:
+        incluir_exe = True
+    return True, incluir_exe, True
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Limpia artefactos temporales y/o exporta la memoria a Word."
+        description=(
+            "Regenera artefactos del TFG (memoria, .exe en Windows) y "
+            "limpia temporales al final."
+        )
     )
     modo = parser.add_mutually_exclusive_group()
     modo.add_argument(
         "--solo-limpieza",
         action="store_true",
-        help="Solo limpieza (__pycache__, Data/Juego/ en raíz y Juego/Data/ del .exe)",
+        help="Solo limpieza final (sin regenerar memoria ni .exe)",
     )
     modo.add_argument(
         "--solo-memoria",
         action="store_true",
-        help="Solo exportación Word (Markdown y LaTeX → .docx)",
+        help="Solo exportación Word; después, limpieza final",
+    )
+    modo.add_argument(
+        "--solo-exe",
+        action="store_true",
+        help="Solo regenerar Juego/juego_grafico.exe; después, limpieza final",
     )
 
     parser.add_argument(
+        "--sin-exe",
+        action="store_true",
+        help="No regenerar juego_grafico.exe (por defecto sí se regenera)",
+    )
+    parser.add_argument(
+        "--forzar-exe",
+        action="store_true",
+        help="Reconstruir juego_grafico.exe aunque no haya cambios en el código o datos",
+    )
+    parser.add_argument(
+        "--conservar-cache-exe",
+        action="store_true",
+        help="No borrar Juego/build/ (por defecto se elimina para ahorrar espacio)",
+    )
+    parser.add_argument(
+        "--con-exe",
+        action="store_true",
+        help="Con --solo-memoria, también regenera el .exe (por defecto ya se regenera)",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Limpieza: listar sin borrar (no afecta a la exportación)",
+        help="Limpieza: listar sin borrar (no afecta a la regeneración)",
     )
     grupo_limpieza = parser.add_mutually_exclusive_group()
     grupo_limpieza.add_argument("--solo-pycache", action="store_true", help="Limpieza: solo __pycache__")
     grupo_limpieza.add_argument("--solo-juego", action="store_true", help="Limpieza: solo JSON runtime en Data/Juego/")
     grupo_limpieza.add_argument("--solo-txt", action="store_true", help="Limpieza: solo .txt en Data/Juego/")
+    grupo_limpieza.add_argument(
+        "--solo-entrega",
+        action="store_true",
+        help="Limpieza: todos los artefactos regenerables en Docs/Entrega/ (incluye .docx)",
+    )
 
     grupo_memoria = parser.add_mutually_exclusive_group()
     grupo_memoria.add_argument("--solo-markdown", action="store_true", help="Memoria: solo Word desde Markdown")
     grupo_memoria.add_argument("--solo-latex", action="store_true", help="Memoria: solo Word desde LaTeX")
 
     args = parser.parse_args(argv)
-
-    filtros_limpieza = args.solo_pycache or args.solo_juego or args.solo_txt
-    filtros_memoria = args.solo_markdown or args.solo_latex
-    hacer_limpieza = args.solo_limpieza or filtros_limpieza or not (args.solo_memoria or filtros_memoria)
-    hacer_memoria = args.solo_memoria or filtros_memoria or not (args.solo_limpieza or filtros_limpieza)
-
-    if args.solo_limpieza:
-        hacer_memoria = False
-    if args.solo_memoria:
-        hacer_limpieza = False
+    regenerar_memoria, regenerar_exe_flag, hacer_limpieza = _planificar_tareas(args)
 
     codigo = 0
 
-    if hacer_limpieza:
-        print("=== Limpieza de temporales ===\n")
-        codigo = max(codigo, main_limpieza(_argv_limpieza(args)))
-        if hacer_memoria:
-            print()
-
-    if hacer_memoria:
+    if regenerar_memoria:
         print("=== Exportación de memoria ===\n")
         codigo = max(
             codigo,
@@ -221,6 +637,21 @@ def main(argv: list[str] | None = None) -> int:
                 solo_latex=args.solo_latex,
             ),
         )
+
+    if regenerar_exe_flag:
+        if regenerar_memoria:
+            print()
+        print("=== Regeneración del ejecutable ===\n")
+        try:
+            regenerar_exe(force=args.forzar_exe)
+        except (FileNotFoundError, RuntimeError) as exc:
+            print(f"  Error:  {exc}", file=sys.stderr)
+            codigo = max(codigo, 1)
+
+    if hacer_limpieza:
+        if regenerar_memoria or regenerar_exe_flag:
+            print()
+        codigo = max(codigo, ejecutar_limpieza_final(args))
 
     return codigo
 
