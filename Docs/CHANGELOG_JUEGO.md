@@ -26,7 +26,7 @@ Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygam
 
 - **Resistencia / reto del día:** apuestas (doble o nada), maldiciones, bloques temáticos temporales, power-ups (bomba, escudo, 50/50, saltar…).
 - **Barra de partida:** tiempo, número de pregunta, racha y estado de resistencia más claros (chips con emoji).
-- Rankings locales de resistencia infinita y reto del día.
+- Rankings locales de resistencia y examen del día.
 
 ## 2026-06-17
 
@@ -55,7 +55,7 @@ Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygam
 
 - **Modo libre:** partida personalizable (filtros, vidas, tiempo, puntuación).
 - **Modo historia:** simulacros de examen con datos históricos MatCAD.
-- **Modo resistencia** (evolución posterior): partida infinita con escalada de dificultad.
+- **Modo resistencia** (evolución posterior): partida continua con escalada de dificultad.
 - Informes de partida en `.txt` al cerrar sesión.
 - Banco inicial de preguntas y materias del grado MATCAD.
 

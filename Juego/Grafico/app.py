@@ -46,9 +46,9 @@ from Grafico.tooltips_ui import (
 from Grafico.menu_opciones import OverlayOpcionesGrafico
 from Comun.ranking_resistencia import finalizar_ranking_al_salir, inicializar_ranking_sesion
 from Comun.preferencias_grafico import debe_saltar_bienvenida_grafico
-from Grafico.pantallas import MenuPrincipal, Pantalla, PantallaFeedback, PartidaModoLibre
-from Grafico.pantalla_info import PantallaInfoHub, PantallaInfoTexto
-from Grafico.pantallas_bienvenida import PantallaBienvenida
+from Grafico.pantallas import MenuPrincipal, Pantalla, PartidaModoLibre
+from Grafico.pantallas_sistema import PantallaFeedback, PantallaInfoHub, PantallaInfoTexto
+from Grafico.pantallas_inicio import PantallaBienvenida
 from Grafico.pantallas_historia import PartidaModoHistoria, PartidaResistenciaHistoria
 
 _ETIQUETA_ICONO_FIJO_SIN_EMOJI: dict[str, str] = {
@@ -305,7 +305,7 @@ class AplicacionGrafica:
     def _abrir_diarios(self) -> None:
         if self._overlay_abierto():
             return
-        from Grafico.pantallas_diarios import ConfigModosDiarios
+        from Grafico.pantallas_modos import ConfigModosDiarios
 
         if isinstance(self.actual, ConfigModosDiarios):
             return
@@ -338,15 +338,11 @@ class AplicacionGrafica:
         )
 
     def _preset_ranking_desde_pantalla(self, pantalla: Pantalla) -> str | None:
-        from Comun.modos_diarios import ID_PRESET_RETO_DIA
-        from Grafico.pantallas_diarios import ConfigModosDiarios
-        from Grafico.pantallas_especiales import ConfigModosEspeciales
+        from Grafico.pantallas_modos import ConfigModosEspeciales
         from Grafico.pantallas_historia import ResumenResistenciaHistoria
 
         if isinstance(pantalla, ResumenResistenciaHistoria):
             return pantalla.preset.id
-        if isinstance(pantalla, ConfigModosDiarios):
-            return ID_PRESET_RETO_DIA
         if isinstance(pantalla, ConfigModosEspeciales):
             return "ranking_resistencia"
         return None

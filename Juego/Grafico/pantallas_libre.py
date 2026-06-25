@@ -10,20 +10,20 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from Comun.cierre_informe import meta_cierre_libre
+from Comun.informe_examen import meta_cierre_libre
 from Comun.navegacion_fin_partida import NavegacionFinPartida
-from Comun.compatibilidad_reglas_libre import (
+from Comun.reglas_libre import (
     normalizar_vidas_y_sistema,
     opciones_reglas_libre,
 )
-from Comun.limites_partida import MIN_PREGUNTAS_PARTIDA
+from Comun.reglas_partida import MIN_PREGUNTAS_PARTIDA
 from Comun.dificultad import (
     complejidad_pregunta,
     max_complejidad_pool,
     niveles_en_pool,
     normalizar_niveles_seleccionados,
 )
-from Comun.modelos import BancoPreguntas, Pregunta
+from Comun.modelos import BancoPreguntas, ETIQUETAS_BANCO_CORTAS, OPCIONES_BANCO_JUEGO, Pregunta
 from Comun.politica_reglas import ContextoPartida, validar_reglas
 from Comun.preferencias_grafico import nombre_jugador_grafico
 from Comun.pool_libre import (
@@ -122,10 +122,8 @@ OPCIONES_FILTRO = (
     (FILTRO_TIPO, "Tipo"),
 )
 
-OPCIONES_BANCO = (
-    (BancoPreguntas.DATASET, "Modo seguro"),
-    (BancoPreguntas.PLANTILLAS_TODO, "Todo + beta"),
-    (BancoPreguntas.PLANTILLAS_EXTRA, "Solo plantillas"),
+OPCIONES_BANCO = tuple(
+    (banco, ETIQUETAS_BANCO_CORTAS[banco]) for banco in OPCIONES_BANCO_JUEGO
 )
 
 PRESETS_PREGUNTAS = (5, 10, 15, 20, 25, 30, 40, 50, 75, 100)
@@ -241,7 +239,6 @@ def _construir_reglas_paso1(
         sistema=sistema_elegido,
         tiempo_por_pregunta_seg=tiempo_preg,
         tiempo_total_seg=tiempo_tot,
-        mostrar_solucion_tras_fallo=False,
         dificultad_progresiva=dificultad_progresiva,
         modo_infinito=modo_infinito,
         n_preguntas=n,
@@ -1088,7 +1085,6 @@ class ConfigFiltrosLibre(Pantalla):
             tiempo_por_pregunta_seg=base.tiempo_por_pregunta_seg,
             tiempo_total_seg=base.tiempo_total_seg,
             sistema_puntuacion=base.sistema_puntuacion,
-            mostrar_solucion_tras_fallo=False,
             mostrar_aciertos_en_curso=False,
             correccion_al_final=base.correccion_al_final,
             dificultad_progresiva=base.dificultad_progresiva,

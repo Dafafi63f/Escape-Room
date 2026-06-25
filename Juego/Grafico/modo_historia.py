@@ -22,8 +22,8 @@ from Comun.presets_historia import (
     semilla_desde_preset,
 )
 from Comun.reglas_partida import ReglasPartida
-from Comun.resistencia_historia import construir_banco_resistencia, es_preset_resistencia
-from Comun.rutas import PATH_MATERIAS, resolver_presets_especiales, resolver_presets_historia
+from Grafico.arranque_partida import iniciar_pantalla_preset
+from Comun.rutas import PATH_MATERIAS, resolver_presets
 from Comun.generador_examen_historia import (
     PlanExamen,
     cargar_estadisticas_historicas,
@@ -36,11 +36,11 @@ if TYPE_CHECKING:
 
 
 def cargar_catalogo_historia() -> list[PresetHistoria]:
-    return cargar_presets_historia(resolver_presets_historia())
+    return cargar_presets_historia(resolver_presets())
 
 
 def cargar_catalogo_especiales() -> list[PresetHistoria]:
-    return cargar_presets_especiales(resolver_presets_especiales())
+    return cargar_presets_especiales(resolver_presets())
 
 
 def _kwargs_generador_examen(
@@ -67,7 +67,7 @@ def preparar_partida_historia(
     semilla: int | None = None,
     semilla_orden: int | None = None,
 ) -> tuple[PlanExamen, ReglasPartida]:
-    from Comun.examen_aleatorio_historia import semilla_aleatoria_examen
+    from Comun.modos_diarios import semilla_aleatoria_examen
 
     orden = cargar_orden_materias(PATH_MATERIAS)
     stats = cargar_estadisticas_historicas(materias_validas=set(datos.materias_meta))
@@ -153,47 +153,16 @@ def iniciar_pantalla_partida_historia(
     salir_app: Callable[[], None],
     *,
     navegacion_fin: NavegacionFinPartida | None = None,
+    ajustes_escape: AjustesEscapeRoom | None = None,
 ) -> Pantalla:
-    """Devuelve la pantalla de partida adecuada (examen fijo o resistencia)."""
-    if es_preset_resistencia(preset):
-        from Grafico.pantallas_historia import PartidaResistenciaHistoria
-
-        banco = construir_banco_resistencia(
-            datos.preguntas,
-            datos.materias_meta,
-            path_plantillas=datos.path_plantillas_json,
-            path_preguntas_csv=datos.path_preguntas_csv,
-        )
-        pool = banco.pool_completo()
-        if not pool:
-            raise ValueError("No hay preguntas disponibles para el modo resistencia.")
-        reglas = aplicar_preset(preset, config)
-        return PartidaResistenciaHistoria(
-            nombre=nombre,
-            preset=preset,
-            pool=pool,
-            banco=banco,
-            reglas=reglas,
-            ir_a=ir_a,
-            datos=datos,
-            salir_app=salir_app,
-            navegacion_fin=navegacion_fin,
-        )
-
-    from Grafico.pantallas_historia import PartidaModoHistoria
-
-    plan, reglas = preparar_partida_historia(datos, preset, config)
-    if not plan.preguntas:
-        raise ValueError("No se pudo generar el examen.")
-    return PartidaModoHistoria(
-        nombre=nombre,
-        preset=preset,
-        preguntas=plan.preguntas,
-        materias_examen=plan.materias,
-        reglas=reglas,
-        ir_a=ir_a,
-        datos=datos,
-        salir_app=salir_app,
-        config_historia=config,
+    """Alias de compatibilidad; usar ``iniciar_pantalla_preset``."""
+    return iniciar_pantalla_preset(
+        datos,
+        preset,
+        config,
+        nombre,
+        ir_a,
+        salir_app,
         navegacion_fin=navegacion_fin,
+        ajustes_escape=ajustes_escape,
     )

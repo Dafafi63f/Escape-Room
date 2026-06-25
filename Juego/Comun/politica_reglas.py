@@ -7,12 +7,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from Comun.compatibilidad_reglas_libre import sanitizar_reglas_libre
-from Comun.limites_partida import MIN_PREGUNTAS_PARTIDA
+from Comun.reglas_libre import sanitizar_reglas_libre
 from Comun.reglas_partida import (
+    MIN_PREGUNTAS_PARTIDA,
     ReglasPartida,
+    preset_escape,
     preset_historia_examen,
-    preset_historia_resistencia,
+    preset_resistencia,
     preset_historia_reto,
 )
 
@@ -20,7 +21,8 @@ from Comun.reglas_partida import (
 class ContextoPartida(str, Enum):
     HISTORIA_SIMULACRO = "historia_simulacro"
     HISTORIA_RETO = "historia_reto"
-    HISTORIA_RESISTENCIA = "historia_resistencia"
+    RESISTENCIA = "resistencia"
+    ESCAPE = "escape"
     LIBRE_INFINITO = "libre_infinito"
     LIBRE_BLOQUE_CORTO = "libre_bloque_corto"
     LIBRE_BLOQUE_NORMAL = "libre_bloque_normal"
@@ -76,11 +78,23 @@ def politica_historia_reto() -> PoliticaReglas:
     )
 
 
-def politica_historia_resistencia() -> PoliticaReglas:
+def politica_escape() -> PoliticaReglas:
     return _politica_fija(
-        ContextoPartida.HISTORIA_RESISTENCIA,
-        preset_historia_resistencia(),
-        "Resistencia infinita: 3 vidas; dificultad por nº de pregunta; la partida solo "
+        ContextoPartida.ESCAPE,
+        preset_escape(),
+        "Escape room: 3 vidas; sin cronómetro global de partida; el tiempo (si hay) "
+        "es solo por pregunta dentro de cada puerta.",
+    )
+
+
+politica_historia_escape = politica_escape
+
+
+def politica_resistencia() -> PoliticaReglas:
+    return _politica_fija(
+        ContextoPartida.RESISTENCIA,
+        preset_resistencia(),
+        "Resistencia: 3 vidas; dificultad por nº de pregunta; la partida solo "
         "termina cuando el jugador falla (o abandona); la racha bonifica puntos y, si crece "
         "mucho, endurece la pregunta sin castigos automáticos.",
     )
@@ -112,8 +126,10 @@ def validar_reglas(
         return _fusionar_tiempo_preset(preset_historia_examen(), reglas)
     if contexto == ContextoPartida.HISTORIA_RETO:
         return _fusionar_tiempo_preset(preset_historia_reto(), reglas)
-    if contexto == ContextoPartida.HISTORIA_RESISTENCIA:
-        return preset_historia_resistencia()
+    if contexto == ContextoPartida.RESISTENCIA:
+        return preset_resistencia()
+    if contexto == ContextoPartida.ESCAPE:
+        return preset_escape()
     if contexto in {
         ContextoPartida.LIBRE_INFINITO,
         ContextoPartida.LIBRE_BLOQUE_CORTO,
@@ -133,6 +149,17 @@ def validar_reglas(
             mostrar_solucion_tras_fallo=reglas.mostrar_solucion_tras_fallo,
             mostrar_aciertos_en_curso=reglas.mostrar_aciertos_en_curso,
             correccion_al_final=False,
+            dificultad_progresiva=reglas.dificultad_progresiva,
+        )
+    elif contexto != ContextoPartida.HISTORIA_SIMULACRO:
+        reglas = ReglasPartida(
+            vidas=reglas.vidas,
+            tiempo_por_pregunta_seg=reglas.tiempo_por_pregunta_seg,
+            tiempo_total_seg=reglas.tiempo_total_seg,
+            sistema_puntuacion=reglas.sistema_puntuacion,
+            mostrar_solucion_tras_fallo=True,
+            mostrar_aciertos_en_curso=reglas.mostrar_aciertos_en_curso,
+            correccion_al_final=reglas.correccion_al_final,
             dificultad_progresiva=reglas.dificultad_progresiva,
         )
     return reglas

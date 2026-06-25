@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Persistencia del ranking local del modo resistencia (tablas separadas)."""
+"""Persistencia del ranking local del modo resistencia."""
 
 from __future__ import annotations
 
 import json
 import uuid
 from dataclasses import asdict, dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from Comun.jugador import NOMBRE_JUGADOR_DEFECTO, nombre_jugador_efectivo
@@ -17,36 +17,34 @@ from Comun.preferencias_ranking import (
     cargar_preferencias,
     guardar_preferencias,
 )
-from Comun.reto_dia_resistencia import ID_PRESET_RETO_DIA, es_id_reto_dia
 
 __all__ = [
     "RecordResistencia",
     "RankingResistencia",
     "VARIANTES_RANKING",
-    "cargar_ranking",
-    "guardar_ranking",
-    "registrar_partida",
-    "top_records",
-    "mejor_de_jugador",
-    "vaciar_ranking",
-    "vaciar_ranking_variante",
-    "inicializar_ranking_sesion",
-    "finalizar_ranking_al_salir",
     "aplicar_cambio_modo_retencion",
+    "cargar_ranking",
+    "ciclar_variante_ranking",
+    "etiqueta_variante_ranking",
+    "finalizar_ranking_al_salir",
+    "guardar_ranking",
+    "inicializar_ranking_sesion",
     "invalidar_cache_ranking",
-    "variante_desde_preset",
+    "mejor_de_jugador",
     "path_ranking_para_preset",
     "path_ranking_para_variante",
-    "etiqueta_variante_ranking",
-    "ciclar_variante_ranking",
-    "es_path_reto_dia",
+    "registrar_partida",
+    "top_records",
+    "vaciar_ranking",
+    "vaciar_ranking_variante",
+    "variante_desde_preset",
 ]
 
 _MAX_RECORDS = 500
 _TOP_MOSTRAR = 50
 
-VARIANTES_RANKING = ("infinita", "reto_dia")
-_ID_PRESET_INFINITA = "ranking_resistencia"
+VARIANTES_RANKING = ("resistencia",)
+_ID_PRESET_RESISTENCIA = "ranking_resistencia"
 
 _estados: dict[str, RankingResistencia] = {}
 _modo_sesion_activo: bool = False
@@ -60,7 +58,7 @@ class RecordResistencia:
     puntos: int
     respondidas: int
     fecha_iso: str
-    preset_id: str = _ID_PRESET_INFINITA
+    preset_id: str = _ID_PRESET_RESISTENCIA
 
     @classmethod
     def nuevo(
@@ -70,7 +68,7 @@ class RecordResistencia:
         racha: int,
         puntos: int,
         respondidas: int,
-        preset_id: str = _ID_PRESET_INFINITA,
+        preset_id: str = _ID_PRESET_RESISTENCIA,
     ) -> RecordResistencia:
         return cls(
             id=uuid.uuid4().hex[:12],
@@ -94,39 +92,30 @@ class RankingResistencia:
 
 
 def variante_desde_preset(preset_id: str) -> str:
-    return "reto_dia" if es_id_reto_dia(preset_id) else "infinita"
+    del preset_id
+    return "resistencia"
 
 
 def path_ranking_para_variante(variante: str) -> Path:
-    from Comun.rutas import resolver_ranking_reto_dia, resolver_ranking_resistencia_infinita
+    if variante != "resistencia":
+        raise ValueError(f"Variante de ranking desconocida: {variante}")
+    from Comun.rutas import resolver_ranking_resistencia
 
-    if variante == "reto_dia":
-        return resolver_ranking_reto_dia()
-    return resolver_ranking_resistencia_infinita()
+    return resolver_ranking_resistencia()
 
 
 def path_ranking_para_preset(preset_id: str) -> Path:
     return path_ranking_para_variante(variante_desde_preset(preset_id))
 
 
-def es_path_reto_dia(path: Path) -> bool:
-    return path.name == "ranking_reto_dia.json"
-
-
 def etiqueta_variante_ranking(variante: str) -> str:
-    return {
-        "infinita": "Resistencia infinita",
-        "reto_dia": "Reto del día",
-    }.get(variante, "Resistencia infinita")
+    del variante
+    return "Resistencia"
 
 
 def ciclar_variante_ranking(variante: str, delta: int) -> str:
-    orden = list(VARIANTES_RANKING)
-    try:
-        idx = orden.index(variante)
-    except ValueError:
-        idx = 0
-    return orden[(idx + delta) % len(orden)]
+    del variante, delta
+    return "resistencia"
 
 
 def _ordenar(records: list[RecordResistencia]) -> list[RecordResistencia]:
@@ -143,10 +132,6 @@ def _parse_fecha(fecha_iso: str) -> datetime | None:
         return datetime.fromisoformat(fecha_iso.replace("Z", "+00:00"))
     except ValueError:
         return None
-
-
-def _fecha_hoy_utc() -> date:
-    return datetime.now(timezone.utc).date()
 
 
 def _dias_retencion(modo: ModoRetencionRanking) -> int | None:
@@ -198,7 +183,7 @@ def _records_desde_raw(raw: object) -> list[RecordResistencia]:
                     puntos=int(item.get("puntos", 0)),
                     respondidas=int(item.get("respondidas", 0)),
                     fecha_iso=str(item.get("fecha_iso", "")),
-                    preset_id=str(item.get("preset_id", _ID_PRESET_INFINITA)),
+                    preset_id=str(item.get("preset_id", _ID_PRESET_RESISTENCIA)),
                 )
             )
         except (TypeError, ValueError):
@@ -206,7 +191,7 @@ def _records_desde_raw(raw: object) -> list[RecordResistencia]:
     return _ordenar(records)
 
 
-def _cargar_infinita_desde_disco(path: Path) -> RankingResistencia:
+def _cargar_desde_disco(path: Path) -> RankingResistencia:
     if not path.exists():
         return RankingResistencia()
     try:
@@ -214,77 +199,36 @@ def _cargar_infinita_desde_disco(path: Path) -> RankingResistencia:
     except (json.JSONDecodeError, OSError):
         return RankingResistencia()
     records = _records_desde_raw(data.get("records", []))
-    records = [r for r in records if not es_id_reto_dia(r.preset_id)]
     return RankingResistencia(version=int(data.get("version", 1)), records=records)
 
 
-def _cargar_reto_dia_desde_disco(path: Path) -> RankingResistencia:
-    hoy = _fecha_hoy_utc().isoformat()
-    if not path.exists():
-        return RankingResistencia(version=2)
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return RankingResistencia(version=2)
-    if str(data.get("fecha_reto", "")) != hoy:
-        return RankingResistencia(version=2)
-    records = _records_desde_raw(data.get("records", []))
-    records = [r for r in records if es_id_reto_dia(r.preset_id)]
-    return RankingResistencia(version=2, records=records)
-
-
-def _cargar_desde_disco(path: Path) -> RankingResistencia:
-    if es_path_reto_dia(path):
-        return _cargar_reto_dia_desde_disco(path)
-    return _cargar_infinita_desde_disco(path)
-
-
-def _migrar_ranking_legacy() -> None:
-    from Comun.rutas import (
-        resolver_ranking_reto_dia,
-        resolver_ranking_resistencia_infinita,
-        _ruta_json_escritura,
-    )
-
-    legacy = _ruta_json_escritura("ranking_resistencia.json")
-    if not legacy.is_file():
+def _fusionar_ranking(path_destino: Path, records: list[RecordResistencia]) -> None:
+    if not records:
         return
-    try:
-        data = json.loads(legacy.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        legacy.unlink(missing_ok=True)
+    if not path_destino.exists() or path_destino.stat().st_size < 3:
+        guardar_ranking(path_destino, RankingResistencia(records=records))
         return
-
-    records = _records_desde_raw(data.get("records", []))
-    path_inf = resolver_ranking_resistencia_infinita()
-    path_dia = resolver_ranking_reto_dia()
-    hoy = _fecha_hoy_utc().isoformat()
-
-    if not path_inf.exists() or path_inf.stat().st_size < 3:
-        inf = [r for r in records if not es_id_reto_dia(r.preset_id)]
-        guardar_ranking(path_inf, RankingResistencia(records=inf))
-
-    if not path_dia.exists() or path_dia.stat().st_size < 3:
-        dia = [r for r in records if es_id_reto_dia(r.preset_id)]
-        guardar_ranking_reto_dia(path_dia, RankingResistencia(version=2, records=dia), fecha_reto=hoy)
-
-    legacy.unlink(missing_ok=True)
+    ranking = _cargar_desde_disco(path_destino)
+    merged = _ordenar(ranking.records + records)[:_MAX_RECORDS]
+    guardar_ranking(path_destino, RankingResistencia(records=merged))
 
 
-def guardar_ranking_reto_dia(
-    path: Path,
-    ranking: RankingResistencia,
-    *,
-    fecha_reto: str | None = None,
-) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    ordenados = _ordenar(ranking.records)[:_MAX_RECORDS]
-    payload = {
-        "version": 2,
-        "fecha_reto": fecha_reto or _fecha_hoy_utc().isoformat(),
-        "records": [asdict(r) for r in ordenados],
-    }
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+def _migrar_archivos_ranking() -> None:
+    from Comun.rutas import _ruta_json_escritura, resolver_ranking_resistencia
+
+    path_canon = resolver_ranking_resistencia()
+
+    for nombre_antiguo in ("ranking_resistencia_infinita.json",):
+        path_antiguo = _ruta_json_escritura(nombre_antiguo)
+        if not path_antiguo.is_file():
+            continue
+        try:
+            data = json.loads(path_antiguo.read_text(encoding="utf-8"))
+            records = _records_desde_raw(data.get("records", []))
+        except (json.JSONDecodeError, OSError):
+            records = []
+        _fusionar_ranking(path_canon, records)
+        path_antiguo.unlink(missing_ok=True)
 
 
 def _obtener_estado(path: Path) -> RankingResistencia:
@@ -293,12 +237,11 @@ def _obtener_estado(path: Path) -> RankingResistencia:
     if key in _estados:
         return _estados[key]
     if _modo_sesion_activo:
-        ranking = RankingResistencia(version=2 if es_path_reto_dia(path) else 1)
+        ranking = RankingResistencia()
     else:
         ranking = _cargar_desde_disco(path)
-        if not es_path_reto_dia(path):
-            prefs = cargar_preferencias()
-            ranking.records = aplicar_retencion(ranking.records, prefs.modo)
+        prefs = cargar_preferencias()
+        ranking.records = aplicar_retencion(ranking.records, prefs.modo)
     _estados[key] = ranking
     return ranking
 
@@ -310,9 +253,6 @@ def _persistir_estado(path: Path) -> None:
     ranking = _estados.get(key)
     if ranking is None:
         return
-    if es_path_reto_dia(path):
-        guardar_ranking_reto_dia(path, ranking)
-        return
     prefs = cargar_preferencias()
     ranking_limpio = RankingResistencia(
         version=ranking.version,
@@ -322,63 +262,57 @@ def _persistir_estado(path: Path) -> None:
     ranking.records = ranking_limpio.records
 
 
-def _paths_ranking() -> list[Path]:
-    from Comun.rutas import resolver_ranking_reto_dia, resolver_ranking_resistencia_infinita
-
-    return [resolver_ranking_resistencia_infinita(), resolver_ranking_reto_dia()]
+def _path_ranking() -> Path:
+    return path_ranking_para_variante("resistencia")
 
 
 def inicializar_ranking_sesion() -> None:
-    """Carga preferencias y prepara los rankings al abrir el juego."""
+    """Carga preferencias y prepara el ranking al abrir el juego."""
     from Comun.datos_locales_juego import inicializar_datos_locales_juego
 
     global _modo_sesion_activo
     inicializar_datos_locales_juego()
-    _migrar_ranking_legacy()
+    _migrar_archivos_ranking()
     prefs = cargar_preferencias()
     _modo_sesion_activo = prefs.modo == ModoRetencionRanking.SESION
     invalidar_cache_ranking()
     if _modo_sesion_activo:
         return
-    for path in _paths_ranking():
-        ranking = _cargar_desde_disco(path)
-        if es_path_reto_dia(path):
-            guardar_ranking_reto_dia(path, ranking)
-        else:
-            ranking.records = aplicar_retencion(ranking.records, prefs.modo)
-            guardar_ranking(path, ranking)
-        _estados[_cache_key(path)] = ranking
+    path = _path_ranking()
+    ranking = _cargar_desde_disco(path)
+    ranking.records = aplicar_retencion(ranking.records, prefs.modo)
+    guardar_ranking(path, ranking)
+    _estados[_cache_key(path)] = ranking
 
 
 def finalizar_ranking_al_salir() -> None:
     """Aplica la política de retención al cerrar el juego."""
     prefs = cargar_preferencias()
+    path = _path_ranking()
     if prefs.modo == ModoRetencionRanking.SESION:
-        for path in _paths_ranking():
-            vaciar_ranking(path)
+        vaciar_ranking(path)
         return
-    for path in _paths_ranking():
-        _persistir_estado(path)
+    _persistir_estado(path)
     invalidar_cache_ranking()
 
 
 def aplicar_cambio_modo_retencion(modo: ModoRetencionRanking) -> None:
-    """Cambia el modo de conservación del ranking infinita."""
+    """Cambia el modo de conservación del ranking."""
     global _modo_sesion_activo
-    path_inf = path_ranking_para_variante("infinita")
+    path = _path_ranking()
     prev_sesion = _modo_sesion_activo
-    prev_estado = _estados.get(_cache_key(path_inf))
+    prev_estado = _estados.get(_cache_key(path))
     guardar_preferencias(PreferenciasRanking(modo=modo))
     _modo_sesion_activo = modo == ModoRetencionRanking.SESION
     invalidar_cache_ranking()
     if _modo_sesion_activo:
         return
-    ranking = _cargar_desde_disco(path_inf)
+    ranking = _cargar_desde_disco(path)
     if prev_sesion and prev_estado and prev_estado.records:
         ranking.records = _ordenar(ranking.records + list(prev_estado.records))[:_MAX_RECORDS]
     ranking.records = aplicar_retencion(ranking.records, modo)
-    guardar_ranking(path_inf, ranking)
-    _estados[_cache_key(path_inf)] = ranking
+    guardar_ranking(path, ranking)
+    _estados[_cache_key(path)] = ranking
 
 
 def cargar_ranking(path: Path) -> RankingResistencia:
@@ -386,9 +320,6 @@ def cargar_ranking(path: Path) -> RankingResistencia:
 
 
 def guardar_ranking(path: Path, ranking: RankingResistencia) -> None:
-    if es_path_reto_dia(path):
-        guardar_ranking_reto_dia(path, ranking)
-        return
     path.parent.mkdir(parents=True, exist_ok=True)
     ordenados = _ordenar(ranking.records)[:_MAX_RECORDS]
     payload = {
@@ -399,17 +330,14 @@ def guardar_ranking(path: Path, ranking: RankingResistencia) -> None:
 
 
 def vaciar_ranking(path: Path) -> None:
-    vacio = RankingResistencia(version=2 if es_path_reto_dia(path) else 1)
-    if es_path_reto_dia(path):
-        guardar_ranking_reto_dia(path, vacio)
-    else:
-        guardar_ranking(path, vacio)
+    vacio = RankingResistencia()
+    guardar_ranking(path, vacio)
     _estados[_cache_key(path)] = vacio
 
 
 def vaciar_ranking_variante(variante: str) -> None:
     """Vacía el contenido del JSON de ranking (no elimina el fichero)."""
-    if variante not in VARIANTES_RANKING:
+    if variante != "resistencia":
         raise ValueError(f"Variante de ranking desconocida: {variante}")
     vaciar_ranking(path_ranking_para_variante(variante))
 
@@ -421,7 +349,7 @@ def registrar_partida(
     racha: int,
     puntos: int,
     respondidas: int,
-    preset_id: str = _ID_PRESET_INFINITA,
+    preset_id: str = _ID_PRESET_RESISTENCIA,
 ) -> tuple[RecordResistencia, int]:
     """Guarda la partida y devuelve el récord y su posición en el ranking (1-based)."""
     if respondidas <= 0:

@@ -28,12 +28,12 @@ from Tests.support import ensure_juego_path
 
 ensure_juego_path()
 
-from Comun.compatibilidad_reglas_libre import (
+from Comun.reglas_libre import (
     MIN_PREGUNTAS_CALIFICACION,
+    alcance_para_contexto,
     opciones_reglas_libre,
     sanitizar_reglas_libre,
 )
-from Comun.configuracion_reglas_libre import alcance_para_contexto
 from Comun.politica_reglas import ContextoPartida, validar_reglas
 from Comun.reglas_partida import ReglasPartida, SistemaPuntuacion
 
@@ -115,7 +115,7 @@ from Tests.support import ensure_juego_path
 
 ensure_juego_path()
 
-from Comun.compatibilidad_reglas_libre import sanitizar_reglas_libre
+from Comun.reglas_libre import sanitizar_reglas_libre
 from Comun.politica_reglas import ContextoPartida, validar_reglas
 from Comun.reglas_partida import ReglasPartida, SistemaPuntuacion
 

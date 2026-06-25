@@ -119,7 +119,6 @@ def contar_bancos(
     )
     return {
         BancoPreguntas.DATASET: n_ds,
-        BancoPreguntas.PLANTILLAS_EXTRA: n_extra,
         BancoPreguntas.PLANTILLAS_TODO: n_ds + n_extra,
     }
 

@@ -154,8 +154,7 @@ class OverlayOpcionesGrafico:
         _, icono_borrar = BTN_BORRAR_RANKING
         etiq_txt = etiqueta(*BTN_BORRAR_TXT_INFORMES)
         etiq_prefs = etiqueta(*BTN_VACIAR_PREFERENCIAS)
-        etiq_infinita = etiqueta("Vaciar ranking infinita", icono_borrar)
-        etiq_reto = etiqueta("Vaciar ranking reto del día", icono_borrar)
+        etiq_resistencia = etiqueta("Vaciar ranking resistencia", icono_borrar)
         self.boton_borrar_txt = Boton(
             etiq_txt,
             rect_boton_etiqueta(
@@ -180,29 +179,17 @@ class OverlayOpcionesGrafico:
             lambda: self._solicitar_borrado("preferencias"),
             tooltip="Restablece preferencias a valores por defecto (el .json se conserva).",
         )
-        self.boton_borrar_infinita = Boton(
-            etiq_infinita,
+        self.boton_borrar_resistencia = Boton(
+            etiq_resistencia,
             rect_boton_etiqueta(
-                etiq_infinita,
+                etiq_resistencia,
                 fuente_peq,
                 x_centro=0,
                 y=0,
                 alto_min=36,
             ),
-            lambda: self._solicitar_borrado("infinita"),
-            tooltip="Vacía el historial local del modo resistencia infinita (el fichero JSON se conserva).",
-        )
-        self.boton_borrar_reto = Boton(
-            etiq_reto,
-            rect_boton_etiqueta(
-                etiq_reto,
-                fuente_peq,
-                x_centro=0,
-                y=0,
-                alto_min=36,
-            ),
-            lambda: self._solicitar_borrado("reto_dia"),
-            tooltip="Vacía el historial local del reto del día (el fichero JSON se conserva).",
+            lambda: self._solicitar_borrado("resistencia"),
+            tooltip="Vacía el historial local del modo resistencia (el fichero JSON se conserva).",
         )
 
     def _reposicionar_campo_y_restablecer(self) -> None:
@@ -233,7 +220,7 @@ class OverlayOpcionesGrafico:
         return self.panel.y + self._Y_BORRADO_LBL + self._GAP_HINT_BORRADO + hint.get_height()
 
     def _alto_bloque_borrado(self) -> int:
-        fila = [self.boton_borrar_infinita, self.boton_borrar_reto]
+        fila = [self.boton_borrar_resistencia]
         gap_h = self._GAP_BORRADO_COLUMNAS
         ancho_max = self.panel.width - 48
         total_w = sum(boton.rect.width for boton in fila) + gap_h * (len(fila) - 1)
@@ -255,7 +242,7 @@ class OverlayOpcionesGrafico:
 
         self.boton_borrar_txt.rect.midtop = (ANCHO // 2, y_bloque)
 
-        fila = [self.boton_borrar_infinita, self.boton_borrar_reto]
+        fila = [self.boton_borrar_resistencia]
         gap_h = self._GAP_BORRADO_COLUMNAS
         y_ranking = y_bloque + self.boton_borrar_txt.rect.height + self._GAP_BORRADO_FILAS
         ancho_max = self.panel.width - 48
@@ -343,8 +330,7 @@ class OverlayOpcionesGrafico:
             self.boton_listo,
             self.boton_borrar_txt,
             self.boton_vaciar_preferencias,
-            self.boton_borrar_infinita,
-            self.boton_borrar_reto,
+            self.boton_borrar_resistencia,
         ]
         for par in self._botones_ciclo.values():
             out.extend(par)
@@ -424,8 +410,7 @@ class OverlayOpcionesGrafico:
         )
 
         self.boton_borrar_txt.dibujar(superficie, fuente_peq)
-        self.boton_borrar_infinita.dibujar(superficie, fuente_peq)
-        self.boton_borrar_reto.dibujar(superficie, fuente_peq)
+        self.boton_borrar_resistencia.dibujar(superficie, fuente_peq)
 
         self.boton_listo.dibujar(superficie, self.fuentes["menu"])
         dibujar_tooltips_botones(superficie, fuente_peq, self._botones())

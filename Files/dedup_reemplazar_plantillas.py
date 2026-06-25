@@ -18,14 +18,24 @@ if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
 import argparse
+import csv
 import json
 
 from catalogo_internet_plantillas import fusionar_con_repuesto  # noqa: E402
-from equilibrar_pool_extra_juego import PATH_PLANTILLAS, claves_dataset_csv  # noqa: E402
+from equilibrar_pool_extra_juego import (  # noqa: E402
+    PATH_PLANTILLAS,
+    claves_dataset_csv,
+    enunciados_dataset_por_materia,
+    repite_enunciado_dataset,
+)
 from utils_plantillas_core import clave_contenido  # noqa: E402
 from utils_dataset_csv import borrar_pycache_en_proyecto  # noqa: E402
-from utils_deduplicacion import deduplicar_plantillas_dict  # noqa: E402
+from utils_deduplicacion import (  # noqa: E402
+    deduplicar_plantillas_dict,
+    quitar_plantillas_presentes_en_dataset,
+)
 from utils_orden_temas import cargar_orden_temas  # noqa: E402
+from rutas_data import PATH_PREGUNTAS  # noqa: E402
 
 _USO_PURGA = frozenset(
     {"ampliado_perm", "ampliado_num", "ampliado_var", "pool_extra"}
@@ -49,6 +59,9 @@ def purgar_sinteticas(plantillas: dict) -> tuple[dict, int]:
 def inyectar_catalogo(
     plantillas: dict, claves_ds: set[tuple], temas: list[str]
 ) -> tuple[dict, int]:
+    from utils_deduplicacion import clave_enunciado
+
+    enunciados_ds = enunciados_dataset_por_materia()
     anadidas = 0
     for tema in temas:
         items = plantillas.setdefault(tema, [])
@@ -67,6 +80,8 @@ def inyectar_catalogo(
                 tpl = dict(entrada)
             else:
                 tpl = {**entrada, "uso": "repuesto"}
+            if repite_enunciado_dataset(tema, tpl, enunciados_ds):
+                continue
             k = clave_contenido(
                 tema,
                 tpl["pregunta"],
@@ -108,6 +123,15 @@ def main() -> int:
     plantillas, n_inj = inyectar_catalogo(plantillas, claves_ds, temas)
     print(f"Inyectadas desde catálogo (nuevas claves): {n_inj}")
 
+    with PATH_PREGUNTAS.open(encoding="utf-8", newline="") as f:
+        filas_ds = list(csv.DictReader(f, delimiter=";"))
+    plantillas, n_cruce = quitar_plantillas_presentes_en_dataset(plantillas, filas_ds)
+    print(f"Quitadas por duplicar el dataset (enunciado o bloque): {n_cruce}")
+
+    plantillas, exact_r2, similar_r2 = deduplicar_plantillas_dict(plantillas)
+    if exact_r2 or similar_r2:
+        print(f"Dedup tras cruce: exactas={exact_r2} similares={similar_r2}")
+
     total1 = sum(len(v) for v in plantillas.values())
     print(f"Total entradas: {total0} -> {total1}")
 
@@ -118,7 +142,7 @@ def main() -> int:
     with PATH_PLANTILLAS.open("w", encoding="utf-8") as f:
         json.dump(plantillas, f, ensure_ascii=False, indent=2)
         f.write("\n")
-    print(f"Guardado: {PATH_PLANTILLAS}")
+    print("Guardado: Data/Banco/plantillas.json")
     return 0
 
 

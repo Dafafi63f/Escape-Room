@@ -13,6 +13,8 @@ from Comun.reglas_partida import SistemaPuntuacion, nota_sobre_diez, porcentaje_
 __all__ = [
     "EMOJI_TIEMPO_PREG",
     "EMOJI_TIEMPO_TOTAL",
+    "EMOJI_PROGRESO_PREGUNTA_ESCAPE",
+    "EMOJI_SALA_ESCAPE",
     "SegmentoEstado",
     "ascii_icono_segmento",
     "stdout_soporta_emoji",
@@ -26,11 +28,15 @@ _SEPARADOR_TEXTO = " · "
 # Iconos de la barra: tiempo activo de partida vs temporizador por pregunta.
 EMOJI_TIEMPO_TOTAL = "⏰"
 EMOJI_TIEMPO_PREG = "⏱️"
+EMOJI_PROGRESO_PREGUNTA_ESCAPE = "📝"
+EMOJI_SALA_ESCAPE = "🗺️"
 _ASCII_TIEMPO_TOTAL = "T·"
 _ASCII_TIEMPO_PREG = "P·"
 
 _EMOJI_ALTERNATIVOS: dict[str, tuple[str, ...]] = {
     "progreso": ("📝", "📋"),
+    "pregunta_puerta": ("📝", "📋"),
+    "sala_escape": ("🗺️", "🏠", "📍"),
     "racha": ("🔥", "💥"),
     "vidas": ("❤️", "❤", "🧡"),
     "tiempo_total": ("⏰", "⏳", "⌚", "🕐", "🕑"),
@@ -42,6 +48,8 @@ _EMOJI_ALTERNATIVOS: dict[str, tuple[str, ...]] = {
 
 _ASCII_POR_ID: dict[str, str] = {
     "progreso": "?",
+    "pregunta_puerta": "?",
+    "sala_escape": "S·",
     "racha": "R·",
     "vidas": "+",
     "tiempo_total": _ASCII_TIEMPO_TOTAL,
@@ -105,22 +113,39 @@ def segmentos_linea_estado(
     vidas_max: int | None = None,
     numero_pregunta: int | None = None,
     racha: int | None = None,
+    progreso_puerta: str | None = None,
+    progreso_sala: str | None = None,
+    mostrar_tiempo_activo: bool = True,
 ) -> list[SegmentoEstado]:
     """Construye los chips de la barra; cada bloque depende solo de sus reglas.
 
-    Orden fijo: pregunta → racha → vidas → tiempo activo (⏰) → temporizador (⏱️) → puntuación.
+    Orden fijo: sala (escape) → pregunta en puerta → progreso genérico → racha → vidas → tiempo → puntuación.
     En resistencia, pregunta y racha van en chips separados.
     """
     if numero_pregunta is not None and racha is not None:
         segmentos = _segmentos_progreso_resistencia(numero_pregunta, racha)
     else:
-        prog = _progreso_visible(progreso)
-        emoji_prog = (
-            "🔥"
-            if prog.lower().startswith("racha") or "racha" in prog.lower()
-            else "📝"
-        )
-        segmentos = [SegmentoEstado("progreso", emoji_prog, prog)]
+        segmentos: list[SegmentoEstado] = []
+        if progreso_sala:
+            segmentos.append(
+                SegmentoEstado("sala_escape", EMOJI_SALA_ESCAPE, progreso_sala)
+            )
+        if progreso_puerta:
+            segmentos.append(
+                SegmentoEstado(
+                    "pregunta_puerta",
+                    EMOJI_PROGRESO_PREGUNTA_ESCAPE,
+                    progreso_puerta,
+                )
+            )
+        if progreso:
+            prog = _progreso_visible(progreso)
+            emoji_prog = (
+                "🔥"
+                if prog.lower().startswith("racha") or "racha" in prog.lower()
+                else "📝"
+            )
+            segmentos.append(SegmentoEstado("progreso", emoji_prog, prog))
 
     if estado.reglas.tiene_vidas():
         n = estado.vidas_restantes or 0
@@ -128,7 +153,8 @@ def segmentos_linea_estado(
         texto_vidas = f"{n}/{tope}" if tope else str(n)
         segmentos.append(SegmentoEstado("vidas", "❤️", texto_vidas))
 
-    segmentos.append(_segmento_tiempo_activo(estado))
+    if mostrar_tiempo_activo:
+        segmentos.append(_segmento_tiempo_activo(estado))
 
     if segundos_pregunta_restantes is not None:
         segmentos.append(_segmento_temporizador_pregunta(segundos_pregunta_restantes))
@@ -195,6 +221,9 @@ def linea_estado_con_iconos(
     vidas_max: int | None = None,
     numero_pregunta: int | None = None,
     racha: int | None = None,
+    progreso_puerta: str | None = None,
+    progreso_sala: str | None = None,
+    mostrar_tiempo_activo: bool = True,
 ) -> str:
     """Atajo: segmentos + formato textual."""
     return formatear_linea_estado(
@@ -205,6 +234,9 @@ def linea_estado_con_iconos(
             vidas_max=vidas_max,
             numero_pregunta=numero_pregunta,
             racha=racha,
+            progreso_puerta=progreso_puerta,
+            progreso_sala=progreso_sala,
+            mostrar_tiempo_activo=mostrar_tiempo_activo,
         ),
         usar_emojis=usar_emojis,
     )

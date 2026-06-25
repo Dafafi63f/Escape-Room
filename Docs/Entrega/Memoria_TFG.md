@@ -168,7 +168,7 @@ La arquitectura del software se organiza en capas desacopladas (figura 1): el la
 |------|-------------------|
 | **Libre** | Autoevaluación abierta con filtros por curso, semestre, temática, grupo, nivel, materia y dificultad |
 | **Historia** | Simulación de examen balanceado según histórico de qualificacions del grado |
-| **Resistencia** | Partida infinita con eventos, objetos y ranking local de preguntas alcanzadas |
+| **Resistencia** | Partida continua con eventos, objetos y ranking local de preguntas alcanzadas |
 | **Feedback** | Canal de mejora continua (bugs, sugerencias) hacia el creador |
 
 **Evaluación del jugador (motor de partida):** el sistema corrige cada respuesta comparando la letra elegida (A–D) con el campo `Correcta` del ítem (`motor_nucleo.py`). Según el preset de reglas:

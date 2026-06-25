@@ -25,7 +25,7 @@ from Comun.motor_nucleo import (
     evaluar_respuesta,
     linea_estado,
 )
-from Comun.cierre_informe import CierreInformePartida
+from Comun.informe_examen import CierreInformePartida
 from Comun.jugador import es_nombre_anonimo
 from Comun.navegacion_fin_partida import NavegacionFinPartida
 from Comun.pool_libre import crear_estado_seleccion, elegir_indice_siguiente
@@ -205,7 +205,7 @@ class MenuPrincipal(Pantalla):
             self.ir_a(ConfigModoHistoria(self.datos, self.ir_a, self.salir_app))
             return
         if opcion_id == "especiales":
-            from Grafico.pantallas_especiales import ConfigModosEspeciales
+            from Grafico.pantallas_modos import ConfigModosEspeciales
 
             self.ir_a(ConfigModosEspeciales(self.datos, self.ir_a, self.salir_app))
             return
@@ -833,6 +833,3 @@ class ResumenPartida(Pantalla):
 
     def titulo_pausa(self) -> str:
         return "Fin de partida"
-
-
-from Grafico.pantalla_feedback import PantallaFeedback  # noqa: E402

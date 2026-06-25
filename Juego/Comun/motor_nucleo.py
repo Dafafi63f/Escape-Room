@@ -77,6 +77,9 @@ def linea_estado(
     *,
     segundos_pregunta_restantes: int | None = None,
     vidas_max: int | None = None,
+    progreso_puerta: str | None = None,
+    progreso_sala: str | None = None,
+    mostrar_tiempo_activo: bool = True,
 ) -> str:
     from Comun.linea_estado_ui import linea_estado_con_iconos
 
@@ -85,6 +88,9 @@ def linea_estado(
         progreso,
         segundos_pregunta_restantes=segundos_pregunta_restantes,
         vidas_max=vidas_max,
+        progreso_puerta=progreso_puerta,
+        progreso_sala=progreso_sala,
+        mostrar_tiempo_activo=mostrar_tiempo_activo,
     )
 
 

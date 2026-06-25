@@ -105,7 +105,21 @@ def preset_historia_reto() -> ReglasPartida:
     )
 
 
-def preset_historia_resistencia() -> ReglasPartida:
+def preset_escape() -> ReglasPartida:
+    """Salas encadenadas: sin cronómetro global de partida (solo tiempo por pregunta en cada puerta)."""
+    return ReglasPartida(
+        vidas=3,
+        sistema_puntuacion=SistemaPuntuacion.ARCADE,
+        mostrar_solucion_tras_fallo=True,
+        tiempo_por_pregunta_seg=None,
+        tiempo_total_seg=None,
+    )
+
+
+preset_historia_escape = preset_escape
+
+
+def preset_resistencia() -> ReglasPartida:
     """Varias vidas; la dificultad escala con el nº de pregunta; la racha solo bonifica puntos."""
     return ReglasPartida(
         vidas=3,
@@ -146,3 +160,28 @@ def formatear_resultado_puntuacion(
     if reglas.sistema_puntuacion == SistemaPuntuacion.PORCENTAJE:
         return f"Aciertos: {porcentaje_aciertos(aciertos, total)}%"
     return f"Aciertos: {aciertos}/{total}"
+
+
+# --- Límites globales de partida y examen ---
+
+MIN_PREGUNTAS_PARTIDA = 5
+
+# Repaso y simulacro (perfil balanceado): preguntas por materia en el generador.
+PREGUNTAS_POR_MATERIA_HISTORIA = 4
+
+
+def min_materias_para_minimo_preguntas(
+    preguntas_por_materia: int = PREGUNTAS_POR_MATERIA_HISTORIA,
+) -> int:
+    """Materias mínimas para alcanzar ``MIN_PREGUNTAS_PARTIDA`` preguntas."""
+    if preguntas_por_materia <= 0:
+        return MIN_PREGUNTAS_PARTIDA
+    return (MIN_PREGUNTAS_PARTIDA + preguntas_por_materia - 1) // preguntas_por_materia
+
+
+def validar_total_preguntas(n: int, *, contexto: str = "") -> None:
+    if n < MIN_PREGUNTAS_PARTIDA:
+        msg = f"El examen debe tener al menos {MIN_PREGUNTAS_PARTIDA} preguntas."
+        if contexto:
+            msg = f"{msg} {contexto}"
+        raise ValueError(msg)

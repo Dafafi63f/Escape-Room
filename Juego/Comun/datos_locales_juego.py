@@ -27,12 +27,8 @@ from Comun.preferencias_grafico import (
     guardar_preferencias_grafico,
     resolver_path_preferencias_grafico,
 )
-from Comun.ranking_resistencia import VARIANTES_RANKING, vaciar_ranking_variante
-from Comun.rutas import (
-    resolver_dir_informes,
-    resolver_ranking_reto_dia,
-    resolver_ranking_resistencia_infinita,
-)
+from Comun.ranking_resistencia import vaciar_ranking_variante
+from Comun.rutas import resolver_dir_informes, resolver_ranking_resistencia
 
 __all__ = [
     "ResumenBorradoTxt",
@@ -53,8 +49,7 @@ class ResumenBorradoTxt:
 
 def inicializar_datos_locales_juego() -> None:
     """Crea los JSON de runtime en ``Data/Juego/`` si aún no existen."""
-    resolver_ranking_resistencia_infinita()
-    resolver_ranking_reto_dia()
+    resolver_ranking_resistencia()
     if not resolver_path_preferencias_grafico().is_file():
         guardar_preferencias_grafico(PreferenciasGrafico())
 
@@ -88,9 +83,8 @@ def vaciar_preferencias_locales() -> None:
 
 
 def vaciar_rankings_locales() -> None:
-    """Vacía el historial de todos los rankings locales (conserva los ficheros JSON)."""
-    for variante in VARIANTES_RANKING:
-        vaciar_ranking_variante(variante)
+    """Vacía el historial del ranking local (conserva el fichero JSON)."""
+    vaciar_ranking_variante("resistencia")
 
 
 def vaciar_contenido_json_locales() -> None:

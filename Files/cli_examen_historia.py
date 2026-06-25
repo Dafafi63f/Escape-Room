@@ -28,7 +28,7 @@ if str(_JUEGO) not in sys.path:
     sys.path.insert(0, str(_JUEGO))
 
 from Comun.datos import cargar_materias, cargar_orden_materias, cargar_preguntas  # noqa: E402
-from Comun.perfiles_historia import PerfilPedagogico, describir_perfil  # noqa: E402
+from Comun.generador_examen_historia import PerfilPedagogico, describir_perfil  # noqa: E402
 from Comun.config_historia import validar_config  # noqa: E402
 from Comun.presets_historia import argumentos_generador, cargar_presets_historia, config_defecto  # noqa: E402
 from Comun.generador_examen_historia import (  # noqa: E402
@@ -37,7 +37,7 @@ from Comun.generador_examen_historia import (  # noqa: E402
     resumen_estadisticas,
 )
 from Comun.modelos import BancoPreguntas  # noqa: E402
-from Comun.rutas import resolver_dataset, resolver_listado_materias, resolver_presets_historia  # noqa: E402
+from Comun.rutas import resolver_dataset, resolver_listado_materias, resolver_presets  # noqa: E402
 
 
 def _texto_stdout_seguro(texto: str) -> str:
@@ -64,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
         "--preset",
         type=str,
         default=None,
-        help="Id de preset en Data/presets_historia.json (sustituye --perfil y filtros manuales)",
+        help="Id de preset en Data/Juego/presets.json (sustituye --perfil y filtros manuales)",
     )
     p.add_argument(
         "--materias",
@@ -90,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     stats = cargar_estadisticas_historicas(materias_validas=set(materias_meta))
 
     if args.preset:
-        presets = cargar_presets_historia(resolver_presets_historia())
+        presets = cargar_presets_historia(resolver_presets())
         preset = next((x for x in presets if x.id == args.preset), None)
         if preset is None:
             print(f"Preset desconocido: {args.preset!r}", file=sys.stderr)

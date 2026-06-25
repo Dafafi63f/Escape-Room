@@ -144,7 +144,7 @@ class BancoResistencia:
         return list(self.revisadas) + list(self.plantillas) + list(self.exclusivas)
 
     def indice_habilitado(self, idx: int, numero_pregunta: int) -> bool:
-        from Comun.probabilidad_resistencia import cuotas_banco_resistencia
+        from Comun.resistencia_motor import cuotas_banco_resistencia
 
         n_rev = self.n_revisadas
         n_pl = len(self.plantillas)

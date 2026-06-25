@@ -26,19 +26,17 @@ Data/
 
 | Fichero | Uso |
 |---------|-----|
-| `presets_historia.json` | Catálogo modo historia (5 modos en carrusel, v27) |
-| `presets_especiales.json` | Catálogo modos especiales |
+| `presets.json` | Catálogo unificado de modos (historia, escape room, resistencia; v28) |
 | `preguntas_resistencia.json` | Pool modo resistencia |
 | `preferencias_grafico.json` | Nombre, emojis, tooltips (menú opciones) |
-| `ranking_resistencia_infinita.json` | Ranking resistencia infinita |
-| `ranking_reto_dia.json` | Ranking reto diario |
+| `ranking_resistencia.json` | Ranking resistencia |
 | `*.txt` | Informes de partida y copias de feedback |
 
 El juego resuelve rutas con [`Juego/Comun/rutas.py`](../Juego/Comun/rutas.py): banco en `Data/Banco/`, estado local en `Data/Juego/` (con compatibilidad hacia rutas legadas).
 
-### Catálogo `presets_historia.json` (v27)
+### Catálogo `presets.json` (v28)
 
-Modos activos en el carrusel de historia:
+Modos activos en el carrusel de historia (`contexto_reglas`: `historia_*`):
 
 | ID | Rol |
 |----|-----|
@@ -47,6 +45,13 @@ Modos activos en el carrusel de historia:
 | `simulacro` | Ronda de exámenes (semestre o curso completo; tipo de preguntas teórico/cálculo) |
 | `examen_asignatura` | Simulacro de una materia (N preguntas por plantilla; tipo de preguntas teórico/cálculo) |
 | `examen_fijo` | Plantilla 4×6 (24 preguntas): diario, aleatorio o semilla numérica (sin histórico) |
+
+**Modos especiales** (mismo fichero; `contexto_reglas`: `escape` / `resistencia`):
+
+| ID | Rol |
+|----|-----|
+| `escape_room` | Escape room progresivo (30 salas, 3 puertas) |
+| `ranking_resistencia` | Resistencia con ranking local |
 
 **Presets retirados** (ya no están en el JSON; la lógica se unificó):
 
@@ -57,7 +62,7 @@ Modos activos en el carrusel de historia:
 | `repaso_historico`, `repaso_integral`, `vuelta_grado`, `repaso_express` | Unificados en `repaso` |
 | `semana_examenes`, `simulacro_curso` | Unificados en `simulacro` |
 
-Semilla diaria compartida (`DDMMYYYY`, p. ej. `22062026`; en UI siempre 8 dígitos): [`modos_diarios.py`](../Juego/Comun/modos_diarios.py). Examen fijo: [`examen_fijo_historia.py`](../Juego/Comun/examen_fijo_historia.py).
+Semilla diaria compartida (`DDMMYYYY`, p. ej. `22062026`; en UI siempre 8 dígitos) y examen fijo: [`modos_diarios.py`](../Juego/Comun/modos_diarios.py).
 
 ## Esquema de `Preguntas.csv`
 

@@ -491,6 +491,7 @@ def deduplicar_plantillas_dict(
     from collections import defaultdict
 
     seen_exact: set[tuple] = set()
+    seen_enunciado: set[str] = set()
     kept_by_bucket: dict[str, list[dict]] = defaultdict(list)
     cleaned: dict = {tema: [] for tema in plantillas}
 
@@ -502,11 +503,17 @@ def deduplicar_plantillas_dict(
 
         comp = {"Pregunta": t.get("pregunta", ""), **t}
         if not solo_exactas:
+            eq = clave_enunciado(comp)
+            if eq and eq in seen_enunciado:
+                similar_removed += 1
+                continue
             bucket = _bucket_key_plantilla(comp)
             if es_duplicado_de_alguna(comp, kept_by_bucket[bucket]):
                 similar_removed += 1
                 continue
             kept_by_bucket[bucket].append(comp)
+            if eq:
+                seen_enunciado.add(eq)
 
         seen_exact.add(k)
         cleaned[tema].append(t)
@@ -520,9 +527,16 @@ def quitar_plantillas_presentes_en_dataset(
     """Elimina plantillas del pool que dupliquen el CSV (conserva copias ``dataset_*``)."""
     from collections import defaultdict
 
+    from utils_dataset_csv import materia_de_fila
+
     ds_por_bucket: dict[str, list[dict]] = defaultdict(list)
+    enunciado_por_materia: dict[str, set[str]] = defaultdict(set)
     for r in filas_dataset:
         ds_por_bucket[_bucket_key_plantilla(r)].append(r)
+        materia = materia_de_fila(r)
+        eq = clave_enunciado(r)
+        if materia and eq:
+            enunciado_por_materia[materia].add(eq)
 
     removed = 0
     cleaned: dict = {}
@@ -533,6 +547,10 @@ def quitar_plantillas_presentes_en_dataset(
                 kept.append(t)
                 continue
             comp = {"Pregunta": t.get("pregunta", ""), **t}
+            eq = clave_enunciado(comp)
+            if eq and eq in enunciado_por_materia.get(tema, set()):
+                removed += 1
+                continue
             candidatos = ds_por_bucket.get(_bucket_key_plantilla(comp), [])
             if candidatos and es_duplicado_de_alguna(comp, candidatos):
                 removed += 1

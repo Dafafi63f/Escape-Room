@@ -19,9 +19,36 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from Comun.limites_partida import validar_total_preguntas
-from Comun.perfiles_historia import PerfilPedagogico, describir_perfil
+from Comun.reglas_partida import validar_total_preguntas
 from Comun.rutas import resolver_historico_qualificacions
+
+# --- Perfiles pedagógicos ---
+
+from enum import Enum
+
+
+class PerfilPedagogico(str, Enum):
+    """Perfiles v1 (datos agregados del histórico)."""
+
+    BALANCEADO = "balanceado"
+    REFUERZO = "refuerzo"
+    DESAFIO = "desafio"
+    POR_CURSO = "por_curso"
+    SIMULACRO = "simulacro"
+
+
+def describir_perfil(perfil: PerfilPedagogico) -> str:
+    textos = {
+        PerfilPedagogico.BALANCEADO: "Preferencia histórica suave al repartir preguntas entre materias.",
+        PerfilPedagogico.REFUERZO: "Más preguntas en materias con más suspensos del ámbito.",
+        PerfilPedagogico.DESAFIO: "Más preguntas en materias con mejores medias del ámbito.",
+        PerfilPedagogico.POR_CURSO: "Cobertura del ámbito curricular; más preguntas en las más exigentes.",
+        PerfilPedagogico.SIMULACRO: "Una pregunta por materia del ámbito (repaso global).",
+    }
+    return textos.get(perfil, perfil.value)
+
+
+# --- Generador ---
 
 _ORDEN_DIFICULTAD = {"Facil": 0, "Media": 1, "Dificil": 2}
 _ORDEN_TIPO = {"Teoria": 0, "Calculo": 1}

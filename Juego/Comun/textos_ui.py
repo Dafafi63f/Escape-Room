@@ -360,7 +360,7 @@ class OpcionMenuPrincipal:
 
 OPCIONES_MENU_PRINCIPAL: tuple[OpcionMenuPrincipal, ...] = (
     OpcionMenuPrincipal("libre", "Modo libre", _p("🎮")),
-    OpcionMenuPrincipal("diarios", "Retos del día", _p("📅")),
+    OpcionMenuPrincipal("diarios", "Modos diarios", _p("📅")),
     OpcionMenuPrincipal("historia", "Modo historia", _p("📖", "📕")),
     OpcionMenuPrincipal("especiales", "Modos especiales", _p("⚡")),
     OpcionMenuPrincipal("feedback", "Modo feedback", _p("📣")),

@@ -28,8 +28,7 @@ TOOLTIP_N_PREGUNTAS_INFINITO = (
 
 TOOLTIP_PAUSA = "Menú de pausa: continuar, ir al título o salir del juego."
 TOOLTIP_DIARIOS = (
-    "Examen del día (semilla diaria), examen aleatorio (semilla nueva cada vez) "
-    "y reto del día (resistencia)."
+    "Examen del día (semilla diaria) y examen aleatorio (semilla nueva cada vez)."
 )
 TOOLTIP_OPCIONES = (
     "Opciones globales: nombre por defecto, ayudas al ratón, emojis y borrado de datos locales."
@@ -59,19 +58,29 @@ TOOLTIP_MENU_PRINCIPAL: dict[str, str] = {
         "Partida personalizada: eliges banco, vidas, tiempo, filtros y número de preguntas."
     ),
     "diarios": (
-        "Examen del día (misma semilla hoy), examen aleatorio (cambia cada vez) "
-        "y reto del día (resistencia)."
+        "Examen del día (misma semilla hoy) y examen aleatorio (cambia cada vez)."
     ),
     "historia": (
         "Presets guiados: simulacros de examen, repasos y retos con datos históricos."
     ),
     "especiales": (
-        "Modos aparte del catálogo de historia: resistencia infinita y futuros retos especiales."
+        "Modos aparte del catálogo de historia: escape room y resistencia."
     ),
     "feedback": (
         "Envía avisos al creador (bugs, sugerencias) o consulta los contactos alternativos."
     ),
     "salir": "Cierra el juego.",
+}
+
+TOOLTIP_MODOS_ESPECIALES: dict[str, str] = {
+    "escape_room": (
+        "30 salas, 3 puertas. Elige desafío; fallar cuesta 1 vida pero avanzas. "
+        "Tres vidas por partida."
+    ),
+    "ranking_resistencia": (
+        "Banco completo, 3 vidas. Escalada, rachas, eventos y ranking local. "
+        "Sin tope de preguntas."
+    ),
 }
 
 TOOLTIP_DIFICULTAD_PROGRESIVA = (
@@ -111,7 +120,7 @@ TOOLTIP_GUARDAR_INFORME = (
 from Comun.textos_ui import emoji_icono
 
 TOOLTIP_RANKING = (
-    "Ranking local de resistencia infinita y reto del día (dos tablas). "
+    "Ranking local de resistencia. "
     f"Borrado local desde Opciones ({emoji_icono('opciones', contexto='grafico')})."
 )
 TOOLTIP_VER_RANKING = TOOLTIP_RANKING
@@ -155,6 +164,10 @@ _TOOLTIP_OPCION_HISTORIA_ID: dict[str, str] = {
 
 def tooltip_menu_principal(opcion_id: str) -> str | None:
     return TOOLTIP_MENU_PRINCIPAL.get(opcion_id)
+
+
+def tooltip_modo_especial(preset_id: str) -> str | None:
+    return TOOLTIP_MODOS_ESPECIALES.get(preset_id)
 
 
 def tooltip_filtro_principal(codigo: str) -> str | None:

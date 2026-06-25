@@ -21,7 +21,7 @@ from Comun.config_creador import (  # noqa: E402
     plantilla_creador_privado,
     texto_plantilla_creador_privado,
 )
-from Comun.cierre_informe import meta_cierre_historia, meta_cierre_libre  # noqa: E402
+from Comun.informe_examen import meta_cierre_historia, meta_cierre_libre  # noqa: E402
 from Comun.informe_examen import RegistroRespuesta, generar_id_sesion  # noqa: E402
 
 
@@ -117,7 +117,7 @@ class TestImportsModulosMigrados(unittest.TestCase):
 
     def test_generador_examen_desde_comun(self) -> None:
         from Comun.generador_examen_historia import PREGUNTAS_POR_MATERIA_DEFECTO
-        from Comun.limites_partida import MIN_PREGUNTAS_PARTIDA
+        from Comun.reglas_partida import MIN_PREGUNTAS_PARTIDA
 
         self.assertEqual(PREGUNTAS_POR_MATERIA_DEFECTO, 4)
         self.assertGreaterEqual(MIN_PREGUNTAS_PARTIDA, 5)

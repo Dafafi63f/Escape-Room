@@ -17,15 +17,17 @@ from Comun.motor_nucleo import (
     evaluar_respuesta,
     linea_estado,
 )
-from Comun.motor_resistencia_comun import (
+from Comun.resistencia_motor import (
     aplicar_bonificaciones_puntos_resistencia,
     aplicar_modificadores_visuales_escalada,
-    avisos_pre_pregunta_resistencia,
     configurar_partida_resistencia,
     consumir_bloque_filtro,
     crear_estado_resistencia,
-    elegir_indice_similar,
+    descripcion_powerup,
+    emoji_powerup,
+    etiqueta_powerup,
     formatear_aviso_apuesta,
+    prefijar_emoji,
     preparar_eventos_nuevo_turno,
     procesar_turno_resistencia,
     texto_pregunta_para_turno,
@@ -33,8 +35,17 @@ from Comun.motor_resistencia_comun import (
     tiempo_pregunta_efectivo,
     usar_powerup,
 )
-from Comun.powerups_resistencia import descripcion_powerup, etiqueta_powerup
-from Comun.iconos_resistencia import emoji_powerup, prefijar_emoji
+from Comun.resistencia_partida import (
+    aplicar_escalada_a_reglas,
+    avisos_pre_pregunta_resistencia,
+    crear_seleccion_resistencia,
+    elegir_indice_resistencia,
+    elegir_indice_similar,
+    escalada_para_pregunta,
+    etiqueta_tier_exclusiva,
+    eventos_aleatorios_para_pregunta,
+    texto_efectos_escalada,
+)
 from Comun.config_historia import (
     GRUPOS_TEMATICOS,
     ConfigPresetHistoria,
@@ -57,7 +68,7 @@ from Comun.config_historia import (
 from Comun.presets_historia import PresetHistoria, config_defecto
 from Comun.preferencias_grafico import nombre_jugador_grafico
 from Comun.reglas_partida import ReglasPartida, formatear_resultado_puntuacion
-from Comun.cierre_informe import CierreInformePartida, meta_cierre_historia
+from Comun.informe_examen import CierreInformePartida, meta_cierre_historia
 from Comun.ranking_resistencia import (
     VARIANTES_RANKING,
     etiqueta_variante_ranking,
@@ -68,15 +79,6 @@ from Comun.ranking_resistencia import (
     top_records,
     variante_desde_preset,
 )
-from Comun.resistencia_historia import (
-    aplicar_escalada_a_reglas,
-    crear_seleccion_resistencia,
-    elegir_indice_resistencia,
-    escalada_para_pregunta,
-    etiqueta_tier_exclusiva,
-    texto_efectos_escalada,
-)
-from Comun.reto_dia_resistencia import etiqueta_fecha_reto_dia
 from Grafico.textos_grafico import (
     BTN_ABANDONAR,
     BTN_APUESTA_NO,
@@ -818,8 +820,7 @@ class ConfigOpcionesHistoria(Pantalla):
         campo.actualizar_limites(min_v, max_v)
         if not habilitado:
             return
-        from Comun.examen_fijo_historia import semilla_defecto_examen_fijo
-        from Comun.modos_diarios import formatear_semilla_diaria
+        from Comun.modos_diarios import formatear_semilla_diaria, semilla_defecto_examen_fijo
 
         raw = self.config.valores.get("semilla")
         if raw is not None and raw != "":
@@ -836,7 +837,7 @@ class ConfigOpcionesHistoria(Pantalla):
         op = self._opcion_preset("semilla")
         if op is None:
             return
-        from Comun.examen_fijo_historia import semilla_defecto_examen_fijo
+        from Comun.modos_diarios import semilla_defecto_examen_fijo
 
         min_v = int(op.min) if op.min is not None else 1
         max_v = int(op.max) if op.max is not None else 2147483646
@@ -2484,7 +2485,7 @@ class PartidaResistenciaHistoria(Pantalla):
 
 
 class RankingResistenciaHistoria(Pantalla):
-    """Tablas locales de resistencia infinita y reto del día (lado a lado)."""
+    """Tabla local del modo resistencia."""
 
     Y_INFO = Y_INICIO_TITULO + 48
     ALTURA_LINEA_INFO = 22
@@ -2560,16 +2561,10 @@ class RankingResistenciaHistoria(Pantalla):
         self._crear_botones_inferiores()
 
     def _calcular_layout_columnas(self) -> dict[str, pygame.Rect]:
-        ancho_col = (ANCHO - 2 * MARGEN - self.GAP_COLUMNAS) // 2
+        ancho_col = ANCHO - 2 * MARGEN
         alto_tabla = ALTO - self.Y_TABLAS - 88
         return {
-            "infinita": pygame.Rect(MARGEN, self.Y_TABLAS, ancho_col, alto_tabla),
-            "reto_dia": pygame.Rect(
-                MARGEN + ancho_col + self.GAP_COLUMNAS,
-                self.Y_TABLAS,
-                ancho_col,
-                alto_tabla,
-            ),
+            "resistencia": pygame.Rect(MARGEN, self.Y_TABLAS, ancho_col, alto_tabla),
         }
 
     def _crear_botones_inferiores(self) -> None:
@@ -2619,21 +2614,6 @@ class RankingResistenciaHistoria(Pantalla):
         y = rect_col.y + 10
         superficie.blit(txt_titulo, txt_titulo.get_rect(midtop=(rect_col.centerx, y)))
         y += self._GAP_TITULO_SUB_RETO
-        if variante == "reto_dia":
-            fecha = fuente_peq.render(
-                f"Hoy: {etiqueta_fecha_reto_dia()}",
-                True,
-                self._COLOR_TEXTO_SECUNDARIO,
-            )
-            superficie.blit(fecha, fecha.get_rect(midtop=(rect_col.centerx, y)))
-            y += self._GAP_LINEA_RETO
-            reinicio = fuente_peq.render(
-                "Se reinicia mañana automáticamente.",
-                True,
-                self._COLOR_TEXTO_SECUNDARIO,
-            )
-            superficie.blit(reinicio, reinicio.get_rect(midtop=(rect_col.centerx, y)))
-            y += self._GAP_LINEA_RETO
         return y + 10
 
     def _dibujar_tabla_columna(

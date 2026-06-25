@@ -43,8 +43,7 @@ GitHub Actions (`.github/workflows/tests.yml`):
 | `test_dominio_juego.py` | Dominio del juego gráfico (datos, reglas, evaluación) |
 | `test_grafico_ui.py` | Textos, tooltips, barra de estado y datos locales |
 | `test_grafico_menus.py` | Menús pygame, pausa, feedback, info y hover |
-| `test_resistencia_historia.py` | Pool, escalada y ranking resistencia |
-| `test_resistencia_motor.py` | Motor, mecánicas, exclusivas e iconos |
+| `test_resistencia.py` | Modo resistencia: partida, ranking, motor, exclusivas e iconos |
 | `helpers_navegacion_grafico.py` | Utilidades para tests gráficos (no es test) |
 | `adaptador_juego.py` | Adaptador de dominio para tests |
 | `support.py` | Bootstrap de `sys.path` |

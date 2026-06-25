@@ -165,6 +165,9 @@ def dibujar_estado_partida_en_barra(
     vidas_max: int | None = None,
     numero_pregunta: int | None = None,
     racha: int | None = None,
+    progreso_puerta: str | None = None,
+    progreso_sala: str | None = None,
+    mostrar_tiempo_activo: bool = True,
 ) -> None:
     """Atajo: segmentos + dibujo centrado en la zona disponible."""
     if y is None:
@@ -178,6 +181,9 @@ def dibujar_estado_partida_en_barra(
         vidas_max=vidas_max,
         numero_pregunta=numero_pregunta,
         racha=racha,
+        progreso_puerta=progreso_puerta,
+        progreso_sala=progreso_sala,
+        mostrar_tiempo_activo=mostrar_tiempo_activo,
     )
     fuente_emoji = fuentes.get("icono_emoji")
     if fuente_emoji is None:

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Equilibra el pool «extra» de plantillas para el juego: 24 instancias por materia
-(2× las 12 del dataset) → opción 3 = 960, opción 2 = 480 + 960.
+Equilibra el pool «extra» de plantillas para el modo beta: 24 instancias por materia
+(2× las 12 del dataset) → modo seguro = 480, modo beta = 480 + 960 = 1440.
 
   python Files/equilibrar_pool_extra_juego.py --dry-run
   python Files/equilibrar_pool_extra_juego.py --inplace
@@ -19,6 +19,7 @@ if str(_SCRIPTS) not in sys.path:
 
 import argparse
 import copy
+import csv
 import json
 import random
 import re
@@ -27,7 +28,8 @@ from collections import Counter, defaultdict
 from objetivos_balanceo import SLOTS_CANONICOS_12  # noqa: E402
 from catalogo_internet_plantillas import fusionar_con_repuesto  # noqa: E402
 from plantillas_repuesto_catalogo import REPUESTO_CATALOGO  # noqa: E402
-from utils_dataset_csv import borrar_pycache_en_proyecto  # noqa: E402
+from utils_dataset_csv import borrar_pycache_en_proyecto, materia_de_fila  # noqa: E402
+from utils_deduplicacion import clave_enunciado, quitar_plantillas_presentes_en_dataset  # noqa: E402
 from utils_orden_temas import cargar_orden_temas  # noqa: E402
 from utils_plantillas_pool import es_uso_copia_dataset  # noqa: E402
 from utils_plantillas_core import (  # noqa: E402
@@ -58,11 +60,44 @@ def claves_dataset_csv() -> set[tuple]:
     return claves_desde_csv(PATH_CSV)
 
 
+def enunciados_dataset_por_materia() -> dict[str, set[str]]:
+    por_materia: dict[str, set[str]] = defaultdict(set)
+    with PATH_CSV.open(encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f, delimiter=";"):
+            materia = materia_de_fila(row)
+            eq = clave_enunciado(row)
+            if materia and eq:
+                por_materia[materia].add(eq)
+    return dict(por_materia)
+
+
+def repite_enunciado_dataset(
+    tema: str,
+    t: dict,
+    enunciados_ds: dict[str, set[str]],
+) -> bool:
+    bloqueados = enunciados_ds.get(tema, set())
+    if not bloqueados:
+        return False
+    for inst in _expandir_plantilla(t):
+        eq = clave_enunciado({"pregunta": inst["pregunta"]})
+        if eq and eq in bloqueados:
+            return True
+    return False
+
+
 _expandir_plantilla = expandir_plantilla_base
 _tiene_placeholders = tiene_placeholders
 
 
-def extra_keys_de_plantilla(tema: str, t: dict, claves_ds: set[tuple]) -> set[tuple]:
+def extra_keys_de_plantilla(
+    tema: str,
+    t: dict,
+    claves_ds: set[tuple],
+    enunciados_ds: dict[str, set[str]] | None = None,
+) -> set[tuple]:
+    if enunciados_ds and repite_enunciado_dataset(tema, t, enunciados_ds):
+        return set()
     out: set[tuple] = set()
     for inst in _expandir_plantilla(t):
         bloque = inst["pregunta"] + "".join(inst["opciones"].values())
@@ -79,16 +114,25 @@ def extra_keys_de_plantilla(tema: str, t: dict, claves_ds: set[tuple]) -> set[tu
 
 
 class IndiceExtra:
-    def __init__(self, claves_ds: set[tuple]) -> None:
+    def __init__(
+        self,
+        claves_ds: set[tuple],
+        enunciados_ds: dict[str, set[str]] | None = None,
+    ) -> None:
         self._ds = claves_ds
+        self._enunciados_ds = enunciados_ds or {}
         self._extra: set[tuple] = set()
 
     def puede_anadir(self, tema: str, t: dict) -> bool:
-        nuevas = extra_keys_de_plantilla(tema, t, self._ds)
+        nuevas = extra_keys_de_plantilla(
+            tema, t, self._ds, self._enunciados_ds
+        )
         return bool(nuevas - self._extra)
 
     def registrar(self, tema: str, t: dict) -> None:
-        self._extra |= extra_keys_de_plantilla(tema, t, self._ds)
+        self._extra |= extra_keys_de_plantilla(
+            tema, t, self._ds, self._enunciados_ds
+        )
 
 
 def _prioridad(t: dict) -> int:
@@ -281,16 +325,34 @@ def es_copia_dataset_alineada(tema: str, t: dict, claves_ds: set[tuple]) -> bool
     return bool(keys) and keys <= claves_ds
 
 
+def enunciados_de_plantilla(tema: str, t: dict) -> set[str]:
+    out: set[str] = set()
+    for inst in _expandir_plantilla(t):
+        eq = clave_enunciado({"pregunta": inst["pregunta"]})
+        if eq:
+            out.add(eq)
+    return out
+
+
 def seleccionar_plantillas_para_24(
     tema: str,
     candidatos: list[dict],
     claves_ds: set[tuple],
     objetivo: int,
+    enunciados_ds: dict[str, set[str]] | None = None,
+    enunciados_extra_global: set[str] | None = None,
 ) -> tuple[list[dict], set[tuple]]:
     """Elige plantillas hasta cubrir exactamente ``objetivo`` claves extra distintas."""
+    global_extra = enunciados_extra_global or set()
+    candidatos = [
+        t
+        for t in candidatos
+        if not (enunciados_ds and repite_enunciado_dataset(tema, t, enunciados_ds))
+        and not (enunciados_de_plantilla(tema, t) & global_extra)
+    ]
     por_tpl: list[tuple[dict, set[tuple], tuple[str, str]]] = []
     for t in candidatos:
-        keys = extra_keys_de_plantilla(tema, t, claves_ds)
+        keys = extra_keys_de_plantilla(tema, t, claves_ds, enunciados_ds)
         if keys:
             por_tpl.append((t, keys, _slot_de_inst(tema, t)))
 
@@ -351,7 +413,7 @@ def seleccionar_plantillas_para_24(
         for _t in sorted(elegidas, key=_prioridad):
             if id(_t) in vistos_id:
                 continue
-            keys = extra_keys_de_plantilla(tema, _t, claves_ds) & cubiertas
+            keys = extra_keys_de_plantilla(tema, _t, claves_ds, enunciados_ds) & cubiertas
             nuevas = keys - cubiertas_ok
             if nuevas:
                 compactas.append(_t)
@@ -370,6 +432,8 @@ def equilibrar_materia(
     items: list[dict],
     claves_ds: set[tuple],
     rng: random.Random,
+    enunciados_ds: dict[str, set[str]] | None = None,
+    enunciados_extra_global: set[str] | None = None,
 ) -> tuple[list[dict], int]:
     copia_ds = [
         copy.deepcopy(t)
@@ -387,21 +451,28 @@ def equilibrar_materia(
         and not es_copia_dataset_alineada(tema, t, claves_ds)
     ]
 
-    indice = IndiceExtra(claves_ds)
+    indice = IndiceExtra(claves_ds, enunciados_ds)
     claves_globales: set[tuple] = set(claves_ds)
     for t in otros + resto:
-        indice._extra |= extra_keys_de_plantilla(tema, t, claves_ds)
+        indice._extra |= extra_keys_de_plantilla(
+            tema, t, claves_ds, enunciados_ds
+        )
     indice._extra = {k for k in indice._extra if k not in claves_ds}
 
     if len(indice._extra) < EXTRA_POR_MATERIA:
         otros = rellenar_extra(tema, otros + resto, indice, EXTRA_POR_MATERIA, rng, claves_globales)
 
     elegidas, cubiertas = seleccionar_plantillas_para_24(
-        tema, otros + resto, claves_ds, EXTRA_POR_MATERIA
+        tema,
+        otros + resto,
+        claves_ds,
+        EXTRA_POR_MATERIA,
+        enunciados_ds,
+        enunciados_extra_global,
     )
 
     while len(cubiertas) < EXTRA_POR_MATERIA:
-        indice2 = IndiceExtra(claves_ds | cubiertas)
+        indice2 = IndiceExtra(claves_ds | cubiertas, enunciados_ds)
         claves_globales2: set[tuple] = set(claves_ds) | cubiertas
         nuevas = anadir_internet_catalogo(tema, indice2, claves_globales2)
         if nuevas:
@@ -413,8 +484,17 @@ def equilibrar_materia(
             if not sint:
                 break
         elegidas, cubiertas = seleccionar_plantillas_para_24(
-            tema, otros, claves_ds, EXTRA_POR_MATERIA
+            tema,
+            otros,
+            claves_ds,
+            EXTRA_POR_MATERIA,
+            enunciados_ds,
+            enunciados_extra_global,
         )
+
+    if enunciados_extra_global is not None:
+        for t in elegidas:
+            enunciados_extra_global |= enunciados_de_plantilla(tema, t)
 
     # Solo copias dataset alineadas + plantillas que aportan el pool extra (24 claves)
     final = copia_ds + elegidas
@@ -422,18 +502,22 @@ def equilibrar_materia(
         {
             k
             for t in elegidas
-            for k in extra_keys_de_plantilla(tema, t, claves_ds)
+            for k in extra_keys_de_plantilla(tema, t, claves_ds, enunciados_ds)
         }
     )
     return final, n_extra
 
 
-def verificar_extra_global(plantillas: dict, claves_ds: set[tuple]) -> dict[str, int]:
+def verificar_extra_global(
+    plantillas: dict,
+    claves_ds: set[tuple],
+    enunciados_ds: dict[str, set[str]] | None = None,
+) -> dict[str, int]:
     por_materia: dict[str, int] = {}
     for tema, items in plantillas.items():
         vistos: set[tuple] = set()
         for t in items:
-            for k in extra_keys_de_plantilla(tema, t, claves_ds):
+            for k in extra_keys_de_plantilla(tema, t, claves_ds, enunciados_ds):
                 if k not in vistos:
                     vistos.add(k)
         por_materia[tema] = len(vistos)
@@ -453,24 +537,66 @@ def main() -> int:
     rng = random.Random(args.seed)
     temas, _ = cargar_orden_temas()
     claves_ds = claves_dataset_csv()
+    enunciados_ds = enunciados_dataset_por_materia()
 
     with PATH_PLANTILLAS.open(encoding="utf-8") as f:
         plantillas = json.load(f)
 
-    antes = verificar_extra_global(plantillas, claves_ds)
+    antes = verificar_extra_global(plantillas, claves_ds, enunciados_ds)
     print(f"Extra antes: total={sum(antes.values())} min={min(antes.values())} max={max(antes.values())}")
 
     nueva: dict[str, list] = {}
     stats: Counter = Counter()
+    enunciados_extra_global: set[str] = set()
+    for eqs in enunciados_ds.values():
+        enunciados_extra_global.update(eqs)
     for tema in temas:
         items = plantillas.get(tema, [])
-        final, n_extra = equilibrar_materia(tema, items, claves_ds, rng)
+        final, n_extra = equilibrar_materia(
+            tema,
+            items,
+            claves_ds,
+            rng,
+            enunciados_ds,
+            enunciados_extra_global,
+        )
         nueva[tema] = final
         stats["ok" if n_extra >= EXTRA_POR_MATERIA else "bajo"] += 1
         if n_extra < EXTRA_POR_MATERIA:
             print(f"  [AVISO] {tema}: solo {n_extra} extra")
 
-    despues = verificar_extra_global(nueva, claves_ds)
+    with PATH_CSV.open(encoding="utf-8", newline="") as f:
+        filas_ds = list(csv.DictReader(f, delimiter=";"))
+    nueva, n_cruce = quitar_plantillas_presentes_en_dataset(nueva, filas_ds)
+    if n_cruce:
+        print(f"Quitadas por duplicar dataset: {n_cruce}")
+        bajo = [
+            t
+            for t in temas
+            if verificar_extra_global(nueva, claves_ds, enunciados_ds).get(t, 0)
+            < EXTRA_POR_MATERIA
+        ]
+        for _ in range(3):
+            if not bajo:
+                break
+            for tema in bajo:
+                nueva[tema], _ = equilibrar_materia(
+                    tema,
+                    nueva.get(tema, []),
+                    claves_ds,
+                    rng,
+                    enunciados_ds,
+                    enunciados_extra_global,
+                )
+            nueva, _ = quitar_plantillas_presentes_en_dataset(nueva, filas_ds)
+            bajo = [
+                t
+                for t in temas
+                if verificar_extra_global(nueva, claves_ds, enunciados_ds).get(t, 0)
+                < EXTRA_POR_MATERIA
+            ]
+
+    despues = verificar_extra_global(nueva, claves_ds, enunciados_ds)
     total = sum(despues.values())
     print(f"Extra después: total={total} (objetivo {EXTRA_POR_MATERIA * len(temas)})")
     print(f"  min={min(despues.values())} max={max(despues.values())}")
@@ -487,7 +613,7 @@ def main() -> int:
     with PATH_PLANTILLAS.open("w", encoding="utf-8") as f:
         json.dump(nueva, f, ensure_ascii=False, indent=2)
         f.write("\n")
-    print(f"Guardado: {PATH_PLANTILLAS}")
+    print("Guardado: Data/Banco/plantillas.json")
     return 1 if bajo else 0
 
 

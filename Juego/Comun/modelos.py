@@ -11,18 +11,26 @@ from enum import Enum
 class BancoPreguntas(str, Enum):
     DATASET = "dataset"
     PLANTILLAS_TODO = "plantillas_todo"
-    PLANTILLAS_EXTRA = "plantillas_extra"
 
+
+OPCIONES_BANCO_JUEGO: tuple[BancoPreguntas, ...] = (
+    BancoPreguntas.DATASET,
+    BancoPreguntas.PLANTILLAS_TODO,
+)
+
+ETIQUETAS_BANCO_CORTAS: dict[BancoPreguntas, str] = {
+    BancoPreguntas.DATASET: "Modo seguro",
+    BancoPreguntas.PLANTILLAS_TODO: "Modo beta",
+}
 
 ETIQUETA_BANCO: dict[BancoPreguntas, tuple[str, str]] = {
-    BancoPreguntas.DATASET: ("MODO SEGURO", "Data/Banco/Preguntas.csv (banco revisado)"),
+    BancoPreguntas.DATASET: (
+        "MODO SEGURO",
+        "Data/Banco/Preguntas.csv — 480 preguntas revisadas",
+    ),
     BancoPreguntas.PLANTILLAS_TODO: (
         "MODO BETA",
-        "dataset revisado + plantillas fuera del dataset",
-    ),
-    BancoPreguntas.PLANTILLAS_EXTRA: (
-        "MODO BETA",
-        "solo plantillas.json fuera del dataset (no revisadas)",
+        "Dataset revisado + plantillas extra — 1440 preguntas",
     ),
 }
 

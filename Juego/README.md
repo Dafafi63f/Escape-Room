@@ -30,8 +30,8 @@ Datos en [`../Data/README.md`](../Data/README.md).
 |------|-------------|
 | **Libre** | Partida configurable, filtros, informes al cerrar |
 | **Historia** | Examen balanceado según histórico; carrusel de 5 presets (repaso, simulacro, examen por materia, etc.) |
-| **Resistencia** | Partida infinita, eventos, objetos, ranking local |
-| **Feedback** | Formulario en pantalla (icono 📣); ver [`Grafico/pantalla_feedback.py`](Grafico/pantalla_feedback.py) |
+| **Resistencia** | Partida continua, eventos, objetos, ranking local |
+| **Feedback** | Formulario en pantalla (icono 📣); ver [`Grafico/pantallas_sistema.py`](Grafico/pantallas_sistema.py) |
 
 Detalle de bancos, puntuación y arquitectura: [`Grafico/README.md`](Grafico/README.md) y [`Comun/README.md`](Comun/README.md).
 

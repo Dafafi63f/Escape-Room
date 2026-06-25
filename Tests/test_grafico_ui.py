@@ -305,13 +305,13 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             juego.mkdir(parents=True)
             (juego / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
             (juego / "preferencias_ranking.json").write_text("{}", encoding="utf-8")
-            (juego / "presets_historia.json").write_text("{}", encoding="utf-8")
+            (juego / "presets.json").write_text("{}", encoding="utf-8")
 
             with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
                 self.assertEqual(len(listar_ficheros_runtime_juego()[0]), 2)
                 resumen = borrar_temporales(raiz, incluir_pycache=False)
                 self.assertEqual(resumen.json_preferencias_borrados, 2)
-                self.assertTrue((juego / "presets_historia.json").is_file())
+                self.assertTrue((juego / "presets.json").is_file())
                 self.assertEqual(listar_ficheros_runtime_juego()[0], [])
 
     def test_dir_data_juego(self) -> None:
@@ -334,7 +334,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             juego_exe = raiz / "Juego" / "Data" / "Juego"
             juego_exe.mkdir(parents=True)
             (juego_exe / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
-            (juego_exe / "ranking_reto_dia.json").write_text("{}", encoding="utf-8")
+            (juego_exe / "ranking_resistencia.json").write_text("{}", encoding="utf-8")
 
             with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
                 self.assertEqual(len(listar_ficheros_runtime_juego()[0]), 0)
@@ -350,7 +350,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             (data_exe / "Banco").mkdir(parents=True)
             (data_exe / "Banco" / "creador_privado.json").write_text("{}", encoding="utf-8")
             (data_exe / "Juego").mkdir(parents=True)
-            (data_exe / "Juego" / "ranking_reto_dia.json").write_text("{}", encoding="utf-8")
+            (data_exe / "Juego" / "ranking_resistencia.json").write_text("{}", encoding="utf-8")
 
             with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
                 resumen = borrar_temporales(raiz, incluir_pycache=False)
@@ -404,14 +404,14 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             juego = raiz / "Data" / "Juego"
             juego.mkdir(parents=True)
             (juego / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
-            (juego / "presets_historia.json").write_text("{}", encoding="utf-8")
+            (juego / "presets.json").write_text("{}", encoding="utf-8")
 
             with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
                 resumen = borrar_temporales(raiz, incluir_pycache=False)
                 self.assertEqual(resumen.json_preferencias_borrados, 1)
                 self.assertEqual(resumen.carpetas_vacias_borradas, 0)
                 self.assertTrue(juego.is_dir())
-                self.assertTrue((juego / "presets_historia.json").is_file())
+                self.assertTrue((juego / "presets.json").is_file())
 
     def test_elimina_directorios_vacios_anidados(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -523,21 +523,12 @@ class TestDatosLocalesJuego(unittest.TestCase):
             juego = Path(tmp) / "Juego"
             juego.mkdir()
             path_graf = juego / "preferencias_grafico.json"
-            path_inf = juego / "ranking_resistencia_infinita.json"
-            path_dia = juego / "ranking_reto_dia.json"
+            path_inf = juego / "ranking_resistencia.json"
 
             def _crear_inf() -> Path:
                 if not path_inf.is_file():
                     path_inf.write_text('{"version": 1, "records": []}', encoding="utf-8")
                 return path_inf
-
-            def _crear_dia() -> Path:
-                if not path_dia.is_file():
-                    path_dia.write_text(
-                        '{"version": 2, "fecha_reto": "2026-01-01", "records": []}',
-                        encoding="utf-8",
-                    )
-                return path_dia
 
             with (
                 patch(
@@ -549,18 +540,13 @@ class TestDatosLocalesJuego(unittest.TestCase):
                     return_value=path_graf,
                 ),
                 patch(
-                    "Comun.datos_locales_juego.resolver_ranking_resistencia_infinita",
+                    "Comun.datos_locales_juego.resolver_ranking_resistencia",
                     side_effect=_crear_inf,
-                ),
-                patch(
-                    "Comun.datos_locales_juego.resolver_ranking_reto_dia",
-                    side_effect=_crear_dia,
                 ),
             ):
                 inicializar_datos_locales_juego()
                 self.assertTrue(path_graf.is_file())
                 self.assertTrue(path_inf.is_file())
-                self.assertTrue(path_dia.is_file())
 
     def test_listar_txt_no_incluye_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -589,16 +575,16 @@ class TestDatosLocalesJuego(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             juego = Path(tmp) / "Juego"
             juego.mkdir()
-            path = juego / "ranking_reto_dia.json"
+            path = juego / "ranking_resistencia.json"
             path.write_text(
-                '{"version": 2, "fecha_reto": "2026-01-01", "records": [{"id": "x"}]}',
+                '{"version": 1, "records": [{"id": "x"}]}',
                 encoding="utf-8",
             )
             with patch(
                 "Comun.ranking_resistencia.path_ranking_para_variante",
                 return_value=path,
             ):
-                vaciar_ranking_variante("reto_dia")
+                vaciar_ranking_variante("resistencia")
                 self.assertTrue(path.is_file())
                 self.assertIn('"records": []', path.read_text(encoding="utf-8"))
 
@@ -615,7 +601,7 @@ class TestDatosLocalesJuego(unittest.TestCase):
                 "Comun.ranking_resistencia.path_ranking_para_variante",
                 return_value=path,
             ):
-                vaciar_ranking_variante("infinita")
+                vaciar_ranking_variante("resistencia")
                 self.assertEqual(top_records(path), [])
 
 
@@ -735,7 +721,7 @@ class TestTextoGrafico(unittest.TestCase):
     def test_partir_lineas_titulo_largo(self) -> None:
         from Grafico.texto import _partir_lineas_centro
 
-        titulo = "Pregunta 18 — Ranking — resistencia infinita"
+        titulo = "Pregunta 18 — Ranking — resistencia"
         lineas = _partir_lineas_centro(titulo, 40, 400, bold=True)
         self.assertGreater(len(lineas), 1)
         for linea in lineas:
@@ -748,7 +734,7 @@ class TestTextoGrafico(unittest.TestCase):
         self.assertEqual(lineas, ["FIN DE PARTIDA"])
 
     def test_icono_saltar_usa_fuente_emoji(self) -> None:
-        from Comun.iconos_resistencia import emoji_powerup
+        from Comun.resistencia_motor import emoji_powerup
         from Grafico.texto import familia_caracter, segmentar_por_familia
 
         icono = emoji_powerup("skip")
@@ -764,7 +750,7 @@ class TestTextoGrafico(unittest.TestCase):
         from Grafico.texto import dibujar_texto_centro
         from Grafico.tema import ANCHO, MARGEN
 
-        titulo = "Pregunta 18 — Ranking — resistencia infinita"
+        titulo = "Pregunta 18 — Ranking — resistencia"
         ancho_max = ANCHO - 2 * MARGEN
         superficie = pygame.Surface((ANCHO, 160))
         rect = dibujar_texto_centro(
@@ -882,6 +868,27 @@ class TestBarraEstado(unittest.TestCase):
         self.assertIn("tiempo_total", ids)
         self.assertIn("tiempo_preg", ids)
         self.assertLess(ids.index("tiempo_total"), ids.index("tiempo_preg"))
+
+    def test_progreso_puerta_escape_en_barra(self) -> None:
+        from Comun.reglas_partida import preset_escape
+
+        estado = EstadoPartida(nombre="Ana", reglas=preset_escape(), vidas_restantes=3)
+        segs = segmentos_linea_estado(
+            estado,
+            "",
+            progreso_sala="1/30",
+            progreso_puerta="2/5",
+            vidas_max=4,
+        )
+        ids = [s.id for s in segs]
+        self.assertEqual(ids[0], "sala_escape")
+        sala = next(s for s in segs if s.id == "sala_escape")
+        self.assertEqual(sala.emoji, "🗺️")
+        self.assertEqual(sala.texto, "1/30")
+        self.assertEqual(ids[1], "pregunta_puerta")
+        pregunta = next(s for s in segs if s.id == "pregunta_puerta")
+        self.assertEqual(pregunta.emoji, "📝")
+        self.assertEqual(pregunta.texto, "2/5")
 
     @unittest.skipUnless(emoji_font_disponible(), "Fuente emoji del sistema no disponible")
     def test_render_icono_barra_rechaza_tofu_fuente_texto(self) -> None:

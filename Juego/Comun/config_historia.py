@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from Comun.limites_partida import (
+from Comun.reglas_partida import (
     MIN_PREGUNTAS_PARTIDA,
     PREGUNTAS_POR_MATERIA_HISTORIA,
     min_materias_para_minimo_preguntas,
@@ -29,6 +29,12 @@ GRUPOS_TEMATICOS: dict[str, str] = {
     "9": "G9 — Inteligencia artificial",
     "10": "G10 — Modelización física",
 }
+
+
+def etiqueta_grupo_tematico(grupo: str | int) -> str:
+    """Nombre legible del bloque G1–G10 del plan de estudios."""
+    clave = str(grupo).strip()
+    return GRUPOS_TEMATICOS.get(clave, f"Grupo {clave}")
 
 TIPOS_ENFOQUE_MIXTO = frozenset({"Teoria", "Calculo"})
 TIPOS_ENFOQUE_TEORIA = frozenset({"Teoria"})
@@ -337,7 +343,7 @@ def aplicar_exclusion_al_cambiar_ambito(
         valores.pop("semestre", None)
     elif op_id == "origen_semilla":
         if _origen_semilla_examen_fijo(valores) == "semilla":
-            from Comun.examen_fijo_historia import semilla_defecto_examen_fijo
+            from Comun.modos_diarios import semilla_defecto_examen_fijo
 
             valores.setdefault("semilla", semilla_defecto_examen_fijo())
     if preset_id == "simulacro" and op_id in ("curso", "periodo", "semestre"):
@@ -593,7 +599,7 @@ def defectos_config(
             plantilla_max=plantilla_max,
         )
     if any(o.id == "origen_semilla" for o in opciones):
-        from Comun.examen_fijo_historia import semilla_defecto_examen_fijo
+        from Comun.modos_diarios import semilla_defecto_examen_fijo
 
         valores["semilla"] = semilla_defecto_examen_fijo()
     if any(o.id == "n_preguntas" for o in opciones):

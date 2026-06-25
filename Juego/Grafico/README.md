@@ -6,14 +6,15 @@ Versión gráfica del juego. Reutiliza [`Comun/`](../Comun/README.md) (datos, re
 |----------|-------------|
 | [`juego_grafico.py`](../juego_grafico.py) | Lanzador pygame |
 | [`app.py`](app.py) | Bucle principal, pausa global, barra fija (pausa · diarios · info · feedback · opciones) |
-| [`pantallas.py`](pantallas.py) | Menú principal, partida libre, resumen |
+| [`pantallas.py`](pantallas.py) | Núcleo: clase `Pantalla`, menú principal, partida libre, resumen |
+| [`pantallas_inicio.py`](pantallas_inicio.py) | Bienvenida y nombre del jugador |
 | [`pantallas_libre.py`](pantallas_libre.py) | Wizard modo libre (paso 1: reglas; paso 2: filtros) |
 | [`pantallas_historia.py`](pantallas_historia.py) | Historia (carrusel de presets), opciones, partida y ranking |
-| [`pantallas_especiales.py`](pantallas_especiales.py) | Modos especiales (menú por botones) |
-| [`pantalla_feedback.py`](pantalla_feedback.py) | Formulario de avisos al creador y pantalla de resultado |
-| [`pantalla_info.py`](pantalla_info.py) | Hub info: ranking, contacto y novedades (`Docs/CHANGELOG_JUEGO.md`) |
+| [`pantallas_modos.py`](pantallas_modos.py) | Modos diarios, modos especiales y escape room |
+| [`pantallas_sistema.py`](pantallas_sistema.py) | Info del juego (ℹ️) y formulario de feedback (📣) |
 | [`modo_libre.py`](modo_libre.py) | Utilidades del modo libre gráfico |
-| [`modo_historia.py`](modo_historia.py) | Arranque de presets historia/resistencia |
+| [`modo_historia.py`](modo_historia.py) | Catálogo y preparación de exámenes del modo historia |
+| [`arranque_partida.py`](arranque_partida.py) | Arranque por preset (historia, resistencia, escape room) |
 | [`ui.py`](ui.py) | Botones, campos de texto, tooltips, texto multilínea |
 | [`tooltips_ui.py`](tooltips_ui.py) | Textos de ayuda al pasar el ratón |
 | [`texto.py`](texto.py) | Renderizado mixto (texto, matemáticas, emojis) |
@@ -25,6 +26,10 @@ Versión gráfica del juego. Reutiliza [`Comun/`](../Comun/README.md) (datos, re
 | [`feedback_partida.py`](feedback_partida.py) | Panel de feedback tras cada respuesta |
 | [`aviso_resistencia.py`](aviso_resistencia.py) | Popups de eventos y recompensas (resistencia) |
 | [`informe_partida.py`](informe_partida.py) | Resumen breve y guardado de informes `.txt` en `Data/Juego/` |
+
+## Convención `pantallas_<área>.py`
+
+Todos los módulos de pantalla usan el prefijo **`pantallas_`** más un área (`inicio`, `libre`, `historia`, `modos`, `sistema`). El plural no indica cuántas clases hay dentro; indica el **rol** del módulo. El núcleo compartido sigue en [`pantallas.py`](pantallas.py).
 
 ## Estado
 
@@ -52,7 +57,7 @@ python Juego/juego_grafico.py
 |------|---------|-------|
 | **Libre** | Implementado | Wizard dos pasos; filtros; tooltips |
 | **Historia** | Implementado | Carrusel de 5 presets (`Data/Juego/presets_historia.json`) |
-| **Resistencia** | Implementado | Eventos, objetos, ranking local, reto del día |
+| **Resistencia** | Implementado | Eventos, objetos, ranking local |
 | **Feedback** | Implementado | Icono 📣 en barra; envío SMTP si hay config en `Data/Banco/creador_privado.json` |
 | **Info** | Implementado | Icono ℹ️: ranking, contacto del creador, changelog del juego |
 
@@ -61,7 +66,7 @@ python Juego/juego_grafico.py
 | Icono | Función |
 |-------|---------|
 | ⏸ | Pausa global |
-| 📅 | Retos del día |
+| 📅 | Modos diarios |
 | ℹ️ | Info del juego (ranking, contacto, novedades) |
 | 📣 | Enviar aviso al creador |
 | ⚙️ | Opciones (nombre, tooltips, emojis) |

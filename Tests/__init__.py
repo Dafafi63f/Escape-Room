@@ -1,1 +1,1 @@
-# Paquete de la suite unificada (Juego + Scripts).
+# Paquete de la suite unificada del juego.

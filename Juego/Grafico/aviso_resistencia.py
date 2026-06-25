@@ -8,7 +8,7 @@ import time
 
 import pygame
 
-from Comun.iconos_resistencia import separar_emoji_mensaje
+from Comun.resistencia_motor import separar_emoji_mensaje
 from Grafico.fuentes import crear_fuente
 from Grafico.tema import ALTO, ANCHO, COLOR_ACENTO, COLOR_AVISO, COLOR_FONDO, COLOR_TITULO, MARGEN
 from Grafico.texto import dibujar_texto_centro, preparar_texto_ui

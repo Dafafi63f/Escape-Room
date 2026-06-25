@@ -10,11 +10,7 @@ from collections.abc import MutableSequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from Comun.datos import (
-    cargar_banco_todo,
-    cargar_preguntas_plantillas,
-    claves_dataset,
-)
+from Comun.datos import cargar_banco_todo
 from Comun.dificultad import (
     debe_filtrar_por_nivel,
     max_complejidad_pool,
@@ -89,24 +85,17 @@ def cargar_pool_por_banco(
 ) -> list[Pregunta]:
     if banco == BancoPreguntas.DATASET:
         return list(preguntas_dataset)
-    try:
-        if banco == BancoPreguntas.PLANTILLAS_TODO:
+    if banco == BancoPreguntas.PLANTILLAS_TODO:
+        try:
             return cargar_banco_todo(
                 path_preguntas_csv,
                 path_plantillas_json,
                 materias_meta,
             )
-        if banco == BancoPreguntas.PLANTILLAS_EXTRA:
-            claves = claves_dataset(path_preguntas_csv)
-            return cargar_preguntas_plantillas(
-                path_plantillas_json,
-                materias_meta,
-                solo_fuera_dataset=True,
-                claves_ds=claves,
-            )
-    except Exception as e:
-        print(f"[Juego] Fallo al cargar banco {banco}: {e}")
-        return list(preguntas_dataset)
+        except Exception as e:
+            print(f"[Juego] Fallo al cargar banco {banco}: {e}")
+            return list(preguntas_dataset)
+    print(f"[Juego] Banco no soportado: {banco}")
     return list(preguntas_dataset)
 
 

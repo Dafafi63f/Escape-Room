@@ -185,31 +185,31 @@ def resolver_preguntas_resistencia() -> Path:
     return _buscar_archivo("preguntas_resistencia.json", ("preguntas_resistencia.json",), zona="juego")
 
 
+def resolver_presets() -> Path:
+    """Catálogo unificado de presets (historia, escape room, resistencia…)."""
+    for nombre in ("presets.json", "presets_historia.json"):
+        try:
+            return _buscar_archivo(nombre, (nombre,), zona="juego")
+        except FileNotFoundError:
+            continue
+    raise FileNotFoundError(
+        "No se encontró el catálogo de presets (presets.json o presets_historia.json)."
+    )
+
+
 def resolver_presets_historia() -> Path:
-    return _buscar_archivo("presets_historia.json", ("presets_historia.json",), zona="juego")
+    return resolver_presets()
 
 
 def resolver_presets_especiales() -> Path:
-    return _buscar_archivo("presets_especiales.json", ("presets_especiales.json",), zona="juego")
+    return resolver_presets()
 
 
-def resolver_ranking_resistencia_infinita() -> Path:
-    """JSON local del ranking de resistencia infinita."""
-    base = _ruta_juego_escritura("ranking_resistencia_infinita.json")
+def resolver_ranking_resistencia() -> Path:
+    """JSON local del ranking de resistencia."""
+    base = _ruta_juego_escritura("ranking_resistencia.json")
     if not base.exists():
         base.write_text('{"version": 1, "records": []}', encoding="utf-8")
-    return base
-
-
-def resolver_ranking_reto_dia() -> Path:
-    """JSON local del ranking del reto del día (se reinicia cada día)."""
-    base = _ruta_juego_escritura("ranking_reto_dia.json")
-    if not base.exists():
-        hoy = datetime.now(timezone.utc).date().isoformat()
-        base.write_text(
-            json.dumps({"version": 2, "fecha_reto": hoy, "records": []}, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
     return base
 
 

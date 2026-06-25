@@ -76,7 +76,7 @@ class TestAppPausaGrafico(unittest.TestCase):
         self.assertIsInstance(self.app.actual, MenuPrincipal)
 
     def test_info_abre_desde_ranking_y_volver_restaura(self) -> None:
-        from Grafico.pantalla_info import PantallaInfoHub
+        from Grafico.pantallas_sistema import PantallaInfoHub
         from Grafico.pantallas_libre import ConfigOpcionesLibre
 
         self.app.actual = ConfigOpcionesLibre(
@@ -88,7 +88,8 @@ class TestAppPausaGrafico(unittest.TestCase):
         self.assertIsInstance(self.app.actual, ConfigOpcionesLibre)
 
     def test_feedback_abre_y_volver_restaura(self) -> None:
-        from Grafico.pantallas import MenuPrincipal, PantallaFeedback
+        from Grafico.pantallas import MenuPrincipal
+        from Grafico.pantallas_sistema import PantallaFeedback
         from Grafico.pantallas_libre import ConfigOpcionesLibre
 
         self.app.actual = ConfigOpcionesLibre(
@@ -120,7 +121,7 @@ class TestAppPausaGrafico(unittest.TestCase):
     def test_bienvenida_bloquea_iconos_fijos(self) -> None:
         from Comun.preferencias_grafico import PreferenciasGrafico, guardar_preferencias_grafico
         from Grafico.app import AplicacionGrafica
-        from Grafico.pantallas_bienvenida import PantallaBienvenida
+        from Grafico.pantallas_inicio import PantallaBienvenida
         from Tests.helpers_navegacion_grafico import preferencias_grafico_aisladas
 
         with preferencias_grafico_aisladas():
@@ -248,7 +249,7 @@ class TestBotonesMenusGrafico(unittest.TestCase):
         self.assertEqual(tipos, ["pausa", "diarios", "ranking", "feedback", "opciones"])
 
     def test_info_hub(self) -> None:
-        from Grafico.pantalla_info import PantallaInfoHub
+        from Grafico.pantallas_sistema import PantallaInfoHub
 
         hub = PantallaInfoHub(
             lambda: None,
@@ -258,7 +259,7 @@ class TestBotonesMenusGrafico(unittest.TestCase):
         self._assert_botones_validos("InfoHub", hub._botones_ui())
 
     def test_feedback(self) -> None:
-        from Grafico.pantallas import PantallaFeedback
+        from Grafico.pantallas_sistema import PantallaFeedback
 
         pantalla = PantallaFeedback(lambda: None)
         self._assert_botones_validos(
@@ -412,7 +413,7 @@ class TestFlujosMenusGrafico(unittest.TestCase):
     def test_menu_especiales_lista_botones(self) -> None:
         """Modos especiales usa botones, no carrusel."""
         from Grafico.pantallas import MenuPrincipal
-        from Grafico.pantallas_especiales import ConfigModosEspeciales
+        from Grafico.pantallas_modos import ConfigModosEspeciales
 
         self.nav.pulsar_menu("especiales")
         self.nav.comprobar(ConfigModosEspeciales)
@@ -503,7 +504,7 @@ class TestFlujosMenusGrafico(unittest.TestCase):
 
     def test_feedback_ida_y_vuelta(self) -> None:
         """En libre: feedback (barra) → Volver → misma pantalla de configuración."""
-        from Grafico.pantallas import PantallaFeedback
+        from Grafico.pantallas_sistema import PantallaFeedback
         from Grafico.pantallas_libre import ConfigOpcionesLibre
 
         self.nav.pulsar_menu("libre")
@@ -677,11 +678,11 @@ class TestHoverTooltipsGrafico(unittest.TestCase):
 
     def test_historia_config_hover_valor_y_navegacion(self) -> None:
         from Comun.presets_historia import cargar_presets_historia
-        from Comun.rutas import resolver_presets_historia
+        from Comun.rutas import resolver_presets
         from Grafico.pantallas_historia import ConfigModoHistoria, ConfigOpcionesHistoria
         from Grafico.tooltips_ui import TOOLTIP_ATRAS, TOOLTIP_CONTINUAR, TOOLTIP_EMPEZAR
 
-        presets = cargar_presets_historia(resolver_presets_historia())
+        presets = cargar_presets_historia(resolver_presets())
         preset = next(p for p in presets if p.id == "simulacro")
 
         carrusel = ConfigModoHistoria(self.datos, self.ir_a, self.salir)

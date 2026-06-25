@@ -132,7 +132,7 @@ class BackendGrafico:
 
     def __init__(self) -> None:
         bootstrap_juego()
-        from Comun.compatibilidad_reglas_libre import opciones_reglas_libre
+        from Comun.reglas_libre import opciones_reglas_libre
         from Comun.datos import cargar_materias, cargar_preguntas
         from Comun.modelos import Pregunta
         from Comun.motor_nucleo import EstadoPartida, ResultadoRespuesta, evaluar_respuesta, linea_estado
@@ -191,7 +191,6 @@ class BackendGrafico:
             sistema=cfg.sistema,
             tiempo_por_pregunta_seg=cfg.tiempo_por_pregunta_seg,
             tiempo_total_seg=cfg.tiempo_total_seg,
-            mostrar_solucion_tras_fallo=cfg.mostrar_solucion_tras_fallo,
             dificultad_progresiva=cfg.dificultad_progresiva,
             modo_infinito=cfg.modo_infinito,
             n_preguntas=cfg.n_preguntas,
@@ -288,9 +287,9 @@ class BackendGrafico:
 
     def catalogo_historia_ids(self) -> tuple[str, ...]:
         from Comun.presets_historia import cargar_presets_historia
-        from Comun.rutas import resolver_presets_historia
+        from Comun.rutas import resolver_presets
 
-        presets = cargar_presets_historia(resolver_presets_historia())
+        presets = cargar_presets_historia(resolver_presets())
         return tuple(p.id for p in presets)
 
     def reglas_historia_preset(self, preset_id: str) -> tuple:

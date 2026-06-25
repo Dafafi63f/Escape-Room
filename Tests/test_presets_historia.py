@@ -45,16 +45,15 @@ from Comun.presets_historia import (  # noqa: E402
 )
 from Comun.config_historia import ConfigPresetHistoria, ID_ESTRATEGIA_MATERIAS, ORDEN_OPCIONES_HISTORIA, VALORES_PRIORIDAD_HISTORICA, limites_n_materias, opciones_config_historia, validar_config  # noqa: E402
 from Comun.presets_historia import PresetHistoria  # noqa: E402
-from Comun.perfiles_historia import PerfilPedagogico  # noqa: E402
+from Comun.generador_examen_historia import PerfilPedagogico  # noqa: E402
 from Comun.rutas import (  # noqa: E402
     resolver_dataset,
     resolver_listado_materias,
     resolver_plantillas,
-    resolver_presets_especiales,
+    resolver_presets,
     resolver_presets_historia,
 )
-from Comun.examen_fijo_historia import config_atajo_aleatorio, config_atajo_diario  # noqa: E402
-from Comun.examen_dia_historia import semilla_examen_dia  # noqa: E402
+from Comun.modos_diarios import config_atajo_aleatorio, config_atajo_diario, semilla_examen_dia  # noqa: E402
 from Comun.generador_examen_historia import (  # noqa: E402
     calcular_pesos_materia,
     cargar_estadisticas_historicas,
@@ -66,7 +65,7 @@ from Comun.generador_examen_historia import (  # noqa: E402
 class TestPresetsHistoria(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.presets = cargar_presets_historia(resolver_presets_historia())
+        cls.presets = cargar_presets_historia(resolver_presets())
         cls.materias_meta = cargar_materias(resolver_listado_materias())
         cls.orden = cargar_orden_materias(resolver_listado_materias())
         cls.preguntas = cargar_banco_todo(
@@ -149,9 +148,13 @@ class TestPresetsHistoria(unittest.TestCase):
         self.assertNotIn("examen_aleatorio_historia", ids)
 
     def test_catalogo_activo_sin_presets_obsoletos(self) -> None:
-        from Comun.presets_historia import PRESETS_HISTORIA_RETIRADOS
+        from Comun.presets_historia import PRESETS_HISTORIA_RETIRADOS, _es_preset_historia
 
-        todos = _cargar_presets_historia_archivo(resolver_presets_historia())
+        todos = [
+            p
+            for p in _cargar_presets_historia_archivo(resolver_presets())
+            if _es_preset_historia(p)
+        ]
         ids = {p.id for p in todos}
         self.assertEqual(len(todos), NUM_MODOS_HISTORIA_CARRUSEL)
         for retirado in PRESETS_HISTORIA_RETIRADOS:
@@ -161,7 +164,7 @@ class TestPresetsHistoria(unittest.TestCase):
 
     def test_historia_sin_modos_resistencia(self) -> None:
         for preset in self.presets:
-            self.assertNotEqual(preset.contexto_reglas, "historia_resistencia")
+            self.assertNotEqual(preset.contexto_reglas, "resistencia")
 
     def test_cada_preset_genera_examen_con_defectos(self) -> None:
         for preset in self.presets:
@@ -576,7 +579,7 @@ class TestPresetsHistoria(unittest.TestCase):
                 self.assertEqual(len(plan.preguntas), max_v)
 
     def test_historia_rechaza_examenes_demasiado_pequenos(self) -> None:
-        from Comun.limites_partida import MIN_PREGUNTAS_PARTIDA
+        from Comun.reglas_partida import MIN_PREGUNTAS_PARTIDA
 
         repaso = next(p for p in self.presets if p.id == "repaso")
         with self.assertRaises(ValueError):
@@ -899,7 +902,13 @@ class TestPresetsHistoria(unittest.TestCase):
                 self.assertEqual(prioridad.valores, esperada)
 
     def test_todos_los_modos_historia_usan_analisis_historico_por_defecto(self) -> None:
-        todos = _cargar_presets_historia_archivo(resolver_presets_historia())
+        from Comun.presets_historia import _es_preset_historia
+
+        todos = [
+            p
+            for p in _cargar_presets_historia_archivo(resolver_presets())
+            if _es_preset_historia(p)
+        ]
         self.assertEqual(len(todos), NUM_MODOS_HISTORIA_CARRUSEL)
         for preset in todos:
             if preset.id in ("examen_asignatura", "examen_fijo"):
@@ -971,14 +980,13 @@ class TestPresetsHistoria(unittest.TestCase):
 
     def test_semilla_diaria_formato_ddmmaaaa(self) -> None:
         from Comun.modos_diarios import formatear_semilla_diaria, semilla_diaria
-        from Comun.reto_dia_resistencia import semilla_reto_dia
 
         self.assertEqual(semilla_diaria(date(2026, 6, 22)), 22_06_2026)
         self.assertEqual(semilla_diaria(date(2026, 6, 18)), 18_06_2026)
         self.assertEqual(semilla_diaria(date(2026, 1, 1)), 1_01_2026)
         self.assertEqual(formatear_semilla_diaria(1_01_2026), "01012026")
         self.assertEqual(formatear_semilla_diaria(22_06_2026), "22062026")
-        self.assertEqual(semilla_examen_dia(date(2026, 6, 18)), semilla_reto_dia(date(2026, 6, 18)))
+        self.assertEqual(semilla_examen_dia(date(2026, 6, 18)), semilla_diaria(date(2026, 6, 18)))
 
     def test_examen_fijo_sin_analisis_historico(self) -> None:
         preset, cfg = self._examen_fijo("diario")
@@ -1105,7 +1113,7 @@ class TestPresetsHistoria(unittest.TestCase):
         self.assertNotEqual(plan.materias, self.orden[: preset.n_materias])
 
     def test_examen_aleatorio_semilla_nueva_cada_vez(self) -> None:
-        from Comun.examen_aleatorio_historia import semilla_aleatoria_examen
+        from Comun.modos_diarios import semilla_aleatoria_examen
 
         semillas = {semilla_aleatoria_examen() for _ in range(32)}
         self.assertGreater(len(semillas), 1)
@@ -1183,7 +1191,7 @@ class TestPresetsHistoria(unittest.TestCase):
         self.assertEqual(resolver_orden_preguntas(preset, cfg), "variar")
         self.assertTrue(contenido_examen_estable(preset, cfg=cfg))
         with patch(
-            "Comun.examen_fijo_historia.semilla_examen_dia",
+            "Comun.modos_diarios.semilla_examen_dia",
             return_value=semilla_examen_dia(date(2026, 6, 18)),
         ):
             semilla = semilla_desde_preset(preset, cfg)
@@ -1224,7 +1232,7 @@ class TestPresetsHistoria(unittest.TestCase):
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
         self.assertEqual(kwargs["orden_preguntas"], "dificultad")
         with patch(
-            "Comun.examen_fijo_historia.semilla_aleatoria_examen",
+            "Comun.modos_diarios.semilla_aleatoria_examen",
             side_effect=[111, 222],
         ):
             sem_a = semilla_desde_preset(preset, cfg)
@@ -1279,14 +1287,22 @@ class TestPresetsHistoria(unittest.TestCase):
 class TestPresetsEspeciales(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.presets = cargar_presets_especiales(resolver_presets_especiales())
+        cls.presets = cargar_presets_especiales(resolver_presets())
 
-    def test_catalogo_resistencia(self) -> None:
+    def test_catalogo_especiales(self) -> None:
         ids = [p.id for p in self.presets]
-        self.assertEqual(ids, ["reto_dia_resistencia", "ranking_resistencia"])
+        self.assertEqual(
+            ids,
+            ["escape_room", "ranking_resistencia"],
+        )
+        escape = next(p for p in self.presets if p.id == "escape_room")
+        self.assertEqual(escape.contexto_reglas, "escape")
         for preset in self.presets:
-            self.assertEqual(preset.contexto_reglas, "historia_resistencia")
+            if preset.id == "escape_room":
+                continue
+            self.assertEqual(preset.contexto_reglas, "resistencia")
             self.assertFalse(preset.tiene_opciones())
+        self.assertFalse(escape.tiene_opciones())
 
 if __name__ == "__main__":
     unittest.main()

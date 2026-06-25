@@ -25,11 +25,12 @@ from Comun.config_historia import (
     tiempo_total_seg_desde_config,
     validar_config,
 )
-from Comun.perfiles_historia import PerfilPedagogico
+from Comun.generador_examen_historia import PerfilPedagogico
 from Comun.politica_reglas import (
     ContextoPartida,
     PoliticaReglas,
-    politica_historia_resistencia,
+    politica_escape,
+    politica_resistencia,
     politica_historia_reto,
     politica_historia_simulacro,
     validar_reglas,
@@ -51,7 +52,7 @@ def resolver_orden_preguntas(
     cfg: ConfigPresetHistoria | None = None,
 ) -> str:
     """Orden explícito de preguntas en partida (independiente del azar de contenido)."""
-    from Comun.examen_fijo_historia import es_id_examen_fijo, orden_preguntas_examen_fijo
+    from Comun.modos_diarios import es_id_examen_fijo, orden_preguntas_examen_fijo
 
     if cfg is not None and es_id_examen_fijo(preset.id):
         return orden_preguntas_examen_fijo(cfg)
@@ -142,6 +143,19 @@ PRESETS_HISTORIA_RETIRADOS = frozenset({
 
 NUM_MODOS_HISTORIA_CARRUSEL = 5
 
+_CONTEXTOS_ESPECIALES = frozenset({
+    ContextoPartida.ESCAPE.value,
+    ContextoPartida.RESISTENCIA.value,
+})
+
+
+def _es_preset_historia(preset: PresetHistoria) -> bool:
+    return preset.contexto_reglas.startswith("historia_")
+
+
+def _es_preset_especial(preset: PresetHistoria) -> bool:
+    return preset.contexto_reglas in _CONTEXTOS_ESPECIALES
+
 
 def _grupo_catalogo_historia(preset_id: str) -> int:
     """Orden de bloques en el carrusel: repasos, luego simulacros, luego el resto."""
@@ -195,9 +209,21 @@ def _cargar_presets_historia_archivo(path: Path) -> list[PresetHistoria]:
     )
 
 
-def cargar_presets_historia(path: Path) -> list[PresetHistoria]:
-    """Catálogo del carrusel (excluye presets marcados como ``solo_atajo``)."""
-    visibles = [p for p in _cargar_presets_historia_archivo(path) if not p.solo_atajo]
+def _cargar_todos_presets(path: Path | None = None) -> list[PresetHistoria]:
+    from Comun.rutas import resolver_presets
+
+    ruta = path or resolver_presets()
+    return _cargar_presets_historia_archivo(ruta)
+
+
+def cargar_presets_historia(path: Path | None = None) -> list[PresetHistoria]:
+    """Catálogo del carrusel (modos historia visibles, sin atajos ni especiales)."""
+    visibles = [
+        p
+        for p in _cargar_todos_presets(path)
+        if _es_preset_historia(p) and not p.solo_atajo
+    ]
+    visibles.sort(key=_clave_orden_catalogo)
     if len(visibles) != NUM_MODOS_HISTORIA_CARRUSEL:
         ids = [p.id for p in visibles]
         raise ValueError(
@@ -207,27 +233,23 @@ def cargar_presets_historia(path: Path) -> list[PresetHistoria]:
     return visibles
 
 
-def cargar_presets_especiales(path: Path) -> list[PresetHistoria]:
+def cargar_presets_especiales(path: Path | None = None) -> list[PresetHistoria]:
     from Comun.modos_diarios import prioridad_orden_preset
 
-    return _cargar_presets_desde_json(
-        path,
-        clave_orden=lambda preset: (
+    especiales = [p for p in _cargar_todos_presets(path) if _es_preset_especial(p)]
+    especiales.sort(
+        key=lambda preset: (
             prioridad_orden_preset(preset.id),
             preset.orden,
             preset.nombre,
-        ),
+        )
     )
+    return especiales
 
 
 def buscar_preset(preset_id: str) -> PresetHistoria:
-    """Busca un preset en historia (incl. atajos) o en modos especiales."""
-    from Comun.rutas import resolver_presets_especiales, resolver_presets_historia
-
-    for preset in _cargar_presets_historia_archivo(resolver_presets_historia()):
-        if preset.id == preset_id:
-            return preset
-    for preset in cargar_presets_especiales(resolver_presets_especiales()):
+    """Busca un preset en el catálogo unificado."""
+    for preset in _cargar_todos_presets():
         if preset.id == preset_id:
             return preset
     raise KeyError(f"Preset no encontrado: {preset_id!r}")
@@ -238,7 +260,12 @@ def _parse_preset(item: dict, *, catalogo_historia: bool = False) -> PresetHisto
         if not item.get(campo):
             raise ValueError(f"Preset sin campo obligatorio {campo!r}: {item!r}")
     contexto = item["contexto_reglas"]
-    if contexto not in {c.value for c in ContextoPartida if c.name.startswith("HISTORIA_")}:
+    if contexto not in {
+        c.value
+        for c in ContextoPartida
+        if c.name.startswith("HISTORIA_")
+        or c in (ContextoPartida.RESISTENCIA, ContextoPartida.ESCAPE)
+    }:
         raise ValueError(f"contexto_reglas desconocido: {contexto!r}")
     # Por defecto el catálogo historia usa MatCAD; un preset puede desactivarlo en JSON.
     usa_historico = bool(item.get("usa_analisis_historico", catalogo_historia))
@@ -290,11 +317,16 @@ def politica_desde_preset(
 ) -> PoliticaReglas:
     if preset.contexto_reglas == ContextoPartida.HISTORIA_RETO.value:
         base = politica_historia_reto()
-    elif preset.contexto_reglas == ContextoPartida.HISTORIA_RESISTENCIA.value:
-        base = politica_historia_resistencia()
+    elif preset.contexto_reglas == ContextoPartida.RESISTENCIA.value:
+        base = politica_resistencia()
+    elif preset.contexto_reglas == ContextoPartida.ESCAPE.value:
+        base = politica_escape()
     else:
         base = politica_historia_simulacro()
-    reglas = _reglas_con_tiempo(base.reglas, preset, config)
+    if preset.contexto_reglas == ContextoPartida.ESCAPE.value:
+        reglas = base.reglas
+    else:
+        reglas = _reglas_con_tiempo(base.reglas, preset, config)
     return PoliticaReglas(
         contexto=preset.contexto(),
         reglas=reglas,
@@ -369,7 +401,7 @@ def semilla_desde_preset(
     preset: PresetHistoria,
     cfg: ConfigPresetHistoria | None = None,
 ) -> int | None:
-    from Comun.examen_fijo_historia import es_id_examen_fijo, semilla_contenido_examen_fijo
+    from Comun.modos_diarios import es_id_examen_fijo, semilla_contenido_examen_fijo
 
     if cfg is not None and es_id_examen_fijo(preset.id):
         return semilla_contenido_examen_fijo(cfg)
@@ -386,7 +418,7 @@ def contenido_examen_estable(
 
     Solo entonces tiene sentido ``variar_orden_cada_partida``: una sola fuente de azar.
     """
-    from Comun.examen_fijo_historia import contenido_estable_examen_fijo, es_id_examen_fijo
+    from Comun.modos_diarios import contenido_estable_examen_fijo, es_id_examen_fijo
 
     if semilla is not None:
         return True
