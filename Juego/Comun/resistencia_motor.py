@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 import random
+import time
 from dataclasses import dataclass, field, replace
 
 from Comun.config_historia import GRUPOS_TEMATICOS, etiqueta_grupo_tematico
+from Comun.emojis_escape import (
+    EMOJI_NIEBLA_AMBOS,
+    EMOJI_NIEBLA_ENUNCIADO,
+    EMOJI_NIEBLA_OPCIONES,
+)
 from Comun.modelos import Pregunta
 from Comun.motor_nucleo import EstadoPartida, FeedbackRespuesta, ResultadoRespuesta, evaluar_respuesta
 from Comun.pool_libre import EstadoSeleccionPool
@@ -110,7 +116,7 @@ def cuotas_banco_resistencia(
 # --- Mecánicas (tipos y constantes) ---
 
 _MALDIGIONES: tuple[tuple[str, str, str], ...] = (
-    ("niebla", "Maldición: niebla en el enunciado", "🌫️"),
+    ("niebla", "Maldición: niebla en el enunciado", EMOJI_NIEBLA_ENUNCIADO),
     ("sin_objetos", "Maldición: no puedes usar objetos", "⛔"),
     ("relampago", "Maldición: relámpago forzado", "⚡"),
 )
@@ -119,6 +125,58 @@ _MALDIGIONES: tuple[tuple[str, str, str], ...] = (
 # Presión por racha alta: la pregunta actual se vuelve más exigente (sin castigos automáticos).
 PRESION_RACHA_UMBRAL = 25
 _PRESION_RACHA_ESCALA = 30.0
+
+# Desafío aparte: X aciertos en Y segundos (fin de partida si expira). Distinto del tiempo por pregunta.
+PREGUNTA_MIN_DESAFIO_BLOQUE_RESISTENCIA = 120
+
+
+@dataclass
+class DesafioBloqueTiempoResistencia:
+    """Bloque de aciertos con tiempo total; independiente del cronómetro por pregunta."""
+
+    aciertos_objetivo: int
+    tiempo_limite_seg: int
+    aciertos_logrados: int = 0
+    inicio_monotonic: float = field(default_factory=time.monotonic)
+
+    def tiempo_restante_seg(self) -> int:
+        rest = int(self.tiempo_limite_seg - (time.monotonic() - self.inicio_monotonic))
+        return max(0, rest)
+
+    def completado(self) -> bool:
+        return self.aciertos_logrados >= self.aciertos_objetivo
+
+    def expirado(self) -> bool:
+        return not self.completado() and self.tiempo_restante_seg() <= 0
+
+
+def probabilidad_desafio_bloque_resistencia(numero_pregunta: int) -> float:
+    if numero_pregunta < PREGUNTA_MIN_DESAFIO_BLOQUE_RESISTENCIA:
+        return 0.0
+    t = factor_progreso_resistencia(numero_pregunta)
+    if t < 0.5:
+        return 0.0
+    return 0.06 + 0.14 * min(1.0, (t - 0.5) * 2.0)
+
+
+def params_desafio_bloque_resistencia(numero_pregunta: int) -> tuple[int, int]:
+    """Devuelve (aciertos necesarios, segundos de bloque) según el progreso."""
+    t = factor_progreso_resistencia(numero_pregunta)
+    if t < 0.75:
+        return (3, 90)
+    if t < 0.9:
+        return (4, 75)
+    return (5, 60)
+
+
+def formatear_aviso_desafio_bloque(desafio: DesafioBloqueTiempoResistencia) -> str:
+    n = desafio.aciertos_objetivo
+    seg = desafio.tiempo_limite_seg
+    texto = (
+        f"Desafío de bloque: consigue {n} acierto"
+        f"{'s' if n != 1 else ''} en {seg} s o pierdes la partida."
+    )
+    return prefijar_emoji(texto, "⏲️")
 
 @dataclass(frozen=True)
 class BloqueFiltroActivo:
@@ -279,6 +337,12 @@ VIDAS_MAX_ABSOLUTO = 9
 VIDAS_MIN_CAP = 2
 
 
+def _pity_eventos_resistencia_nuevo():
+    from Comun.resistencia_partida import PityEventosResistencia
+
+    return PityEventosResistencia()
+
+
 @dataclass
 class EstadoResistencia:
     """Racha de aciertos seguidos (se corta al fallar); vidas e inventario aparte."""
@@ -301,8 +365,11 @@ class EstadoResistencia:
     ventana_resultados: list[bool] = field(default_factory=list)
     tiradas_recompensa: int = 0
     objetos_bloqueados: bool = False
+    powerups_usados_en_pregunta: set[str] = field(default_factory=set)
     banco_resistencia: object | None = None
     presion_racha_intensidad: float = 0.0
+    desafio_bloque: DesafioBloqueTiempoResistencia | None = None
+    pity_eventos: object = field(default_factory=lambda: _pity_eventos_resistencia_nuevo())
 
     def reset_pregunta(self) -> None:
         self.letras_ocultas = frozenset()
@@ -312,6 +379,13 @@ class EstadoResistencia:
         self.ultimo_evento = ""
         self.presion_racha_intensidad = 0.0
         self.objetos_bloqueados = False
+        self.powerups_usados_en_pregunta.clear()
+
+    def reiniciar_slot_pregunta(self) -> None:
+        """Nueva pregunta en el mismo turno (cambio): limpia ayudas de la anterior."""
+        self.letras_ocultas = frozenset()
+        self.tiempo_extra_seg = 0
+        self.powerups_usados_en_pregunta.clear()
 
     def registrar_acierto(self) -> None:
         self.racha += 1
@@ -346,6 +420,57 @@ class EstadoResistencia:
             if n > 0
         ]
         return ", ".join(partes) if partes else "vacío"
+
+
+def texto_segmento_desafio_bloque(er: EstadoResistencia) -> str | None:
+    db = er.desafio_bloque
+    if db is None:
+        return None
+    return f"{db.aciertos_logrados}/{db.aciertos_objetivo}·{db.tiempo_restante_seg()}s"
+
+
+def desafio_bloque_expirado(er: EstadoResistencia) -> bool:
+    db = er.desafio_bloque
+    return db is not None and db.expirado()
+
+
+def _intentar_activar_desafio_bloque(
+    er: EstadoResistencia,
+    numero_pregunta: int,
+) -> str | None:
+    if er.desafio_bloque is not None:
+        return None
+    prob = probabilidad_desafio_bloque_resistencia(numero_pregunta)
+    if prob <= 0.0:
+        return None
+    rng = rng_partida(er, numero_pregunta * 43 + 5107)
+    if rng.random() > prob:
+        return None
+    aciertos, segundos = params_desafio_bloque_resistencia(numero_pregunta)
+    er.desafio_bloque = DesafioBloqueTiempoResistencia(
+        aciertos_objetivo=aciertos,
+        tiempo_limite_seg=segundos,
+    )
+    return formatear_aviso_desafio_bloque(er.desafio_bloque)
+
+
+def _tick_desafio_bloque_tras_acierto(er: EstadoResistencia, *, acierto: bool) -> list[str]:
+    db = er.desafio_bloque
+    if db is None or not acierto:
+        return []
+    db.aciertos_logrados += 1
+    if not db.completado():
+        return []
+    er.desafio_bloque = None
+    return [prefijar_emoji("Desafío de bloque superado.", "✅")]
+
+
+def finalizar_partida_por_desafio_bloque(estado: EstadoPartida, er: EstadoResistencia) -> str:
+    er.desafio_bloque = None
+    if estado.vidas_restantes is not None:
+        estado.vidas_restantes = 0
+    return prefijar_emoji("Desafío de bloque: tiempo agotado.", "⏲️")
+
 
 # --- Powerups ---
 
@@ -383,6 +508,33 @@ def etiqueta_powerup(powerup_id: str) -> str:
 
 def descripcion_powerup(powerup_id: str) -> str:
     return POWERUPS.get(powerup_id, (powerup_id, ""))[1]
+
+
+MENSAJE_POWERUP_YA_USADO = "Solo puedes usar un objeto por pregunta."
+
+POWERUPS_INCOMPATIBLES_EN_PREGUNTA: dict[str, frozenset[str]] = {
+    "bomba": frozenset({"fifty_fifty"}),
+    "fifty_fifty": frozenset({"bomba"}),
+}
+
+
+def puede_usar_powerup_en_pregunta(powerup_id: str, usados: set[str]) -> str | None:
+    """Devuelve mensaje de error si el objeto no puede usarse en esta pregunta."""
+    if powerup_id in usados:
+        if powerup_id in POWERUPS:
+            return f"Ya usaste {etiqueta_powerup(powerup_id)} en esta pregunta."
+        return "Ya usaste este objeto en esta pregunta."
+    incompatibles = POWERUPS_INCOMPATIBLES_EN_PREGUNTA.get(powerup_id, frozenset())
+    for usado in usados:
+        if usado in incompatibles:
+            nom = etiqueta_powerup(powerup_id)
+            otro = etiqueta_powerup(usado) if usado in POWERUPS else usado
+            return f"No puedes combinar {nom} con {otro} en la misma pregunta."
+    return None
+
+
+def revocar_powerup_usado(usados: set[str], powerup_id: str) -> None:
+    usados.discard(powerup_id)
 
 
 def _incorrectas(p: Pregunta) -> list[str]:
@@ -522,9 +674,11 @@ def emoji_evento_etiqueta(etiqueta: str) -> str:
     if etiqueta.startswith("Relámpago"):
         return "⚡"
     if etiqueta.startswith("Niebla:"):
+        if "enunciado y opciones" in etiqueta:
+            return EMOJI_NIEBLA_AMBOS
         if "enunciado" in etiqueta:
-            return "🙈"
-        return "🌫️"
+            return EMOJI_NIEBLA_ENUNCIADO
+        return EMOJI_NIEBLA_OPCIONES
     if etiqueta == "Doble puntos":
         return "✨"
     if etiqueta == "Triple puntos":
@@ -924,6 +1078,9 @@ def preparar_eventos_nuevo_turno(
         avisos.append(formatear_aviso_bloque(bloque.etiqueta))
     if not er.apuesta_oferta:
         er.apuesta_oferta = oferta_apuesta_para_pregunta(numero_pregunta, er)
+    aviso_bloque = _intentar_activar_desafio_bloque(er, numero_pregunta)
+    if aviso_bloque:
+        avisos.append(aviso_bloque)
     return avisos
 
 
@@ -992,6 +1149,8 @@ def procesar_post_turno_resistencia(
         if nueva:
             er.maldicion = nueva
             avisos.append(formatear_aviso_maldicion(nueva.etiqueta))
+
+    avisos.extend(_tick_desafio_bloque_tras_acierto(er, acierto=acierto))
 
     er.apuesta_activa = None
     er.apuesta_oferta = None
@@ -1114,6 +1273,9 @@ def usar_powerup(
     """Consume un comodín; devuelve mensaje de error o None si OK."""
     if er.objetos_bloqueados:
         return "Maldición activa: no puedes usar objetos."
+    err_uso = puede_usar_powerup_en_pregunta(powerup_id, er.powerups_usados_en_pregunta)
+    if err_uso:
+        return err_uso
     if not er.consumir_powerup(powerup_id):
         return "No tienes ese objeto."
     if powerup_id == "fifty_fifty":
@@ -1131,6 +1293,7 @@ def usar_powerup(
         pass
     else:
         return f"Objeto desconocido: {powerup_id}"
+    er.powerups_usados_en_pregunta.add(powerup_id)
     return None
 
 
@@ -1333,6 +1496,7 @@ __all__ = [
     "BloqueFiltroActivo",
     "CosteApuesta",
     "CuotasBancoResistencia",
+    "DesafioBloqueTiempoResistencia",
     "EMOJI_POWERUP",
     "EstadoResistencia",
     "EventoRecompensaResistencia",
@@ -1343,6 +1507,7 @@ __all__ = [
     "MAX_TIRADAS_RECOMPENSA_ACIERTO",
     "POWERUPS",
     "POWERUPS_LOOT",
+    "PREGUNTA_MIN_DESAFIO_BLOQUE_RESISTENCIA",
     "PREGUNTA_MIN_EVENTOS_ALEATORIOS",
     "PREGUNTAS_HASTA_EXTREMO_PROB",
     "PRESION_RACHA_UMBRAL",
@@ -1368,6 +1533,7 @@ __all__ = [
     "cuotas_banco_resistencia",
     "descripcion_evento_etiqueta",
     "descripcion_powerup",
+    "desafio_bloque_expirado",
     "emoji_aviso_exclusiva",
     "emoji_evento_etiqueta",
     "emoji_powerup",
@@ -1379,6 +1545,8 @@ __all__ = [
     "factor_malo_resistencia",
     "factor_progreso_banco_resistencia",
     "factor_progreso_resistencia",
+    "finalizar_partida_por_desafio_bloque",
+    "formatear_aviso_desafio_bloque",
     "formatear_aviso_apuesta",
     "formatear_aviso_bloque",
     "formatear_aviso_evento",
@@ -1394,11 +1562,13 @@ __all__ = [
     "preparar_presion_racha_turno",
     "presion_racha_umbral",
     "probabilidad_buena_resistencia",
+    "probabilidad_desafio_bloque_resistencia",
     "probabilidad_evento_bueno_escalada",
     "probabilidad_mala_resistencia",
     "procesar_post_turno_resistencia",
     "procesar_turno_resistencia",
     "progreso_probabilidad_resistencia",
+    "params_desafio_bloque_resistencia",
     "pregunta_compatible_bloque",
     "prefijar_emoji",
     "rng_partida",
@@ -1406,6 +1576,7 @@ __all__ = [
     "texto_pregunta_para_turno",
     "texto_pregunta_visible",
     "texto_progreso_resistencia",
+    "texto_segmento_desafio_bloque",
     "tiempo_pregunta_efectivo",
     "tirar_recompensas_tras_acierto",
     "usar_powerup",

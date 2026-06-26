@@ -97,7 +97,7 @@ Tests de mantenimiento en este directorio (plano):
 python -m unittest discover -s Files -p "test_*.py" -v
 ```
 
-Tests del juego: [`Tests/`](../Tests/README.md) (**246** tests en total). CI: `.github/workflows/tests.yml`.
+Tests del juego: [`Tests/`](../Tests/README.md) (**395** tests en total). CI: `.github/workflows/tests.yml`.
 
 ## Limpieza de temporales
 

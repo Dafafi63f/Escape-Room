@@ -297,7 +297,9 @@ Y_MODOS_LBL = Y_SUBTITULO + 36
 Y_BOTONES_MODOS = Y_MODOS_LBL + 32
 MARGEN_INF = 22
 
-_EMOJI_ESCAPE = _p("🔐")
+from Comun.emojis_escape import EMOJI_MODO_ESCAPE
+
+_EMOJI_ESCAPE = _p(EMOJI_MODO_ESCAPE)
 _EMOJI_RESISTENCIA = _p("💪")
 _EMOJI_ESPECIAL_DEFECTO = _p("⚡")
 
@@ -879,11 +881,10 @@ import pygame
 from Comun.informe_examen import CierreInformePartida, meta_cierre_historia
 from Comun.config_historia import etiqueta_grupo_tematico
 from Comun.escape_partida import (
+    VIDAS_MAX_ABSOLUTO_ESCAPE,
     VIDAS_MAX_ESCAPE,
     aplicar_bonificacion_completar,
     bonificacion_completar_escape,
-    delta_vidas_descanso_entrada,
-    iconos_recompensa_completar,
     materias_del_grupo,
     mensaje_acierto_desafio,
     mensaje_feedback_puerta_sin_pregunta,
@@ -891,28 +892,57 @@ from Comun.escape_partida import (
     puntos_extra_mult_desafio,
     reglas_juego_desafio,
     reglas_partida_desde_desafio,
+    reemplazar_pregunta_cambio_escape,
     seleccionar_preguntas_desafio,
 )
 from Comun.reglas_partida import SistemaPuntuacion, calcular_puntos_arcade
+from Comun.emojis_escape import CapaIconoEscape
 from Comun.eventos_partida import (
     evento_por_id,
     evento_sin_pregunta_escape,
+    emoji_tipo_puerta_escape,
     iconos_efecto_puerta,
     IconoEfectoPuerta,
+    linea_bloque_preguntas_puerta,
+    linea_recompensa_pie_carta,
+    lineas_botin_puerta,
 )
 from Comun.escape_room import (
     ConfigEscapeRoom,
+    PityPuertasEspecialesEscape,
     PuertaEscape,
     SalaEscapeRoom,
     generar_puertas_sala,
 )
-from Comun.resistencia_motor import letras_ocultas_por_cantidad, texto_pregunta_visible
+from Comun.resistencia_motor import (
+    emoji_powerup,
+    etiqueta_powerup,
+    letras_ocultas_por_cantidad,
+    puede_usar_powerup_en_pregunta,
+    prefijar_emoji,
+    revocar_powerup_usado,
+    texto_pregunta_visible,
+)
+from Comun.tienda_escape import (
+    EstadoInventarioEscape,
+    MAX_STOCK_ARTICULO_ESCAPE,
+    articulo_tienda_por_id,
+    comprar_articulo_tienda,
+    descripcion_articulo_escape,
+    linea_detalle_tienda_puerta,
+    puerta_es_tienda,
+    seleccionar_articulos_tienda_visita,
+    usar_objeto_escape,
+)
 from Comun.modelos import Pregunta
 from Comun.motor_nucleo import (
     EstadoPartida,
     ResultadoRespuesta,
     evaluar_respuesta,
     linea_estado,
+    marcar_botones_opciones_tras_respuesta,
+    presentacion_opciones_pantalla,
+    texto_solucion,
 )
 from Comun.presets_historia import PresetHistoria
 from Comun.reglas_partida import ReglasPartida
@@ -928,6 +958,7 @@ from Grafico.pantallas import (
     ALTO_OPCION_PARTIDA,
     ALTO_PANEL_PREGUNTA,
     GAP_TRAS_PANEL_PARTIDA,
+    MARGEN_INF_PARTIDA,
     MenuPrincipal,
     Pantalla,
     SEP_OPCIONES_PARTIDA,
@@ -937,6 +968,7 @@ from Grafico.pantallas import (
 )
 from Grafico.pantallas_historia import ResumenHistoriaPartida
 from Grafico.tema import (
+    ALTO,
     ANCHO,
     COLOR_ACENTO,
     COLOR_FONDO,
@@ -961,6 +993,7 @@ from Grafico.ui import (
     dibujar_texto_multilinea,
     dibujar_tooltip,
     dibujar_tooltips_botones,
+    medir_etiqueta_boton,
     rect_boton_etiqueta,
 )
 
@@ -983,7 +1016,6 @@ class PartidaEscapeRoom(Pantalla):
     _GAP_ICONOS = 8
     _PAD_ICONO = 6
     _TAMANO_ICONO = 26
-    _VIDAS_MAX_DESCANSO = VIDAS_MAX_ESCAPE
 
     def __init__(
         self,
@@ -1014,6 +1046,7 @@ class PartidaEscapeRoom(Pantalla):
         self.datos = datos
         self.salir_app = salir_app
         self.navegacion_fin: NavegacionFinPartida | None = navegacion_fin
+        self.vidas_max = VIDAS_MAX_ESCAPE
         self.fuentes = crear_fuentes()
         self.reglas_base = reglas
         self.registros: list = []
@@ -1042,10 +1075,20 @@ class PartidaEscapeRoom(Pantalla):
         self.feedback_ok = False
         self.inicio_feedback = 0.0
         self.botones_opcion: list[BotonOpcion] = []
+        self._presentacion_opciones = None
         self.inicio_pregunta = time.monotonic()
         self._tiempo_agotado_marcado = False
         self._bonus_completar_mostrado = False
         self._mult_puntos_desafio = 1
+        self.inventario_escape = EstadoInventarioEscape()
+        self.botones_tienda: list[Boton] = []
+        self._articulos_tienda: tuple = ()
+        self._articulos_comprados_visita: set[str] = set()
+        self._hover_icono_tienda: int | None = None
+        self.botones_inventario: list[Boton] = []
+        self.boton_salir_tienda: Boton | None = None
+        self.mensaje_tienda = ""
+        self._pity_puertas = PityPuertasEspecialesEscape()
 
         lbl_abandonar = etiqueta(*BTN_ABANDONAR)
         self.boton_abandonar = Boton(
@@ -1083,13 +1126,15 @@ class PartidaEscapeRoom(Pantalla):
     def _kwargs_barra_estado(self) -> dict:
         seg_preg = None
         if self.fase == "pregunta" and self.tiempo_pregunta_limite:
-            seg_preg = _segundos_pregunta_restantes(
-                self.inicio_pregunta,
-                self.tiempo_pregunta_limite,
-            )
+            limite = self._limite_tiempo_pregunta_efectivo()
+            if limite:
+                seg_preg = _segundos_pregunta_restantes(
+                    self.inicio_pregunta,
+                    limite,
+                )
         return {
             "segundos_pregunta_restantes": seg_preg,
-            "vidas_max": self._VIDAS_MAX_DESCANSO,
+            "vidas_max": self.vidas_max,
             "progreso_sala": self._texto_progreso_sala(),
             "progreso_puerta": self._texto_progreso_puerta(),
             "mostrar_tiempo_activo": (
@@ -1130,13 +1175,16 @@ class PartidaEscapeRoom(Pantalla):
             return self._semilla_sala(self.sala_idx)
         return self._semilla_sala(self.sala_idx) + puerta.indice * 9176
 
+    def _semilla_iconos_puerta(self, indice_puerta: int) -> int:
+        return self._semilla_sala(self.sala_idx) + indice_puerta * 5591 + 31
+
     def _preparar_puertas(self) -> None:
         sala = self._sala_actual()
         if sala is None:
             self._resultado = "victoria"
             self._fin_partida()
             return
-        self.puertas_actuales = generar_puertas_sala(
+        self.puertas_actuales, self._pity_puertas = generar_puertas_sala(
             sala,
             self.sala_idx,
             materias_pool=self.materias_pool,
@@ -1144,6 +1192,7 @@ class PartidaEscapeRoom(Pantalla):
             semilla=self.semilla,
             puertas_por_sala=self.config.puertas_por_sala,
             n_salas=self.config.n_salas,
+            pity=self._pity_puertas,
         )
         self.puerta_actual = None
         self.preguntas_desafio = []
@@ -1165,8 +1214,13 @@ class PartidaEscapeRoom(Pantalla):
                 evento=p.evento,
                 modificadores=p.modificadores,
                 n_preguntas=p.n_preguntas,
+                delta_jefe=(
+                    bonificacion_completar_escape(p).delta_vidas
+                    if puerta_es_jefe(p)
+                    else 0
+                ),
+                semilla=self._semilla_iconos_puerta(p.indice),
             )
-            + iconos_recompensa_completar(p)
             for p in self.puertas_actuales
         ]
         self._hover_icono = None
@@ -1255,39 +1309,50 @@ class PartidaEscapeRoom(Pantalla):
 
     def _lineas_carta_puerta(self, puerta: PuertaEscape) -> tuple[str, str, list[str]]:
         if puerta.modificadores.sin_pregunta:
+            if puerta_es_tienda(puerta):
+                ev = evento_por_id("tienda")
+                return ev.nombre, ev.descripcion, []
             ev = evento_sin_pregunta_escape(puerta.modificadores) or evento_por_id("descanso")
-            detalle: list[str] = []
-            bonus = bonificacion_completar_escape(puerta)
-            if bonus.delta_vidas > 0:
-                n = bonus.delta_vidas
-                txt = "1 vida" if n == 1 else f"{n} vidas"
-                detalle.append(f"Botín extra: +{txt}")
+            detalle = list(
+                lineas_botin_puerta(
+                    puerta.modificadores,
+                    vidas_max_tope=self.vidas_max,
+                    vidas_max_absoluto=VIDAS_MAX_ABSOLUTO_ESCAPE,
+                )
+            )
             return ev.nombre, ev.descripcion, detalle
 
         evento = puerta.evento
         titulo = evento.nombre
         descripcion = evento.descripcion
         detalle: list[str] = []
+        if puerta.n_preguntas > 0:
+            detalle.append(linea_bloque_preguntas_puerta(puerta.n_preguntas))
         if evento.materia:
-            detalle.append(f"Materia: {evento.materia}")
+            detalle.append(evento.materia)
         if evento.grupo:
             nombre_grupo = etiqueta_grupo_tematico(evento.grupo)
             mats = materias_del_grupo(self.pool, evento.grupo)
             if mats:
-                detalle.append(f"{nombre_grupo}: {len(mats)} materias del plan")
+                detalle.append(f"{nombre_grupo} · {len(mats)} materias")
             else:
                 detalle.append(nombre_grupo)
-        bonus = bonificacion_completar_escape(puerta)
-        if bonus.delta_vidas > 0:
-            n = bonus.delta_vidas
-            txt = "1 vida" if n == 1 else f"{n} vidas"
-            if puerta_es_jefe(puerta):
-                detalle.append(f"Recompensa jefe: +{txt}")
-            else:
-                detalle.append(f"Recompensa: +{txt}")
+        detalle.extend(
+            lineas_botin_puerta(
+                puerta.modificadores,
+                vidas_max_tope=self.vidas_max,
+                vidas_max_absoluto=VIDAS_MAX_ABSOLUTO_ESCAPE,
+            )
+        )
+        if puerta_es_jefe(puerta):
+            bonus = bonificacion_completar_escape(puerta)
+            if bonus.delta_vidas > 0:
+                n = bonus.delta_vidas
+                txt = "1 vida" if n == 1 else f"{n} vidas"
+                detalle.append(linea_recompensa_pie_carta(f"+{txt} al superar (jefe)"))
         mult = puerta.modificadores.multiplicador_puntos
         if mult > 1:
-            detalle.append(f"Puntos: ×{mult} en toda la puerta")
+            detalle.append(linea_recompensa_pie_carta(f"puntos ×{mult} en toda la puerta"))
         return titulo, descripcion, detalle
 
     def _dibujar_carta_puerta(
@@ -1358,7 +1423,19 @@ class PartidaEscapeRoom(Pantalla):
         self.fraccion_enunciado = reglas.fraccion_enunciado
         self._mult_puntos_desafio = reglas.multiplicador_puntos
         self.letras_ocultas = frozenset()
+        self.inventario_escape.reset_pregunta()
         self._tiempo_agotado_marcado = False
+
+    def _indice_pool_pregunta(self, pregunta: Pregunta) -> int | None:
+        try:
+            return self.pool.index(pregunta)
+        except ValueError:
+            return None
+
+    def _limite_tiempo_pregunta_efectivo(self) -> int | None:
+        if not self.tiempo_pregunta_limite:
+            return None
+        return self.tiempo_pregunta_limite + self.inventario_escape.tiempo_extra_seg
 
     def _elegir_puerta(self, indice: int) -> None:
         if self.fase != "puertas":
@@ -1368,12 +1445,18 @@ class PartidaEscapeRoom(Pantalla):
         mods = puerta.modificadores
 
         if mods.sin_pregunta:
-            delta_entrada = delta_vidas_descanso_entrada(puerta)
-            if delta_entrada > 0 and self.estado.vidas_restantes is not None:
-                self.estado.vidas_restantes = min(
-                    self._VIDAS_MAX_DESCANSO,
-                    self.estado.vidas_restantes + delta_entrada,
+            if puerta_es_tienda(puerta):
+                self.desafio_fallo = False
+                self._bonus_completar_mostrado = False
+                self.fase = "tienda"
+                self.mensaje_tienda = ""
+                self._articulos_comprados_visita = set()
+                self._articulos_tienda = seleccionar_articulos_tienda_visita(
+                    self.sala_idx + 1,
+                    semilla=self.semilla + self.sala_idx * 5591,
                 )
+                self._reconstruir_tienda()
+                return
             self.feedback_mensaje = mensaje_feedback_puerta_sin_pregunta(puerta)
             self.feedback_solucion = None
             self.feedback_ok = True
@@ -1385,6 +1468,7 @@ class PartidaEscapeRoom(Pantalla):
 
         self._bonus_completar_mostrado = False
         self._aplicar_reglas_desafio(puerta)
+        self.inventario_escape.reset_pregunta()
         self.preguntas_desafio = seleccionar_preguntas_desafio(
             self.pool,
             puerta,
@@ -1398,6 +1482,301 @@ class PartidaEscapeRoom(Pantalla):
         self.fase = "pregunta"
         self.inicio_pregunta = time.monotonic()
         self._reconstruir_opciones()
+        self._reconstruir_inventario_botones()
+
+    def _altura_banda_inventario(self) -> int:
+        n = sum(
+            1
+            for aid in self.inventario_escape.inventario.keys()
+            if self.inventario_escape.cantidad(aid) > 0
+            and puede_usar_powerup_en_pregunta(
+                aid, self.inventario_escape.powerups_usados_en_pregunta
+            )
+            is None
+        )
+        if n <= 0:
+            return 0
+        filas = 1 + (n - 1) // 4
+        return filas * 36 + 8
+
+    def _y_banda_inventario(self) -> int:
+        altura = self._altura_banda_inventario()
+        if altura <= 0:
+            return ALTO - MARGEN_INF_PARTIDA
+        return ALTO - MARGEN_INF_PARTIDA - altura
+
+    def _reconstruir_inventario_botones(self) -> None:
+        self.botones_inventario = []
+        if self.fase != "pregunta":
+            return
+        items = [
+            (aid, self.inventario_escape.cantidad(aid))
+            for aid in sorted(self.inventario_escape.inventario.keys())
+            if self.inventario_escape.cantidad(aid) > 0
+            and puede_usar_powerup_en_pregunta(
+                aid, self.inventario_escape.powerups_usados_en_pregunta
+            )
+            is None
+        ]
+        if not items:
+            return
+        x = MARGEN
+        y = self._y_banda_inventario()
+        for aid, cant in items:
+            try:
+                art = articulo_tienda_por_id(aid)
+                emoji = art.emoji
+                nombre = art.nombre
+            except KeyError:
+                emoji = emoji_powerup(aid)
+                nombre = etiqueta_powerup(aid)
+            etiqueta_btn = prefijar_emoji(f"{nombre} ({cant})", emoji)
+            ancho = min(
+                156,
+                max(96, medir_etiqueta_boton(etiqueta_btn, self.fuentes["pequena"])[0] + 28),
+            )
+            rect = pygame.Rect(x, y, ancho, 32)
+            self.botones_inventario.append(
+                Boton(
+                    etiqueta_btn,
+                    rect,
+                    capturar(self._usar_objeto_escape, aid),
+                    tooltip=descripcion_articulo_escape(aid),
+                )
+            )
+            x += ancho + 8
+            if x > ANCHO - MARGEN - 80:
+                x = MARGEN
+                y += 36
+
+    def _reconstruir_tienda(self) -> None:
+        self.botones_tienda = []
+        arts = self._articulos_tienda
+        rects = self._rects_cartas_puertas(len(arts))
+        for i, art in enumerate(arts):
+            boton = Boton(
+                "",
+                rects[i],
+                capturar(self._comprar_tienda, art.id),
+                mostrar_texto=False,
+            )
+            boton.activo = art.id not in self._articulos_comprados_visita
+            self.botones_tienda.append(boton)
+        y_salir = self.Y_CARTAS_PUERTAS + self.ALTO_CARTA_PUERTA + 20
+        ancho = ANCHO - 2 * MARGEN
+        self.boton_salir_tienda = Boton(
+            "Continuar",
+            pygame.Rect(MARGEN, y_salir, ancho, 44),
+            self._salir_tienda,
+            tooltip="Salir de la tienda y avanzar de sala.",
+        )
+
+    def _articulo_tienda_comprable(self, articulo_id: str) -> str | None:
+        if articulo_id in self._articulos_comprados_visita:
+            return "Ya compraste este objeto en esta visita."
+        art = articulo_tienda_por_id(articulo_id)
+        if self.inventario_escape.cantidad(articulo_id) >= MAX_STOCK_ARTICULO_ESCAPE:
+            return f"Ya tienes el máximo ({MAX_STOCK_ARTICULO_ESCAPE}) de {art.nombre}."
+        if self.estado.puntos_arcade < art.precio:
+            return f"Necesitas {art.precio} pts (tienes {self.estado.puntos_arcade})."
+        return None
+
+    def _comprar_tienda(self, articulo_id: str) -> None:
+        previo = self._articulo_tienda_comprable(articulo_id)
+        if previo:
+            self.mensaje_tienda = previo
+            return
+        err = comprar_articulo_tienda(
+            self.estado, self.inventario_escape, articulo_id
+        )
+        if err:
+            self.mensaje_tienda = err
+            return
+        self.mensaje_tienda = ""
+        self._articulos_comprados_visita.add(articulo_id)
+        self._reconstruir_tienda()
+
+    def _iconos_carta_tienda(self, art) -> tuple[IconoEfectoPuerta, ...]:
+        return (
+            IconoEfectoPuerta(
+                art.emoji,
+                art.descripcion,
+                CapaIconoEscape.TIENDA,
+            ),
+        )
+
+    def _lineas_carta_tienda(self, art) -> tuple[str, str, list[str]]:
+        detalle = [f"{art.precio} puntos"]
+        if art.id in self._articulos_comprados_visita:
+            detalle.append("Comprado")
+            return art.nombre, art.descripcion, detalle
+        if self.inventario_escape.cantidad(art.id) >= MAX_STOCK_ARTICULO_ESCAPE:
+            detalle.append("Inventario lleno.")
+        elif self.estado.puntos_arcade < art.precio:
+            detalle.append("Puntos insuficientes.")
+        return art.nombre, art.descripcion, detalle
+
+    def _dibujar_carta_tienda(
+        self,
+        superficie: pygame.Surface,
+        art,
+        rect: pygame.Rect,
+        *,
+        hover: bool,
+        indice: int,
+    ) -> None:
+        comprado = art.id in self._articulos_comprados_visita
+        comprable = self._articulo_tienda_comprable(art.id) is None
+        if comprado:
+            color = (40, 40, 40)
+            color_titulo = (120, 120, 120)
+            color_sub = (100, 100, 100)
+        elif not comprable:
+            color = (238, 240, 244)
+            color_titulo = self._COLOR_TEXTO_CARTA
+            color_sub = self._COLOR_SUBTEXTO_CARTA
+        else:
+            color = self._COLOR_CARTA_HOVER if hover and comprable else self._COLOR_CARTA
+            color_titulo = self._COLOR_TEXTO_CARTA
+            color_sub = self._COLOR_SUBTEXTO_CARTA
+        dibujar_panel(superficie, rect, color=color)
+        if hover and comprable and not comprado:
+            pygame.draw.rect(superficie, COLOR_ACENTO, rect, width=3, border_radius=10)
+
+        inner = rect.inflate(-20, -20)
+        y = inner.y
+        iconos = self._iconos_carta_tienda(art)
+        hover_icono = indice if self._hover_icono_tienda == indice else None
+        self._dibujar_fila_iconos(superficie, inner, iconos, hover_idx=hover_icono)
+        y += self._ALTO_FILA_ICONOS + 10
+
+        titulo, descripcion, detalle = self._lineas_carta_tienda(art)
+
+        titulo_ui = preparar_texto_ui(titulo)
+        tit_surf = self.fuentes["menu"].render(titulo_ui, True, color_titulo)
+        tit_rect = tit_surf.get_rect(centerx=inner.centerx, top=y)
+        superficie.blit(tit_surf, tit_rect)
+        y += tit_surf.get_height() + 8
+
+        alto_desc = min(72, max(36, inner.bottom - y - 100))
+        desc_rect = pygame.Rect(inner.x, y, inner.width, alto_desc)
+        dibujar_texto_multilinea(
+            superficie,
+            self.fuentes["pequena"],
+            descripcion,
+            desc_rect,
+            color_sub,
+        )
+        y = desc_rect.bottom + 12
+
+        pygame.draw.line(
+            superficie,
+            (200, 210, 225),
+            (inner.x, y),
+            (inner.right, y),
+            1,
+        )
+        y += 10
+        detalle_rect = pygame.Rect(inner.x, y, inner.width, inner.bottom - y)
+        dibujar_texto_multilinea(
+            superficie,
+            self.fuentes["cuerpo"],
+            "\n".join(detalle),
+            detalle_rect,
+            color_titulo,
+        )
+
+    def _actualizar_hover_icono_tienda(self, pos: tuple[int, int]) -> None:
+        self._hover_icono_tienda = None
+        for i, boton in enumerate(self.botones_tienda):
+            if not boton.rect.collidepoint(pos):
+                continue
+            inner = boton.rect.inflate(-20, -20)
+            if self._rects_iconos_carta(inner, self._iconos_carta_tienda(self._articulos_tienda[i]))[
+                0
+            ].collidepoint(pos):
+                self._hover_icono_tienda = i
+            return
+
+    def _salir_tienda(self) -> None:
+        if self._intentar_feedback_bonus_completar():
+            return
+        self._finalizar_desafio()
+
+    def _usar_objeto_escape(self, articulo_id: str) -> None:
+        if self.fase != "pregunta":
+            return
+        p = self._pregunta_actual()
+        if articulo_id in {"skip", "cambio"}:
+            err = usar_objeto_escape(articulo_id, self.inventario_escape, p)
+            if err:
+                self.feedback_mensaje = err
+                self.feedback_ok = False
+                self.feedback_solucion = None
+                self.fase = "feedback"
+                self.inicio_feedback = marcar_inicio_feedback()
+                return
+            if articulo_id == "skip":
+                self.pregunta_idx += 1
+                if self.pregunta_idx >= len(self.preguntas_desafio):
+                    if self._intentar_feedback_bonus_completar():
+                        return
+                    self._finalizar_desafio()
+                    return
+                self.inventario_escape.reset_pregunta()
+                self.inicio_pregunta = time.monotonic()
+                self._tiempo_agotado_marcado = False
+                self.fase = "pregunta"
+                self._reconstruir_opciones()
+                self._reconstruir_inventario_botones()
+                return
+            indice = self._indice_pool_pregunta(p)
+            reemplazo = reemplazar_pregunta_cambio_escape(
+                self.pool,
+                self.puerta_actual,
+                indice_actual=indice,
+                numero_sala=self.sala_idx + 1,
+                n_salas=self.config.n_salas,
+                semilla=self._semilla_desafio() + self.pregunta_idx + 77771,
+                usadas=self._usadas_pool,
+            )
+            if reemplazo is None:
+                revocar_powerup_usado(
+                    self.inventario_escape.powerups_usados_en_pregunta, "cambio"
+                )
+                self.inventario_escape.agregar("cambio")
+                self.feedback_mensaje = "No hay otra pregunta compatible."
+                self.feedback_ok = False
+                self.feedback_solucion = None
+                self.fase = "feedback"
+                self.inicio_feedback = marcar_inicio_feedback()
+                return
+            self.preguntas_desafio[self.pregunta_idx] = reemplazo
+            self.inventario_escape.reiniciar_slot_pregunta()
+            self.inicio_pregunta = time.monotonic()
+            self._tiempo_agotado_marcado = False
+            self.fase = "pregunta"
+            self._reconstruir_opciones()
+            self._reconstruir_inventario_botones()
+            return
+
+        err = usar_objeto_escape(
+            articulo_id,
+            self.inventario_escape,
+            p,
+            estado=self.estado,
+            vidas_max=self.vidas_max,
+        )
+        if err:
+            self.feedback_mensaje = err
+            self.feedback_ok = False
+            self.feedback_solucion = None
+            self.fase = "feedback"
+            self.inicio_feedback = marcar_inicio_feedback()
+            return
+        if articulo_id in {"fifty_fifty", "bomba"}:
+            self._reconstruir_opciones()
+        self._reconstruir_inventario_botones()
 
     def _pregunta_actual(self) -> Pregunta:
         return self.preguntas_desafio[self.pregunta_idx]
@@ -1406,30 +1785,53 @@ class PartidaEscapeRoom(Pantalla):
         return Y_PANEL_PREGUNTA + ALTO_PANEL_PREGUNTA + GAP_TRAS_PANEL_PARTIDA
 
     def _y_fin_opciones(self) -> int:
-        return self._y_inicio_opciones() + 4 * (ALTO_OPCION_PARTIDA + SEP_OPCIONES_PARTIDA)
+        if self.botones_opcion:
+            return max(boton.rect.bottom for boton in self.botones_opcion)
+        n = 4
+        return (
+            self._y_inicio_opciones()
+            + n * ALTO_OPCION_PARTIDA
+            + max(0, n - 1) * SEP_OPCIONES_PARTIDA
+        )
+
+    def _y_mensaje_feedback(self) -> int:
+        gap = 12
+        y = self._y_fin_opciones() + gap
+        limite = self._y_banda_inventario() - 6
+        alto_est = self.fuentes["subtitulo"].get_height() + 8
+        if y + alto_est > limite:
+            y = max(self._y_fin_opciones() + 4, limite - alto_est)
+        return y
 
     def _reconstruir_opciones(self) -> None:
         p = self._pregunta_actual()
         mods = self.puerta_actual.modificadores if self.puerta_actual else None
+        ocultas_niebla: frozenset[str] = frozenset()
         if mods and mods.opciones_ocultas:
-            self.letras_ocultas = letras_ocultas_por_cantidad(
+            ocultas_niebla = letras_ocultas_por_cantidad(
                 p,
                 mods.opciones_ocultas,
                 semilla=self._semilla_desafio() + self.pregunta_idx,
             )
+        self.letras_ocultas = (
+            ocultas_niebla | self.inventario_escape.letras_ocultas_powerup
+        )
+        semilla_opciones = self._semilla_desafio() + self.pregunta_idx
+        self._presentacion_opciones = presentacion_opciones_pantalla(
+            p, semilla=semilla_opciones
+        )
         self.botones_opcion = []
         y = self._y_inicio_opciones()
-        for letra in ("A", "B", "C", "D"):
+        for etiqueta, texto_opc, letra_ds in self._presentacion_opciones.filas:
+            if letra_ds in self.letras_ocultas:
+                continue
             rect = pygame.Rect(MARGEN, y, ANCHO - 2 * MARGEN, ALTO_OPCION_PARTIDA)
-            texto_opc = p.opciones.get(letra, "")
-            if letra in self.letras_ocultas:
-                texto_opc = "???"
             self.botones_opcion.append(
                 BotonOpcion(
-                    letra,
+                    etiqueta,
                     texto_opc,
                     rect,
-                    capturar(self._responder, letra),
+                    capturar(self._responder, etiqueta),
                 )
             )
             y += ALTO_OPCION_PARTIDA + SEP_OPCIONES_PARTIDA
@@ -1510,7 +1912,22 @@ class PartidaEscapeRoom(Pantalla):
 
     def _tras_respuesta(self, resultado: ResultadoRespuesta) -> None:
         p = self._pregunta_actual()
+        escudo = (
+            not resultado.acierto
+            and not resultado.tiempo_agotado
+            and self.inventario_escape.escudo_activo
+        )
+        vidas_antes = self.estado.vidas_restantes if escudo else None
         feedback = evaluar_respuesta(p, self.estado, resultado)
+        if escudo and vidas_antes is not None:
+            self.estado.vidas_restantes = vidas_antes
+            self.inventario_escape.escudo_activo = False
+            feedback = replace(feedback, mensaje="Escudo: no pierdes vida.")
+        if resultado.acierto and not resultado.tiempo_agotado:
+            bonus_amuleto = self.inventario_escape.bonus_proximo_acierto
+            if bonus_amuleto:
+                self.estado.puntos_arcade += bonus_amuleto
+                self.inventario_escape.bonus_proximo_acierto = 0
         if (
             resultado.acierto
             and not resultado.tiempo_agotado
@@ -1533,26 +1950,36 @@ class PartidaEscapeRoom(Pantalla):
         if not resultado.acierto or resultado.tiempo_agotado:
             self.desafio_fallo = True
         self.feedback_mensaje = feedback.mensaje
-        self.feedback_solucion = solucion_feedback_grafico(feedback.solucion)
+        if feedback.solucion and self._presentacion_opciones is not None:
+            self.feedback_solucion = solucion_feedback_grafico(
+                texto_solucion(p, self._presentacion_opciones)
+            )
+        else:
+            self.feedback_solucion = solucion_feedback_grafico(feedback.solucion)
         self.feedback_ok = resultado.acierto and not resultado.tiempo_agotado
         self.fase = "feedback"
         self.inicio_feedback = marcar_inicio_feedback()
-        for boton in self.botones_opcion:
-            boton.activo = False
-            boton.marcar_correcta = False
-            boton.marcar_incorrecta = False
-            if boton.letra == p.correcta:
-                boton.marcar_correcta = True
-            elif boton.letra == resultado.respuesta and not resultado.acierto:
-                boton.marcar_incorrecta = True
+        if self._presentacion_opciones is not None:
+            marcar_botones_opciones_tras_respuesta(
+                self.botones_opcion,
+                presentacion=self._presentacion_opciones,
+                correcta_dataset=p.correcta,
+                respuesta_dataset=resultado.respuesta,
+                acierto=resultado.acierto,
+            )
 
     def _responder(self, letra: str) -> None:
         if self.fase != "pregunta":
             return
         p = self._pregunta_actual()
+        if self._presentacion_opciones is None:
+            return
+        letra_dataset = self._presentacion_opciones.letra_dataset(letra)
         correcta = p.correcta if p.correcta in {"A", "B", "C", "D"} else ""
-        acierto = letra == correcta and bool(correcta)
-        self._tras_respuesta(ResultadoRespuesta(acierto=acierto, respuesta=letra))
+        acierto = letra_dataset == correcta and bool(correcta)
+        self._tras_respuesta(
+            ResultadoRespuesta(acierto=acierto, respuesta=letra_dataset)
+        )
 
     def _avanzar_sala(self) -> None:
         self.sala_idx += 1
@@ -1580,13 +2007,17 @@ class PartidaEscapeRoom(Pantalla):
         ):
             return False
         bonus = bonificacion_completar_escape(self.puerta_actual)
-        if bonus.delta_vidas <= 0:
+        if not bonus.tiene_recompensa:
             return False
-        aplicar_bonificacion_completar(
+        _, self.vidas_max = aplicar_bonificacion_completar(
             self.estado,
             bonus,
-            vidas_max=self._VIDAS_MAX_DESCANSO,
+            vidas_max=self.vidas_max,
         )
+        for pid, cant in bonus.powerups:
+            espacio = MAX_STOCK_ARTICULO_ESCAPE - self.inventario_escape.cantidad(pid)
+            if espacio > 0:
+                self.inventario_escape.agregar(pid, min(cant, espacio))
         self._bonus_completar_mostrado = True
         self.feedback_mensaje = bonus.mensaje
         self.feedback_solucion = None
@@ -1614,10 +2045,12 @@ class PartidaEscapeRoom(Pantalla):
             self.fase = "pregunta"
             self.inicio_pregunta = time.monotonic()
             self._tiempo_agotado_marcado = False
+            self.inventario_escape.reset_pregunta()
             self.feedback_mensaje = ""
             self.feedback_solucion = None
             self.feedback_ok = False
             self._reconstruir_opciones()
+            self._reconstruir_inventario_botones()
             return
         if (
             not self.desafio_fallo
@@ -1639,7 +2072,9 @@ class PartidaEscapeRoom(Pantalla):
                 return None
             if (
                 self.tiempo_pregunta_limite
-                and time.monotonic() - self.inicio_pregunta >= self.tiempo_pregunta_limite
+                and self._limite_tiempo_pregunta_efectivo() is not None
+                and time.monotonic() - self.inicio_pregunta
+                >= self._limite_tiempo_pregunta_efectivo()
             ):
                 self._tiempo_agotado_marcado = True
                 self._tras_respuesta(
@@ -1727,6 +2162,60 @@ class PartidaEscapeRoom(Pantalla):
         tip = self._iconos_puerta[i][j].tooltip
         dibujar_tooltip(superficie, self.fuentes["pequena"], rects[j], tip)
 
+    def _dibujar_tienda(self, superficie: pygame.Surface) -> None:
+        superficie.fill(COLOR_FONDO)
+        self._dibujar_barra_superior(superficie)
+        sala = self._sala_actual()
+        titulo = titulo_pantalla(f"{sala.nombre if sala else 'Escape room'} · Tienda")
+        tit = self.fuentes["titulo"].render(titulo, True, COLOR_TITULO)
+        superficie.blit(tit, tit.get_rect(midtop=(ANCHO // 2, self.Y_TITULO_SALA)))
+        subt = self.fuentes["menu"].render(
+            f"Puntos arcade: {self.estado.puntos_arcade}",
+            True,
+            COLOR_TEXTO_PANEL,
+        )
+        superficie.blit(subt, subt.get_rect(midtop=(ANCHO // 2, self.Y_SUBTITULO_PUERTAS)))
+        intro = self.fuentes["pequena"].render(
+            linea_detalle_tienda_puerta(),
+            True,
+            self._COLOR_SUBTEXTO_CARTA,
+        )
+        superficie.blit(intro, intro.get_rect(midtop=(ANCHO // 2, self.Y_SUBTITULO_PUERTAS + 36)))
+        for i, boton in enumerate(self.botones_tienda):
+            self._dibujar_carta_tienda(
+                superficie,
+                self._articulos_tienda[i],
+                boton.rect,
+                hover=boton.hover,
+                indice=i,
+            )
+        if self._hover_icono_tienda is not None:
+            i = self._hover_icono_tienda
+            if i < len(self.botones_tienda):
+                inner = self.botones_tienda[i].rect.inflate(-20, -20)
+                rects = self._rects_iconos_carta(
+                    inner, self._iconos_carta_tienda(self._articulos_tienda[i])
+                )
+                if rects:
+                    dibujar_tooltip(
+                        superficie,
+                        self.fuentes["pequena"],
+                        rects[0],
+                        self._articulos_tienda[i].descripcion,
+                    )
+        if self.boton_salir_tienda:
+            self.boton_salir_tienda.dibujar(superficie, self.fuentes["menu"])
+        if self.mensaje_tienda:
+            msg = self.fuentes["cuerpo"].render(self.mensaje_tienda, True, COLOR_ACENTO)
+            superficie.blit(
+                msg,
+                msg.get_rect(midtop=(ANCHO // 2, self.Y_CARTAS_PUERTAS + self.ALTO_CARTA_PUERTA + 72)),
+            )
+        tips: list = []
+        if self.boton_salir_tienda:
+            tips.append(self.boton_salir_tienda)
+        dibujar_tooltips_botones(superficie, self.fuentes["pequena"], tips + self._botones_ui())
+
     def _dibujar_feedback_sin_pregunta(self, superficie: pygame.Surface) -> None:
         """Tras descanso u otro desafío sin bloque de preguntas."""
         superficie.fill(COLOR_FONDO)
@@ -1756,7 +2245,7 @@ class PartidaEscapeRoom(Pantalla):
         if puerta:
             foco_txt = puerta.evento.etiqueta_foco or p.materia
             meta_txt = (
-                f"{puerta.evento.emoji} {puerta.evento.nombre} · "
+                f"{emoji_tipo_puerta_escape(puerta.evento)} {puerta.evento.nombre} · "
                 f"{foco_txt} · {p.tipo} / {p.dificultad}"
             )
         else:
@@ -1772,6 +2261,9 @@ class PartidaEscapeRoom(Pantalla):
         )
         for boton in self.botones_opcion:
             boton.dibujar(superficie, self.fuentes["opcion"])
+        if self.fase == "pregunta":
+            for boton in self.botones_inventario:
+                boton.dibujar(superficie, self.fuentes["pequena"])
         if self.fase == "feedback":
             dibujar_feedback_partida(
                 superficie,
@@ -1779,9 +2271,12 @@ class PartidaEscapeRoom(Pantalla):
                 mensaje=self.feedback_mensaje,
                 solucion=self.feedback_solucion,
                 acierto=self.feedback_ok,
-                y_mensaje=self._y_fin_opciones() + 8,
+                y_mensaje=self._y_mensaje_feedback(),
             )
-        dibujar_tooltips_botones(superficie, self.fuentes["pequena"], self._botones_ui())
+        tips = list(self._botones_ui())
+        if self.fase == "pregunta":
+            tips.extend(self.botones_inventario)
+        dibujar_tooltips_botones(superficie, self.fuentes["pequena"], tips)
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
         if evento.type == pygame.MOUSEMOTION:
@@ -1791,8 +2286,16 @@ class PartidaEscapeRoom(Pantalla):
                 for boton in self.botones_puerta:
                     boton.actualizar_hover(evento.pos)
                 self._actualizar_hover_iconos(evento.pos)
+            elif self.fase == "tienda":
+                for boton in self.botones_tienda:
+                    boton.actualizar_hover(evento.pos)
+                self._actualizar_hover_icono_tienda(evento.pos)
+                if self.boton_salir_tienda:
+                    self.boton_salir_tienda.actualizar_hover(evento.pos)
             elif self.fase == "pregunta":
                 for boton in self.botones_opcion:
+                    boton.actualizar_hover(evento.pos)
+                for boton in self.botones_inventario:
                     boton.actualizar_hover(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
             if self.boton_abandonar.manejar_clic(evento.pos, evento.button):
@@ -1801,15 +2304,29 @@ class PartidaEscapeRoom(Pantalla):
                 for boton in self.botones_puerta:
                     if boton.manejar_clic(evento.pos, evento.button):
                         break
-            elif self.fase == "pregunta":
-                for boton in self.botones_opcion:
+            elif self.fase == "tienda":
+                for boton in self.botones_tienda:
                     if boton.manejar_clic(evento.pos, evento.button):
                         break
+                if self.boton_salir_tienda and self.boton_salir_tienda.manejar_clic(
+                    evento.pos, evento.button
+                ):
+                    pass
+            elif self.fase == "pregunta":
+                for boton in self.botones_inventario:
+                    if boton.manejar_clic(evento.pos, evento.button):
+                        break
+                else:
+                    for boton in self.botones_opcion:
+                        if boton.manejar_clic(evento.pos, evento.button):
+                            break
         return None
 
     def dibujar(self, superficie: pygame.Surface) -> None:
         if self.fase == "puertas":
             self._dibujar_puertas(superficie)
+        elif self.fase == "tienda":
+            self._dibujar_tienda(superficie)
         elif self.fase == "feedback" and not self.preguntas_desafio:
             self._dibujar_feedback_sin_pregunta(superficie)
         else:

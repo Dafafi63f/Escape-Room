@@ -2,7 +2,7 @@
 
 Registro **vivo** del proyecto: snapshot de estado, feedback del tutor y changelog por sesiones. Las tareas abiertas están en [`CHECKLIST.md`](CHECKLIST.md).
 
-**Última actualización:** 2026-06-19
+**Última actualización:** 2026-06-26
 **Alumno:** Daniel Fageda Figueredo · **Tutor:** Víctor Navas Portella
 
 En [`Docs/`](README.md): changelogs, checklist y memoria borrador. El repositorio no versiona PDFs.
@@ -26,10 +26,10 @@ Regenerar figuras: `python Docs/generar_figuras_memoria.py` · Word: `python uti
 |------|--------|-------|
 | **Memoria** | En revisión con tutor | Estructura académica; Word desde MD/LaTeX; PDF de entrega manual |
 | **Banco de preguntas** | Cerrado | 480/480 revisadas; `Preguntas.csv` protegido (`TFG_PERMITIR_CSV=1` para escribir) |
-| **Juego (pygame)** | Operativo | 4 modos: libre, historia, resistencia, feedback |
+| **Juego (pygame)** | Operativo | 5 modos: libre, historia, resistencia, escape room, feedback |
 | **Scripts mantenimiento** | Operativo | `Files/mantenimiento.py` (scripts en `Files/`) |
-| **CI / pruebas** | Operativo | GitHub Actions; **258 tests** (250 + 8) |
-| **Interfaz gráfica / narrativa** | En desarrollo | Pygame operativo; narrativa escape room pendiente |
+| **CI / pruebas** | Operativo | GitHub Actions; **395 tests** (387 + 8) |
+| **Interfaz gráfica / narrativa** | Parcial | Escape room jugable (mecánicas); narrativa gráfica completa pendiente |
 | **Piloto con usuarios** | No realizado | Ver [`CHECKLIST.md`](CHECKLIST.md) |
 
 **Entregable actual:** juego pygame + banco 480 preguntas + herramientas de validación.
@@ -52,8 +52,8 @@ Regenerar figuras: `python Docs/generar_figuras_memoria.py` · Word: `python uti
 | Elemento | Estado | Notas |
 |----------|--------|-------|
 | Lanzador gráfico | OK | `Juego/juego_grafico.py` + `Juego/Grafico/` |
-| Paquete `Comun/` | OK | Dominio: reglas, datos, informes, feedback, historia, resistencia |
-| Paquete `Grafico/` | OK | UI pygame, cuatro modos |
+| Paquete `Comun/` | OK | Dominio: reglas, datos, informes, feedback, historia, resistencia, escape |
+| Paquete `Grafico/` | OK | UI pygame, cinco modos de juego |
 | Ejecutable Windows | Opcional | `Juego/build_exe_onefile.ps1` → `juego_grafico.exe` |
 | Tests + CI | OK | `python -m unittest discover -s Tests -q` |
 
@@ -100,7 +100,7 @@ Leyenda: ✅ aplicado · 🔄 parcial · ⏳ pendiente
 | Tema | Prioridad | Notas |
 |------|-----------|-------|
 | Piloto con estudiantes | Media | En [`CHECKLIST.md`](CHECKLIST.md) |
-| Escape room narrativo | Baja | En [`CHECKLIST.md`](CHECKLIST.md) |
+| Escape room narrativo | Baja | Mecánicas en juego; guion visual completo en [`CHECKLIST.md`](CHECKLIST.md) |
 | Revisión final Word → PDF | Alta | En [`CHECKLIST.md`](CHECKLIST.md) |
 | Pares similares CSV/plantillas | ✅ | 2026-06-15 |
 
@@ -109,6 +109,17 @@ Leyenda: ✅ aplicado · 🔄 parcial · ⏳ pendiente
 ## 4. Changelog (historial)
 
 Síntesis de **41 commits** en git (mayo–junio 2026) más el trabajo reciente en la rama gráfica. Las filas antiguas de la tabla resumen siguen abajo; el detalle por periodo es el referencia principal.
+
+### 2026-06-26 — Escape room (mecánicas)
+
+| Ámbito | Cambio |
+|--------|--------|
+| Escape | Salas, puertas, escalada, cronómetros, niebla, puertas jefe; catálogo unificado en `eventos_partida.py` |
+| Escape | Tienda (`tienda_escape.py`): economía en puntos, inventario, 3 artículos/visita, compra múltiple (1 u. c/u) |
+| Escape | Botín: vidas, corazón máximo y objetos (bomba, 50/50, …); pity cada 3 salas; hard pity descanso/tienda |
+| Escape | Pity dual descanso/tienda; persistencia entre salas; UI cartas puerta + inventario inferior |
+| Gráfico | `PartidaEscapeRoom` en `pantallas_modos.py`; emojis escape (`emojis_escape.py`) |
+| Tests | `test_escape_room.py` ampliado; suite **387** tests en `Tests/` |
 
 ### 2026-06-19 — Rama gráfica (local / pendiente de commit)
 
@@ -202,6 +213,7 @@ Síntesis de **41 commits** en git (mayo–junio 2026) más el trabajo reciente 
 
 | Fecha | Ámbito | Cambio |
 |-------|--------|--------|
+| 2026-06-26 | Escape | Modo escape room: tienda, botín, inventario, pity; 387 tests `Tests/` |
 | 2026-06-19 | Entrega | Prep. informe: figuras y Word regenerados, limpieza, merge en `main` |
 | 2026-06-19 | Migración | Solo pygame: eliminado `Juego/Consola/`, módulos a `Comun/`, 258 tests |
 | 2026-06-19 | Build | PyInstaller: empaqueta `utils_plantillas_core` (`--paths Files`, hidden-import) |

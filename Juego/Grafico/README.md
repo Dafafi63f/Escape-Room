@@ -58,6 +58,7 @@ python Juego/juego_grafico.py
 | **Libre** | Implementado | Wizard dos pasos; filtros; tooltips |
 | **Historia** | Implementado | Carrusel de 5 presets (`Data/Juego/presets_historia.json`) |
 | **Resistencia** | Implementado | Eventos, objetos, ranking local |
+| **Escape room** | Implementado | 30 salas, tienda, botín, inventario (pity descanso/tienda/botín) |
 | **Feedback** | Implementado | Icono 📣 en barra; envío SMTP si hay config en `Data/Banco/creador_privado.json` |
 | **Info** | Implementado | Icono ℹ️: ranking, contacto del creador, changelog del juego |
 
@@ -73,8 +74,8 @@ python Juego/juego_grafico.py
 
 ## Tooltips
 
-Textos en [`tooltips_ui.py`](tooltips_ui.py). Cobertura: iconos de barra, menús, wizard libre/historia, inventario resistencia, etc.
+Textos en [`tooltips_ui.py`](tooltips_ui.py). Cobertura: iconos de barra, menús, wizard libre/historia, inventario resistencia y escape, etc.
 
 ## Pruebas
 
-[`Tests/test_grafico_menus.py`](../../Tests/test_grafico_menus.py), [`Tests/test_grafico_ui.py`](../../Tests/test_grafico_ui.py), dominio en [`Tests/test_dominio_juego.py`](../../Tests/test_dominio_juego.py).
+[`Tests/test_grafico_menus.py`](../../Tests/test_grafico_menus.py), [`Tests/test_grafico_ui.py`](../../Tests/test_grafico_ui.py), [`Tests/test_escape_room.py`](../../Tests/test_escape_room.py), dominio en [`Tests/test_dominio_juego.py`](../../Tests/test_dominio_juego.py).

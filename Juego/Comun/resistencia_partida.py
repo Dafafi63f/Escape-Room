@@ -23,9 +23,11 @@ __all__ = [
     "BancoResistencia",
     "EscaladaResistencia",
     "EventoAleatorioResistencia",
+    "PityEventosResistencia",
     "PREGUNTA_MIN_EVENTOS_ALEATORIOS",
     "aplicar_escalada_a_reglas",
     "avisos_pre_pregunta_resistencia",
+    "baseline_escalada_resistencia",
     "construir_banco_resistencia",
     "construir_pool_resistencia",
     "elegir_indice_resistencia",
@@ -37,6 +39,8 @@ __all__ = [
     "eventos_aleatorios_para_pregunta",
     "eventos_aleatorios_para_racha",
     "parametros_eventos_aleatorios",
+    "actualizar_pity_eventos_resistencia",
+    "prob_gate_evento_resistencia_con_pity",
     "pool_resistencia_desde_dataset",
     "probabilidad_pregunta_exclusiva",
     "texto_efectos_escalada",
@@ -47,15 +51,124 @@ _DIFICULTADES = ("Facil", "Media", "Dificil")
 RACHA_MIN_EVENTOS_ALEATORIOS = PREGUNTA_MIN_EVENTOS_ALEATORIOS
 
 from Comun.eventos_partida import (
+    elegir_malos_resistencia_exclusivos,
     ids_eventos_buenos_resistencia,
-    ids_eventos_malos_resistencia_para,
+    malos_resistencia_vigentes,
     ids_pool_resistencia_aleatorio,
 )
 
 _EVENTOS_ALEATORIOS_POOL = ids_pool_resistencia_aleatorio()
 _EVENTOS_BUENOS = ids_eventos_buenos_resistencia()
 
+_MALOS_PITY_RESISTENCIA = frozenset({
+    "relampago",
+    "opciones_ocultas",
+    "enunciado_oculto",
+    "niebla_ambos",
+})
+_KINDS_PITY_RESISTENCIA = _MALOS_PITY_RESISTENCIA | frozenset({"doble"})
+
+_PITY_INC_GATE_MALO = 0.025
+_PITY_INC_GATE_BUENO = 0.018
+_PROB_GATE_MAX_BOOST_MALO = 0.35
+_PROB_GATE_MAX_BOOST_BUENO = 0.30
+_PITY_INC_MALO_KIND = 0.22
+_PESO_BASE_MALO_KIND = 1.0
+
 # Hasta aquí el techo de complejidad suele dejar solo fácil/medio; eventos solo modifican la pregunta actual.
+
+
+@dataclass
+class PityEventosResistencia:
+    """Preguntas seguidas sin ver un popup de escalada; sube prob. y peso al elegir tipo."""
+
+    preguntas_sin_malo: int = 0
+    preguntas_sin_bueno: int = 0
+    preguntas_sin_por_kind: dict[str, int] = field(
+        default_factory=lambda: {k: 0 for k in _KINDS_PITY_RESISTENCIA}
+    )
+    ultima_pregunta_actualizada: int = 0
+    _cache_pregunta: int = 0
+    _cache_eventos: tuple[EventoAleatorioResistencia, ...] = ()
+
+
+def prob_gate_evento_resistencia_con_pity(
+    *,
+    prob_base: float,
+    preguntas_sin_ver: int,
+    incremento_por_pregunta: float,
+    max_boost: float,
+    prob_tope: float = 0.98,
+) -> float:
+    if preguntas_sin_ver <= 0:
+        return prob_base
+    boost = min(max_boost, preguntas_sin_ver * incremento_por_pregunta)
+    return min(prob_tope, prob_base + boost)
+
+
+def kind_de_evento_resistencia(evento: EventoAleatorioResistencia) -> str | None:
+    if evento.tiempo_pregunta is not None:
+        return "relampago"
+    if evento.multiplicador_puntos is not None:
+        return "doble"
+    tiene_opc = (evento.opciones_ocultas or 0) > 0
+    tiene_enun = evento.fraccion_enunciado is not None and evento.fraccion_enunciado < 1.0
+    if tiene_opc and tiene_enun:
+        return "niebla_ambos"
+    if tiene_opc:
+        return "opciones_ocultas"
+    if tiene_enun:
+        return "enunciado_oculto"
+    return None
+
+
+def kinds_de_eventos_resistencia(
+    eventos: tuple[EventoAleatorioResistencia, ...],
+) -> frozenset[str]:
+    vistos: set[str] = set()
+    for evento in eventos:
+        kind = kind_de_evento_resistencia(evento)
+        if kind is not None:
+            vistos.add(kind)
+    return frozenset(vistos)
+
+
+def actualizar_pity_eventos_resistencia(
+    pity: PityEventosResistencia,
+    eventos: tuple[EventoAleatorioResistencia, ...],
+    *,
+    numero_pregunta: int,
+    kinds_vigentes: tuple[str, ...],
+) -> None:
+    """Tras una pregunta: resetea el pity del tipo visto o acumula +1 (idempotente)."""
+    if numero_pregunta <= pity.ultima_pregunta_actualizada:
+        return
+    pity.ultima_pregunta_actualizada = numero_pregunta
+    vistos = kinds_de_eventos_resistencia(eventos)
+    hubo_malo = bool(vistos & _MALOS_PITY_RESISTENCIA)
+    pity.preguntas_sin_malo = 0 if hubo_malo else pity.preguntas_sin_malo + 1
+    pity.preguntas_sin_bueno = 0 if "doble" in vistos else pity.preguntas_sin_bueno + 1
+    for kind in kinds_vigentes:
+        if kind in vistos:
+            pity.preguntas_sin_por_kind[kind] = 0
+        else:
+            pity.preguntas_sin_por_kind[kind] = pity.preguntas_sin_por_kind.get(kind, 0) + 1
+    if numero_pregunta >= PREGUNTA_MIN_EVENTOS_ALEATORIOS:
+        if "doble" in vistos:
+            pity.preguntas_sin_por_kind["doble"] = 0
+        else:
+            pity.preguntas_sin_por_kind["doble"] = pity.preguntas_sin_por_kind.get("doble", 0) + 1
+
+
+def _pesos_malos_resistencia_con_pity(
+    pity: PityEventosResistencia,
+    kinds: tuple[str, ...],
+) -> dict[str, float]:
+    return {
+        kind: _PESO_BASE_MALO_KIND
+        + pity.preguntas_sin_por_kind.get(kind, 0) * _PITY_INC_MALO_KIND
+        for kind in kinds
+    }
 
 
 @dataclass(frozen=True)
@@ -71,6 +184,19 @@ class EventoAleatorioResistencia:
     fraccion_enunciado: float | None = None
     min_max_complejidad: int | None = None
     unir_dificultades: frozenset[str] | None = None
+
+
+@dataclass(frozen=True)
+class BaselineEscaladaResistencia:
+    """Reglas fijas de la escalada antes de eventos aleatorios."""
+
+    nivel: int
+    tiempo_pregunta_seg: int | None
+    max_complejidad: int
+    dificultades_permitidas: frozenset[str]
+    fraccion_enunciado: float
+    opciones_ocultas: int
+    efectos: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -145,10 +271,45 @@ def parametros_eventos_aleatorios(
     return prob_buena, prob_mala, max_malos, max_buenos, intensidad
 
 
-def _construir_evento(kind: str, intensidad: float) -> EventoAleatorioResistencia:
+def _construir_evento(
+    kind: str,
+    intensidad: float,
+    *,
+    numero_pregunta: int,
+) -> EventoAleatorioResistencia:
     from Comun.eventos_partida import evento_resistencia_aleatorio
 
-    return evento_resistencia_aleatorio(kind, intensidad)
+    return evento_resistencia_aleatorio(kind, intensidad, numero_pregunta=numero_pregunta)
+
+
+def _añadir_malos_aleatorios(
+    eventos: list[EventoAleatorioResistencia],
+    *,
+    kinds: tuple[str, ...],
+    cantidad: int,
+    intensidad: float,
+    numero_pregunta: int,
+    rng: random.Random,
+    familias_usadas: set[str],
+    pity: PityEventosResistencia | None = None,
+) -> None:
+    from Comun.eventos_partida import familia_malo_resistencia
+
+    disponibles = tuple(
+        k
+        for k in kinds
+        if (fam := familia_malo_resistencia(k)) is None or fam not in familias_usadas
+    )
+    pesos = _pesos_malos_resistencia_con_pity(pity, disponibles) if pity is not None else None
+    for kind in elegir_malos_resistencia_exclusivos(
+        disponibles, cantidad, rng, pesos=pesos
+    ):
+        eventos.append(
+            _construir_evento(kind, intensidad, numero_pregunta=numero_pregunta)
+        )
+        familia = familia_malo_resistencia(kind)
+        if familia is not None:
+            familias_usadas.add(familia)
 
 
 def eventos_aleatorios_para_pregunta(
@@ -156,10 +317,17 @@ def eventos_aleatorios_para_pregunta(
     *,
     semilla_partida: int | None = None,
     racha: int = 0,
+    baseline: BaselineEscaladaResistencia | None = None,
+    pity: PityEventosResistencia | None = None,
 ) -> tuple[EventoAleatorioResistencia, ...]:
     """Efectos de escalada; con racha extrema se apilan hostiles más allá del tope."""
     from Comun.resistencia_motor import exceso_presion_racha, intensidad_presion_racha
 
+    if pity is not None and pity._cache_pregunta == numero_pregunta:
+        return pity._cache_eventos
+
+    if baseline is None:
+        baseline = baseline_escalada_resistencia(numero_pregunta)
     prob_buena, prob_mala, max_malos, max_buenos, intensidad = parametros_eventos_aleatorios(
         numero_pregunta
     )
@@ -168,38 +336,85 @@ def eventos_aleatorios_para_pregunta(
         max_buenos = 0
     if max_malos <= 0 and max_buenos <= 0 and t_presion <= 1.0:
         return ()
+    kinds = malos_resistencia_vigentes(
+        numero_pregunta,
+        tiempo_baseline=baseline.tiempo_pregunta_seg,
+        fraccion_baseline=baseline.fraccion_enunciado,
+        opciones_baseline=baseline.opciones_ocultas,
+    )
     base = semilla_partida or 0
     rng = random.Random(numero_pregunta * 7919 + 17 + base * 10007)
     eventos: list[EventoAleatorioResistencia] = []
+    familias_usadas: set[str] = set()
 
-    if prob_mala > 0.0 and max_malos > 0 and rng.random() <= prob_mala:
-        kinds = list(ids_eventos_malos_resistencia_para(numero_pregunta))
-        rng.shuffle(kinds)
+    prob_mala_eff = prob_mala
+    if pity is not None and prob_mala > 0.0:
+        prob_mala_eff = prob_gate_evento_resistencia_con_pity(
+            prob_base=prob_mala,
+            preguntas_sin_ver=pity.preguntas_sin_malo,
+            incremento_por_pregunta=_PITY_INC_GATE_MALO,
+            max_boost=_PROB_GATE_MAX_BOOST_MALO,
+        )
+
+    if prob_mala_eff > 0.0 and max_malos > 0 and kinds and rng.random() <= prob_mala_eff:
         n_malos = 1
         if max_malos > 1 and rng.random() < min(0.35, intensidad * 0.4):
             n_malos = min(2, max_malos, len(kinds))
-        for i in range(n_malos):
-            eventos.append(_construir_evento(kinds[i % len(kinds)], intensidad))
+        _añadir_malos_aleatorios(
+            eventos,
+            kinds=kinds,
+            cantidad=n_malos,
+            intensidad=intensidad,
+            numero_pregunta=numero_pregunta,
+            rng=rng,
+            familias_usadas=familias_usadas,
+            pity=pity,
+        )
 
     from Comun.resistencia_motor import probabilidad_evento_bueno_escalada
 
     prob_evento_bueno = probabilidad_evento_bueno_escalada(numero_pregunta)
-    if prob_evento_bueno > 0.0 and max_buenos > 0 and rng.random() <= prob_evento_bueno:
-        eventos.append(_construir_evento("doble", intensidad))
+    prob_bueno_eff = prob_evento_bueno
+    if pity is not None and prob_evento_bueno > 0.0:
+        prob_bueno_eff = prob_gate_evento_resistencia_con_pity(
+            prob_base=prob_evento_bueno,
+            preguntas_sin_ver=pity.preguntas_sin_bueno,
+            incremento_por_pregunta=_PITY_INC_GATE_BUENO,
+            max_boost=_PROB_GATE_MAX_BOOST_BUENO,
+            prob_tope=0.95,
+        )
+    if prob_bueno_eff > 0.0 and max_buenos > 0 and rng.random() <= prob_bueno_eff:
+        eventos.append(
+            _construir_evento("doble", intensidad, numero_pregunta=numero_pregunta)
+        )
 
     exceso = exceso_presion_racha(racha)
-    if exceso > 0.0:
+    if exceso > 0.0 and kinds:
         rng_extra = random.Random(
             numero_pregunta * 8311 + 29 + base * 10007 + racha * 17
         )
-        kinds = list(ids_eventos_malos_resistencia_para(numero_pregunta))
-        rng_extra.shuffle(kinds)
         n_extra = min(8, 1 + int(exceso * 5))
         int_extra = min(1.0, intensidad + exceso * 0.2)
-        for i in range(n_extra):
-            eventos.append(
-                _construir_evento(kinds[i % len(kinds)], int_extra)
-            )
+        _añadir_malos_aleatorios(
+            eventos,
+            kinds=kinds,
+            cantidad=n_extra,
+            intensidad=int_extra,
+            numero_pregunta=numero_pregunta,
+            rng=rng_extra,
+            familias_usadas=familias_usadas,
+            pity=pity,
+        )
+
+    if pity is not None:
+        actualizar_pity_eventos_resistencia(
+            pity,
+            tuple(eventos),
+            numero_pregunta=numero_pregunta,
+            kinds_vigentes=kinds,
+        )
+        pity._cache_pregunta = numero_pregunta
+        pity._cache_eventos = tuple(eventos)
 
     return tuple(eventos)
 
@@ -240,18 +455,12 @@ def _fusionar_evento_en_escalada(
     return tiempo, max_cx, permitidas, mult, opciones_ocultas, fraccion_enunciado
 
 
-def escalada_para_pregunta(
-    numero_pregunta: int,
-    *,
-    semilla_partida: int | None = None,
-    racha: int = 0,
-) -> EscaladaResistencia:
-    """Calcula reglas vigentes según el número de pregunta (1 = inicio fácil, sin tiempo)."""
+def baseline_escalada_resistencia(numero_pregunta: int) -> BaselineEscaladaResistencia:
+    """Reglas fijas por progreso: tiempo y niebla pasan a ser permanentes en fases altas."""
     progreso = max(0, numero_pregunta - 1)
     tiempo: int | None = None
     max_cx = 2
     permitidas = frozenset(_DIFICULTADES)
-    mult = 1
     nivel = 0
     opciones_ocultas = 0
     fraccion_enunciado = 1.0
@@ -298,8 +507,58 @@ def escalada_para_pregunta(
         permitidas = frozenset({"Media", "Dificil"})
         efectos.append("Sin preguntas fáciles")
 
+    if progreso >= 600:
+        fraccion_enunciado = min(fraccion_enunciado, 0.35)
+        opciones_ocultas = max(opciones_ocultas, 2)
+        efectos.append("Niebla densa en enunciado y opciones")
+    elif progreso >= 350:
+        fraccion_enunciado = min(fraccion_enunciado, 0.45)
+        opciones_ocultas = max(opciones_ocultas, 1)
+        efectos.append("Niebla en enunciado y opciones")
+    elif progreso >= 150:
+        fraccion_enunciado = min(fraccion_enunciado, 0.55)
+        efectos.append("Niebla en el enunciado")
+    elif progreso >= 50:
+        fraccion_enunciado = min(fraccion_enunciado, 0.72)
+        efectos.append("Bruma leve en el enunciado")
+    elif progreso >= 25:
+        fraccion_enunciado = min(fraccion_enunciado, 0.88)
+        efectos.append("Bruma leve en el enunciado")
+
+    return BaselineEscaladaResistencia(
+        nivel=nivel,
+        tiempo_pregunta_seg=tiempo,
+        max_complejidad=max_cx,
+        dificultades_permitidas=permitidas,
+        fraccion_enunciado=fraccion_enunciado,
+        opciones_ocultas=opciones_ocultas,
+        efectos=tuple(efectos),
+    )
+
+
+def escalada_para_pregunta(
+    numero_pregunta: int,
+    *,
+    semilla_partida: int | None = None,
+    racha: int = 0,
+    pity: PityEventosResistencia | None = None,
+) -> EscaladaResistencia:
+    """Calcula reglas vigentes según el número de pregunta (1 = inicio fácil, sin tiempo)."""
+    base = baseline_escalada_resistencia(numero_pregunta)
+    tiempo = base.tiempo_pregunta_seg
+    max_cx = base.max_complejidad
+    permitidas = base.dificultades_permitidas
+    mult = 1
+    opciones_ocultas = base.opciones_ocultas
+    fraccion_enunciado = base.fraccion_enunciado
+    efectos = list(base.efectos)
+
     for evento in eventos_aleatorios_para_pregunta(
-        numero_pregunta, semilla_partida=semilla_partida, racha=racha
+        numero_pregunta,
+        semilla_partida=semilla_partida,
+        racha=racha,
+        baseline=base,
+        pity=pity,
     ):
         (
             tiempo,
@@ -320,7 +579,7 @@ def escalada_para_pregunta(
         )
 
     return EscaladaResistencia(
-        nivel=nivel,
+        nivel=base.nivel,
         tiempo_pregunta_seg=tiempo,
         max_complejidad=max_cx,
         dificultades_permitidas=permitidas,
@@ -565,6 +824,8 @@ def avisos_pre_pregunta_resistencia(
         numero_pregunta,
         semilla_partida=er.semilla_partida if er else None,
         racha=er.racha if er is not None else 0,
+        baseline=baseline_escalada_resistencia(numero_pregunta),
+        pity=er.pity_eventos if er is not None else None,
     ):
         avisos.append(formatear_aviso_evento(evento.etiqueta))
     if p.exclusiva_resistencia:

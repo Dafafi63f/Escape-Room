@@ -40,8 +40,11 @@ class TestEventosPartida(unittest.TestCase):
 
         self.assertGreater(len(eventos_para_escape()), 10)
         self.assertIn("descanso", {e.id for e in eventos_puerta_escape_para_sala(1)})
-        self.assertIn("respiro", {e.id for e in eventos_puerta_escape_para_sala(1)})
         self.assertIn("botin", {e.id for e in eventos_puerta_escape_para_sala(6)})
+        self.assertIn(
+            "botin_corazon_max",
+            {e.id for e in eventos_puerta_escape_para_sala(12)},
+        )
         ids_escape_puerta = {e.id for e in eventos_puerta_escape_para_sala(30)}
         self.assertNotIn("sin_pistas", ids_escape_puerta)
         self.assertNotIn("examen_cerrado", ids_escape_puerta)
@@ -57,7 +60,7 @@ class TestEventosPartida(unittest.TestCase):
         )
         self.assertNotIn("sin_pistas", {e.id for e in catalogo_eventos()})
         self.assertNotIn("examen_cerrado", {e.id for e in catalogo_eventos()})
-        self.assertIn("solo_facil", {e.id for e in eventos_contenido_escape_para_sala(1)})
+        self.assertIn("puerta_materia", {e.id for e in eventos_contenido_escape_para_sala(1)})
         for ev in eventos_para_escape():
             self.assertIn(ev.rol_escape, {RolEscape.PUERTA, RolEscape.CONTENIDO})
         self.assertIn("triple_puntos", {e.id for e in eventos_puerta_escape_para_sala(30)})
@@ -80,7 +83,7 @@ class TestEventosPartida(unittest.TestCase):
         )
         texto = texto_evento_contenido(ev)
         self.assertIn("Àlgebra Lineal", texto)
-        self.assertIn("Balanceado", texto)
+        self.assertIn("Puerta de materia", texto)
 
     def test_texto_contenido_incluye_nombre_grupo_completo(self) -> None:
         ev = EventoContenidoInstanciado(
@@ -100,7 +103,20 @@ class TestEventosPartida(unittest.TestCase):
         for ev in catalogo_eventos():
             self.assertIsInstance(ev.alcance, AlcanceEvento)
 
+    def test_catalogo_escape_emojis_y_capas(self) -> None:
+        from Comun.emojis_escape import (
+            CAPA_EVENTO_ESCAPE,
+            EMOJI_EVENTO_ESCAPE,
+            capa_evento_escape,
+        )
+
+        for eid, emoji in EMOJI_EVENTO_ESCAPE.items():
+            ev = evento_por_id(eid)
+            self.assertEqual(ev.emoji, emoji, msg=eid)
+            self.assertEqual(capa_evento_escape(eid), CAPA_EVENTO_ESCAPE[eid])
+
     def test_iconos_descanso_sin_contenido(self) -> None:
+        from Comun.emojis_escape import EMOJI_DESCANSO
         evento = EventoContenidoInstanciado(
             definicion=evento_por_id("solo_facil"),
             materia="Probabilitat",
@@ -117,7 +133,7 @@ class TestEventosPartida(unittest.TestCase):
             n_preguntas=puerta.n_preguntas,
         )
         self.assertEqual(len(iconos), 1)
-        self.assertEqual(iconos[0].emoji, "💤")
+        self.assertEqual(iconos[0].emoji, EMOJI_DESCANSO)
 
 
 if __name__ == "__main__":

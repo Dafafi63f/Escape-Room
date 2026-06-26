@@ -191,7 +191,7 @@ La arquitectura del software se organiza en capas desacopladas (figura 1): el la
 | Revisión manual del contenido | 480/480 ítems revisados; validación automatizada |
 | Auditoría de distractores | `mantenimiento.py auditar-distractores` (terminal; `--json` opcional) |
 | Duplicados semánticos | `duplicados.py revisar` (0 pares similares en CSV y plantillas intra-materia, 2026-06-15) |
-| Pruebas de regresión | `python -m unittest discover -s Tests -v` (**258** tests: 250 + 8 en `Files/`) |
+| Pruebas de regresión | `python -m unittest discover -s Tests -v` (**395** tests: 387 + 8 en `Files/`) |
 | Integración continua | GitHub Actions (`.github/workflows/tests.yml`) |
 | Revisión con profesorado | Identificación de solapamiento temático y prerrequisitos (véase §6.2) |
 | Simulación Monte Carlo | `Files/simulacion_evaluacion_azar.py` (véase §5.7) |
@@ -223,7 +223,7 @@ El banco distingue **modo seguro** (solo dataset revisado) y **modo beta** (pool
 
 ## Aplicación de juego
 
-**Estado del entregable:** cuestionario en **pygame** con cuatro modos operativos (libre, historia, resistencia, feedback), banco de **480 preguntas** revisadas manualmente y herramientas de mantenimiento del dataset. La capa narrativa escape room / novela gráfica completa queda como evolución futura.
+**Estado del entregable:** cuestionario en **pygame** con cinco modos operativos (libre, historia, resistencia, escape room, feedback), banco de **480 preguntas** revisadas manualmente y herramientas de mantenimiento del dataset. El **modo escape room** implementa mecánicas de salas y puertas (tienda, botín, inventario); la narrativa gráfica completa tipo novela queda como evolución futura.
 
 El desarrollo siguió un enfoque incremental: un prototipo en terminal validó el motor de evaluación; la interfaz gráfica concentró después toda la experiencia de juego. En junio de 2026 se eliminó la capa de consola y se unificó el código en `juego_grafico.py` con dominio en `Juego/Comun/` e interfaz en `Juego/Grafico/`.
 
@@ -274,7 +274,7 @@ Diagrama detallado (40 materias con posición curricular): [`Data/README.md`](..
 
 ## Herramientas de mantenimiento
 
-Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en `utils_plantillas_core.py`, compartida con `Juego/Comun/datos.py`. Los datos del juego se organizan en `Data/Banco/` (banco y catálogos) y `Data/Juego/` (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en `Tests/` (**258** tests) con CI en GitHub Actions. Catálogo de comandos: [`Files/README.md`](../../Files/README.md).
+Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en `utils_plantillas_core.py`, compartida con `Juego/Comun/datos.py`. Los datos del juego se organizan en `Data/Banco/` (banco y catálogos) y `Data/Juego/` (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en `Tests/` (**395** tests) con CI en GitHub Actions. Catálogo de comandos: [`Files/README.md`](../../Files/README.md).
 
 ## Síntesis cuantitativa
 
@@ -284,7 +284,7 @@ Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado
 | Materias cubiertas | 40 |
 | Módulos Python del juego (`Comun/` + `Grafico/`) | ~35 |
 | Modos de juego operativos | 4 |
-| Pruebas automatizadas | 258 |
+| Pruebas automatizadas | 395 |
 | Grupos temáticos modelados | 10 |
 
 ## Validación del modo historia (H3)
@@ -352,17 +352,17 @@ En conjunto, el experimento muestra que el azar produce suspensión sistemática
 
 ## Cumplimiento de los objetivos
 
-El **objetivo general** se cumple de forma parcial: existe un juego educativo interactivo basado en contenidos del grado, pero la progresión narrativa tipo escape room no está implementada. La progresión actual es ludificada (vidas, puntos, dificultad creciente) y curricular (filtros por etapa del grado).
+El **objetivo general** se cumple de forma parcial: existe un juego educativo interactivo basado en contenidos del grado, con un **modo escape room** que estructura la partida en salas y puertas, aunque sin guion narrativo gráfico completo. La progresión actual es ludificada (vidas, puntos, dificultad creciente) y curricular (filtros por etapa del grado).
 
 | # | Objetivo | Estado | Comentario |
 |---|----------|--------|------------|
-| OE1 | Narrativa interactiva | Pendiente (futuro) | Sin guion de escenas/salas implementado |
+| OE1 | Narrativa interactiva | Parcial | Modo escape room jugable; guion visual completo pendiente |
 | OE2 | Retos por materias | **Cumplido** | Banco 480 ítems, Teoría/Cálculo, tres dificultades |
 | OE3 | Validación de respuestas | **Cumplido** | Motor A–D, puntuación, vidas, informes |
-| OE4 | Interfaz gráfica | **Cumplido** | `juego_grafico.py` con libre, historia, resistencia y feedback; tooltips y barra superior |
-| OE5 | Valor formativo | **Parcialmente cumplido** | Banco validado, 258 tests + CI; sin estudio con usuarios |
+| OE4 | Interfaz gráfica | **Cumplido** | `juego_grafico.py` con libre, historia, resistencia, escape room y feedback |
+| OE5 | Valor formativo | **Parcialmente cumplido** | Banco validado, 395 tests + CI; sin estudio con usuarios |
 
-Los **objetivos específicos** OE2, OE3, OE4 y OE5 están cubiertos en la versión pygame. OE1 (narrativa gráfica completa tipo escape room) queda como trabajo futuro. El enfoque incremental —primero validar el núcleo evaluable, después la capa visual— permitió concentrar el esfuerzo en un único lanzador mantenible.
+Los **objetivos específicos** OE2, OE3, OE4 y OE5 están cubiertos en la versión pygame. OE1 (narrativa gráfica completa) queda parcialmente cubierto por las mecánicas del escape room y como trabajo futuro en arte y guion. El enfoque incremental —primero validar el núcleo evaluable, después la capa visual— permitió concentrar el esfuerzo en un único lanzador mantenible.
 
 ## Validez del banco de preguntas
 
@@ -395,7 +395,7 @@ La hipótesis **H1** queda apoyada por la operatividad de los filtros curricular
 
 ## Limitaciones del estudio
 
-El estudio no incluye **evaluación con usuarios**: no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes. La **interfaz gráfica** actual cubre menús y partida, pero aún no implementa la narrativa escape room del documento inicial. El **modelo de datos** asigna una sola materia por pregunta y aún no modela prerrequisitos explícitos (véase §6.2). El **idioma del banco** mezcla castellano y catalán según la asignatura, con coherencia terminológica revisada pero mejorable. Por último, el **modo beta** amplía el pool con plantillas no revisadas y debe distinguirse del banco de producción en cualquier evaluación formal.
+El estudio no incluye **evaluación con usuarios**: no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes. La **interfaz gráfica** cubre menús y partida, incluido un **modo escape room** con salas, tienda y botín, pero sin la narrativa gráfica completa del documento inicial. El **modelo de datos** asigna una sola materia por pregunta y aún no modela prerrequisitos explícitos (véase §6.2). El **idioma del banco** mezcla castellano y catalán según la asignatura, con coherencia terminológica revisada pero mejorable. Por último, el **modo beta** amplía el pool con plantillas no revisadas y debe distinguirse del banco de producción en cualquier evaluación formal.
 
 ## Trabajo futuro
 

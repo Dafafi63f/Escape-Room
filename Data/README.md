@@ -50,7 +50,7 @@ Modos activos en el carrusel de historia (`contexto_reglas`: `historia_*`):
 
 | ID | Rol |
 |----|-----|
-| `escape_room` | Escape room progresivo (30 salas, 3 puertas) |
+| `escape_room` | Escape room: 30 salas, 3 puertas, descanso, tienda, botín, inventario |
 | `ranking_resistencia` | Resistencia con ranking local |
 
 **Presets retirados** (ya no están en el JSON; la lógica se unificó):

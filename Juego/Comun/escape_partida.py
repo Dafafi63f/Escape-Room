@@ -20,6 +20,7 @@ from Comun.config_historia import etiqueta_grupo_tematico
 from Comun.eventos_partida import (
     EventoContenidoInstanciado,
     ModificadoresPuerta,
+    RASGOS_BOTIN_ESCAPE,
     RASGOS_RECOMPENSA_VIDAS_ESCAPE,
     evento_por_id,
     instanciar_evento_contenido,
@@ -46,7 +47,6 @@ __all__ = [
     "filtro_pool_escalada",
     "grupos_del_pool",
     "grupos_viables_sala",
-    "iconos_recompensa_completar",
     "materias_del_grupo",
     "materias_del_pool",
     "materias_viables_sala",
@@ -57,13 +57,15 @@ __all__ = [
     "tiempo_pregunta_escape_por_defecto",
     "acotar_tiempo_pregunta_escape",
     "TIEMPO_PREGUNTA_MIN_ESCAPE",
+    "VIDAS_MAX_ABSOLUTO_ESCAPE",
     "VIDAS_MAX_ESCAPE",
 ]
 
 _DIFICULTADES_TODAS = frozenset({"Facil", "Media", "Dificil"})
-_PLANTILLA_BALANCEADA = "pregunta_unica"
+_PLANTILLA_BALANCEADA = "puerta_materia"
 _TAMANOS_REDUCCION = (3, 5, 10)
 VIDAS_MAX_ESCAPE = 4
+VIDAS_MAX_ABSOLUTO_ESCAPE = 9
 TIEMPO_PREGUNTA_MIN_ESCAPE = 20
 _DIFICULTAD_JEFE = frozenset({"Dificil"})
 
@@ -113,15 +115,46 @@ class BonificacionCompletarEscape:
     """Recompensa al superar un bloque de preguntas (solo esa puerta; no arrastra)."""
 
     delta_vidas: int = 0
+    delta_vidas_max: int = 0
     etiqueta: str = ""
+    en_descanso: bool = False
+    powerups: tuple[tuple[str, int], ...] = ()
+
+    @property
+    def tiene_recompensa(self) -> bool:
+        return (
+            self.delta_vidas > 0
+            or self.delta_vidas_max > 0
+            or bool(self.powerups)
+        )
 
     @property
     def mensaje(self) -> str:
-        if self.delta_vidas <= 0:
+        if not self.tiene_recompensa:
             return ""
-        if self.etiqueta:
-            return f"❤️ {self.etiqueta}: recuperas {self._texto_vidas()}."
-        return f"❤️ Puerta superada: recuperas {self._texto_vidas()}."
+        partes: list[str] = []
+        if self.delta_vidas_max > 0:
+            n = self.delta_vidas_max
+            txt = "1 al máximo" if n == 1 else f"{n} al máximo"
+            partes.append(f"💖 Corazón máximo: +{txt} de vidas.")
+        if self.delta_vidas > 0:
+            txt = self._texto_vidas()
+            if self.en_descanso:
+                partes.append(f"❤️ Botín: +{txt}.")
+            elif self.etiqueta:
+                partes.append(f"❤️ {self.etiqueta}: recuperas {txt}.")
+            else:
+                partes.append(f"❤️ Puerta superada: recuperas {txt}.")
+        if self.powerups:
+            from Comun.resistencia_motor import etiqueta_powerup
+
+            for pid, cant in self.powerups:
+                nom = etiqueta_powerup(pid)
+                if cant == 1:
+                    partes.append(f"🎁 Objeto: {nom}.")
+                else:
+                    partes.append(f"🎁 Objetos: {cant}× {nom}.")
+        return " ".join(partes)
 
     def _texto_vidas(self) -> str:
         n = self.delta_vidas
@@ -136,76 +169,88 @@ def puerta_es_jefe(puerta: PuertaEscape) -> bool:
     return difs is not None and difs <= _DIFICULTAD_JEFE and "Dificil" in difs
 
 
-def delta_vidas_descanso_entrada(puerta: PuertaEscape) -> int:
-    """Vida al elegir puerta sin preguntas (respiro, no botín)."""
-    if not puerta.modificadores.sin_pregunta:
-        return 0
-    from Comun.eventos_partida import RASGOS_PUERTA_SIN_PREGUNTA_ESCAPE, evento_por_id
-
-    return sum(
-        evento_por_id(eid).modificadores.delta_vidas_al_completar
-        for eid in puerta.modificadores.eventos_ids
-        if eid in RASGOS_PUERTA_SIN_PREGUNTA_ESCAPE
-    )
-
-
 def mensaje_feedback_puerta_sin_pregunta(puerta: PuertaEscape) -> str:
     """Texto al elegir una puerta sin bloque de preguntas."""
-    from Comun.eventos_partida import evento_sin_pregunta_escape
+    from Comun.eventos_partida import evento_por_id, evento_sin_pregunta_escape, lineas_botin_puerta
+    from Comun.tienda_escape import puerta_es_tienda
 
+    if puerta_es_tienda(puerta):
+        ev = evento_por_id("tienda")
+        return f"{ev.nombre}: {ev.descripcion}"
     ev = evento_sin_pregunta_escape(puerta.modificadores)
     if ev is None:
         base = "💤 Avanzas sin preguntas."
-    elif delta_vidas_descanso_entrada(puerta) > 0:
-        base = f"{ev.emoji} {ev.nombre}: recuperas 1 vida."
     else:
         base = f"{ev.emoji} {ev.nombre}: avanzas sin preguntas."
-    if "botin" in puerta.modificadores.eventos_ids:
-        base += " Al cerrar la puerta podrás reclamar el botín."
+    botines = lineas_botin_puerta(puerta.modificadores)
+    if botines:
+        base += " " + " ".join(botines)
     return base
 
 
-def puerta_tiene_recompensa_vidas(puerta: PuertaEscape) -> bool:
-    """True si la puerta puede dar vidas extra (botín, jefe o descanso)."""
-    if puerta.modificadores.sin_pregunta:
-        return any(
-            eid in RASGOS_RECOMPENSA_VIDAS_ESCAPE for eid in puerta.modificadores.eventos_ids
-        )
-    if puerta_es_jefe(puerta):
-        return True
-    return any(
-        eid in RASGOS_RECOMPENSA_VIDAS_ESCAPE for eid in puerta.modificadores.eventos_ids
-    )
-
-
 def bonificacion_completar_escape(puerta: PuertaEscape) -> BonificacionCompletarEscape:
-    """Vidas extra al superar la puerta sin fallar (solo rasgos de recompensa o jefe)."""
-    if puerta.modificadores.sin_pregunta:
-        if any(
-            eid in RASGOS_RECOMPENSA_VIDAS_ESCAPE for eid in puerta.modificadores.eventos_ids
-        ):
-            from Comun.eventos_partida import evento_por_id
+    """Vidas u objetos extra al superar la puerta sin fallar (botín, corazón máximo o jefe)."""
 
-            delta = sum(
-                evento_por_id(eid).modificadores.delta_vidas_al_completar
-                for eid in puerta.modificadores.eventos_ids
-                if eid in RASGOS_RECOMPENSA_VIDAS_ESCAPE
+    def _bonus_botin() -> tuple[int, int]:
+        delta = 0
+        delta_max = 0
+        for eid in puerta.modificadores.eventos_ids:
+            if eid not in RASGOS_RECOMPENSA_VIDAS_ESCAPE:
+                continue
+            ev = evento_por_id(eid)
+            delta += ev.modificadores.delta_vidas_al_completar
+            delta_max += ev.modificadores.delta_vidas_max_al_completar
+        if delta == 0 and delta_max == 0:
+            delta = puerta.modificadores.delta_vidas_al_completar
+            delta_max = puerta.modificadores.delta_vidas_max_al_completar
+        return delta, delta_max
+
+    def _powerups_botin() -> tuple[tuple[str, int], ...]:
+        acum: dict[str, int] = {}
+        for eid in puerta.modificadores.eventos_ids:
+            if eid not in RASGOS_BOTIN_ESCAPE:
+                continue
+            pid = evento_por_id(eid).modificadores.powerup_al_completar
+            if pid:
+                acum[pid] = acum.get(pid, 0) + 1
+        return tuple(sorted(acum.items()))
+
+    powerups = _powerups_botin()
+
+    if puerta.modificadores.sin_pregunta:
+        tiene_vidas = any(
+            eid in RASGOS_RECOMPENSA_VIDAS_ESCAPE
+            for eid in puerta.modificadores.eventos_ids
+        )
+        if tiene_vidas or powerups:
+            delta, delta_max = _bonus_botin() if tiene_vidas else (0, 0)
+            return BonificacionCompletarEscape(
+                delta_vidas=delta,
+                delta_vidas_max=delta_max,
+                etiqueta="Botín de la puerta",
+                en_descanso=True,
+                powerups=powerups,
             )
-            return BonificacionCompletarEscape(delta_vidas=delta, etiqueta="Botín de la puerta")
         return BonificacionCompletarEscape()
     if puerta.n_preguntas <= 0:
         return BonificacionCompletarEscape()
     delta = 0
+    delta_max = 0
     etiqueta = ""
     if any(
         eid in RASGOS_RECOMPENSA_VIDAS_ESCAPE for eid in puerta.modificadores.eventos_ids
     ):
-        delta = puerta.modificadores.delta_vidas_al_completar
+        delta, delta_max = _bonus_botin()
         etiqueta = "Botín de la puerta"
     if puerta_es_jefe(puerta):
         delta = max(delta, 2)
         etiqueta = "Puerta jefe superada"
-    return BonificacionCompletarEscape(delta_vidas=delta, etiqueta=etiqueta)
+    return BonificacionCompletarEscape(
+        delta_vidas=delta,
+        delta_vidas_max=delta_max,
+        etiqueta=etiqueta,
+        powerups=powerups,
+    )
 
 
 def puntos_extra_mult_desafio(
@@ -237,29 +282,21 @@ def aplicar_bonificacion_completar(
     bonus: BonificacionCompletarEscape,
     *,
     vidas_max: int = VIDAS_MAX_ESCAPE,
-) -> int:
-    """Suma vidas de recompensa respetando el tope. Devuelve vidas realmente ganadas."""
+) -> tuple[int, int]:
+    """Aplica botín/jefe: devuelve (vidas ganadas, nuevo tope de vidas)."""
+    nuevo_max = vidas_max
+    if bonus.delta_vidas_max > 0:
+        nuevo_max = max(
+            VIDAS_MAX_ESCAPE,
+            min(VIDAS_MAX_ABSOLUTO_ESCAPE, vidas_max + bonus.delta_vidas_max),
+        )
+        if estado.vidas_restantes is not None and estado.vidas_restantes > nuevo_max:
+            estado.vidas_restantes = nuevo_max
     if bonus.delta_vidas <= 0 or estado.vidas_restantes is None:
-        return 0
+        return 0, nuevo_max
     antes = estado.vidas_restantes
-    estado.vidas_restantes = min(vidas_max, antes + bonus.delta_vidas)
-    return estado.vidas_restantes - antes
-
-
-def iconos_recompensa_completar(puerta: PuertaEscape) -> tuple:
-    """Iconos de recompensa esperada al superar la puerta (escape_partida → eventos)."""
-    from Comun.eventos_partida import IconoEfectoPuerta, tooltip_recompensa_completar
-
-    bonus = bonificacion_completar_escape(puerta)
-    if bonus.delta_vidas <= 0:
-        return ()
-    emoji = "👑" if puerta_es_jefe(puerta) else "❤️"
-    return (
-        IconoEfectoPuerta(
-            emoji=emoji,
-            tooltip=tooltip_recompensa_completar(bonus, es_jefe=puerta_es_jefe(puerta)),
-        ),
-    )
+    estado.vidas_restantes = min(nuevo_max, antes + bonus.delta_vidas)
+    return estado.vidas_restantes - antes, nuevo_max
 
 
 def construir_pool_escape(
@@ -504,6 +541,64 @@ def _indices_candidatas(
     return candidatas
 
 
+def _criterios_sin_filtro_complejidad(criterios: CriteriosSeleccionPool) -> CriteriosSeleccionPool:
+    return replace(criterios, min_complejidad=1, max_complejidad=99)
+
+
+def _indices_por_dificultad(
+    pool: list[Pregunta],
+    indices: list[int],
+    dificultad: str,
+) -> list[int]:
+    return [i for i in indices if pool[i].dificultad == dificultad]
+
+
+def _seleccionar_indices_diversificando_dificultad(
+    pool: list[Pregunta],
+    candidatas: list[int],
+    n: int,
+    criterios: CriteriosSeleccionPool,
+    usadas: set[int],
+    rng: random.Random,
+) -> list[int]:
+    """Al menos una por dificultad del perfil con stock; el resto al azar (sin orden fijo)."""
+    objetivo = criterios.dificultades_permitidas
+    if len(objetivo) <= 1:
+        return rng.sample(candidatas, n)
+
+    relajadas = _indices_candidatas(
+        pool, _criterios_sin_filtro_complejidad(criterios), usadas
+    )
+    elegidos: list[int] = []
+    bloqueados = set(usadas)
+
+    orden = list(objetivo)
+    rng.shuffle(orden)
+    for dif in orden:
+        if len(elegidos) >= n:
+            break
+        stock = [i for i in _indices_por_dificultad(pool, candidatas, dif) if i not in bloqueados]
+        if not stock:
+            stock = [
+                i
+                for i in _indices_por_dificultad(pool, relajadas, dif)
+                if i not in bloqueados
+            ]
+        if not stock:
+            continue
+        idx = rng.choice(stock)
+        elegidos.append(idx)
+        bloqueados.add(idx)
+
+    restantes = [i for i in candidatas if i not in bloqueados]
+    faltan = n - len(elegidos)
+    if faltan > len(restantes):
+        restantes = [i for i in relajadas if i not in bloqueados]
+    if faltan > 0:
+        elegidos.extend(rng.sample(restantes, faltan))
+    return elegidos
+
+
 def contar_candidatas_puerta(
     pool: list[Pregunta],
     puerta: PuertaEscape,
@@ -564,7 +659,7 @@ def grupos_viables_sala(
     viables: list[str] = []
     for grupo in grupos_pool:
         evento = EventoContenidoInstanciado(
-            definicion=evento_por_id("bloque_grupo"),
+            definicion=evento_por_id("puerta_grupo"),
             grupo=grupo,
         )
         puerta = PuertaEscape(
@@ -586,15 +681,26 @@ def _evento_es_grupo(evento: EventoContenidoInstanciado) -> bool:
 
 
 def _evento_balanceado_desde(evento: EventoContenidoInstanciado) -> EventoContenidoInstanciado:
+    from Comun.eventos_partida import (
+        definicion_grupo_con_perfil,
+        perfil_materia_por_id,
+    )
+
     if evento.id == _PLANTILLA_BALANCEADA:
         return evento
     opts = evento.contenido_escape
+    balanceado = perfil_materia_por_id("balanceado")
     if opts and opts.usa_grupo:
-        return evento
+        return EventoContenidoInstanciado(
+            definicion=definicion_grupo_con_perfil(balanceado),
+            grupo=evento.grupo,
+            perfil_id="balanceado",
+        )
     return EventoContenidoInstanciado(
         definicion=evento_por_id(_PLANTILLA_BALANCEADA),
         materia=evento.materia,
         grupo=evento.grupo,
+        perfil_id="balanceado",
     )
 
 
@@ -645,7 +751,7 @@ def asegurar_puerta_viable(
         mejor_n = 0
         for grupo in grupos_pool:
             evento = EventoContenidoInstanciado(
-                definicion=evento_por_id("bloque_grupo"),
+                definicion=evento_por_id("puerta_grupo"),
                 grupo=grupo,
             )
             for n in reversed(_TAMANOS_REDUCCION):
@@ -728,6 +834,39 @@ def seleccionar_preguntas_desafio(
         )
 
     rng = random.Random(semilla)
-    elegidos = rng.sample(candidatas, n_preguntas)
+    elegidos = _seleccionar_indices_diversificando_dificultad(
+        pool, candidatas, n_preguntas, criterios, usadas, rng
+    )
     usadas.update(elegidos)
     return [pool[i] for i in elegidos]
+
+
+def reemplazar_pregunta_cambio_escape(
+    pool: list[Pregunta],
+    puerta: PuertaEscape,
+    *,
+    indice_actual: int | None,
+    numero_sala: int,
+    n_salas: int,
+    semilla: int,
+    usadas: set[int],
+) -> Pregunta | None:
+    """Sustituye la pregunta actual por otra del mismo criterio (powerup cambio)."""
+    if puerta.modificadores.sin_pregunta or puerta.n_preguntas <= 0:
+        return None
+    criterios = _criterios_desafio(
+        puerta, numero_sala=numero_sala, n_salas=n_salas, pool=pool
+    )
+    candidatas = [
+        i for i in _indices_candidatas(pool, criterios, usadas) if i != indice_actual
+    ]
+    if not candidatas:
+        candidatas = [
+            i for i in _indices_candidatas(pool, criterios, set()) if i != indice_actual
+        ]
+    if not candidatas:
+        return None
+    rng = random.Random(semilla)
+    elegido = rng.choice(candidatas)
+    usadas.add(elegido)
+    return pool[elegido]

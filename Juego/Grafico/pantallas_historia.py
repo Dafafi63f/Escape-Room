@@ -16,6 +16,10 @@ from Comun.motor_nucleo import (
     ResultadoRespuesta,
     evaluar_respuesta,
     linea_estado,
+    marcar_botones_opciones_tras_respuesta,
+    presentacion_opciones_pantalla,
+    semilla_orden_opciones,
+    texto_solucion,
 )
 from Comun.resistencia_motor import (
     aplicar_bonificaciones_puntos_resistencia,
@@ -23,15 +27,20 @@ from Comun.resistencia_motor import (
     configurar_partida_resistencia,
     consumir_bloque_filtro,
     crear_estado_resistencia,
+    desafio_bloque_expirado,
     descripcion_powerup,
     emoji_powerup,
     etiqueta_powerup,
+    finalizar_partida_por_desafio_bloque,
     formatear_aviso_apuesta,
     prefijar_emoji,
     preparar_eventos_nuevo_turno,
     procesar_turno_resistencia,
+    puede_usar_powerup_en_pregunta,
+    revocar_powerup_usado,
     texto_pregunta_para_turno,
     texto_progreso_resistencia,
+    texto_segmento_desafio_bloque,
     tiempo_pregunta_efectivo,
     usar_powerup,
 )
@@ -1415,6 +1424,7 @@ class PartidaModoHistoria(Pantalla):
         self.feedback_solucion: str | None = None
         self.feedback_ok = False
         self.botones_opcion: list[BotonOpcion] = []
+        self._presentacion_opciones = None
         self.inicio_pregunta = time.monotonic()
         self.inicio_feedback = 0.0
         lbl_abandonar = etiqueta(*BTN_ABANDONAR)
@@ -1461,18 +1471,32 @@ class PartidaModoHistoria(Pantalla):
 
     def _reconstruir_opciones(self) -> None:
         p = self._pregunta_actual()
+        semilla = self._semilla_orden_opciones()
+        self._presentacion_opciones = presentacion_opciones_pantalla(p, semilla=semilla)
         self.botones_opcion = []
         y = self._y_inicio_opciones()
-        for letra in ("A", "B", "C", "D"):
+        for etiqueta, texto, _ in self._presentacion_opciones.filas:
             rect = pygame.Rect(MARGEN, y, ANCHO - 2 * MARGEN, ALTO_OPCION_PARTIDA)
             boton = BotonOpcion(
-                letra,
-                p.opciones.get(letra, ""),
+                etiqueta,
+                texto,
                 rect,
-                capturar(self._responder, letra),
+                capturar(self._responder, etiqueta),
             )
             self.botones_opcion.append(boton)
             y += ALTO_OPCION_PARTIDA + SEP_OPCIONES_PARTIDA
+
+    def _semilla_orden_opciones(self) -> int:
+        raw = self.config_historia.valores.get("semilla", 0)
+        try:
+            base = int(raw)
+        except (TypeError, ValueError):
+            base = hash(self.preset.id) & 0x7FFFFFFF
+        return semilla_orden_opciones(
+            semilla_base=base,
+            numero_turno=self.estado.respondidas,
+            indice_pregunta=self.indice,
+        )
 
     def _registrar_respuesta(self, p: Pregunta, resultado: ResultadoRespuesta) -> None:
         from Comun.informe_examen import RegistroRespuesta
@@ -1555,24 +1579,34 @@ class PartidaModoHistoria(Pantalla):
             return
 
         self.feedback_mensaje = feedback.mensaje
-        self.feedback_solucion = solucion_feedback_grafico(feedback.solucion)
+        if feedback.solucion and self._presentacion_opciones is not None:
+            self.feedback_solucion = solucion_feedback_grafico(
+                texto_solucion(p, self._presentacion_opciones)
+            )
+        else:
+            self.feedback_solucion = solucion_feedback_grafico(feedback.solucion)
         self.feedback_ok = resultado.acierto and not resultado.tiempo_agotado
         self.fase = "feedback"
         self.inicio_feedback = marcar_inicio_feedback()
-        for boton in self.botones_opcion:
-            boton.activo = False
-            if boton.letra == p.correcta:
-                boton.marcar_correcta = True
-            elif boton.letra == resultado.respuesta and not resultado.acierto:
-                boton.marcar_incorrecta = True
+        if self._presentacion_opciones is not None:
+            marcar_botones_opciones_tras_respuesta(
+                self.botones_opcion,
+                presentacion=self._presentacion_opciones,
+                correcta_dataset=p.correcta,
+                respuesta_dataset=resultado.respuesta,
+                acierto=resultado.acierto,
+            )
 
     def _responder(self, letra: str) -> None:
         if self.fase != "pregunta":
             return
         p = self._pregunta_actual()
+        if self._presentacion_opciones is None:
+            return
+        letra_dataset = self._presentacion_opciones.letra_dataset(letra)
         correcta = p.correcta if p.correcta in {"A", "B", "C", "D"} else ""
-        acierto = letra == correcta and bool(correcta)
-        self._tras_respuesta(ResultadoRespuesta(acierto=acierto, respuesta=letra))
+        acierto = letra_dataset == correcta and bool(correcta)
+        self._tras_respuesta(ResultadoRespuesta(acierto=acierto, respuesta=letra_dataset))
 
     def _responder_timeout(self) -> None:
         if self.fase != "pregunta":
@@ -1766,7 +1800,9 @@ class PartidaResistenciaHistoria(Pantalla):
         self.er = crear_estado_resistencia(reglas.vidas or 3)
         self.er.banco_resistencia = banco
         configurar_partida_resistencia(self.er, preset_id=self.preset.id)
-        self.escalada = escalada_para_pregunta(1, semilla_partida=self.er.semilla_partida)
+        self.escalada = escalada_para_pregunta(
+            1, semilla_partida=self.er.semilla_partida, pity=self.er.pity_eventos
+        )
         self.estado = EstadoPartida(
             nombre=nombre,
             reglas=aplicar_escalada_a_reglas(reglas, self.escalada),
@@ -1788,6 +1824,7 @@ class PartidaResistenciaHistoria(Pantalla):
         self.boton_apuesta_si: Boton | None = None
         self.boton_apuesta_no: Boton | None = None
         self.botones_opcion: list[BotonOpcion] = []
+        self._presentacion_opciones = None
         self.botones_powerup: list[Boton] = []
         self.inicio_pregunta = time.monotonic()
         self.inicio_feedback = 0.0
@@ -1888,7 +1925,10 @@ class PartidaResistenciaHistoria(Pantalla):
 
     def _aplicar_escalada(self, numero_pregunta: int) -> None:
         self.escalada = escalada_para_pregunta(
-            numero_pregunta, semilla_partida=self.er.semilla_partida, racha=self.er.racha
+            numero_pregunta,
+            semilla_partida=self.er.semilla_partida,
+            racha=self.er.racha,
+            pity=self.er.pity_eventos,
         )
         self.estado.reglas = aplicar_escalada_a_reglas(self.reglas_base, self.escalada)
         self.efecto_actual = texto_efectos_escalada(self.escalada)
@@ -1959,6 +1999,17 @@ class PartidaResistenciaHistoria(Pantalla):
             y = max(self._y_fin_opciones() + 4, limite - alto_est)
         return y
 
+    def _texto_desafio_bloque_barra(self) -> str | None:
+        return texto_segmento_desafio_bloque(self.er)
+
+    def _comprobar_desafio_bloque_expirado(self) -> bool:
+        if not desafio_bloque_expirado(self.er):
+            return False
+        self.avisos_pendientes.append(
+            finalizar_partida_por_desafio_bloque(self.estado, self.er)
+        )
+        return True
+
     def _linea_estado_actual(self) -> str:
         seg_preg = None
         if self.fase == "pregunta":
@@ -1971,6 +2022,7 @@ class PartidaResistenciaHistoria(Pantalla):
             self._texto_progreso(),
             segundos_pregunta_restantes=seg_preg,
             vidas_max=self.er.vidas_max,
+            desafio_bloque_texto=self._texto_desafio_bloque_barra(),
         )
 
     def _reconstruir_powerups(self) -> None:
@@ -1981,6 +2033,8 @@ class PartidaResistenciaHistoria(Pantalla):
             (pid, self.er.cantidad(pid))
             for pid in sorted(self.er.inventario.keys())
             if self.er.cantidad(pid) > 0
+            and puede_usar_powerup_en_pregunta(pid, self.er.powerups_usados_en_pregunta)
+            is None
         ]
         if not items:
             return
@@ -2006,17 +2060,23 @@ class PartidaResistenciaHistoria(Pantalla):
 
     def _reconstruir_opciones(self) -> None:
         p = self._pregunta_actual()
+        semilla = semilla_orden_opciones(
+            semilla_base=self.er.semilla_partida,
+            numero_turno=self.indice_global,
+            indice_pregunta=self.pregunta_idx or 0,
+        )
+        self._presentacion_opciones = presentacion_opciones_pantalla(p, semilla=semilla)
         self.botones_opcion = []
         y = self._y_inicio_opciones()
-        for letra in ("A", "B", "C", "D"):
-            if letra in self.er.letras_ocultas:
+        for etiqueta, texto, letra_ds in self._presentacion_opciones.filas:
+            if letra_ds in self.er.letras_ocultas:
                 continue
             rect = pygame.Rect(MARGEN, y, ANCHO - 2 * MARGEN, ALTO_OPCION_PARTIDA)
             boton = BotonOpcion(
-                letra,
-                p.opciones.get(letra, ""),
+                etiqueta,
+                texto,
                 rect,
-                capturar(self._responder, letra),
+                capturar(self._responder, etiqueta),
             )
             self.botones_opcion.append(boton)
             y += ALTO_OPCION_PARTIDA + SEP_OPCIONES_PARTIDA
@@ -2055,6 +2115,7 @@ class PartidaResistenciaHistoria(Pantalla):
                 er=self.er,
             )
             if nuevo is None:
+                revocar_powerup_usado(self.er.powerups_usados_en_pregunta, "cambio")
                 self.er.agregar_powerup("cambio", 1)
                 self.feedback_mensaje = "No hay otra pregunta parecida disponible."
                 self.feedback_solucion = None
@@ -2066,6 +2127,7 @@ class PartidaResistenciaHistoria(Pantalla):
             aplicar_modificadores_visuales_escalada(
                 self.er, self.escalada, self._pregunta_actual(), self._numero_pregunta()
             )
+            self.er.reiniciar_slot_pregunta()
             self._reconstruir_opciones()
             self._reconstruir_powerups()
             return
@@ -2179,17 +2241,24 @@ class PartidaResistenciaHistoria(Pantalla):
         acierto_ok: bool,
     ) -> None:
         self.feedback_mensaje = mensaje
-        self.feedback_solucion = solucion_feedback_grafico(feedback.solucion)
+        if feedback.solucion and self._presentacion_opciones is not None:
+            self.feedback_solucion = solucion_feedback_grafico(
+                texto_solucion(p, self._presentacion_opciones)
+            )
+        else:
+            self.feedback_solucion = solucion_feedback_grafico(feedback.solucion)
         self.feedback_ok = acierto_ok
         self.fase = "feedback"
         self.inicio_feedback = marcar_inicio_feedback()
         self.botones_powerup = []
-        for boton in self.botones_opcion:
-            boton.activo = False
-            if boton.letra == p.correcta:
-                boton.marcar_correcta = True
-            elif boton.letra == resultado.respuesta and not resultado.acierto:
-                boton.marcar_incorrecta = True
+        if self._presentacion_opciones is not None:
+            marcar_botones_opciones_tras_respuesta(
+                self.botones_opcion,
+                presentacion=self._presentacion_opciones,
+                correcta_dataset=p.correcta,
+                respuesta_dataset=resultado.respuesta,
+                acierto=resultado.acierto,
+            )
 
     def _tras_respuesta(self, resultado: ResultadoRespuesta) -> None:
         p = self._pregunta_actual()
@@ -2229,9 +2298,14 @@ class PartidaResistenciaHistoria(Pantalla):
         if self.fase != "pregunta":
             return
         p = self._pregunta_actual()
+        if self._presentacion_opciones is None:
+            return
+        letra_dataset = self._presentacion_opciones.letra_dataset(letra)
         correcta = p.correcta if p.correcta in {"A", "B", "C", "D"} else ""
-        acierto = letra == correcta and bool(correcta)
-        self._tras_respuesta(ResultadoRespuesta(acierto=acierto, respuesta=letra))
+        acierto = letra_dataset == correcta and bool(correcta)
+        self._tras_respuesta(
+            ResultadoRespuesta(acierto=acierto, respuesta=letra_dataset)
+        )
 
     def _responder_timeout(self) -> None:
         if self.fase != "pregunta":
@@ -2242,6 +2316,9 @@ class PartidaResistenciaHistoria(Pantalla):
 
     def _continuar(self) -> None:
         if self.fase != "feedback":
+            return
+        if self._comprobar_desafio_bloque_expirado():
+            self._fin_partida()
             return
         if not self.estado.debe_continuar(None):
             self._fin_partida()
@@ -2264,6 +2341,9 @@ class PartidaResistenciaHistoria(Pantalla):
         self._entrar_pregunta_o_avisos()
 
     def actualizar(self) -> Pantalla | None:
+        if self._comprobar_desafio_bloque_expirado():
+            self._fin_partida()
+            return None
         if self.fase == "aviso":
             if aviso_debe_avanzar(self.inicio_aviso):
                 self.indice_aviso += 1
@@ -2368,6 +2448,7 @@ class PartidaResistenciaHistoria(Pantalla):
             vidas_max=self.er.vidas_max,
             numero_pregunta=numero,
             racha=self.er.racha,
+            desafio_bloque_texto=self._texto_desafio_bloque_barra(),
         )
         if texto_extra:
             extra_txt = preparar_texto_ui(texto_extra)

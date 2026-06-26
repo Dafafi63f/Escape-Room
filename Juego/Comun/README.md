@@ -41,9 +41,12 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_grafico.py`](../juego_g
 | `changelog_juego.py` | Lectura de `Docs/CHANGELOG_JUEGO.md` para la UI |
 | `contacto_creador.py` | Canales de contacto públicos (sin credenciales SMTP) |
 | `feedback_opciones.py` | Categorías y zonas del formulario de feedback |
-| `eventos_partida.py` | Catálogo común; ``rol_escape`` puerta vs contenido |
-| `escape_room.py` | Salas, generación de puertas y partida |
-| `escape_partida.py` | Pool progresivo del dataset revisado y selección de desafíos |
+| `eventos_partida.py` | Catálogo común; ``rol_escape`` puerta vs contenido; botín y pity escape |
+| `escape_room.py` | Salas, generación de puertas y pity hard |
+| `escape_partida.py` | Pool progresivo, selección de desafíos y bonificación al completar |
+| `tienda_escape.py` | Tienda escape: catálogo, economía e inventario de objetos |
+| `emojis_escape.py` | Emojis y capas de iconos en cartas de puerta escape |
+| `linea_estado_ui.py` | Fragmentos de barra de estado (vidas, progreso sala/puerta) |
 | `envio_feedback.py` | Guardado local y envío SMTP del feedback |
 | `config_creador.py` | Plantilla `creador_privado.json` |
 
@@ -57,4 +60,4 @@ El gráfico elige banco en [`Grafico/pantallas_libre.py`](../Grafico/pantallas_l
 
 ## Pruebas de dominio
 
-Los tests en [`Tests/test_dominio_juego.py`](../../Tests/test_dominio_juego.py) comprueban datos, reglas y evaluación vía el adaptador en [`Tests/adaptador_juego.py`](../../Tests/adaptador_juego.py).
+Los tests en [`Tests/test_dominio_juego.py`](../../Tests/test_dominio_juego.py), [`Tests/test_escape_room.py`](../../Tests/test_escape_room.py) y [`Tests/test_eventos_partida.py`](../../Tests/test_eventos_partida.py) cubren dominio, escape y catálogo de eventos.

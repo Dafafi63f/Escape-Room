@@ -41,6 +41,7 @@ _EMOJI_ALTERNATIVOS: dict[str, tuple[str, ...]] = {
     "vidas": ("❤️", "❤", "🧡"),
     "tiempo_total": ("⏰", "⏳", "⌚", "🕐", "🕑"),
     "tiempo_preg": ("⏱️", "⏱", "⏳", "⌛", "⏰"),
+    "desafio_bloque": ("⏲️", "⏰", "⏳"),
     "puntos": ("⭐", "★", "🌟"),
     "nota": ("📊", "📈"),
     "aciertos": ("✅", "✔️"),
@@ -54,6 +55,7 @@ _ASCII_POR_ID: dict[str, str] = {
     "vidas": "+",
     "tiempo_total": _ASCII_TIEMPO_TOTAL,
     "tiempo_preg": _ASCII_TIEMPO_PREG,
+    "desafio_bloque": "B·",
     "puntos": "*",
     "nota": "%",
     "aciertos": "OK",
@@ -116,6 +118,7 @@ def segmentos_linea_estado(
     progreso_puerta: str | None = None,
     progreso_sala: str | None = None,
     mostrar_tiempo_activo: bool = True,
+    desafio_bloque_texto: str | None = None,
 ) -> list[SegmentoEstado]:
     """Construye los chips de la barra; cada bloque depende solo de sus reglas.
 
@@ -158,6 +161,11 @@ def segmentos_linea_estado(
 
     if segundos_pregunta_restantes is not None:
         segmentos.append(_segmento_temporizador_pregunta(segundos_pregunta_restantes))
+
+    if desafio_bloque_texto:
+        segmentos.append(
+            SegmentoEstado("desafio_bloque", "⏲️", desafio_bloque_texto)
+        )
 
     sis = estado.reglas.sistema_puntuacion
     if sis == SistemaPuntuacion.ARCADE:
@@ -224,6 +232,7 @@ def linea_estado_con_iconos(
     progreso_puerta: str | None = None,
     progreso_sala: str | None = None,
     mostrar_tiempo_activo: bool = True,
+    desafio_bloque_texto: str | None = None,
 ) -> str:
     """Atajo: segmentos + formato textual."""
     return formatear_linea_estado(
@@ -237,6 +246,7 @@ def linea_estado_con_iconos(
             progreso_puerta=progreso_puerta,
             progreso_sala=progreso_sala,
             mostrar_tiempo_activo=mostrar_tiempo_activo,
+            desafio_bloque_texto=desafio_bloque_texto,
         ),
         usar_emojis=usar_emojis,
     )

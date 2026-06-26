@@ -24,6 +24,10 @@ from Comun.motor_nucleo import (
     ResultadoRespuesta,
     evaluar_respuesta,
     linea_estado,
+    marcar_botones_opciones_tras_respuesta,
+    presentacion_opciones_pantalla,
+    semilla_orden_opciones,
+    texto_solucion,
 )
 from Comun.informe_examen import CierreInformePartida
 from Comun.jugador import es_nombre_anonimo
@@ -311,6 +315,7 @@ class PartidaModoLibre(Pantalla):
         self.feedback_ok = False
         self.respuesta_elegida = ""
         self.botones_opcion: list[BotonOpcion] = []
+        self._presentacion_opciones = None
         self.seleccion_pool = crear_estado_seleccion(len(self.pool))
         self.pregunta_idx: int | None = None
         self.inicio_pregunta = time.monotonic()
@@ -449,15 +454,21 @@ class PartidaModoLibre(Pantalla):
 
     def _reconstruir_opciones(self) -> None:
         p = self._pregunta_actual()
+        semilla = semilla_orden_opciones(
+            semilla_base=hash(self.nombre) & 0x7FFFFFFF,
+            numero_turno=self.estado.respondidas,
+            indice_pregunta=self.pregunta_idx or 0,
+        )
+        self._presentacion_opciones = presentacion_opciones_pantalla(p, semilla=semilla)
         self.botones_opcion = []
         y = self._y_inicio_opciones()
-        for letra in ("A", "B", "C", "D"):
+        for etiqueta, texto, _ in self._presentacion_opciones.filas:
             rect = pygame.Rect(MARGEN, y, ANCHO - 2 * MARGEN, ALTO_OPCION_PARTIDA)
             boton = BotonOpcion(
-                letra,
-                p.opciones.get(letra, ""),
+                etiqueta,
+                texto,
                 rect,
-                capturar(self._responder, letra),
+                capturar(self._responder, etiqueta),
             )
             self.botones_opcion.append(boton)
             y += ALTO_OPCION_PARTIDA + SEP_OPCIONES_PARTIDA
@@ -477,25 +488,38 @@ class PartidaModoLibre(Pantalla):
             )
         )
         self.feedback_mensaje = feedback.mensaje
-        self.feedback_solucion = solucion_feedback_grafico(feedback.solucion)
+        if feedback.solucion and self._presentacion_opciones is not None:
+            self.feedback_solucion = solucion_feedback_grafico(
+                texto_solucion(p, self._presentacion_opciones)
+            )
+        else:
+            self.feedback_solucion = solucion_feedback_grafico(feedback.solucion)
+
         self.feedback_ok = resultado.acierto and not resultado.tiempo_agotado
         self.fase = "feedback"
         self.inicio_feedback = marcar_inicio_feedback()
-        for boton in self.botones_opcion:
-            boton.activo = False
-            if boton.letra == p.correcta:
-                boton.marcar_correcta = True
-            elif boton.letra == resultado.respuesta and not resultado.acierto:
-                boton.marcar_incorrecta = True
+        if self._presentacion_opciones is not None:
+            marcar_botones_opciones_tras_respuesta(
+                self.botones_opcion,
+                presentacion=self._presentacion_opciones,
+                correcta_dataset=p.correcta,
+                respuesta_dataset=resultado.respuesta,
+                acierto=resultado.acierto,
+            )
 
     def _responder(self, letra: str) -> None:
         if self.fase != "pregunta":
             return
         p = self._pregunta_actual()
+        if self._presentacion_opciones is None:
+            return
+        letra_dataset = self._presentacion_opciones.letra_dataset(letra)
         correcta = p.correcta if p.correcta in {"A", "B", "C", "D"} else ""
-        acierto = letra == correcta and bool(correcta)
+        acierto = letra_dataset == correcta and bool(correcta)
         self.respuesta_elegida = letra
-        self._aplicar_resultado(ResultadoRespuesta(acierto=acierto, respuesta=letra))
+        self._aplicar_resultado(
+            ResultadoRespuesta(acierto=acierto, respuesta=letra_dataset)
+        )
 
     def _responder_timeout(self) -> None:
         if self.fase != "pregunta":

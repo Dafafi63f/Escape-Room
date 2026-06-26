@@ -2,7 +2,7 @@
 
 Checklist **único** de trabajo pendiente e ideas futuras. El historial y el estado del proyecto están en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
 
-**Última actualización:** 2026-06-19
+**Última actualización:** 2026-06-26
 
 ## Cómo mantenerlo
 
@@ -32,7 +32,8 @@ Checklist **único** de trabajo pendiente e ideas futuras. El historial y el est
 
 ## Juego (general)
 
-- [ ] Capa gráfica / narrativa escape room (OE1, OE4)
+- [x] Modo escape room jugable (salas, puertas, tienda, botín, inventario, pity)
+- [ ] Narrativa gráfica escape room completa (guion, arte de escenas; OE1)
 - [ ] Piloto de usabilidad con estudiantes del grado (SUS, motivación, validez predictiva)
 - [x] Retirar consola — migración «solo pygame» integrada en `main`
 

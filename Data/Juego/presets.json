@@ -114,7 +114,7 @@
       "orden": 0,
       "categoria": "Escape room",
       "nombre": "Escape room",
-      "descripcion": "30 salas, 3 puertas. Elige desafío; fallar cuesta 1 vida pero avanzas. Tres vidas por partida.",
+      "descripcion": "30 salas, 3 puertas. Descanso, tienda y botín. Inventario de objetos como en resistencia. Tres vidas por partida.",
       "usa_analisis_historico": false,
       "perfil": "balanceado",
       "contexto_reglas": "escape",

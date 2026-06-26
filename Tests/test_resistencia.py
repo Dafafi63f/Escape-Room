@@ -184,11 +184,114 @@ class TestResistenciaPartida(unittest.TestCase):
         self.assertAlmostEqual(prob_b, prob_m, delta=0.05)
         self.assertAlmostEqual(prob_b, 0.465, delta=0.05)
 
-    def test_relampago_mas_duro_con_pregunta_alta(self) -> None:
-        eventos = eventos_aleatorios_para_pregunta(180)
-        relampagos = [e for e in eventos if e.tiempo_pregunta is not None]
-        if relampagos:
-            self.assertLessEqual(relampagos[0].tiempo_pregunta, 5)
+    def test_relampago_solo_sin_tiempo_base(self) -> None:
+        from Comun.eventos_partida import malos_resistencia_vigentes
+
+        self.assertIn(
+            "relampago",
+            malos_resistencia_vigentes(
+                15,
+                tiempo_baseline=None,
+                fraccion_baseline=1.0,
+                opciones_baseline=0,
+            ),
+        )
+        self.assertNotIn(
+            "relampago",
+            malos_resistencia_vigentes(
+                56,
+                tiempo_baseline=30,
+                fraccion_baseline=0.72,
+                opciones_baseline=0,
+            ),
+        )
+
+    def test_relampago_aleatorio_solo_antes_de_tiempo_base(self) -> None:
+        relampagos = [
+            e
+            for n in range(PREGUNTA_MIN_EVENTOS_ALEATORIOS, 25)
+            for e in eventos_aleatorios_para_pregunta(n, semilla_partida=11)
+            if e.tiempo_pregunta is not None
+        ]
+        self.assertGreater(len(relampagos), 0)
+        tardios = [
+            e
+            for n in range(120, 200)
+            for e in eventos_aleatorios_para_pregunta(n, semilla_partida=11)
+            if e.tiempo_pregunta is not None
+        ]
+        self.assertEqual(tardios, [])
+
+    def test_escalada_incluye_niebla_base_en_fases_altas(self) -> None:
+        from Comun.resistencia_partida import baseline_escalada_resistencia
+
+        b26 = baseline_escalada_resistencia(26)
+        self.assertLess(b26.fraccion_enunciado, 1.0)
+        self.assertIsNotNone(b26.tiempo_pregunta_seg)
+        b151 = baseline_escalada_resistencia(151)
+        self.assertLessEqual(b151.fraccion_enunciado, 0.55)
+        b351 = baseline_escalada_resistencia(351)
+        self.assertGreaterEqual(b351.opciones_ocultas, 1)
+
+    def test_malos_exclusivos_un_tiempo_y_una_niebla(self) -> None:
+        from Comun.eventos_partida import (
+            elegir_malos_resistencia_exclusivos,
+            familia_malo_resistencia,
+        )
+        import random
+
+        rng = random.Random(0)
+        kinds = (
+            "relampago",
+            "opciones_ocultas",
+            "enunciado_oculto",
+            "niebla_ambos",
+        )
+        elegidos = elegir_malos_resistencia_exclusivos(kinds, 3, rng)
+        familias = [
+            familia_malo_resistencia(k) for k in elegidos if familia_malo_resistencia(k)
+        ]
+        self.assertEqual(len(familias), len(set(familias)))
+        self.assertLessEqual(len(elegidos), 2)
+
+    def test_desafio_bloque_completa_y_limpia_estado(self) -> None:
+        from Comun.resistencia_motor import (
+            DesafioBloqueTiempoResistencia,
+            procesar_post_turno_resistencia,
+        )
+
+        er = EstadoResistencia()
+        er.desafio_bloque = DesafioBloqueTiempoResistencia(
+            aciertos_objetivo=2,
+            tiempo_limite_seg=60,
+        )
+        avisos = procesar_post_turno_resistencia(er, acierto=True, numero_pregunta=150)
+        self.assertEqual(er.desafio_bloque.aciertos_logrados, 1)
+        self.assertEqual(avisos, [])
+        avisos = procesar_post_turno_resistencia(er, acierto=True, numero_pregunta=151)
+        self.assertIsNone(er.desafio_bloque)
+        self.assertTrue(any("superado" in a for a in avisos))
+
+    def test_desafio_bloque_expirado_finaliza_partida(self) -> None:
+        import time
+        from Comun.resistencia_motor import (
+            DesafioBloqueTiempoResistencia,
+            desafio_bloque_expirado,
+            finalizar_partida_por_desafio_bloque,
+        )
+
+        er = EstadoResistencia()
+        estado = EstadoPartida(nombre="T", reglas=preset_resistencia(), vidas_restantes=3)
+        er.desafio_bloque = DesafioBloqueTiempoResistencia(
+            aciertos_objetivo=3,
+            tiempo_limite_seg=1,
+            inicio_monotonic=time.monotonic() - 5,
+        )
+        self.assertTrue(desafio_bloque_expirado(er))
+        msg = finalizar_partida_por_desafio_bloque(estado, er)
+        self.assertIn("tiempo agotado", msg.lower())
+        self.assertEqual(estado.vidas_restantes, 0)
+        self.assertIsNone(er.desafio_bloque)
 
     def test_sin_eventos_redundantes_de_dificultad(self) -> None:
         etiquetas = set()
@@ -214,6 +317,66 @@ class TestResistenciaPartida(unittest.TestCase):
             "opciones_ocultas",
             ids_eventos_malos_resistencia_para(PREGUNTA_MIN_NIEBLA_RESISTENCIA),
         )
+
+    def test_pity_resistencia_incrementa_y_resetea(self) -> None:
+        from Comun.eventos_partida import evento_resistencia_aleatorio
+        from Comun.resistencia_partida import (
+            actualizar_pity_eventos_resistencia,
+            kind_de_evento_resistencia,
+            PityEventosResistencia,
+        )
+
+        pity = PityEventosResistencia()
+        relampago = evento_resistencia_aleatorio("relampago", 0.8, numero_pregunta=50)
+        self.assertEqual(kind_de_evento_resistencia(relampago), "relampago")
+        actualizar_pity_eventos_resistencia(
+            pity,
+            (relampago,),
+            numero_pregunta=10,
+            kinds_vigentes=("relampago", "opciones_ocultas"),
+        )
+        self.assertEqual(pity.preguntas_sin_malo, 0)
+        self.assertEqual(pity.preguntas_sin_bueno, 1)
+        self.assertEqual(pity.preguntas_sin_por_kind["relampago"], 0)
+        self.assertEqual(pity.preguntas_sin_por_kind["opciones_ocultas"], 1)
+
+    def test_pity_resistencia_alto_favorece_tipo_ausente(self) -> None:
+        from Comun.eventos_partida import elegir_malos_resistencia_exclusivos
+        from Comun.resistencia_partida import PityEventosResistencia
+        import random
+
+        kinds = ("relampago", "opciones_ocultas", "enunciado_oculto")
+        pity = PityEventosResistencia(
+            preguntas_sin_por_kind={
+                "relampago": 12,
+                "opciones_ocultas": 0,
+                "enunciado_oculto": 0,
+                "niebla_ambos": 0,
+                "doble": 0,
+            }
+        )
+        pesos = {k: 1.0 + pity.preguntas_sin_por_kind.get(k, 0) * 0.22 for k in kinds}
+        vistos: set[str] = set()
+        for semilla in range(40):
+            rng = random.Random(semilla)
+            elegidos = elegir_malos_resistencia_exclusivos(
+                kinds, 1, rng, pesos=pesos
+            )
+            vistos.update(elegidos)
+        self.assertIn("relampago", vistos)
+
+    def test_pity_resistencia_cache_coherente_escalada_y_avisos(self) -> None:
+        from Comun.resistencia_partida import PityEventosResistencia
+
+        er = EstadoResistencia(semilla_partida=99)
+        escalada_para_pregunta(20, semilla_partida=99, pity=er.pity_eventos)
+        avisos = avisos_pre_pregunta_resistencia(
+            self.pool[0], 20, er=er
+        )
+        eventos = er.pity_eventos._cache_eventos
+        self.assertEqual(er.pity_eventos._cache_pregunta, 20)
+        if eventos:
+            self.assertGreaterEqual(len(avisos), len(eventos))
 
     def test_eventos_malos_y_buenos_cupos_independientes(self) -> None:
         class _Rng:
@@ -534,20 +697,21 @@ class TestMecanicasResistencia(unittest.TestCase):
         self.assertLess(er.fraccion_enunciado, 1.0)
         self.assertTrue(er.letras_ocultas)
 
-    def test_racha_extrema_apila_eventos_hostiles(self) -> None:
+    def test_racha_extrema_un_tiempo_y_una_niebla_como_maximo(self) -> None:
         from Comun.resistencia_partida import eventos_aleatorios_para_pregunta
 
         eventos = eventos_aleatorios_para_pregunta(
             50, semilla_partida=3, racha=100
         )
-        hostiles = [
-            e
+        n_tiempo = sum(1 for e in eventos if e.tiempo_pregunta is not None)
+        n_niebla = sum(
+            1
             for e in eventos
-            if e.tiempo_pregunta
-            or e.opciones_ocultas
-            or e.fraccion_enunciado is not None
-        ]
-        self.assertGreater(len(hostiles), 2)
+            if (e.opciones_ocultas or 0) > 0 or e.fraccion_enunciado is not None
+        )
+        self.assertLessEqual(n_tiempo, 1)
+        self.assertLessEqual(n_niebla, 1)
+        self.assertGreater(n_tiempo + n_niebla, 0)
         self.assertFalse(any(e.multiplicador_puntos for e in eventos))
 
     def test_racha_extrema_aplica_maldiciones_presion(self) -> None:
@@ -838,6 +1002,26 @@ class TestMotorResistenciaComun(unittest.TestCase):
         p = _pregunta()
         self.assertIsNone(usar_powerup("skip", er, p))
         self.assertEqual(er.cantidad("skip"), 1)
+        self.assertIn("skip", er.powerups_usados_en_pregunta)
+
+    def test_bomba_y_fifty_incompatibles_misma_pregunta(self) -> None:
+        er = EstadoResistencia()
+        er.agregar_powerup("bomba", 1)
+        er.agregar_powerup("fifty_fifty", 1)
+        p = _pregunta()
+        self.assertIsNone(usar_powerup("bomba", er, p))
+        self.assertIsNotNone(usar_powerup("fifty_fifty", er, p))
+        er.reiniciar_slot_pregunta()
+        self.assertIsNone(usar_powerup("fifty_fifty", er, p))
+
+    def test_bomba_y_tiempo_extra_compatibles(self) -> None:
+        er = EstadoResistencia()
+        er.agregar_powerup("bomba", 1)
+        er.agregar_powerup("tiempo_extra", 1)
+        p = _pregunta()
+        self.assertIsNone(usar_powerup("bomba", er, p))
+        self.assertIsNone(usar_powerup("tiempo_extra", er, p))
+        self.assertEqual(er.tiempo_extra_seg, 20)
 
     def test_recompensas_no_dependen_de_racha_ni_pregunta(self) -> None:
         from Comun.resistencia_motor import tirar_recompensas_tras_acierto

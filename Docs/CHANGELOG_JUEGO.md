@@ -2,15 +2,24 @@
 
 Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygame. El historial técnico del TFG está en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
 
-**Última actualización:** 2026-06-19
+**Última actualización:** 2026-06-26
 
 ---
+
+## 2026-06-26 (modo escape room)
+
+- **Escape room** jugable desde Modos especiales: 30 salas, 3 puertas por sala; eliges desafío y avanzas (fallar cuesta 1 vida).
+- **Puertas especiales:** descanso (sin preguntas), **tienda** (compra con puntos arcade) y **botín** (vidas u objetos al superar la puerta).
+- **Tienda:** hasta 3 artículos por visita; puedes comprar varios distintos (máx. 1 de cada); cartas compradas se marcan en gris.
+- **Inventario** en la banda inferior (como en resistencia): bomba, 50/50, tiempo extra, escudo, salto, cambio, refuerzo vital, amuleto arcade.
+- **Botín de objetos** en puertas normales y en descanso; icono 🎁 con el detalle del premio en la descripción.
+- **Pity** suave y garantías: descanso (sala 5), tienda (sala 10), botín (cada 3 salas sin ver uno).
 
 ## 2026-06-19 (migración solo pygame)
 
 - Eliminada la versión en terminal; **único lanzador:** `python Juego/juego_grafico.py`.
 - Informes, feedback y generador de historia viven en `Juego/Comun/`.
-- Suite de tests reorientada al backend gráfico (**246** tests).
+- Suite de tests reorientada al backend gráfico (**395** tests: 387 en `Tests/` + 8 en `Files/`).
 
 ## 2026-06-19 (interfaz gráfica)
 

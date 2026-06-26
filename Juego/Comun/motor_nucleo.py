@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import random
 import time
 from dataclasses import dataclass, field
 
@@ -64,10 +65,111 @@ class FeedbackRespuesta:
     sin_vidas: bool = False
 
 
-def texto_solucion(p: Pregunta) -> str:
-    if p.correcta in {"A", "B", "C", "D"}:
+LETRAS_OPCION = ("A", "B", "C", "D")
+
+
+@dataclass(frozen=True)
+class PresentacionOpcionesPregunta:
+    """Opciones permutadas y reetiquetadas A–D en pantalla (mapeo al dataset)."""
+
+    filas: tuple[tuple[str, str, str], ...]  # (etiqueta, texto, letra_dataset)
+
+    @classmethod
+    def construir(cls, pregunta: Pregunta, *, semilla: int) -> PresentacionOpcionesPregunta:
+        originales = [letra for letra in LETRAS_OPCION if pregunta.opciones.get(letra)]
+        if len(originales) <= 1:
+            filas = tuple(
+                (letra, pregunta.opciones.get(letra, ""), letra) for letra in originales
+            )
+            return cls(filas=filas)
+        rng = random.Random(semilla)
+        permutadas = list(originales)
+        rng.shuffle(permutadas)
+        filas = tuple(
+            (
+                LETRAS_OPCION[i],
+                pregunta.opciones.get(permutadas[i], ""),
+                permutadas[i],
+            )
+            for i in range(len(permutadas))
+        )
+        return cls(filas=filas)
+
+    def letra_dataset(self, etiqueta: str) -> str:
+        for etiq, _, origen in self.filas:
+            if etiq == etiqueta:
+                return origen
+        return etiqueta
+
+    def etiqueta_visual(self, letra_dataset: str) -> str | None:
+        for etiq, _, origen in self.filas:
+            if origen == letra_dataset:
+                return etiq
+        return None
+
+
+def semilla_orden_opciones(
+    *,
+    semilla_base: int,
+    numero_turno: int,
+    indice_pregunta: int = 0,
+) -> int:
+    """Semilla estable por turno para permutar opciones en pantalla."""
+    return semilla_base + numero_turno * 1_009 + indice_pregunta * 7_919
+
+
+def presentacion_opciones_pantalla(
+    pregunta: Pregunta,
+    *,
+    semilla: int,
+) -> PresentacionOpcionesPregunta:
+    """Permuta textos y muestra siempre A, B, C, D en orden vertical."""
+    return PresentacionOpcionesPregunta.construir(pregunta, semilla=semilla)
+
+
+def orden_letras_opciones_pantalla(
+    pregunta: Pregunta,
+    *,
+    semilla: int,
+) -> tuple[str, ...]:
+    """Etiquetas visuales en pantalla (A–D en orden)."""
+    return tuple(etiq for etiq, _, _ in presentacion_opciones_pantalla(pregunta, semilla=semilla).filas)
+
+
+def marcar_botones_opciones_tras_respuesta(
+    botones,
+    *,
+    presentacion: PresentacionOpcionesPregunta,
+    correcta_dataset: str,
+    respuesta_dataset: str,
+    acierto: bool,
+) -> None:
+    correcta_vis = presentacion.etiqueta_visual(correcta_dataset)
+    respuesta_vis = (
+        presentacion.etiqueta_visual(respuesta_dataset) if respuesta_dataset else None
+    )
+    for boton in botones:
+        boton.activo = False
+        boton.marcar_correcta = False
+        boton.marcar_incorrecta = False
+        if correcta_vis and boton.letra == correcta_vis:
+            boton.marcar_correcta = True
+        elif respuesta_vis and boton.letra == respuesta_vis and not acierto:
+            boton.marcar_incorrecta = True
+
+
+def texto_solucion(
+    p: Pregunta,
+    presentacion: PresentacionOpcionesPregunta | None = None,
+) -> str:
+    if p.correcta in LETRAS_OPCION:
         texto = p.opciones.get(p.correcta, "")
-        return f"Correcta: {p.correcta}) {texto}"
+        etiqueta = p.correcta
+        if presentacion is not None:
+            vis = presentacion.etiqueta_visual(p.correcta)
+            if vis:
+                etiqueta = vis
+        return f"Correcta: {etiqueta}) {texto}"
     return "Correcta: (dato no disponible en esta pregunta)"
 
 
@@ -80,6 +182,7 @@ def linea_estado(
     progreso_puerta: str | None = None,
     progreso_sala: str | None = None,
     mostrar_tiempo_activo: bool = True,
+    desafio_bloque_texto: str | None = None,
 ) -> str:
     from Comun.linea_estado_ui import linea_estado_con_iconos
 
@@ -91,6 +194,7 @@ def linea_estado(
         progreso_puerta=progreso_puerta,
         progreso_sala=progreso_sala,
         mostrar_tiempo_activo=mostrar_tiempo_activo,
+        desafio_bloque_texto=desafio_bloque_texto,
     )
 
 

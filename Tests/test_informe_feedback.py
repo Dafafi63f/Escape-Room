@@ -36,7 +36,13 @@ from Comun.informe_examen import (
     publicar_informe_partida,
 )
 from Comun.modelos import Pregunta
-from Comun.motor_nucleo import EstadoPartida, ResultadoRespuesta, evaluar_respuesta
+from Comun.motor_nucleo import (
+    EstadoPartida,
+    ResultadoRespuesta,
+    evaluar_respuesta,
+    presentacion_opciones_pantalla,
+    semilla_orden_opciones,
+)
 from Comun.reglas_partida import preset_historia_examen, preset_libre_arcade
 
 
@@ -195,6 +201,38 @@ class TestInformeExamen(unittest.TestCase):
         self.assertEqual(fb2.mensaje, "Respuesta registrada.")
         self.assertEqual(estado.aciertos, 1)
         self.assertEqual(estado.respondidas, 2)
+
+    def test_orden_opciones_permutado_en_pantalla(self) -> None:
+        p = _pregunta_simple()
+        pres_a = presentacion_opciones_pantalla(p, semilla=11)
+        pres_b = presentacion_opciones_pantalla(p, semilla=22)
+        pres_rep = presentacion_opciones_pantalla(p, semilla=11)
+        self.assertEqual(pres_a.filas, pres_rep.filas)
+        etiquetas_a = tuple(etiq for etiq, _, _ in pres_a.filas)
+        self.assertEqual(etiquetas_a, ("A", "B", "C", "D"))
+        self.assertNotEqual(pres_a.filas, pres_b.filas)
+        origen_correcta = next(
+            origen for etiq, _, origen in pres_a.filas if etiq == "A"
+        )
+        self.assertEqual(pres_a.letra_dataset("A"), origen_correcta)
+        self.assertIsNotNone(pres_a.etiqueta_visual(p.correcta))
+        otra_vez = presentacion_opciones_pantalla(
+            p,
+            semilla=semilla_orden_opciones(
+                semilla_base=99,
+                numero_turno=0,
+                indice_pregunta=0,
+            ),
+        )
+        otra_vez_2 = presentacion_opciones_pantalla(
+            p,
+            semilla=semilla_orden_opciones(
+                semilla_base=99,
+                numero_turno=1,
+                indice_pregunta=0,
+            ),
+        )
+        self.assertNotEqual(otra_vez.filas, otra_vez_2.filas)
 
     def test_arcade_muestra_feedback_inmediato(self) -> None:
         reglas = preset_libre_arcade()

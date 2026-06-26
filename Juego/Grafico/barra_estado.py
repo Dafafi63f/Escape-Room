@@ -168,6 +168,7 @@ def dibujar_estado_partida_en_barra(
     progreso_puerta: str | None = None,
     progreso_sala: str | None = None,
     mostrar_tiempo_activo: bool = True,
+    desafio_bloque_texto: str | None = None,
 ) -> None:
     """Atajo: segmentos + dibujo centrado en la zona disponible."""
     if y is None:
@@ -184,6 +185,7 @@ def dibujar_estado_partida_en_barra(
         progreso_puerta=progreso_puerta,
         progreso_sala=progreso_sala,
         mostrar_tiempo_activo=mostrar_tiempo_activo,
+        desafio_bloque_texto=desafio_bloque_texto,
     )
     fuente_emoji = fuentes.get("icono_emoji")
     if fuente_emoji is None:

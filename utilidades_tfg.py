@@ -2,23 +2,26 @@
 # -*- coding: utf-8 -*-
 """Utilidades locales del TFG: regeneración y limpieza del proyecto.
 
-Flujo por defecto (**regenerar todo → limpiar**):
+Flujo por defecto (**regenerar todo → limpiar → zip portable**):
 
   python utilidades_tfg.py
 
 1. Exporta la memoria a Word (Markdown y LaTeX → .docx).
 2. Regenera ``Juego/juego_grafico.exe`` (``build_exe_onefile.ps1``).
 3. Limpia temporales (__pycache__, runtime del juego, intermedios de Entrega/, PyInstaller).
+4. Crea ``MATCAD_juego_portable.zip`` (solo ``Data/`` y ``Juego/`` + ``requirements.txt``).
 
 Solo una fase:
 
   python utilidades_tfg.py --solo-memoria
   python utilidades_tfg.py --solo-exe
   python utilidades_tfg.py --solo-limpieza
+  python utilidades_tfg.py --solo-zip
 
 Atajos:
 
   python utilidades_tfg.py --sin-exe           # memoria sin .exe (más rápido)
+  python utilidades_tfg.py --sin-zip           # no generar zip portable
   python utilidades_tfg.py --forzar-exe        # reconstruir .exe aunque no haya cambios
   python utilidades_tfg.py --conservar-cache-exe  # no borrar Juego/build/ tras el build
   python utilidades_tfg.py --solo-memoria --con-exe
@@ -37,6 +40,7 @@ import argparse
 import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 if sys.platform == "win32":
@@ -58,6 +62,7 @@ FILES = _ROOT / "Files"
 DATA = _ROOT / "Data"
 CHANGELOG_JUEGO = DOCS / "CHANGELOG_JUEGO.md"
 REQUIREMENTS = _ROOT / "requirements.txt"
+ZIP_PORTABLE = _ROOT / "MATCAD_juego_portable.zip"
 MD = ENTREGA / "Memoria_TFG.md"
 TEX = ENTREGA / "Memoria_TFG.tex"
 DOCX_MD = ENTREGA / "Memoria_TFG_markdown.docx"
@@ -85,6 +90,11 @@ _ARTEFACTOS_ENTREGA_SALIDA = (
     DOCX_MD,
     DOCX_LATEX,
 )
+
+_ZIP_CARPETAS = (DATA, JUEGO)
+_ZIP_EXCLUIR_DIRNAMES = frozenset({"__pycache__", "build", "dist"})
+_ZIP_EXCLUIR_FICHEROS = frozenset({"juego_grafico.exe"})
+_ZIP_EXCLUIR_SUFIJOS = (".spec", ".pyc")
 
 
 def _listar_ficheros_existentes(candidatos: list[Path]) -> list[Path]:
@@ -542,29 +552,91 @@ def ejecutar_limpieza_final(args: argparse.Namespace) -> int:
     return codigo
 
 
-def _planificar_tareas(args: argparse.Namespace) -> tuple[bool, bool, bool]:
+def _planificar_tareas(args: argparse.Namespace) -> tuple[bool, bool, bool, bool]:
     filtros_limpieza = (
         args.solo_pycache or args.solo_juego or args.solo_txt or args.solo_entrega
     )
     solo_limpieza = args.solo_limpieza or filtros_limpieza
 
+    if args.solo_zip:
+        return False, False, False, True
     if solo_limpieza:
-        return False, False, True
+        return False, False, True, not args.sin_zip
     if args.solo_exe:
-        return False, True, True
+        return False, True, True, not args.sin_zip
     if args.solo_memoria:
-        return True, bool(args.con_exe), True
+        return True, bool(args.con_exe), True, not args.sin_zip
     incluir_exe = not args.sin_exe
     if args.con_exe:
         incluir_exe = True
-    return True, incluir_exe, True
+    return True, incluir_exe, True, not args.sin_zip
+
+
+def _excluir_del_zip_portable(ruta: Path) -> bool:
+    if not ruta.is_file():
+        return True
+    if ruta.name in _ZIP_EXCLUIR_FICHEROS:
+        return True
+    return ruta.suffix.lower() in _ZIP_EXCLUIR_SUFIJOS
+
+
+def _iterar_ficheros_zip_portable() -> list[tuple[Path, str]]:
+    """Pares (ruta_absoluta, nombre_dentro_del_zip) para Data/ y Juego/."""
+    entradas: list[tuple[Path, str]] = []
+    for base in _ZIP_CARPETAS:
+        if not base.is_dir():
+            raise FileNotFoundError(f"No existe la carpeta necesaria: {base}")
+        for ruta in sorted(base.rglob("*")):
+            if not ruta.is_file():
+                continue
+            if any(part in _ZIP_EXCLUIR_DIRNAMES for part in ruta.relative_to(base).parts):
+                continue
+            if _excluir_del_zip_portable(ruta):
+                continue
+            entradas.append((ruta, f"{base.name}/{ruta.relative_to(base).as_posix()}"))
+    if REQUIREMENTS.is_file():
+        entradas.append((REQUIREMENTS, "requirements.txt"))
+    return entradas
+
+
+def crear_zip_juego_portable(destino: Path = ZIP_PORTABLE) -> Path:
+    """Empaqueta Data/, Juego/ y requirements.txt para jugar con Python (sin .exe)."""
+    if destino.exists():
+        destino.unlink()
+    ficheros = _iterar_ficheros_zip_portable()
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(destino, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for ruta, arcname in ficheros:
+            zf.write(ruta, arcname)
+    return destino
+
+
+def ejecutar_zip_portable(destino: Path = ZIP_PORTABLE) -> int:
+    print("=== Zip portable (Python) ===\n")
+    print("  Contenido: Data/, Juego/, requirements.txt")
+    print("  Excluye: .exe, build/, dist/, __pycache__, .spec")
+    try:
+        ficheros = _iterar_ficheros_zip_portable()
+        salida = crear_zip_juego_portable(destino)
+    except FileNotFoundError as exc:
+        print(f"  Error:  {exc}", file=sys.stderr)
+        return 1
+    tam_mb = salida.stat().st_size / (1024 * 1024)
+    print(f"  Ficheros: {len(ficheros)}")
+    print(f"  ZIP:      {_rel(salida)} ({tam_mb:.1f} MiB)")
+    print()
+    print("  En el PC destino:")
+    print("    1. Descomprimir el zip")
+    print("    2. pip install -r requirements.txt")
+    print("    3. python Juego/juego_grafico.py")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Regenera artefactos del TFG (memoria, .exe en Windows) y "
-            "limpia temporales al final."
+            "Regenera artefactos del TFG (memoria, .exe en Windows), "
+            "limpia temporales y crea zip portable al final."
         )
     )
     modo = parser.add_mutually_exclusive_group()
@@ -583,11 +655,21 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Solo regenerar Juego/juego_grafico.exe; después, limpieza final",
     )
+    modo.add_argument(
+        "--solo-zip",
+        action="store_true",
+        help="Solo crear MATCAD_juego_portable.zip (Data/, Juego/, requirements.txt)",
+    )
 
     parser.add_argument(
         "--sin-exe",
         action="store_true",
         help="No regenerar juego_grafico.exe (por defecto sí se regenera)",
+    )
+    parser.add_argument(
+        "--sin-zip",
+        action="store_true",
+        help="No crear MATCAD_juego_portable.zip al final",
     )
     parser.add_argument(
         "--forzar-exe",
@@ -624,7 +706,9 @@ def main(argv: list[str] | None = None) -> int:
     grupo_memoria.add_argument("--solo-latex", action="store_true", help="Memoria: solo Word desde LaTeX")
 
     args = parser.parse_args(argv)
-    regenerar_memoria, regenerar_exe_flag, hacer_limpieza = _planificar_tareas(args)
+    regenerar_memoria, regenerar_exe_flag, hacer_limpieza, crear_zip = _planificar_tareas(
+        args
+    )
 
     codigo = 0
 
@@ -652,6 +736,11 @@ def main(argv: list[str] | None = None) -> int:
         if regenerar_memoria or regenerar_exe_flag:
             print()
         codigo = max(codigo, ejecutar_limpieza_final(args))
+
+    if crear_zip:
+        if regenerar_memoria or regenerar_exe_flag or hacer_limpieza:
+            print()
+        codigo = max(codigo, ejecutar_zip_portable())
 
     return codigo
 

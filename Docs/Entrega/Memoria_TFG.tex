@@ -54,7 +54,7 @@
 \maketitle
 
 \begin{abstract}
-\noindent Se presenta el diseño e implementación de un cuestionario educativo alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos (MatCAD). El entregable incluye un banco cerrado de \textbf{480 preguntas} con metadatos curriculares, un juego en \textbf{pygame} con cuatro modos (libre, historia, resistencia y feedback), y herramientas de validación del dataset. El desarrollo siguió un enfoque incremental: primero un prototipo en terminal para validar el motor de evaluación y, después, una interfaz gráfica que concentra toda la experiencia de juego. Los resultados muestran un sistema funcional, documentado y extensible; la validación con usuarios y la narrativa gráfica quedan como trabajo futuro.
+\noindent Se presenta el diseño e implementación de un cuestionario educativo alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos (MatCAD). El entregable incluye un banco cerrado de \textbf{480 preguntas} con metadatos curriculares, un juego en \textbf{pygame} con cinco modos (libre, historia, resistencia, escape room y feedback), y herramientas de validación del dataset. El desarrollo siguió un enfoque incremental: primero un prototipo en terminal para validar el motor de evaluación y, después, una interfaz gráfica que concentra toda la experiencia de juego. Los resultados muestran un sistema funcional, documentado y extensible; la validación con usuarios y la narrativa gráfica quedan como trabajo futuro.
 
 \medskip
 \noindent\textbf{Palabras clave:} cuestionario educativo, gamificación, banco de preguntas, autoevaluación, MatCAD, serious games.
@@ -275,7 +275,7 @@ Balance estructural del CSV & \texttt{mantenimiento.py validar} \\
 Revisión manual del contenido & 480/480 ítems revisados; validación automatizada \\
 Auditoría de distractores & \texttt{mantenimiento.py auditar-distractores} (terminal; \texttt{--json} opcional) \\
 Duplicados semánticos & \texttt{duplicados.py revisar} (0 pares similares en CSV y plantillas intra-materia, 2026-06-15) \\
-Pruebas de regresión & \texttt{python -m unittest discover -s Tests -v} (\textbf{258} tests: 250 + 8 en \texttt{Files/}) \\
+Pruebas de regresión & \texttt{python -m unittest discover -s Tests -v} (\textbf{395} tests: 387 + 8 en \texttt{Files/}) \\
 Integración continua & GitHub Actions (\texttt{.github/workflows/tests.yml}) \\
 Revisión con profesorado & Identificación de solapamiento temático y prerrequisitos (véase §6.2) \\
 Simulación Monte Carlo & \texttt{Files/simulacion\_evaluacion\_azar.py} (véase §5.7) \\
@@ -311,7 +311,7 @@ El banco distingue \textbf{modo seguro} (solo dataset revisado) y \textbf{modo b
 
 \subsection{Aplicación de juego}
 
-\textbf{Estado del entregable:} cuestionario en \textbf{pygame} con cuatro modos operativos (libre, historia, resistencia, feedback), banco de \textbf{480 preguntas} revisadas manualmente y herramientas de mantenimiento del dataset. La capa narrativa escape room / novela gráfica completa queda como evolución futura.
+\textbf{Estado del entregable:} cuestionario en \textbf{pygame} con cinco modos operativos (libre, historia, resistencia, escape room, feedback), banco de \textbf{480 preguntas} revisadas manualmente y herramientas de mantenimiento del dataset. El \textbf{modo escape room} implementa mecánicas de salas y puertas (tienda, botín, inventario); la narrativa gráfica completa queda como evolución futura.
 
 El desarrollo siguió un enfoque incremental: un prototipo en terminal validó el motor de evaluación; la interfaz gráfica concentró después toda la experiencia de juego. En junio de 2026 se eliminó la capa de consola y se unificó el código en \texttt{juego\_grafico.py} con dominio en \texttt{Juego/Comun/} e interfaz en \texttt{Juego/Grafico/}.
 
@@ -378,7 +378,7 @@ Diagrama detallado (40 materias con posición curricular): \texttt{Data/README.m
 
 \subsection{Herramientas de mantenimiento}
 
-Se desarrolló un conjunto de scripts en \texttt{Files/} con punto de entrada unificado (\texttt{mantenimiento.py}): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en \texttt{utils\_plantillas\_core.py}, compartida con \texttt{Juego/Comun/datos.py}. Los datos del juego se organizan en \texttt{Data/Banco/} (banco y catálogos) y \texttt{Data/Juego/} (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en \texttt{Tests/} (\textbf{258} tests) con CI en GitHub Actions. Catálogo de comandos: \texttt{Files/README.md}.
+Se desarrolló un conjunto de scripts en \texttt{Files/} con punto de entrada unificado (\texttt{mantenimiento.py}): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en \texttt{utils\_plantillas\_core.py}, compartida con \texttt{Juego/Comun/datos.py}. Los datos del juego se organizan en \texttt{Data/Banco/} (banco y catálogos) y \texttt{Data/Juego/} (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en \texttt{Tests/} (\textbf{395} tests) con CI en GitHub Actions. Catálogo de comandos: \texttt{Files/README.md}.
 
 \subsection{Síntesis cuantitativa}
 
@@ -390,7 +390,7 @@ Preguntas en banco de producción & 480 \\
 Materias cubiertas & 40 \\
 Módulos Python del juego (\texttt{Comun/} + \texttt{Grafico/}) & $\sim$35 \\
 Modos de juego operativos & 4 \\
-Pruebas automatizadas & 258 \\
+Pruebas automatizadas & 395 \\
 Grupos temáticos modelados & 10 \\
 \bottomrule
 \end{tabular}
@@ -477,23 +477,23 @@ En conjunto, el experimento muestra que el azar produce suspensión sistemática
 
 \subsection{Cumplimiento de los objetivos}
 
-El \textbf{objetivo general} se cumple de forma parcial: existe un juego educativo interactivo basado en contenidos del grado, pero la progresión narrativa tipo escape room no está implementada. La progresión actual es ludificada (vidas, puntos, dificultad creciente) y curricular (filtros por etapa del grado).
+El \textbf{objetivo general} se cumple de forma parcial: existe un juego educativo interactivo basado en contenidos del grado, con un \textbf{modo escape room} que estructura la partida en salas y puertas, aunque sin guion narrativo gráfico completo. La progresión actual es ludificada (vidas, puntos, dificultad creciente) y curricular (filtros por etapa del grado).
 
 \iniciotabla
 \begin{tabular}{@{}l>{\raggedright\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{5.8cm}@{}}
 \toprule
 \textbf{\#} & \textbf{Objetivo} & \textbf{Estado} & \textbf{Comentario} \\
 \midrule
-OE1 & Narrativa interactiva & Pendiente (futuro) & Sin guion de escenas/salas implementado \\
+OE1 & Narrativa interactiva & Parcial & Modo escape room jugable; guion visual completo pendiente \\
 OE2 & Retos por materias & \textbf{Cumplido} & Banco 480 ítems, Teoría/Cálculo, tres dificultades \\
 OE3 & Validación de respuestas & \textbf{Cumplido} & Motor A--D, puntuación, vidas, informes \\
-OE4 & Interfaz gráfica & \textbf{Cumplido} & \texttt{juego\_grafico.py} con libre, historia, resistencia y feedback; tooltips y barra superior \\
-OE5 & Valor formativo & \textbf{Parcialmente cumplido} & Banco validado, 258 tests + CI; sin estudio con usuarios \\
+OE4 & Interfaz gráfica & \textbf{Cumplido} & \texttt{juego\_grafico.py} con libre, historia, resistencia, escape room y feedback \\
+OE5 & Valor formativo & \textbf{Parcialmente cumplido} & Banco validado, 395 tests + CI; sin estudio con usuarios \\
 \bottomrule
 \end{tabular}
 \fintabla
 
-Los \textbf{objetivos específicos} OE2, OE3, OE4 y OE5 están cubiertos en la versión pygame. OE1 (narrativa gráfica completa tipo escape room) queda como trabajo futuro. El enfoque incremental ---primero validar el núcleo evaluable, después la capa visual--- permitió concentrar el esfuerzo en un único lanzador mantenible.
+Los \textbf{objetivos específicos} OE2, OE3, OE4 y OE5 están cubiertos en la versión pygame. OE1 (narrativa gráfica completa) queda parcialmente cubierto por las mecánicas del escape room y como trabajo futuro en arte y guion. El enfoque incremental ---primero validar el núcleo evaluable, después la capa visual--- permitió concentrar el esfuerzo en un único lanzador mantenible.
 
 \subsection{Validez del banco de preguntas}
 
@@ -528,7 +528,7 @@ La hipótesis \textbf{H1} queda apoyada por la operatividad de los filtros curri
 
 \subsection{Limitaciones del estudio}
 
-El estudio no incluye \textbf{evaluación con usuarios}: no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes. La \textbf{interfaz gráfica} actual cubre menús y partida, pero aún no implementa la narrativa escape room del documento inicial. El \textbf{modelo de datos} asigna una sola materia por pregunta y aún no modela prerrequisitos explícitos (véase §6.2). El \textbf{idioma del banco} mezcla castellano y catalán según la asignatura, con coherencia terminológica revisada pero mejorable. Por último, el \textbf{modo beta} amplía el pool con plantillas no revisadas y debe distinguirse del banco de producción en cualquier evaluación formal.
+El estudio no incluye \textbf{evaluación con usuarios}: no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes. La \textbf{interfaz gráfica} cubre menús y partida, incluido un \textbf{modo escape room} con salas, tienda y botín, pero sin la narrativa gráfica completa del documento inicial. El \textbf{modelo de datos} asigna una sola materia por pregunta y aún no modela prerrequisitos explícitos (véase §6.2). El \textbf{idioma del banco} mezcla castellano y catalán según la asignatura, con coherencia terminológica revisada pero mejorable. Por último, el \textbf{modo beta} amplía el pool con plantillas no revisadas y debe distinguirse del banco de producción en cualquier evaluación formal.
 
 \subsection{Trabajo futuro}
 

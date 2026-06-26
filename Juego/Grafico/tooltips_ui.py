@@ -74,8 +74,8 @@ TOOLTIP_MENU_PRINCIPAL: dict[str, str] = {
 
 TOOLTIP_MODOS_ESPECIALES: dict[str, str] = {
     "escape_room": (
-        "30 salas, 3 puertas. Elige desafío; fallar cuesta 1 vida pero avanzas. "
-        "Tres vidas por partida."
+        "30 salas, 3 puertas por sala. Descanso, tienda (puntos arcade) y botín. "
+        "Objetos en la banda inferior. Fallar cuesta 1 vida pero avanzas."
     ),
     "ranking_resistencia": (
         "Banco completo, 3 vidas. Escalada, rachas, eventos y ranking local. "
