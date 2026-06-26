@@ -11,6 +11,8 @@ Flujo por defecto (**regenerar todo → limpiar → zip portable**):
 3. Limpia temporales (__pycache__, runtime del juego, intermedios de Entrega/, PyInstaller).
 4. Crea ``MATCAD_juego_portable.zip`` (solo ``Data/`` y ``Juego/`` + ``requirements.txt``).
 
+Los artefactos regenerados (``.exe``, zip portable, ``.docx`` de memoria) se versionan en el repositorio.
+
 Solo una fase:
 
   python utilidades_tfg.py --solo-memoria
