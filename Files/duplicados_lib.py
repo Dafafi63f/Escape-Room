@@ -28,6 +28,7 @@ from utils_deduplicacion import (
     motivo_duplicado,
     quitar_plantillas_presentes_en_dataset,
 )
+from utils_banco_cerrado import guardar_plantillas_json
 from utils_dataset_csv import fila_pregunta, guardar_filas_csv, materia_de_fila, ordenar_filas_por_tema_y_id, renumerar_ids
 from utils_texto import normalizar_basico
 from utils_plantillas_core import expandir_plantilla_csv_filas
@@ -417,9 +418,7 @@ def ejecutar_todo(inplace: bool = False, dry_run: bool = False, seed: int = 42) 
     if dry_run:
         return 0
 
-    with PATH_PLANTILLAS.open("w", encoding="utf-8") as f:
-        json.dump(plantillas_sin_cruce, f, ensure_ascii=False, indent=2)
-        f.write("\n")
+    guardar_plantillas_json(plantillas_sin_cruce)
 
     guardar_filas_csv(fieldnames, filas_nuevas, PATH_PREGUNTAS)
 
@@ -443,9 +442,7 @@ def ejecutar_plantillas() -> int:
     cleaned, exact_removed, similar_removed = deduplicar_plantillas_dict(plantillas)
     total_after = sum(len(v) for v in cleaned.values())
 
-    with PATH_PLANTILLAS.open("w", encoding="utf-8") as f:
-        json.dump(cleaned, f, ensure_ascii=False, indent=2)
-        f.write("\n")
+    guardar_plantillas_json(cleaned)
 
     print(f"Total antes: {total_before}")
     print(f"Total despues: {total_after}")

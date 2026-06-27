@@ -129,7 +129,7 @@ _IDS_PRESET_SIMULACROS: frozenset[str] = frozenset({
     "examen_fijo",
 })
 
-# IDs retirados del catálogo activo (solo documentación histórica y tests).
+# IDs retirados del catálogo activo (documentación, tests y tabla en Data/README.md).
 PRESETS_HISTORIA_RETIRADOS = frozenset({
     "examen_dia_historia",
     "examen_aleatorio_historia",

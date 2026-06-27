@@ -135,9 +135,7 @@ CAPA_EVENTO_ESCAPE: dict[str, CapaIconoEscape] = {
     "tienda": CapaIconoEscape.TIENDA,
     "botin": CapaIconoEscape.BOTIN,
     "botin_corazon_max": CapaIconoEscape.BOTIN,
-    "niebla_enunciado": CapaIconoEscape.NIEBLA,
     "niebla_opciones": CapaIconoEscape.NIEBLA,
-    "niebla_ambos": CapaIconoEscape.NIEBLA,
     "cronometro_pregunta": CapaIconoEscape.TIEMPO,
     "cronometro_bloque": CapaIconoEscape.TIEMPO,
     "cronometro_doble": CapaIconoEscape.TIEMPO,
@@ -152,9 +150,7 @@ EMOJI_EVENTO_ESCAPE: dict[str, str] = {
     "tienda": EMOJI_TIENDA,
     "botin": EMOJI_BOTIN_ESCAPE,
     "botin_corazon_max": EMOJI_BOTIN_ESCAPE,
-    "niebla_enunciado": EMOJI_NIEBLA_ENUNCIADO,
     "niebla_opciones": EMOJI_NIEBLA_OPCIONES,
-    "niebla_ambos": EMOJI_NIEBLA_AMBOS,
     "cronometro_bloque": EMOJI_CRONO_BLOQUE,
     "cronometro_pregunta": EMOJI_CRONO_PREGUNTA,
     "cronometro_doble": EMOJI_CRONO_DOBLE,
@@ -189,7 +185,7 @@ ALTERNATIVAS_EMOJI_PUERTA: dict[str, tuple[str, ...]] = {
     "grupo": ("🗂️", "🧩", "🌐", "📦", "🔗", "🏛️", "🎛️"),
 }
 
-# Familia viento: suave (enunciado) → ráfaga (opciones) → torbellino (ambos).
+# Alternativas guardadas (niebla enunciado/ambos inactivos; catálogo solo niebla_opciones).
 ALTERNATIVAS_EMOJI_NIEBLA: dict[str, tuple[str, ...]] = {
     "enunciado": ("🌬️", "💨", "🪶", "📝"),
     "opciones": ("🌬️", "🌀", "🎭", "🙈"),

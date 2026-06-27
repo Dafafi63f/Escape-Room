@@ -18,7 +18,7 @@ from Comun.dificultad import (
     techo_complejidad_partida,
 )
 from Comun.modelos import Pregunta
-from Comun.reglas_partida import ReglasPartida
+from Comun.reglas_partida import ReglasPartida, vidas_iniciales_partida
 from Comun.motor_nucleo import (
     EstadoPartida,
     ResultadoRespuesta,
@@ -26,11 +26,11 @@ from Comun.motor_nucleo import (
     linea_estado,
     marcar_botones_opciones_tras_respuesta,
     presentacion_opciones_pantalla,
-    semilla_orden_opciones,
     texto_solucion,
 )
+from Comun.semillas import semilla_orden_opciones, semilla_partida_libre
 from Comun.informe_examen import CierreInformePartida
-from Comun.jugador import es_nombre_anonimo
+from Comun.preferencias_grafico import es_nombre_anonimo
 from Comun.navegacion_fin_partida import NavegacionFinPartida
 from Comun.pool_libre import crear_estado_seleccion, elegir_indice_siguiente
 from Comun.preferencias_grafico import guardar_informes_txt_habilitados
@@ -306,7 +306,7 @@ class PartidaModoLibre(Pantalla):
         self.estado = EstadoPartida(
             nombre=nombre,
             reglas=reglas,
-            vidas_restantes=reglas.vidas,
+            vidas_restantes=vidas_iniciales_partida(reglas),
         )
         self.indice_global = 0
         self.fase = "pregunta"
@@ -455,7 +455,7 @@ class PartidaModoLibre(Pantalla):
     def _reconstruir_opciones(self) -> None:
         p = self._pregunta_actual()
         semilla = semilla_orden_opciones(
-            semilla_base=hash(self.nombre) & 0x7FFFFFFF,
+            semilla_base=semilla_partida_libre(nombre=self.nombre),
             numero_turno=self.estado.respondidas,
             indice_pregunta=self.pregunta_idx or 0,
         )

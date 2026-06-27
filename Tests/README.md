@@ -2,7 +2,7 @@
 
 Pruebas en directorio plano `Tests/` (juego y gráfico). Tests de mantenimiento en [`Files/test_*.py`](../Files/README.md#pruebas).
 
-**Suite actual:** **395 tests** (387 en `Tests/` + 8 en `Files/`).
+**Suite actual:** **424 tests** (416 en `Tests/` + 8 en `Files/`).
 
 ## Ejecutar
 
@@ -44,8 +44,9 @@ GitHub Actions (`.github/workflows/tests.yml`):
 | `test_grafico_ui.py` | Textos, tooltips, barra de estado y datos locales |
 | `test_grafico_menus.py` | Menús pygame, pausa, feedback, info y hover |
 | `test_resistencia.py` | Modo resistencia: partida, ranking, motor, exclusivas e iconos |
-| `test_escape_room.py` | Escape room: puertas, tienda, botín, pity, inventario |
+| `test_escape_room.py` | Escape room: puertas, tienda, botín, pity, inventario, semillas |
 | `test_eventos_partida.py` | Catálogo de eventos compartido (escape y resistencia) |
+| `test_semillas.py` | Semillas diaria, aleatoria, libre y derivadas |
 | `helpers_navegacion_grafico.py` | Utilidades para tests gráficos (no es test) |
 | `adaptador_juego.py` | Adaptador de dominio para tests |
 | `support.py` | Bootstrap de `sys.path` |

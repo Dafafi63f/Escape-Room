@@ -60,7 +60,7 @@
 \noindent\textbf{Palabras clave:} cuestionario educativo, gamificación, banco de preguntas, autoevaluación, MatCAD, serious games.
 \end{abstract}
 
-\noindent\textit{Nota sobre el título:} el documento de proyecto inicial planteaba un escape room con interfaz gráfica. El \textbf{entregable de este TFG} es el cuestionario (banco + juego en \textbf{pygame}) descrito en esta memoria; la capa narrativa escape room completa queda como evolución futura del mismo proyecto.
+\noindent\textit{Nota sobre el título:} el documento de proyecto inicial planteaba un escape room con interfaz gráfica. El \textbf{entregable de este TFG} es el cuestionario (banco + juego en \textbf{pygame} con cinco modos, incluido escape room con mecánicas jugables) descrito en esta memoria; la capa narrativa gráfica completa queda como evolución futura del mismo proyecto.
 
 \smallskip
 \noindent El detalle técnico del repositorio (esquema del banco, scripts, arquitectura del juego) se documenta en los \texttt{README.md} del proyecto y se cita en los apéndices al final de esta memoria.
@@ -275,10 +275,11 @@ Balance estructural del CSV & \texttt{mantenimiento.py validar} \\
 Revisión manual del contenido & 480/480 ítems revisados; validación automatizada \\
 Auditoría de distractores & \texttt{mantenimiento.py auditar-distractores} (terminal; \texttt{--json} opcional) \\
 Duplicados semánticos & \texttt{duplicados.py revisar} (0 pares similares en CSV y plantillas intra-materia, 2026-06-15) \\
-Pruebas de regresión & \texttt{python -m unittest discover -s Tests -v} (\textbf{395} tests: 387 + 8 en \texttt{Files/}) \\
+Pruebas de regresión & \texttt{python -m unittest discover -s Tests -v} (\textbf{424} tests: 416 + 8 en \texttt{Files/}) \\
 Integración continua & GitHub Actions (\texttt{.github/workflows/tests.yml}) \\
 Revisión con profesorado & Identificación de solapamiento temático y prerrequisitos (véase §6.2) \\
 Simulación Monte Carlo & \texttt{Files/simulacion\_evaluacion\_azar.py} (véase §5.7) \\
+Análisis del sistema de pity & \texttt{Files/simulacion\_pity.py} (véase §5.8) \\
 \bottomrule
 \end{tabular}
 \fintabla
@@ -304,7 +305,7 @@ Se obtuvo un banco cerrado de \textbf{480 preguntas} con las siguientes propieda
   \item \textbf{40 materias} alineadas con el listado del grado.
   \item \textbf{12 preguntas por materia} siguiendo el patrón 2FT 2MT 2DT 2FC 2MC 2DC.
   \item \textbf{Revisión manual 480/480} completada en cinco tramos temporales.
-  \item \textbf{Auditorías de calidad} ejecutadas (\texttt{mantenimiento.py auditar-distractores}, \texttt{duplicados.py revisar}): \textbf{0 pares similares} en CSV y plantillas intra-materia tras sustituciones y deduplicación (junio 2026). Pool de plantillas beta: \textbf{1289} entradas.
+  \item \textbf{Auditorías de calidad} ejecutadas (\texttt{mantenimiento.py auditar-distractores}, \texttt{duplicados.py revisar}): \textbf{0 pares similares} en CSV y plantillas intra-materia tras sustituciones y deduplicación (junio 2026). Pool de plantillas beta: \textbf{1411} entradas (480 copias alineadas con el dataset).
 \end{itemize}
 
 El banco distingue \textbf{modo seguro} (solo dataset revisado) y \textbf{modo beta} (pool ampliado con plantillas no revisadas, hasta 1440 ítems jugables), dejando clara la trazabilidad para evaluación formal del TFG.
@@ -378,7 +379,7 @@ Diagrama detallado (40 materias con posición curricular): \texttt{Data/README.m
 
 \subsection{Herramientas de mantenimiento}
 
-Se desarrolló un conjunto de scripts en \texttt{Files/} con punto de entrada unificado (\texttt{mantenimiento.py}): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en \texttt{utils\_plantillas\_core.py}, compartida con \texttt{Juego/Comun/datos.py}. Los datos del juego se organizan en \texttt{Data/Banco/} (banco y catálogos) y \texttt{Data/Juego/} (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en \texttt{Tests/} (\textbf{395} tests) con CI en GitHub Actions. Catálogo de comandos: \texttt{Files/README.md}.
+Se desarrolló un conjunto de scripts en \texttt{Files/} con punto de entrada unificado (\texttt{mantenimiento.py}): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en \texttt{Juego/Comun/utils\_plantillas\_core.py} (reexportada desde \texttt{Files/} para los scripts de mantenimiento). Los datos del juego se organizan en \texttt{Data/Banco/} (banco y catálogos) y \texttt{Data/Juego/} (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en \texttt{Tests/} (\textbf{424} tests) con CI en GitHub Actions. Catálogo de comandos: \texttt{Files/README.md}.
 
 \subsection{Síntesis cuantitativa}
 
@@ -389,8 +390,8 @@ Se desarrolló un conjunto de scripts en \texttt{Files/} con punto de entrada un
 Preguntas en banco de producción & 480 \\
 Materias cubiertas & 40 \\
 Módulos Python del juego (\texttt{Comun/} + \texttt{Grafico/}) & $\sim$35 \\
-Modos de juego operativos & 4 \\
-Pruebas automatizadas & 395 \\
+Modos de juego operativos & 5 \\
+Pruebas automatizadas & 424 \\
 Grupos temáticos modelados & 10 \\
 \bottomrule
 \end{tabular}
@@ -473,6 +474,53 @@ Modo libre (arcade) & Puntos medios & \textbf{-10,0} \\
 
 En conjunto, el experimento muestra que el azar produce suspensión sistemática y que, con vidas limitadas, impide completar bloques largos sin conocimiento real. Las figuras se regeneran con \texttt{python Docs/generar\_figuras\_memoria.py}; la simulación numérica, con \texttt{python Files/simulacion\_evaluacion\_azar.py}.
 
+\subsection{Análisis del sistema de pity}
+
+En los modos \emph{escape room} y \emph{resistencia}, ciertos eventos beneficiosos (puertas de descanso, tienda, botín u ofertas sí/no) se generan de forma aleatoria. Para evitar rachas largas sin recompensas ---análogo al \emph{pity} de los \emph{gacha games}--- el motor combina \textbf{pity suave} (sube la probabilidad tras cada fallo) y \textbf{hard pity} (garantía en un umbral).
+
+Sea $s$ el número de salas consecutivas sin haber visto el evento. La probabilidad en el siguiente intento es
+\[
+p_s = \min\bigl(p_{\max},\, p_0 + s\,\delta\bigr),
+\]
+con $p_0$ probabilidad base, $\delta$ incremento por racha y $p_{\max}$ techo ($0{,}48$ en escape room). Tras un acierto, $s\leftarrow 0$; si no sale, $s\leftarrow s+1$.
+
+\iniciotabla
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Evento} & $p_0$ & $\delta$ & \textbf{Hard pity (sala)} \\
+\midrule
+Descanso & 0,06 & 0,04 & 5 \\
+Tienda & 0,03 & 0,05 & 10 \\
+Botín (puerta normal) & --- & --- & cada 3 salas \\
+\bottomrule
+\end{tabular}
+\fintabla
+
+Sin pity ($\delta=0$), la probabilidad de no ver descanso en $n=30$ salas es $(1-p_0)^n \approx 15{,}6\,\%$; la racha p95 sin evento alcanza 29 salas (10\,000 réplicas). Con pity suave + hard pity en la sala 5, ninguna réplica termina sin descanso; la racha p95 queda en 4 salas y la sala media del primer descanso es \textbf{4,13} (figuras~\ref{fig:pity-curva}--\ref{fig:pity-dist}).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{pity_curva_probabilidad.png}
+\caption{Curva $p_s$ para descanso y tienda en escape room.}
+\label{fig:pity-curva}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\linewidth]{pity_comparacion_descanso.png}
+\caption{Modelo simplificado (10\,000 réplicas): comparación con y sin pity.}
+\label{fig:pity-comp}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{pity_distribucion_primer_descanso.png}
+\caption{Distribución de la sala del primer descanso (modelo con pity).}
+\label{fig:pity-dist}
+\end{figure}
+
+El script \texttt{Files/simulacion\_pity.py} reproduce el modelo; las figuras se generan con \texttt{python Docs/generar\_figuras\_memoria.py}.
+
 \section{Discusión}
 
 \subsection{Cumplimiento de los objetivos}
@@ -488,7 +536,7 @@ OE1 & Narrativa interactiva & Parcial & Modo escape room jugable; guion visual c
 OE2 & Retos por materias & \textbf{Cumplido} & Banco 480 ítems, Teoría/Cálculo, tres dificultades \\
 OE3 & Validación de respuestas & \textbf{Cumplido} & Motor A--D, puntuación, vidas, informes \\
 OE4 & Interfaz gráfica & \textbf{Cumplido} & \texttt{juego\_grafico.py} con libre, historia, resistencia, escape room y feedback \\
-OE5 & Valor formativo & \textbf{Parcialmente cumplido} & Banco validado, 395 tests + CI; sin estudio con usuarios \\
+OE5 & Valor formativo & \textbf{Parcialmente cumplido} & Banco validado, 424 tests + CI; sin estudio con usuarios \\
 \bottomrule
 \end{tabular}
 \fintabla
@@ -524,7 +572,7 @@ La interfaz pygame facilita el despliegue para usuarios no familiarizados con te
 
 \subsection{Relación con las hipótesis}
 
-La hipótesis \textbf{H1} queda apoyada por la operatividad de los filtros curriculares en el modo libre, que permiten segmentar la práctica por curso, semestre y materia. \textbf{H2} se sustenta en las auditorías y en la validación estructural, cuyos conteos son reproducibles en cada ejecución de los scripts de mantenimiento. \textbf{H3} encuentra respaldo en el modo historia y en el análisis del histórico institucional (8818 registros), desarrollado en la sección~5.6. La simulación Monte Carlo de la sección~5.7 complementa estas hipótesis al verificar cuantitativamente que el motor de evaluación no concede aprobación al azar.
+La hipótesis \textbf{H1} queda apoyada por la operatividad de los filtros curriculares en el modo libre, que permiten segmentar la práctica por curso, semestre y materia. \textbf{H2} se sustenta en las auditorías y en la validación estructural, cuyos conteos son reproducibles en cada ejecución de los scripts de mantenimiento. \textbf{H3} encuentra respaldo en el modo historia y en el análisis del histórico institucional (8818 registros), desarrollado en la sección~5.6. La simulación Monte Carlo de la sección~5.7 complementa estas hipótesis al verificar cuantitativamente que el motor de evaluación no concede aprobación al azar. El análisis del pity (§5.8) documenta el diseño probabilístico de la gamificación en modos prolongados.
 
 \subsection{Limitaciones del estudio}
 
@@ -532,14 +580,14 @@ El estudio no incluye \textbf{evaluación con usuarios}: no se recogieron datos 
 
 \subsection{Trabajo futuro}
 
-Entre las líneas futuras inmediatas figuran la implementación de \texttt{Materias\_relacionadas} y \texttt{Prerequisitos} en el CSV y en los filtros del juego, el desarrollo de la capa gráfica escape room o novela gráfica, y un piloto con usuarios (n $\approx$ 15--20, cuestionario SUS, tiempo de práctica) para contrastar si las mecánicas de juego aumentan la práctica respecto a un listado estático ---línea no formulada como hipótesis contrastada en este TFG por ausencia de datos. La integración con plataformas institucionales (Moodle, AulaWeb) completaría el despliegue en el grado.
+Entre las líneas futuras inmediatas figuran la implementación de \texttt{Materias\_relacionadas} y \texttt{Prerequisitos} en el CSV y en los filtros del juego, el desarrollo de la narrativa gráfica completa del escape room, y un piloto con usuarios (n $\approx$ 15--20, cuestionario SUS, tiempo de práctica) para contrastar si las mecánicas de juego aumentan la práctica respecto a un listado estático ---línea no formulada como hipótesis contrastada en este TFG por ausencia de datos. La integración con plataformas institucionales (Moodle, AulaWeb) completaría el despliegue en el grado.
 
 \section{Conclusiones}
 
 Este Trabajo de Fin de Grado ha diseñado e implementado un \textbf{sistema de cuestionarios académicos} alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos, integrando:
 \begin{itemize}
   \item un \textbf{banco de 480 preguntas} estructurado, balanceado y revisado manualmente;
-  \item un \textbf{juego} en pygame con modos libre, historia, resistencia y feedback que gamifica la autoevaluación;
+  \item un \textbf{juego} en pygame con modos libre, historia, resistencia, escape room y feedback que gamifica la autoevaluación;
   \item un \textbf{conjunto de herramientas} de validación y mantenimiento del dataset;
   \item y una \textbf{arquitectura extensible} preparada para narrativa gráfica y modelos pedagógicos más ricos.
 \end{itemize}
@@ -550,7 +598,7 @@ En el plano personal, el proyecto ha consolidado competencias de programación e
 
 Las líneas futuras más inmediatas son la validación con usuarios reales (incluida la motivación frente a un listado estático), el enriquecimiento del modelo de datos con multiasignatura y prerrequisitos, y el desarrollo de la capa narrativa escape room prevista en el documento de proyecto.
 
-La simulación Monte Carlo (§5.7) aporta una primera validación cuantitativa del motor de evaluación: el azar no permite aprobar ni completar partidas largas con vidas limitadas.
+La simulación Monte Carlo (§5.7) aporta una primera validación cuantitativa del motor de evaluación: el azar no permite aprobar ni completar partidas largas con vidas limitadas. El análisis del pity (§5.8) cuantifica cómo se acotan las rachas sin recompensas en escape room y resistencia.
 
 \section{Bibliografía}
 

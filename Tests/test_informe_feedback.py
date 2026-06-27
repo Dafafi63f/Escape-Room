@@ -27,7 +27,7 @@ from Tests.support import ensure_juego_path
 
 ensure_juego_path()
 
-from Comun.jugador import NOMBRE_JUGADOR_DEFECTO
+from Comun.preferencias_grafico import NOMBRE_JUGADOR_DEFECTO
 from Comun.informe_examen import (
     RegistroRespuesta,
     construir_nombre_archivo_informe,
@@ -259,7 +259,7 @@ from Tests.support import ensure_juego_path
 
 ensure_juego_path()
 
-from Comun.envio_feedback import (
+from Comun.feedback import (
     CategoriaFeedback,
     ReporteFeedback,
     _cargar_config,
@@ -280,7 +280,7 @@ class TestFeedback(unittest.TestCase):
             id_reporte="FB-TEST-001",
         )
         with tempfile.TemporaryDirectory() as tmp:
-            with patch("Comun.envio_feedback.resolver_dir_feedback", return_value=Path(tmp)):
+            with patch("Comun.feedback.resolver_dir_feedback", return_value=Path(tmp)):
                 path = guardar_reporte_local(reporte)
             texto = path.read_text(encoding="utf-8")
         self.assertIn("FB-TEST-001", texto)
@@ -318,7 +318,7 @@ class TestFeedback(unittest.TestCase):
                 encoding="utf-8",
             )
             with patch(
-                "Comun.envio_feedback.resolver_config_creador_privado",
+                "Comun.feedback.resolver_config_creador_privado",
                 return_value=privado,
             ):
                 config = _cargar_config()
@@ -326,12 +326,12 @@ class TestFeedback(unittest.TestCase):
 
     def test_cargar_config_vacio_sin_fichero(self) -> None:
         with patch(
-            "Comun.envio_feedback.resolver_config_creador_privado",
+            "Comun.feedback.resolver_config_creador_privado",
             return_value=None,
         ):
             self.assertEqual(_cargar_config(), {})
 
-    @patch("Comun.envio_feedback._cargar_config")
+    @patch("Comun.feedback._cargar_config")
     def test_sin_envio_si_falta_password_smtp(self, mock_cfg) -> None:
         mock_cfg.return_value = {
             "habilitar_smtp": True,
@@ -346,13 +346,13 @@ class TestFeedback(unittest.TestCase):
             id_reporte="FB-NOMAIL",
         )
         with tempfile.TemporaryDirectory() as tmp:
-            with patch("Comun.envio_feedback.resolver_dir_feedback", return_value=Path(tmp)):
+            with patch("Comun.feedback.resolver_dir_feedback", return_value=Path(tmp)):
                 resultado = enviar_feedback(reporte)
         self.assertFalse(resultado.smtp_enviado)
         self.assertIn("Faltan datos SMTP", resultado.smtp_error or "")
 
-    @patch("Comun.envio_feedback.smtplib.SMTP")
-    @patch("Comun.envio_feedback._cargar_config")
+    @patch("Comun.feedback.smtplib.SMTP")
+    @patch("Comun.feedback._cargar_config")
     def test_enviar_smtp_si_configurado(self, mock_cfg, mock_smtp_cls) -> None:
         mock_cfg.return_value = {
             "habilitar_smtp": True,
@@ -370,7 +370,7 @@ class TestFeedback(unittest.TestCase):
             id_reporte="FB-SMTP",
         )
         with tempfile.TemporaryDirectory() as tmp:
-            with patch("Comun.envio_feedback.resolver_dir_feedback", return_value=Path(tmp)):
+            with patch("Comun.feedback.resolver_dir_feedback", return_value=Path(tmp)):
                 resultado = enviar_feedback(reporte)
         self.assertTrue(resultado.smtp_enviado)
         self.assertEqual(resultado.smtp_destino, "destino@gmail.com")
@@ -381,7 +381,7 @@ class TestFeedback(unittest.TestCase):
 class TestContactoCreador(unittest.TestCase):
     def test_canales_solo_correo_por_defecto(self) -> None:
         import json
-        from Comun.contacto_creador import canales_contacto_alternativo
+        from Comun.feedback import canales_contacto_alternativo
 
         privado = {
             "creador": {"correo": "autor@uab.cat"},
@@ -395,7 +395,7 @@ class TestContactoCreador(unittest.TestCase):
             path = Path(tmp) / "creador_privado.json"
             path.write_text(json.dumps(privado), encoding="utf-8")
             with patch(
-                "Comun.contacto_creador.resolver_config_creador_privado",
+                "Comun.feedback.resolver_config_creador_privado",
                 return_value=path,
             ):
                 canales = canales_contacto_alternativo()
@@ -403,7 +403,7 @@ class TestContactoCreador(unittest.TestCase):
 
     def test_canales_configurados_explicitamente(self) -> None:
         import json
-        from Comun.contacto_creador import canales_contacto_alternativo, nota_contacto_jugador
+        from Comun.feedback import canales_contacto_alternativo, nota_contacto_jugador
 
         privado = {
             "contacto_jugador": {
@@ -419,7 +419,7 @@ class TestContactoCreador(unittest.TestCase):
             path = Path(tmp) / "creador_privado.json"
             path.write_text(json.dumps(privado), encoding="utf-8")
             with patch(
-                "Comun.contacto_creador.resolver_config_creador_privado",
+                "Comun.feedback.resolver_config_creador_privado",
                 return_value=path,
             ):
                 self.assertEqual(nota_contacto_jugador(), "Escríbeme por:")
@@ -434,7 +434,7 @@ class TestContactoCreador(unittest.TestCase):
 
     def test_describir_resultado_incluye_contacto(self) -> None:
         import json
-        from Comun.envio_feedback import ResultadoEnvioFeedback, describir_resultado_envio
+        from Comun.feedback import ResultadoEnvioFeedback, describir_resultado_envio
 
         privado = {"creador": {"correo": "autor@uab.cat"}}
         with tempfile.TemporaryDirectory() as tmp:
@@ -443,7 +443,7 @@ class TestContactoCreador(unittest.TestCase):
             archivo = Path(tmp) / "feedback.txt"
             archivo.write_text("ok", encoding="utf-8")
             with patch(
-                "Comun.contacto_creador.resolver_config_creador_privado",
+                "Comun.feedback.resolver_config_creador_privado",
                 return_value=path_priv,
             ):
                 lineas = describir_resultado_envio(

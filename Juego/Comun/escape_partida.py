@@ -64,7 +64,7 @@ __all__ = [
 _DIFICULTADES_TODAS = frozenset({"Facil", "Media", "Dificil"})
 _PLANTILLA_BALANCEADA = "puerta_materia"
 _TAMANOS_REDUCCION = (3, 5, 10)
-VIDAS_MAX_ESCAPE = 4
+VIDAS_MAX_ESCAPE = 3
 VIDAS_MAX_ABSOLUTO_ESCAPE = 9
 TIEMPO_PREGUNTA_MIN_ESCAPE = 20
 _DIFICULTAD_JEFE = frozenset({"Dificil"})
@@ -105,7 +105,6 @@ class CriteriosSeleccionPool:
 class ReglasJuegoDesafio:
     tiempo_pregunta_seg: int | None
     tiempo_puerta_seg: int | None
-    fraccion_enunciado: float
     opciones_ocultas: int
     multiplicador_puntos: int
 
@@ -477,7 +476,6 @@ def reglas_juego_desafio(
     return ReglasJuegoDesafio(
         tiempo_pregunta_seg=tiempo_preg,
         tiempo_puerta_seg=tiempo_puerta,
-        fraccion_enunciado=mods.fraccion_enunciado,
         opciones_ocultas=mods.opciones_ocultas,
         multiplicador_puntos=mods.multiplicador_puntos,
     )

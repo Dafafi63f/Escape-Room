@@ -665,6 +665,28 @@ class TestPresetsHistoria(unittest.TestCase):
         self.assertEqual(periodos[-1][0], "4-2")
         self.assertEqual(parse_periodo("3-2"), ("3", "2"))
 
+    def test_etiquetas_periodo_academico_unificadas(self) -> None:
+        from Comun.config_historia import (
+            clave_periodo_academico,
+            descripcion_ambito_curso_semestre,
+            etiqueta_curso_academico,
+            etiqueta_periodo_academico,
+            etiqueta_periodo_desde_clave,
+        )
+
+        self.assertEqual(clave_periodo_academico("3", "2"), "3-2")
+        self.assertEqual(etiqueta_periodo_academico("3", "2"), "Semestre 3-2")
+        self.assertEqual(etiqueta_periodo_desde_clave("3-2"), "Semestre 3-2")
+        self.assertEqual(etiqueta_curso_academico("3"), "Curso 3")
+        self.assertEqual(
+            descripcion_ambito_curso_semestre("3", "2"),
+            "del semestre 3-2",
+        )
+        self.assertEqual(
+            descripcion_ambito_curso_semestre("3", None),
+            "del curso 3",
+        )
+
     def test_indices_ambito_relativizan_dentro_del_semestre(self) -> None:
         from Comun.config_historia import cursos_disponibles, semestres_para_curso
 

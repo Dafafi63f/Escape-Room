@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Modos diarios: semilla compartida, examen del día y examen fijo."""
+"""Modos diarios: examen del día (semilla ``semilla_diaria``) y atajos de examen fijo."""
 
 from __future__ import annotations
 
-import secrets
 from datetime import date, datetime, timezone
 
 from Comun.config_historia import ConfigPresetHistoria
+from Comun.semillas import (
+    formatear_semilla_diaria,
+    semilla_aleatoria,
+    semilla_diaria,
+)
 
 __all__ = [
     "ID_PRESET_EXAMEN_FIJO",
@@ -46,17 +50,6 @@ ID_PRESET_EXAMEN_FIJO = "examen_fijo"
 _ORIGEN_SEMILLA_VALIDOS = frozenset({"diario", "aleatorio", "semilla"})
 
 
-def semilla_diaria(d: date | None = None) -> int:
-    """Entero estable por día civil (UTC), formato DDMMYYYY (p. ej. 22062026)."""
-    d = d or datetime.now(timezone.utc).date()
-    return int(d.strftime("%d%m%Y"))
-
-
-def formatear_semilla_diaria(semilla: int) -> str:
-    """Representación de 8 dígitos con ceros a la izquierda (p. ej. 1012026 → 01012026)."""
-    return f"{semilla:08d}"
-
-
 def _etiqueta_fecha(d: date | None = None) -> str:
     d = d or datetime.now(timezone.utc).date()
     return d.strftime("%d/%m/%Y")
@@ -71,7 +64,7 @@ def etiqueta_fecha_examen_dia(d: date | None = None) -> str:
 
 
 def semilla_aleatoria_examen() -> int:
-    return secrets.randbelow(2**31 - 1) + 1
+    return semilla_aleatoria()
 
 
 def prioridad_orden_preset(preset_id: str) -> int:

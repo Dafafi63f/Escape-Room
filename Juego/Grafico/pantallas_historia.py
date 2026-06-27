@@ -19,6 +19,7 @@ from Comun.motor_nucleo import (
     marcar_botones_opciones_tras_respuesta,
     presentacion_opciones_pantalla,
     semilla_orden_opciones,
+    texto_opcion_visible_pantalla,
     texto_solucion,
 )
 from Comun.resistencia_motor import (
@@ -32,17 +33,21 @@ from Comun.resistencia_motor import (
     emoji_powerup,
     etiqueta_powerup,
     finalizar_partida_por_desafio_bloque,
-    formatear_aviso_apuesta,
     prefijar_emoji,
     preparar_eventos_nuevo_turno,
     procesar_turno_resistencia,
     puede_usar_powerup_en_pregunta,
     revocar_powerup_usado,
-    texto_pregunta_para_turno,
     texto_progreso_resistencia,
     texto_segmento_desafio_bloque,
     tiempo_pregunta_efectivo,
     usar_powerup,
+)
+from Comun.eventos_partida import (
+    aceptar_evento_si_no,
+    formatear_aviso_evento_si_no,
+    puede_aceptar_evento_si_no,
+    titulo_popup_evento_si_no,
 )
 from Comun.resistencia_partida import (
     aplicar_escalada_a_reglas,
@@ -53,6 +58,7 @@ from Comun.resistencia_partida import (
     escalada_para_pregunta,
     etiqueta_tier_exclusiva,
     eventos_aleatorios_para_pregunta,
+    partes_texto_efectos_escalada,
     texto_efectos_escalada,
 )
 from Comun.config_historia import (
@@ -60,6 +66,9 @@ from Comun.config_historia import (
     ConfigPresetHistoria,
     OpcionPreset,
     cursos_disponibles,
+    etiqueta_curso_academico,
+    etiqueta_periodo_academico,
+    etiqueta_periodo_desde_clave,
     limites_n_materias,
     limites_n_preguntas,
     ajustar_n_preguntas_examen_asignatura,
@@ -76,7 +85,7 @@ from Comun.config_historia import (
 )
 from Comun.presets_historia import PresetHistoria, config_defecto
 from Comun.preferencias_grafico import nombre_jugador_grafico
-from Comun.reglas_partida import ReglasPartida, formatear_resultado_puntuacion
+from Comun.reglas_partida import ReglasPartida, formatear_resultado_puntuacion, vidas_iniciales_partida
 from Comun.informe_examen import CierreInformePartida, meta_cierre_historia
 from Comun.ranking_resistencia import (
     VARIANTES_RANKING,
@@ -141,8 +150,9 @@ from Grafico.pantallas import (
 from Grafico.tooltips_ui import (
     TOOLTIP_ABANDONAR_HISTORIA,
     TOOLTIP_ABANDONAR_RESISTENCIA,
-    TOOLTIP_APUESTA_NO,
-    TOOLTIP_APUESTA_SI,
+    TOOLTIP_EVENTO_SI_NO_NO,
+    TOOLTIP_EVENTO_SI_NO_SI,
+    TOOLTIP_EVENTO_SI_NO_SI_RIESGO,
     TOOLTIP_ATRAS,
     TOOLTIP_CONTINUAR,
     TOOLTIP_EMPEZAR,
@@ -180,6 +190,7 @@ from Grafico.ui import (
     posicionar_pila_inferior,
     rect_boton_etiqueta,
     tamano_grupo_botones,
+    unir_partes_cabientes,
 )
 from Grafico.texto import dibujar_texto_centro, preparar_texto_ui, texto_requiere_fuentes_mixtas
 
@@ -787,6 +798,7 @@ class ConfigOpcionesHistoria(Pantalla):
                 op.tipo,
                 self._clave_opcion(op_id),
                 etiqueta_opcion=op.etiqueta,
+                curso_actual=self.config.valores.get("curso"),
             ):
                 self._hover_opcion_valor = op_id
             return
@@ -803,6 +815,7 @@ class ConfigOpcionesHistoria(Pantalla):
             op.tipo,
             self._clave_opcion(op_id),
             etiqueta_opcion=op.etiqueta,
+            curso_actual=self.config.valores.get("curso"),
         )
         if not tip:
             return
@@ -952,7 +965,10 @@ class ConfigOpcionesHistoria(Pantalla):
         )
 
     def _items_opcion_curso(self, op: OpcionPreset) -> list[tuple[str, str]]:
-        items = [(c, f"Curso {c}") for c in cursos_disponibles(self.datos.materias_meta)]
+        items = [
+            (c, etiqueta_curso_academico(c))
+            for c in cursos_disponibles(self.datos.materias_meta)
+        ]
         if not op.obligatorio:
             return [("", "Todo el grado")] + items
         return items
@@ -961,7 +977,7 @@ class ConfigOpcionesHistoria(Pantalla):
         curso = self.config.valores.get("curso")
         if curso:
             items = [
-                (s, f"Semestre {s}")
+                (s, etiqueta_periodo_academico(str(curso), s))
                 for s in semestres_para_curso(self.datos.materias_meta, str(curso))
             ]
             if not op.obligatorio:
@@ -973,7 +989,10 @@ class ConfigOpcionesHistoria(Pantalla):
         return items
 
     def _items_opcion_periodo(self, op: OpcionPreset) -> list[tuple[str, str]]:
-        items = [(clave, clave) for clave, _, _ in periodos_academicos(self.datos.materias_meta)]
+        items = [
+            (clave, etiqueta_periodo_desde_clave(clave))
+            for clave, _, _ in periodos_academicos(self.datos.materias_meta)
+        ]
         if not op.obligatorio:
             return [("", "Sin especificar")] + items
         return items
@@ -1027,11 +1046,14 @@ class ConfigOpcionesHistoria(Pantalla):
                     return etq
             return str(raw)
         if op.tipo == "curso":
-            return f"Curso {raw}"
+            return etiqueta_curso_academico(str(raw))
         if op.tipo == "semestre":
+            curso = self.config.valores.get("curso")
+            if curso:
+                return etiqueta_periodo_academico(str(curso), str(raw))
             return f"Semestre {raw}"
         if op.tipo == "periodo":
-            return str(raw)
+            return etiqueta_periodo_desde_clave(str(raw))
         if op.tipo == "entero":
             if op.id == "tiempo_total_min" and int(str(raw)) == 0:
                 return "Sin límite"
@@ -1416,7 +1438,7 @@ class PartidaModoHistoria(Pantalla):
         self.estado = EstadoPartida(
             nombre=nombre,
             reglas=reglas,
-            vidas_restantes=reglas.vidas,
+            vidas_restantes=vidas_iniciales_partida(reglas),
         )
         self.indice = 0
         self.fase = "pregunta"
@@ -1797,16 +1819,17 @@ class PartidaResistenciaHistoria(Pantalla):
         self.fuentes = crear_fuentes()
         self.registros: list = []
         self.reglas_base = reglas
-        self.er = crear_estado_resistencia(reglas.vidas or 3)
+        self.er = crear_estado_resistencia(vidas_iniciales_partida(reglas))
         self.er.banco_resistencia = banco
         configurar_partida_resistencia(self.er, preset_id=self.preset.id)
         self.escalada = escalada_para_pregunta(
             1, semilla_partida=self.er.semilla_partida, pity=self.er.pity_eventos
         )
+        vidas_ini = vidas_iniciales_partida(reglas)
         self.estado = EstadoPartida(
             nombre=nombre,
             reglas=aplicar_escalada_a_reglas(reglas, self.escalada),
-            vidas_restantes=min(reglas.vidas or 3, self.er.vidas_max),
+            vidas_restantes=vidas_ini,
         )
         self.seleccion_pool = crear_seleccion_resistencia(pool)
         self.pregunta_idx: int | None = None
@@ -1819,10 +1842,12 @@ class PartidaResistenciaHistoria(Pantalla):
         self.efecto_actual = ""
         self.avisos_cola: list[str] = []
         self.avisos_pendientes: list[str] = []
+        self.avisos_recompensa_pendientes: list[str] = []
+        self.aviso_es_recompensa = False
         self.indice_aviso = 0
         self.inicio_aviso = 0.0
-        self.boton_apuesta_si: Boton | None = None
-        self.boton_apuesta_no: Boton | None = None
+        self.boton_evento_si: Boton | None = None
+        self.boton_evento_no: Boton | None = None
         self.botones_opcion: list[BotonOpcion] = []
         self._presentacion_opciones = None
         self.botones_powerup: list[Boton] = []
@@ -1853,13 +1878,34 @@ class PartidaResistenciaHistoria(Pantalla):
         self._reconstruir_opciones()
         self._reconstruir_powerups()
 
-    def _texto_pregunta_visible(self) -> str:
-        return texto_pregunta_para_turno(self._pregunta_actual(), self.er)
+    def _iniciar_cola_avisos(
+        self,
+        avisos: list[str],
+        *,
+        es_recompensa: bool = False,
+    ) -> None:
+        self.avisos_cola = avisos
+        self.aviso_es_recompensa = es_recompensa
+        self.indice_aviso = 0
+        self.fase = "aviso"
+        self.inicio_aviso = marcar_inicio_aviso()
+        self.botones_opcion = []
+        self.botones_powerup = []
+
+    def _titulo_aviso_resistencia(self) -> str:
+        total = len(self.avisos_cola)
+        if self.aviso_es_recompensa:
+            base = "Recompensa"
+        else:
+            base = "Esta pregunta"
+        if total <= 1:
+            return base
+        return f"{base} ({self.indice_aviso + 1}/{total})"
 
     def _entrar_pregunta_o_avisos(self) -> None:
-        if self.er.apuesta_oferta:
-            self.fase = "apuesta"
-            self._reconstruir_botones_apuesta()
+        if self.er.evento_si_no:
+            self.fase = "evento_si_no"
+            self._reconstruir_botones_evento_si_no()
             self.botones_opcion = []
             self.botones_powerup = []
             return
@@ -1873,45 +1919,62 @@ class PartidaResistenciaHistoria(Pantalla):
             er=self.er,
         )
         if avisos:
-            self.avisos_cola = avisos
-            self.indice_aviso = 0
-            self.fase = "aviso"
-            self.inicio_aviso = marcar_inicio_aviso()
-            self.botones_opcion = []
-            self.botones_powerup = []
+            self._iniciar_cola_avisos(avisos, es_recompensa=False)
             return
         self._iniciar_fase_pregunta()
 
-    def _reconstruir_botones_apuesta(self) -> None:
+    def _reconstruir_botones_evento_si_no(self) -> None:
         lbl_si = etiqueta(*BTN_APUESTA_SI)
         lbl_no = etiqueta(*BTN_APUESTA_NO)
         tam = 56
         gap = 20
         y = ALTO // 2 + 122
         cx = ANCHO // 2
-        self.boton_apuesta_si = Boton(
+        evento = self.er.evento_si_no
+        puede_si = (
+            evento is not None
+            and puede_aceptar_evento_si_no(evento, self.estado, self.er) is None
+        )
+        tooltip_si = TOOLTIP_EVENTO_SI_NO_SI
+        if evento is not None and evento.requiere_puntos and not puede_si:
+            err = puede_aceptar_evento_si_no(evento, self.estado, self.er)
+            tooltip_si = err or TOOLTIP_EVENTO_SI_NO_SI
+        elif evento is not None and evento.es_riesgo_en_pregunta:
+            tooltip_si = TOOLTIP_EVENTO_SI_NO_SI_RIESGO
+        self.boton_evento_si = Boton(
             lbl_si,
             pygame.Rect(cx - tam - gap // 2, y, tam, tam),
-            self._aceptar_apuesta,
-            tooltip=TOOLTIP_APUESTA_SI,
+            self._aceptar_evento_si_no,
+            tooltip=tooltip_si,
             familia_etiqueta="emoji",
         )
-        self.boton_apuesta_no = Boton(
+        self.boton_evento_si.activo = puede_si
+        self.boton_evento_no = Boton(
             lbl_no,
             pygame.Rect(cx + gap // 2, y, tam, tam),
-            self._rechazar_apuesta,
-            tooltip=TOOLTIP_APUESTA_NO,
+            self._rechazar_evento_si_no,
+            tooltip=TOOLTIP_EVENTO_SI_NO_NO,
             familia_etiqueta="emoji",
         )
 
-    def _aceptar_apuesta(self) -> None:
-        if self.er.apuesta_oferta:
-            self.er.apuesta_activa = self.er.apuesta_oferta
-            self.er.apuesta_oferta = None
+    def _aceptar_evento_si_no(self) -> None:
+        evento = self.er.evento_si_no
+        if evento is None:
+            return
+        err = aceptar_evento_si_no(
+            evento,
+            self.estado,
+            self.er,
+            numero_pregunta=self._numero_pregunta(),
+        )
+        if err:
+            self._reconstruir_botones_evento_si_no()
+            return
+        self.er.evento_si_no = None
         self._entrar_pregunta_o_avisos()
 
-    def _rechazar_apuesta(self) -> None:
-        self.er.apuesta_oferta = None
+    def _rechazar_evento_si_no(self) -> None:
+        self.er.evento_si_no = None
         self._entrar_pregunta_o_avisos()
 
     def _limite_tiempo_pregunta(self) -> int | None:
@@ -1937,7 +2000,9 @@ class PartidaResistenciaHistoria(Pantalla):
         self.er.reset_pregunta()
         numero = self._numero_pregunta()
         self._aplicar_escalada(numero)
-        avisos_turno = preparar_eventos_nuevo_turno(self.er, self.pool, numero)
+        avisos_turno = preparar_eventos_nuevo_turno(
+            self.er, self.pool, numero, self.estado
+        )
         self.avisos_pendientes.extend(avisos_turno)
         idx = elegir_indice_resistencia(
             self.pool, self.seleccion_pool, self.escalada, numero, er=self.er
@@ -1970,9 +2035,20 @@ class PartidaResistenciaHistoria(Pantalla):
         return ALTO - MARGEN_INF_PARTIDA - altura
 
     def _offset_y_panel(self) -> int:
-        if not self._texto_extra_layout():
+        if not self._partes_texto_extra_layout():
             return 0
         return self.fuentes["pequena"].get_height() + 22
+
+    def _ancho_texto_extra(self) -> int:
+        x_centro_min = x_min_centro_barra_partida(self.fuentes["menu"])
+        return max(80, ANCHO - MARGEN - x_centro_min)
+
+    def _partes_texto_extra_layout(self) -> list[str]:
+        partes: list[str] = []
+        partes.extend(partes_texto_efectos_escalada(self.escalada))
+        if self.er.bloque_filtro:
+            partes.append(self.er.bloque_filtro.etiqueta)
+        return partes
 
     def _y_panel_pregunta(self) -> int:
         return Y_PANEL_PREGUNTA + self._offset_y_panel()
@@ -2069,12 +2145,18 @@ class PartidaResistenciaHistoria(Pantalla):
         self.botones_opcion = []
         y = self._y_inicio_opciones()
         for etiqueta, texto, letra_ds in self._presentacion_opciones.filas:
-            if letra_ds in self.er.letras_ocultas:
+            texto_visible = texto_opcion_visible_pantalla(
+                texto,
+                letra_ds,
+                letras_eliminadas=self.er.letras_ocultas,
+                letras_niebla=self.er.letras_niebla,
+            )
+            if texto_visible is None:
                 continue
             rect = pygame.Rect(MARGEN, y, ANCHO - 2 * MARGEN, ALTO_OPCION_PARTIDA)
             boton = BotonOpcion(
                 etiqueta,
-                texto,
+                texto_visible,
                 rect,
                 capturar(self._responder, etiqueta),
             )
@@ -2273,7 +2355,7 @@ class PartidaResistenciaHistoria(Pantalla):
         self._ajustar_multiplicador(resultado, puntos_prev, turno.mult_apuesta)
         self.reintentar_pregunta = turno.reintentar_pregunta
         if turno.avisos_extra:
-            self.avisos_pendientes.extend(turno.avisos_extra)
+            self.avisos_recompensa_pendientes.extend(turno.avisos_extra)
         if not turno.reintentar_pregunta:
             self._registrar_respuesta(p, resultado)
 
@@ -2314,6 +2396,16 @@ class PartidaResistenciaHistoria(Pantalla):
             ResultadoRespuesta(acierto=False, respuesta="", tiempo_agotado=True)
         )
 
+    def _pasar_a_siguiente_pregunta(self) -> None:
+        self.indice_global += 1
+        if not self._cargar_siguiente_pregunta():
+            self._fin_partida()
+            return
+        self.feedback_mensaje = ""
+        self.feedback_solucion = None
+        self.feedback_ok = False
+        self._entrar_pregunta_o_avisos()
+
     def _continuar(self) -> None:
         if self.fase != "feedback":
             return
@@ -2331,14 +2423,14 @@ class PartidaResistenciaHistoria(Pantalla):
                 boton.marcar_correcta = False
                 boton.marcar_incorrecta = False
             return
-        self.indice_global += 1
-        if not self._cargar_siguiente_pregunta():
-            self._fin_partida()
+        if self.avisos_recompensa_pendientes:
+            self._iniciar_cola_avisos(
+                list(self.avisos_recompensa_pendientes),
+                es_recompensa=True,
+            )
+            self.avisos_recompensa_pendientes = []
             return
-        self.feedback_mensaje = ""
-        self.feedback_solucion = None
-        self.feedback_ok = False
-        self._entrar_pregunta_o_avisos()
+        self._pasar_a_siguiente_pregunta()
 
     def actualizar(self) -> Pantalla | None:
         if self._comprobar_desafio_bloque_expirado():
@@ -2349,6 +2441,9 @@ class PartidaResistenciaHistoria(Pantalla):
                 self.indice_aviso += 1
                 if self.indice_aviso < len(self.avisos_cola):
                     self.inicio_aviso = marcar_inicio_aviso()
+                elif self.aviso_es_recompensa:
+                    self.aviso_es_recompensa = False
+                    self._pasar_a_siguiente_pregunta()
                 else:
                     self._iniciar_fase_pregunta()
             return None
@@ -2371,26 +2466,38 @@ class PartidaResistenciaHistoria(Pantalla):
         return f"{self.preset.nombre} · {self._linea_estado_actual()}"
 
     def popup_bloqueante(self) -> bool:
-        return self.fase in ("aviso", "apuesta")
+        return self.fase in ("aviso", "evento_si_no")
 
     def dibujar_contenido_popup_bloqueante(self, superficie: pygame.Surface) -> None:
         fuente = self.fuentes["menu"]
-        if self.fase == "apuesta" and self.er.apuesta_oferta:
+        if self.fase == "evento_si_no" and self.er.evento_si_no:
+            evento = self.er.evento_si_no
             dibujar_contenido_aviso_resistencia(
                 superficie,
                 self.fuentes,
-                mensaje=formatear_aviso_apuesta(self.er.apuesta_oferta),
-                titulo="Apuesta",
+                mensaje=formatear_aviso_evento_si_no(evento),
+                titulo=titulo_popup_evento_si_no(evento),
                 mostrar_pie_espera=False,
             )
-            if self.boton_apuesta_si:
-                self.boton_apuesta_si.dibujar(superficie, fuente)
-            if self.boton_apuesta_no:
-                self.boton_apuesta_no.dibujar(superficie, fuente)
-            tips_apuesta = [
-                b for b in (self.boton_apuesta_si, self.boton_apuesta_no) if b
-            ]
-            dibujar_tooltips_botones(superficie, self.fuentes["pequena"], tips_apuesta)
+            if self.boton_evento_si:
+                self.boton_evento_si.dibujar(superficie, fuente)
+            if self.boton_evento_no:
+                self.boton_evento_no.dibujar(superficie, fuente)
+            if (
+                self.boton_evento_si
+                and self.boton_evento_si.hover
+                and self.boton_evento_si.tooltip
+            ):
+                dibujar_tooltip(
+                    superficie,
+                    self.fuentes["pequena"],
+                    self.boton_evento_si.rect,
+                    self.boton_evento_si.tooltip,
+                )
+            if self.boton_evento_no and self.boton_evento_no.activo:
+                dibujar_tooltips_botones(
+                    superficie, self.fuentes["pequena"], [self.boton_evento_no]
+                )
             return
         if self.fase == "aviso" and self.avisos_cola:
             dibujar_contenido_aviso_resistencia(
@@ -2399,20 +2506,23 @@ class PartidaResistenciaHistoria(Pantalla):
                 mensaje=self.avisos_cola[self.indice_aviso],
                 indice=self.indice_aviso,
                 total=len(self.avisos_cola),
+                titulo=self._titulo_aviso_resistencia(),
             )
 
     def _texto_extra_layout(self) -> str:
-        partes: list[str] = []
-        if self.efecto_actual:
-            partes.append(self.efecto_actual[:80])
-        if self.er.bloque_filtro:
-            partes.append(self.er.bloque_filtro.etiqueta[:72])
-        return " · ".join(partes)
+        return self._texto_extra_barra()
 
     def _texto_extra_barra(self) -> str:
         if self.fase != "pregunta":
             return ""
-        return self._texto_extra_layout()
+        partes = self._partes_texto_extra_layout()
+        if not partes:
+            return ""
+        return unir_partes_cabientes(
+            partes,
+            self.fuentes["pequena"],
+            self._ancho_texto_extra(),
+        )
 
     def _dibujar_barra_superior(self, superficie: pygame.Surface) -> None:
         fuente = self.fuentes["pequena"]
@@ -2451,15 +2561,13 @@ class PartidaResistenciaHistoria(Pantalla):
             desafio_bloque_texto=self._texto_desafio_bloque_barra(),
         )
         if texto_extra:
-            extra_txt = preparar_texto_ui(texto_extra)
-            if len(extra_txt) > 96:
-                extra_txt = extra_txt[:93] + "…"
-            extra = fuente.render(extra_txt, True, COLOR_AVISO)
+            ancho_extra = self._ancho_texto_extra()
+            extra = fuente.render(preparar_texto_ui(texto_extra), True, COLOR_AVISO)
             y_extra = ALTURA_BARRA_PARTIDA + 10
-            if extra.get_width() <= ancho_centro:
-                superficie.blit(extra, extra.get_rect(midtop=(ANCHO // 2, y_extra)))
-            else:
-                superficie.blit(extra, (x_centro_min, y_extra))
+            superficie.blit(
+                extra,
+                extra.get_rect(midtop=(x_centro_min + ancho_extra // 2, y_extra)),
+            )
         pygame.draw.line(
             superficie,
             (50, 72, 110),
@@ -2471,11 +2579,11 @@ class PartidaResistenciaHistoria(Pantalla):
 
     def _actualizar_hover_resistencia(self, pos: tuple[int, int]) -> None:
         self.boton_abandonar.actualizar_hover(pos)
-        if self.fase == "apuesta":
-            if self.boton_apuesta_si:
-                self.boton_apuesta_si.actualizar_hover(pos)
-            if self.boton_apuesta_no:
-                self.boton_apuesta_no.actualizar_hover(pos)
+        if self.fase == "evento_si_no":
+            if self.boton_evento_si:
+                self.boton_evento_si.hover = self.boton_evento_si.rect.collidepoint(pos)
+            if self.boton_evento_no:
+                self.boton_evento_no.actualizar_hover(pos)
             return
         if self.fase != "pregunta":
             return
@@ -2484,11 +2592,11 @@ class PartidaResistenciaHistoria(Pantalla):
         for boton in self.botones_opcion:
             boton.actualizar_hover(pos)
 
-    def _manejar_clic_apuesta(self, pos: tuple[int, int], boton: int) -> bool:
-        if self.boton_apuesta_si and self.boton_apuesta_si.manejar_clic(pos, boton):
+    def _manejar_clic_evento_si_no(self, pos: tuple[int, int], boton: int) -> bool:
+        if self.boton_evento_si and self.boton_evento_si.manejar_clic(pos, boton):
             return True
         return bool(
-            self.boton_apuesta_no and self.boton_apuesta_no.manejar_clic(pos, boton)
+            self.boton_evento_no and self.boton_evento_no.manejar_clic(pos, boton)
         )
 
     def _manejar_clic_pregunta_resistencia(self, pos: tuple[int, int], boton: int) -> bool:
@@ -2500,8 +2608,8 @@ class PartidaResistenciaHistoria(Pantalla):
     def _manejar_clic_resistencia(self, pos: tuple[int, int], boton: int) -> bool:
         if self.boton_abandonar.manejar_clic(pos, boton):
             return True
-        if self.fase == "apuesta":
-            return self._manejar_clic_apuesta(pos, boton)
+        if self.fase == "evento_si_no":
+            return self._manejar_clic_evento_si_no(pos, boton)
         if self.fase == "pregunta":
             return self._manejar_clic_pregunta_resistencia(pos, boton)
         return False
@@ -2541,7 +2649,7 @@ class PartidaResistenciaHistoria(Pantalla):
         dibujar_texto_multilinea(
             superficie,
             self.fuentes["cuerpo"],
-            self._texto_pregunta_visible(),
+            self._pregunta_actual().texto,
             pygame.Rect(panel.x + 8, panel.y + 36, panel.width - 16, panel.height - 44),
             COLOR_TITULO,
         )

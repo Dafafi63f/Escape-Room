@@ -2,31 +2,53 @@
 
 Scripts y utilidades de **mantenimiento del banco**. No son necesarios para jugar; el jugador solo necesita `Juego/juego_grafico.py` y `Data/`.
 
-Limpieza de artefactos temporales: [`../utilidades_tfg.py`](../utilidades_tfg.py) (`--solo-limpieza`).
+Limpieza de artefactos temporales: [`borrar_temporales.py`](borrar_temporales.py) o [`../Docs/utilidades_tfg.py`](../Docs/utilidades_tfg.py) (`--solo-limpieza`).
 
-## Banco cerrado
+## Bancos cerrados (pool juego: **1000** preguntas reales)
 
-`Data/Banco/Preguntas.csv` está protegido desde 2026-06-03. `guardar_filas_csv()` falla salvo `TFG_PERMITIR_CSV=1`.
+Sin campo ``variaciones`` en `plantillas.json`: cada fila es una pregunta definitiva.
+No se prevén altas ni bajas; solo **revisión** de enunciados y distractores.
+
+| Archivo | Estado | Override |
+|---------|--------|----------|
+| `Data/Banco/Preguntas.csv` | 480 preguntas revisadas (2026-06-03) | `TFG_PERMITIR_CSV=1` |
+| `Data/Banco/plantillas.json` | 960 filas (480 `dataset_480` + 480 extra, 2026-06-27) | `TFG_PERMITIR_PLANTILLAS=1` |
+| `Data/Juego/preguntas_resistencia.json` | 40 exclusivas (1/materia); pool resistencia = **1000** | `TFG_PERMITIR_RESISTENCIA=1` |
 
 Rutas canónicas: [`rutas_data.py`](rutas_data.py) (`DATA_BANCO`, `DATA_JUEGO`).
 
-**Flujo habitual:**
+Toda escritura en `plantillas.json` pasa por `utils_banco_cerrado.guardar_plantillas_json()`.
+
+### Base vs beta (qué queda por revisar)
+
+| Pool | Filas | Revisión manual |
+|------|-------|----------------|
+| **Base** (`Preguntas.csv` + `uso: dataset_480` en JSON) | 480 | Completada: enunciado, distractores, materia, tipo, dificultad |
+| **Beta jugable** (`internet`, `repuesto`, `general`, …) | 480 | Metadatos OK; **pendiente: enunciado y opciones A–D** |
+
+`clasificar_pregunta.py` y `plantillas reclasificar` leen `Data/Banco/criterios_clasificacion_materia.csv` (cerrado; editar a mano si hiciera falta).
+
+```bash
+python Files/mantenimiento.py auditar-distractores              # todo el JSON
+python Files/mantenimiento.py auditar-distractores --solo-dataset  # solo las 480 base
+python Files/mantenimiento.py auditar-plantillas
+python Files/clasificar_pregunta.py --dataset --solo-incoherentes
+```
+
+**Flujo habitual (solo lectura):**
 
 1. `mantenimiento.py validar`
-2. `mantenimiento.py plantillas pipeline`
-3. `mantenimiento.py criterios`
-4. `mantenimiento.py auditar-distractores`
+2. `mantenimiento.py auditar-plantillas`
+3. `mantenimiento.py auditar-distractores`
 
 ## Entrada principal — `mantenimiento.py`
 
 ```bash
 python Files/mantenimiento.py validar
 python Files/mantenimiento.py revision
-python Files/mantenimiento.py dataset
-python Files/mantenimiento.py plantillas pipeline
-python Files/mantenimiento.py duplicados --help
-python Files/mantenimiento.py temporales
-python Files/mantenimiento.py temporales --dry-run
+python Files/mantenimiento.py auditar-plantillas
+python Files/mantenimiento.py auditar-distractores
+python Files/mantenimiento.py duplicados revisar
 ```
 
 | Comando | Función |
@@ -35,73 +57,57 @@ python Files/mantenimiento.py temporales --dry-run
 | `revision` / `revision --estadisticas` | Revisión del CSV |
 | `dataset` [--variedad] | Validación extendida |
 | `auditar-distractores` [--json RUTA] [--solo-dataset] | Auditoría de opciones A–D |
-| `auditar-plantillas` | Cobertura de `plantillas.json` |
-| `plantillas pipeline` | limpiar → inyectar → repuesto → dedup |
-| `criterios` | Actualiza `Banco/criterios_clasificacion_materia.csv` |
-| `duplicados revisar` / `plantillas` | Ver `duplicados.py` |
+| `auditar-plantillas` | Cobertura y balance de `plantillas.json` (960 filas) |
+| `plantillas comprobar` | Comprueba 24 filas/materia (12+12) |
+| `plantillas reclasificar` | Audita materia (sin `--aplicar`: solo lectura) |
+| `duplicados revisar` | Informe de duplicados (sin escribir) |
 | `temporales` | Limpieza de `__pycache__` bajo el proyecto |
 
-## Simulación de evaluación al azar
+**Bloqueados** (plantillas cerradas; requieren `TFG_PERMITIR_PLANTILLAS=1`):  
+`plantillas reclasificar --aplicar`, `duplicados plantillas`, `duplicados todo --inplace`, etc.
 
-```bash
-python Files/simulacion_evaluacion_azar.py
-python Files/simulacion_evaluacion_azar.py --iteraciones 50000 --preguntas 20
-```
+Los scripts de **regeneración del JSON** (equilibrador, catálogos repuesto/internet, pipeline de inyección) se eliminaron en 2026-06: el banco quedó materializado en `plantillas.json`. Para recuperarlos, usar el historial de git con `TFG_PERMITIR_PLANTILLAS=1`.
 
-## Otros CLIs útiles
+## Simulaciones (memoria TFG)
 
 | Script | Uso |
 |--------|-----|
-| `cli_examen_historia.py` | Previsualizar plan de examen (salida por terminal) |
-| `clasificar_pregunta.py` | Clasificar una pregunta concreta (solo lectura) |
-| `auditoria.py` | Auditorías del dataset y plantillas |
-| `duplicados.py` + `duplicados_lib.py` | `revisar`, `plantillas`, `todo`, `exacto`, `enunciado` |
-| `plantillas_sync.py` | `inyectar`, `limpiar`, `repuesto`, `pipeline` sobre `Banco/plantillas.json` |
-| `equilibrar_pool_extra_juego.py` | Pool extra para modos beta del juego (solo JSON) |
-| `dedup_reemplazar_plantillas.py --inplace` | Purga sintéticas + catálogo internet + dedup |
-| `validacion_dataset.py` | Revisión amplia del CSV |
-| `exportar_criterios_clasificacion_materia.py` | Regenera `Banco/criterios_clasificacion_materia.csv` |
-| `estadisticas_historic_qualificacions.py` | Estadísticas del histórico de qualificacions |
-| `rutas_data.py` | Rutas `Data/Banco/` y `Data/Juego/` |
+| `simulacion_evaluacion_azar.py` | Monte Carlo: respuestas al azar (§5.7) |
+| `simulacion_pity.py` | Análisis del sistema de pity (§5.8) |
+
+Figuras: `python Docs/generar_figuras_memoria.py`
 
 ## Utilidades (`utils_*`)
 
 | Módulo | Función |
 |--------|---------|
+| `utils_banco_cerrado.py` | Protección CSV + plantillas.json |
 | `utils_dataset_csv.py` | CSV, columnas, guardado con metadatos |
-| `utils_banco_cerrado.py` | Protección del CSV cerrado |
-| `objetivos_balanceo.py` | Objetivos 480, slots 12×40 |
+| `objetivos_balanceo.py` | Objetivos 480 / 960 JSON, `USO_PLANTILLA_DATASET` |
 | `balance_lib.py` | Validación y orden canónico (usado por `validar`) |
-| `utils_plantillas_core.py` | Claves de contenido y expansión (compartido con `Juego/Comun/datos.py`) |
-| `utils_clasificacion_pregunta.py`, `utils_puntuacion_materia.py` | Clasificación semántica |
+| `utils_clasificacion_pregunta.py`, `utils_puntuacion_materia.py` | Clasificación semántica (auditoría) |
+| `utils_plantillas_core.py` | Reexporta `Juego/Comun/utils_plantillas_core.py` |
 
 ## Seguridad — qué puede romper el juego
 
-| Riesgo | Scripts | Protección |
-|--------|---------|------------|
-| **Modificar `Preguntas.csv`** | `duplicados.py` con `--inplace`, funciones de `balance_lib` | Bloqueado salvo `TFG_PERMITIR_CSV=1` |
-| **Modificar `plantillas.json`** | `plantillas_sync.py`, `equilibrar_pool_extra_juego.py`, `dedup_reemplazar_plantillas.py` con `--inplace` | Afecta modos beta; no toca el CSV de 480 |
-| **Solo lectura (seguros)** | `validar`, `revision`, `auditar-*`, `clasificar_pregunta.py`, `simulacion_evaluacion_azar.py` | No escriben datos del juego |
+| Riesgo | Protección |
+|--------|------------|
+| **Modificar `Preguntas.csv`** | `TFG_PERMITIR_CSV=1` |
+| **Modificar `plantillas.json`** | `TFG_PERMITIR_PLANTILLAS=1` |
+| **Modificar `preguntas_resistencia.json`** | `TFG_PERMITIR_RESISTENCIA=1` |
+| **Solo lectura (seguros)** | `validar`, `revision`, `auditar-*`, `clasificar_pregunta.py`, `duplicados revisar` |
 
 ## Pruebas
-
-Tests de mantenimiento en este directorio (plano):
-
-| Módulo | Enfoque |
-|--------|---------|
-| `test_balance_validar.py` | Validación del banco (`balance_lib`) |
-| `test_utils_plantillas_core.py` | Claves de contenido de plantillas |
-| `test_support.py` | Bootstrap de `sys.path` para los tests |
 
 ```bash
 python -m unittest discover -s Files -p "test_*.py" -v
 ```
 
-Tests del juego: [`Tests/`](../Tests/README.md) (**395** tests en total). CI: `.github/workflows/tests.yml`.
+Tests del juego: [`Tests/`](../Tests/README.md). CI: `.github/workflows/tests.yml`.
 
 ## Limpieza de temporales
 
 ```bash
-python utilidades_tfg.py --solo-limpieza
+python Docs/utilidades_tfg.py --solo-limpieza
 python Files/mantenimiento.py temporales
 ```

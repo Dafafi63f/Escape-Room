@@ -185,25 +185,24 @@ def cargar_plantillas() -> list[tuple[str, str, dict]]:
     return out
 
 
-def expandir_variaciones(tema: str, idx: int, t: dict) -> list[tuple[str, dict]]:
-    base = {
-        "pregunta": t.get("pregunta", ""),
-        "opciones": {L: t.get(L, "") for L in LETRAS},
-        "correcta": t.get("correcta", ""),
-        "uso": t.get("uso", ""),
-    }
-    vars_ = t.get("variaciones")
-    if not vars_:
-        return [(f"{tema}#{idx}", base)]
-    outs = []
-    for vi, var in enumerate(vars_):
-        p, opts = base["pregunta"], dict(base["opciones"])
-        for key, val in var.items():
-            ph = "{" + str(key) + "}"
-            p = p.replace(ph, str(val))
-            for L in LETRAS:
-                opts[L] = opts[L].replace(ph, str(val))
-        outs.append((f"{tema}#{idx}v{vi}", {**base, "pregunta": p, "opciones": opts}))
+def expandir_fila_plantilla(tema: str, idx: int, t: dict) -> list[tuple[str, dict]]:
+    """Una etiqueta por fila JSON (sin expansión de variaciones)."""
+    from utils_plantillas_core import expandir_plantilla_instancias
+
+    outs: list[tuple[str, dict]] = []
+    for vi, inst in enumerate(expandir_plantilla_instancias(tema, t)):
+        sufijo = f"v{vi}" if vi else ""
+        outs.append(
+            (
+                f"{tema}#{idx}{sufijo}",
+                {
+                    "pregunta": inst["pregunta"],
+                    "opciones": inst["opciones"],
+                    "correcta": inst["correcta"],
+                    "uso": inst.get("uso", ""),
+                },
+            )
+        )
     return outs
 
 
@@ -212,13 +211,77 @@ def cargar_plantillas_expandidas() -> list[tuple[str, dict]]:
     out: list[tuple[str, dict]] = []
     for tema, items in data.items():
         for i, t in enumerate(items):
-            for label, item in expandir_variaciones(tema, i, t):
+            for label, item in expandir_fila_plantilla(tema, i, t):
                 out.append((label, item))
     return out
 
 
 def agrupar(incidencias: list[dict]) -> Counter:
     return Counter(x["tipo"] for x in incidencias)
+
+
+def comprobar_cobertura_plantillas() -> int:
+    """Comprueba 12 dataset + 12 extra por materia (960 filas). Sin ``variaciones``. Solo lectura."""
+    from objetivos_balanceo import (
+        MIN_PLANTILLAS_POR_MATERIA_FACTOR,
+        TARGET_TOTAL_PREGUNTAS,
+        plantillas_minimas_por_materia,
+        preguntas_por_materia,
+    )
+    from utils_orden_temas import cargar_orden_temas
+
+    with PATH_PLANTILLAS.open(encoding="utf-8") as f:
+        plant = json.load(f)
+    variaciones: list[str] = []
+    for tema, items in plant.items():
+        for i, t in enumerate(items):
+            if isinstance(t, dict) and t.get("variaciones"):
+                variaciones.append(f"{tema}[{i}]")
+    if variaciones:
+        msgs_var = [
+            f"Campo 'variaciones' prohibido ({len(variaciones)} filas); "
+            "materializar en filas sueltas o eliminar."
+        ]
+        for v in variaciones[:5]:
+            msgs_var.append(f"  - {v}")
+        if len(variaciones) > 5:
+            msgs_var.append(f"  ... y {len(variaciones) - 5} más")
+        print("\n".join(msgs_var))
+        return 1
+    rows = list(csv.DictReader(PATH_CSV.open(encoding="utf-8", newline=""), delimiter=";"))
+    por_plant = {m: len(plant.get(m, [])) for m in plant}
+    por_ds = Counter(r["Materia"] for r in rows)
+    minimo = plantillas_minimas_por_materia()
+    temas, _ = cargar_orden_temas()
+
+    msgs: list[str] = []
+    total_plant = sum(por_plant.values())
+    if total_plant != TARGET_TOTAL_PREGUNTAS * 2:
+        msgs.append(
+            f"Total plantillas ({total_plant}) distinto del objetivo "
+            f"({TARGET_TOTAL_PREGUNTAS * 2}: 480 dataset + 480 extra)"
+        )
+    elif total_plant <= TARGET_TOTAL_PREGUNTAS:
+        msgs.append(f"Total plantillas ({total_plant}) no supera el dataset ({TARGET_TOTAL_PREGUNTAS})")
+    for tema in temas:
+        n_plant = por_plant.get(tema, 0)
+        n_ds = por_ds.get(tema, preguntas_por_materia())
+        if n_plant <= n_ds:
+            msgs.append(f"{tema!r}: {n_plant} plantillas <= {n_ds} en dataset")
+        elif n_plant < minimo:
+            msgs.append(
+                f"{tema!r}: {n_plant} < mínimo {minimo} ({MIN_PLANTILLAS_POR_MATERIA_FACTOR}× dataset)"
+            )
+
+    print(f"Dataset: {TARGET_TOTAL_PREGUNTAS} preguntas ({preguntas_por_materia()}/materia)")
+    print(f"Plantillas: {total_plant} (mínimo {minimo}/materia, objetivo 24/materia)")
+    if not msgs:
+        print("OK: cobertura de plantillas adecuada.")
+        return 0
+    print("Desviaciones:")
+    for m in msgs:
+        print(f"  - {m}")
+    return 1
 
 
 def auditar_plantillas_global() -> int:
@@ -352,8 +415,8 @@ def auditar_plantillas_global() -> int:
         print(f"  {' | '.join(labels[:4])}{'…' if len(labels) > 4 else ''}")
 
     print("\nComandos sugeridos:")
-    print("  python Files/mantenimiento.py plantillas pipeline")
-    print("  python Files/duplicados.py plantillas")
+    print("  python Files/mantenimiento.py plantillas comprobar")
+    print("  python Files/duplicados.py revisar")
     print("=" * 72)
 
     return 1 if faltan_ds or exact_global else (1 if huecos_balance else 0)

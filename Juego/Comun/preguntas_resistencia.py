@@ -11,9 +11,12 @@ from pathlib import Path
 from Comun.modelos import Pregunta
 from Comun.rutas import resolver_preguntas_resistencia
 
+TARGET_EXCLUSIVAS_RESISTENCIA = 40
+
 __all__ = [
     "BancoResistencia",
     "ETIQUETAS_TIER_RESISTENCIA",
+    "TARGET_EXCLUSIVAS_RESISTENCIA",
     "cargar_preguntas_exclusivas_resistencia",
     "construir_banco_resistencia",
     "construir_pool_resistencia",
@@ -26,6 +29,19 @@ ETIQUETAS_TIER_RESISTENCIA: dict[int, str] = {
     3: "Legendario",
     4: "Imposible",
 }
+
+# Modo beta (libre/escape): extras sin revisar manualmente; sin autogeneradas.
+USOS_PLANTILLA_BETA_JUEGO = frozenset(
+    {"repuesto", "internet", "general", "calculo", "dificil", "reserva", "web_seed"}
+)
+
+# Extras reales de plantillas.json (mismo pool que modo beta, sin sintéticas).
+USOS_PLANTILLA_RESISTENCIA = USOS_PLANTILLA_BETA_JUEGO
+
+# Nunca entran al juego (usos legacy de relleno estructural; el JSON cerrado no los usa).
+USOS_PLANTILLA_SOLO_ESTRUCTURA = frozenset(
+    {"pool_extra", "ampliado_perm", "ampliado_num", "ampliado_var"}
+)
 
 
 def _pregunta_valida_resistencia(p: Pregunta) -> bool:
@@ -46,17 +62,25 @@ def pool_plantillas_resistencia(
     materias_meta: dict[str, dict[str, str]],
     *,
     claves_dataset: set[tuple],
+    path_preguntas_csv: Path | None = None,
 ) -> list[Pregunta]:
     """Plantillas fuera del dataset revisado, válidas para resistencia."""
-    from Comun.datos import cargar_preguntas_plantillas
+    from Comun.datos import cargar_preguntas_plantillas, claves_contenido_dataset
 
     if not path_plantillas.exists():
         return []
+    claves_contenido = (
+        claves_contenido_dataset(path_preguntas_csv)
+        if path_preguntas_csv is not None and path_preguntas_csv.exists()
+        else None
+    )
     raw = cargar_preguntas_plantillas(
         path_plantillas,
         materias_meta,
         solo_fuera_dataset=True,
         claves_ds=claves_dataset,
+        usos_permitidos=USOS_PLANTILLA_RESISTENCIA,
+        claves_contenido_ds=claves_contenido,
     )
     validas = [p for p in raw if _pregunta_valida_resistencia(p)]
     return sorted(validas, key=lambda p: (p.materia, p.texto, p.correcta))
@@ -181,7 +205,10 @@ def construir_banco_resistencia(
         )
         plantillas = tuple(
             pool_plantillas_resistencia(
-                path_plantillas, materias_meta, claves_dataset=claves
+                path_plantillas,
+                materias_meta,
+                claves_dataset=claves,
+                path_preguntas_csv=path_preguntas_csv,
             )
         )
     exclusivas = tuple(

@@ -281,7 +281,7 @@ class BackendGrafico:
         )
 
     def nombre_jugador_defecto(self) -> str:
-        from Comun.jugador import nombre_jugador_efectivo
+        from Comun.preferencias_grafico import nombre_jugador_efectivo
 
         return nombre_jugador_efectivo("")
 

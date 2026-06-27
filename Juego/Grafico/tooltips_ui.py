@@ -75,7 +75,8 @@ TOOLTIP_MENU_PRINCIPAL: dict[str, str] = {
 TOOLTIP_MODOS_ESPECIALES: dict[str, str] = {
     "escape_room": (
         "30 salas, 3 puertas por sala. Descanso, tienda (puntos arcade) y botín. "
-        "Objetos en la banda inferior. Fallar cuesta 1 vida pero avanzas."
+        "Partida distinta cada vez (semilla aleatoria). Objetos en la banda inferior. "
+        "Fallar cuesta 1 vida pero avanzas."
     ),
     "ranking_resistencia": (
         "Banco completo, 3 vidas. Escalada, rachas, eventos y ranking local. "
@@ -111,6 +112,11 @@ TOOLTIP_ABANDONAR_RESISTENCIA = (
 )
 TOOLTIP_APUESTA_SI = "Aceptar la apuesta arriesgada."
 TOOLTIP_APUESTA_NO = "Rechazar la apuesta y jugar con las reglas normales."
+TOOLTIP_EVENTO_SI_NO_SI = "Aceptar (gastas los puntos indicados, si los hay)."
+TOOLTIP_EVENTO_SI_NO_SI_RIESGO = (
+    "Aceptar: el riesgo o la recompensa aplican a esta pregunta."
+)
+TOOLTIP_EVENTO_SI_NO_NO = "Rechazar: no pasa nada y sigues a la pregunta."
 
 TOOLTIP_GUARDAR_INFORME = (
     "Guarda un archivo .txt en Data/Juego/ con tus respuestas, "
@@ -149,7 +155,7 @@ _TOOLTIP_ELECCION_HISTORIA: dict[str, dict[str, str]] = {
 _TOOLTIP_OPCION_HISTORIA_ID: dict[str, str] = {
     "curso": "Limita el ámbito del examen a un curso del grado (vacío = todo el grado).",
     "semestre": "Acota a un semestre concreto. Vacío: cualquier semestre del grado. Con curso: todo el curso o un semestre (5 asignaturas).",
-    "periodo": "Semestre académico concreto del plan (p. ej. 1-1). Vacío: filtra por curso y semestre por separado.",
+    "periodo": "Semestre académico concreto del plan (p. ej. Semestre 3-2). Vacío: filtra por curso y semestre por separado.",
     "grupo": "Elige un bloque G1–G10: entran todas sus asignaturas (sin mezclar con curso ni semestre).",
     "materia": "Concentra el reto en una sola asignatura.",
     "estrategia_materias": "Cómo repartir preguntas entre asignaturas según el histórico MatCAD.",
@@ -213,8 +219,11 @@ def tooltip_opcion_ciclo_historia(
     clave: str,
     *,
     etiqueta_opcion: str = "",
+    curso_actual: str | None = None,
 ) -> str | None:
     """Ayuda en la caja central ◀ valor ▶ del configurador de preset historia."""
+    from Comun.config_historia import etiqueta_periodo_academico, etiqueta_periodo_desde_clave
+
     if tipo == "eleccion":
         return _tooltip_historia_eleccion(op_id, clave, etiqueta_opcion)
     if tipo == "curso":
@@ -224,9 +233,11 @@ def tooltip_opcion_ciclo_historia(
     if tipo == "semestre":
         if not clave:
             return "Sin filtro de semestre: se usa el curso completo elegido."
-        return f"Acota al semestre {clave} del curso."
+        if curso_actual:
+            return f"Acota al {etiqueta_periodo_academico(str(curso_actual), clave).lower()}."
+        return f"Acota al semestre {clave}."
     if tipo == "periodo" and clave:
-        return _TOOLTIP_OPCION_HISTORIA_ID.get("periodo")
+        return f"Limita al {etiqueta_periodo_desde_clave(clave).lower()}."
     if tipo in ("curso", "semestre", "periodo") and not clave:
         return _TOOLTIP_OPCION_HISTORIA_ID.get(tipo)
     if tipo == "grupo" and clave:

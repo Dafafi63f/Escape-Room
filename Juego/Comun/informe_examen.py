@@ -20,6 +20,23 @@ from Comun.reglas_partida import (
 from Comun.rutas import resolver_dir_informes, ruta_informe_para_usuario
 
 
+def _etiqueta_curso_semestre_pregunta(p: Pregunta) -> str:
+    from Comun.config_historia import (
+        etiqueta_curso_academico,
+        etiqueta_periodo_academico,
+    )
+
+    curso = (p.curso or "").strip()
+    semestre = (p.semestre or "").strip()
+    if curso and semestre:
+        return etiqueta_periodo_academico(curso, semestre)
+    if curso:
+        return etiqueta_curso_academico(curso)
+    if semestre:
+        return f"Semestre {semestre}"
+    return "—"
+
+
 @dataclass
 class CierreInformePartida:
     """Datos para un informe .txt al cerrar una actividad concreta."""
@@ -318,7 +335,7 @@ def formatear_informe_examen(
                 "",
                 f"[{reg.indice}] {estado_txt}",
                 f"Materia: {p.materia} | {p.tipo} / {p.dificultad}",
-                f"Temática: {p.tematica or '-'} | Curso {p.curso or '-'} · Sem. {p.semestre or '-'}",
+                f"Temática: {p.tematica or '-'} | {_etiqueta_curso_semestre_pregunta(p)}",
                 "",
                 p.texto,
                 "",

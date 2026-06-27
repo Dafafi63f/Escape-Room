@@ -2,9 +2,16 @@
 
 Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygame. El historial técnico del TFG está en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
 
-**Última actualización:** 2026-06-26
+**Última actualización:** 2026-06-27
 
 ---
+
+## 2026-06-27 (escape room y economía)
+
+- **Escape room:** cada partida es distinta (semilla aleatoria).
+- **Tienda:** si no tienes puntos para lo más barato, la puerta tienda no aparece y el pity se pospone; hard pity no fuerza tienda inviable.
+- **Cartas de puerta:** icono 🎁 arriba; en la descripción, emoji del premio concreto (💣, 🔮, ❤️…).
+- **Código:** catálogo y economía unificados (`objetos_partida`, `economia_partida`); eliminados alias legacy de semillas y tienda.
 
 ## 2026-06-26 (modo escape room)
 
@@ -19,7 +26,7 @@ Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygam
 
 - Eliminada la versión en terminal; **único lanzador:** `python Juego/juego_grafico.py`.
 - Informes, feedback y generador de historia viven en `Juego/Comun/`.
-- Suite de tests reorientada al backend gráfico (**395** tests: 387 en `Tests/` + 8 en `Files/`).
+- Suite de tests reorientada al backend gráfico (**424** tests: 416 en `Tests/` + 8 en `Files/`).
 
 ## 2026-06-19 (interfaz gráfica)
 
@@ -33,7 +40,7 @@ Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygam
 
 ## 2026-06-18
 
-- **Resistencia / reto del día:** apuestas (doble o nada), maldiciones, bloques temáticos temporales, power-ups (bomba, escudo, 50/50, saltar…).
+- **Resistencia:** apuestas (doble o nada), maldiciones, bloques temáticos temporales, power-ups (bomba, escudo, 50/50, saltar…).
 - **Barra de partida:** tiempo, número de pregunta, racha y estado de resistencia más claros (chips con emoji).
 - Rankings locales de resistencia y examen del día.
 

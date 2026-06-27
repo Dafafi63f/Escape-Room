@@ -2,57 +2,77 @@
 
 Interfaz gráfica del juego (pygame) sobre el dominio compartido en [`Comun/`](Comun/README.md).
 
-| Lanzador | Interfaz | Requisitos |
-|----------|----------|------------|
-| [`juego_grafico.py`](juego_grafico.py) | Pygame (libre, historia, resistencia, feedback) | `pip install -r requirements.txt` |
+**Requisitos para jugar** (Python, pip, `.exe`, zip, PCs del centro): [`COMO_JUGAR.md`](COMO_JUGAR.md).
+
+## Estructura
 
 | Elemento | Descripción |
 |----------|-------------|
-| [`juego_grafico.py`](juego_grafico.py) | Lanzador pygame |
+| [`juego_grafico.py`](juego_grafico.py) | Lanzador pygame (libre, historia, resistencia, escape room, feedback) |
+| [`LEEME.txt`](LEEME.txt) | Instrucciones breves (zip portable) |
+| [`COMO_JUGAR.md`](COMO_JUGAR.md) | Guía completa para usuarios |
+| [`requirements.txt`](requirements.txt) | Dependencias para jugar (pygame-ce) |
 | [`Comun/`](Comun/README.md) | Dominio compartido (`from Comun...`) |
 | [`Grafico/`](Grafico/README.md) | Interfaz pygame (ratón; teclado para texto) |
-| [`Data/Banco/`](../Data/README.md) | Banco de preguntas y catálogos |
-| [`Data/Juego/`](../Data/README.md) | Estado local del jugador (informes, rankings, preferencias) |
-| [`Tests/`](../Tests/README.md) | Pruebas unitarias |
+| [`Distribucion/`](Distribucion/) | Artefactos: zip, `.exe`, `Jugar.bat` |
+| [`Scripts/`](Scripts/) | Build y diagnóstico (PowerShell; no va en el zip portable) |
+
+| En `Distribucion/` | Descripción |
+|--------------------|-------------|
+| [`Jugar.bat`](Distribucion/Jugar.bat) | Atajo Windows (doble clic) |
+| [`MATCAD_juego_portable.zip`](Distribucion/MATCAD_juego_portable.zip) | Paquete portable (`python Docs/utilidades_tfg.py --solo-zip`) |
+| [`juego_grafico.exe`](Distribucion/juego_grafico.exe) | Ejecutable Windows (opcional) |
+
+| En `Scripts/` | Descripción |
+|---------------|-------------|
+| [`build_exe_onefile.ps1`](Scripts/build_exe_onefile.ps1) | PyInstaller → `Distribucion/juego_grafico.exe` |
+| [`comprobar_entorno.ps1`](Scripts/comprobar_entorno.ps1) | Diagnóstico (Python, pip, pygame, datos) |
+| [`instalar_entorno.ps1`](Scripts/instalar_entorno.ps1) | Intenta instalar Python (winget) + dependencias |
+
+Datos: [`../Data/README.md`](../Data/README.md). Tests: [`../Tests/README.md`](../Tests/README.md).
 
 ## Ejecutar
 
 ```bash
-pip install -r requirements.txt
+pip install -r Juego/requirements.txt   # desde la raíz del repo
 python Juego/juego_grafico.py
 ```
 
-Datos en [`../Data/README.md`](../Data/README.md).
+En Windows: doble clic en [`Distribucion/Jugar.bat`](Distribucion/Jugar.bat) o:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File Juego\Scripts\comprobar_entorno.ps1
+powershell -ExecutionPolicy Bypass -File Juego\Scripts\instalar_entorno.ps1
+```
 
 ## Modos
 
 | Modo | Descripción |
 |------|-------------|
 | **Libre** | Partida configurable, filtros, informes al cerrar |
-| **Historia** | Examen balanceado según histórico; carrusel de 5 presets (repaso, simulacro, examen por materia, etc.) |
+| **Historia** | Examen balanceado según histórico; carrusel de 5 presets |
 | **Resistencia** | Partida continua, eventos, objetos, ranking local |
-| **Feedback** | Formulario en pantalla (icono 📣); ver [`Grafico/pantallas_sistema.py`](Grafico/pantallas_sistema.py) |
+| **Escape room** | Salas y puertas, tienda, botín, inventario; partida distinta cada vez |
+| **Feedback** | Formulario en pantalla (icono 📣) |
 
-Detalle de bancos, puntuación y arquitectura: [`Grafico/README.md`](Grafico/README.md) y [`Comun/README.md`](Comun/README.md).
+Detalle: [`Grafico/README.md`](Grafico/README.md) y [`Comun/README.md`](Comun/README.md).
 
 ## Configuración del creador
 
-Plantilla local para SMTP y datos privados: [`Comun/config_creador.py`](Comun/config_creador.py).
-
 ```bash
 cd Juego
-python -m Comun.config_creador
+python -m Comun.feedback
 ```
 
-Genera `Data/Banco/creador_privado.json` (no versionado). Rellena tus datos reales en el fichero generado si necesitas SMTP.
+Genera `Data/Banco/creador_privado.json` (no versionado).
 
-## Ejecutable Windows (opcional)
-
-Empaquetado con PyInstaller (incluye pygame, `Files/utils_plantillas_core.py` y el banco `Data/` del repositorio):
+## Ejecutable Windows (sin Python)
 
 ```powershell
-pip install -r requirements.txt
-.\Juego\build_exe_onefile.ps1
+pip install -r requirements.txt   # raíz del repo (desarrollo + PyInstaller)
+.\Juego\Scripts\build_exe_onefile.ps1
 ```
 
-Genera `Juego/juego_grafico.exe` (ventana sin consola). Si no empaquetas `Data/`, copia la carpeta `Data/` del repo junto al `.exe`. El estado del jugador (informes, rankings, preferencias) se escribe en `Data/Juego/` al lado del ejecutable.
+Genera `Juego/Distribucion/juego_grafico.exe`. Si no empaquetas `Data/`, copia la carpeta `Data/` del repo junto al `.exe`. El estado del jugador se escribe en `Data/Juego/` al lado del ejecutable.
+
+En PCs con `.exe` bloqueados, usa la vía Python. Ver [`COMO_JUGAR.md`](COMO_JUGAR.md).

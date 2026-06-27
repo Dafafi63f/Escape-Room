@@ -8,7 +8,7 @@ from collections.abc import Callable
 
 import pygame
 
-from Comun.jugador import es_nombre_anonimo, nombre_jugador_efectivo
+from Comun.preferencias_grafico import es_nombre_anonimo, nombre_jugador_efectivo
 from Comun.datos_locales_juego import borrar_txt_informes_feedback, vaciar_preferencias_locales
 from Comun.ranking_resistencia import vaciar_ranking_variante
 from Comun.preferencias_grafico import (

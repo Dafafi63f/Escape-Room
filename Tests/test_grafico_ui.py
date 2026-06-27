@@ -19,9 +19,10 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from Tests.support import emoji_font_disponible, ensure_juego_path
+from Tests.support import emoji_font_disponible, ensure_files_path, ensure_juego_path
 
 ensure_juego_path()
+ensure_files_path()
 
 # --- test_textos_ui.py ---
 
@@ -187,7 +188,7 @@ from Comun.preferencias_grafico import (  # noqa: E402
     nombre_inicial_grafico,
     resolver_path_preferencias_grafico,
 )
-from Comun.jugador import NOMBRE_JUGADOR_DEFECTO  # noqa: E402
+from Comun.preferencias_grafico import NOMBRE_JUGADOR_DEFECTO  # noqa: E402
 
 
 class TestPreferenciasGrafico(unittest.TestCase):
@@ -262,7 +263,7 @@ class TestPreferenciasGrafico(unittest.TestCase):
                 "Comun.preferencias_grafico.resolver_path_preferencias_grafico",
                 return_value=path,
             ):
-                from Comun.jugador import es_nombre_anonimo, nombre_jugador_efectivo
+                from Comun.preferencias_grafico import es_nombre_anonimo, nombre_jugador_efectivo
 
                 nombre_efectivo = nombre_jugador_efectivo("")
                 nombre_guardado = (
@@ -287,7 +288,7 @@ from Comun.ranking_resistencia import top_records, vaciar_ranking_variante  # no
 
 # --- test_borrar_temporales_externo.py ---
 
-from Comun.borrar_temporales import (  # noqa: E402
+from borrar_temporales import (  # noqa: E402
     borrar_temporales,
     dir_data_juego,
     dirs_data_juego,
@@ -307,7 +308,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             (juego / "preferencias_ranking.json").write_text("{}", encoding="utf-8")
             (juego / "presets.json").write_text("{}", encoding="utf-8")
 
-            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+            with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 self.assertEqual(len(listar_ficheros_runtime_juego()[0]), 2)
                 resumen = borrar_temporales(raiz, incluir_pycache=False)
                 self.assertEqual(resumen.json_preferencias_borrados, 2)
@@ -315,7 +316,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
                 self.assertEqual(listar_ficheros_runtime_juego()[0], [])
 
     def test_dir_data_juego(self) -> None:
-        with patch("Comun.borrar_temporales.raiz_proyecto", return_value=Path("/proyecto")):
+        with patch("borrar_temporales.raiz_proyecto", return_value=Path("/proyecto")):
             self.assertEqual(dir_data_juego(), Path("/proyecto") / "Data" / "Juego")
 
     def test_dirs_data_juego_solo_canonica(self) -> None:
@@ -325,7 +326,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             exe = raiz / "Juego" / "Data" / "Juego"
             canon.mkdir(parents=True)
             exe.mkdir(parents=True)
-            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+            with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 self.assertEqual(dirs_data_juego(), [canon])
 
     def test_elimina_runtime_junto_al_exe(self) -> None:
@@ -336,7 +337,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             (juego_exe / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
             (juego_exe / "ranking_resistencia.json").write_text("{}", encoding="utf-8")
 
-            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+            with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 self.assertEqual(len(listar_ficheros_runtime_juego()[0]), 0)
                 resumen = borrar_temporales(raiz, incluir_pycache=False)
                 self.assertEqual(resumen.json_preferencias_borrados, 0)
@@ -352,7 +353,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             (data_exe / "Juego").mkdir(parents=True)
             (data_exe / "Juego" / "ranking_resistencia.json").write_text("{}", encoding="utf-8")
 
-            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+            with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 resumen = borrar_temporales(raiz, incluir_pycache=False)
                 self.assertFalse(data_exe.exists())
                 self.assertGreaterEqual(resumen.carpetas_vacias_borradas, 1)
@@ -363,7 +364,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             vacia = raiz / "Juego" / "Data" / "Juego"
             vacia.mkdir(parents=True)
 
-            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+            with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 resumen = borrar_temporales(raiz, incluir_pycache=False)
                 self.assertGreaterEqual(resumen.carpetas_vacias_borradas, 1)
                 self.assertFalse((raiz / "Juego" / "Data").exists())
@@ -373,9 +374,9 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             raiz = Path(tmp)
             (raiz / "Juego" / "Data" / "Juego").mkdir(parents=True)
 
-            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+            with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 with patch(
-                    "Comun.borrar_temporales.shutil.rmtree",
+                    "borrar_temporales.shutil.rmtree",
                     side_effect=OSError("bloqueado"),
                 ):
                     resumen = borrar_temporales(raiz, incluir_pycache=False)
@@ -388,7 +389,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             raiz = Path(tmp)
             (raiz / "Juego" / "Data" / "Juego").mkdir(parents=True)
 
-            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+            with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 resumen = borrar_temporales(
                     raiz,
                     incluir_pycache=True,
@@ -406,7 +407,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             (juego / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
             (juego / "presets.json").write_text("{}", encoding="utf-8")
 
-            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+            with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 resumen = borrar_temporales(raiz, incluir_pycache=False)
                 self.assertEqual(resumen.json_preferencias_borrados, 1)
                 self.assertEqual(resumen.carpetas_vacias_borradas, 0)
@@ -419,7 +420,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             hoja = raiz / "test" / "a" / "b" / "z"
             hoja.mkdir(parents=True)
 
-            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+            with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 previstos = listar_directorios_vacios(raiz)
                 self.assertIn(hoja, previstos)
                 self.assertIn(hoja.parent, previstos)
@@ -436,7 +437,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             (a / "datos.txt").write_text("x", encoding="utf-8")
             (a / "b" / "z").mkdir(parents=True)
 
-            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+            with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 previstos = listar_directorios_vacios(raiz)
                 self.assertIn(a / "b" / "z", previstos)
                 self.assertIn(a / "b", previstos)
@@ -458,7 +459,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             (b / "f.txt").write_text("x", encoding="utf-8")
             (b / "z").mkdir()
 
-            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+            with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 previstos = listar_directorios_vacios(raiz)
                 self.assertEqual(previstos, [b / "z"])
 
@@ -475,7 +476,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             (a / "b" / "z").mkdir(parents=True)
             (a / "c").mkdir(parents=True)
 
-            with patch("Comun.borrar_temporales.raiz_proyecto", return_value=raiz):
+            with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 previstos = listar_directorios_vacios(raiz)
                 self.assertIn(a / "b" / "z", previstos)
                 self.assertIn(a / "b", previstos)
@@ -878,7 +879,7 @@ class TestBarraEstado(unittest.TestCase):
             "",
             progreso_sala="1/30",
             progreso_puerta="2/5",
-            vidas_max=4,
+            vidas_max=3,
         )
         ids = [s.id for s in segs]
         self.assertEqual(ids[0], "sala_escape")

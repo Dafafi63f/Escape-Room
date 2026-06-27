@@ -4,7 +4,7 @@
 
 **Alumno:** Daniel Fageda Figueredo · **NIU:** 1601846 · **Tutor:** Víctor Navas Portella
 
-Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en **pygame** (modos libre, historia, resistencia y feedback), y herramientas de mantenimiento del dataset. La capa narrativa escape room queda como evolución futura.
+Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en **pygame** (modos libre, historia, resistencia, escape room y feedback), y herramientas de mantenimiento del dataset. El modo escape room incluye mecánicas jugables (salas, tienda, botín); la narrativa gráfica completa queda como evolución futura.
 
 - **Documentación y entrega del TFG:** [`Docs/`](Docs/README.md) (`Entrega/`, `Figuras/`, changelogs)
 - **Repositorio:** https://github.com/Dafafi63f/Escape-Room.git
@@ -35,9 +35,11 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
 | [`Docs/`](Docs/README.md) | Changelogs, `Entrega/` (memoria md/tex/docx), `Figuras/` |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias (**303** tests: 295 en `Tests/` + 8 en `Files/`) y CI |
-| [`utilidades_tfg.py`](utilidades_tfg.py) | Regeneración (memoria + .exe) + limpieza final |
-| [`requirements.txt`](requirements.txt) | Dependencias (pandas, matplotlib, pyinstaller, pygame-ce, mypy, pre-commit) |
+| [`Tests/`](Tests/README.md) | Pruebas unitarias (**424** tests: 416 en `Tests/` + 8 en `Files/`) y CI |
+| [`Docs/utilidades_tfg.py`](Docs/utilidades_tfg.py) | Regeneración (memoria + .exe) + limpieza final + zip portable |
+| [`Juego/requirements.txt`](Juego/requirements.txt) | Solo jugar (pygame-ce) |
+| [`requirements.txt`](requirements.txt) | Desarrollo completo (incluye el del juego) |
+| [`Juego/COMO_JUGAR.md`](Juego/COMO_JUGAR.md) | Requisitos Python / `.exe` / zip portable |
 
 ## Memoria — exportar Word
 
@@ -45,8 +47,8 @@ El borrador editable está en [`Docs/Entrega/Memoria_TFG.md`](Docs/Entrega/Memor
 
 ```bash
 python Docs/generar_figuras_memoria.py
-python utilidades_tfg.py                 # memoria + .exe → limpieza final
-python utilidades_tfg.py --sin-exe       # memoria sin .exe (más rápido)
+python Docs/utilidades_tfg.py                 # memoria + .exe → limpieza final
+python Docs/utilidades_tfg.py --sin-exe       # memoria sin .exe (más rápido)
 ```
 
 Genera los `.docx` en `Docs/Entrega/` (Pandoc). El PDF de entrega lo exportas desde Word tras editar. Detalle en [`Docs/README.md`](Docs/README.md).
@@ -55,25 +57,47 @@ Solo una fase: `--solo-memoria`, `--solo-exe` o `--solo-limpieza`.
 
 ## Jugar
 
+Guía completa (Python, pip, `.exe`, PCs restringidos, zip portable): [`Juego/COMO_JUGAR.md`](Juego/COMO_JUGAR.md).
+
 ```bash
-pip install -r requirements.txt
+pip install -r Juego/requirements.txt
 python Juego/juego_grafico.py
 ```
 
-### Ejecutable Windows (opcional)
+En Windows también: doble clic en [`Juego/Distribucion/Jugar.bat`](Juego/Distribucion/Jugar.bat). Diagnóstico:
 
 ```powershell
-pip install -r requirements.txt
-python utilidades_tfg.py --solo-exe      # solo .exe → limpieza
+powershell -ExecutionPolicy Bypass -File Juego\Scripts\comprobar_entorno.ps1
 ```
 
-También: `.\Juego\build_exe_onefile.ps1`. Salida: `Juego/juego_grafico.exe`. Detalle en [`Juego/README.md`](Juego/README.md).
+Instalar Python + pygame si hace falta (usa `winget` cuando esté disponible):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File Juego\Scripts\instalar_entorno.ps1
+```
+
+### Zip portable (`Juego/Distribucion/MATCAD_juego_portable.zip`)
+
+No incluye Python, el `.exe` ni scripts `.ps1`. Tras descomprimir, lee `Juego/LEEME.txt` e instala Python manualmente.
+
+```bash
+python Docs/utilidades_tfg.py --solo-zip
+```
+
+### Ejecutable Windows (alternativa sin Python)
+
+```powershell
+pip install -r requirements.txt   # desarrollo (PyInstaller, etc.)
+python Docs/utilidades_tfg.py --solo-exe
+```
+
+También: `.\Juego\Scripts\build_exe_onefile.ps1`. Salida: `Juego/Distribucion/juego_grafico.exe`. En PCs con `.exe` bloqueados, usa la vía Python. Detalle en [`Juego/README.md`](Juego/README.md) y [`Juego/COMO_JUGAR.md`](Juego/COMO_JUGAR.md).
 
 ### Datos
 
-Ver [`Data/README.md`](Data/README.md). Imprescindibles: `Data/Banco/Preguntas.csv`, `listado_materias.csv`. Modo historia: `Historic_qualificacions_MatCAD_completo.csv`, `Data/Juego/presets_historia.json`. Modo resistencia: `Data/Juego/preguntas_resistencia.json`, rankings en `Data/Juego/`. Modo con plantillas: `Data/Banco/plantillas.json`.
+Ver [`Data/README.md`](Data/README.md). Imprescindibles: `Data/Banco/Preguntas.csv`, `listado_materias.csv`. Modo historia: `Historic_qualificacions_MatCAD_completo.csv`, `Data/Juego/presets.json`. Modo resistencia: `Data/Juego/preguntas_resistencia.json`, rankings en `Data/Juego/`. Modo con plantillas: `Data/Banco/plantillas.json`.
 
-Configuración privada del creador (SMTP, GitHub, etc.): `Data/Banco/creador_privado.json` (local; plantilla en [`Juego/Comun/config_creador.py`](Juego/Comun/config_creador.py)).
+Configuración privada del creador (SMTP, GitHub, etc.): `Data/Banco/creador_privado.json` (local; plantilla en [`Juego/Comun/feedback.py`](Juego/Comun/feedback.py)).
 
 ## Pruebas
 
@@ -111,35 +135,34 @@ mypy Juego/Comun Juego/Grafico Files
 
 ## Dependencias
 
-El juego necesita Python 3.10+ y las dependencias de `requirements.txt` (pygame-ce, etc.). Para scripts de mantenimiento y figuras de la memoria:
+| Fichero | Para quién |
+|---------|------------|
+| [`Juego/requirements.txt`](Juego/requirements.txt) | **Jugar** (solo pygame-ce) |
+| [`requirements.txt`](requirements.txt) | Desarrollo, tests, memoria y empaquetado |
 
-```bash
-pip install -r requirements.txt
-```
-
-Pandoc (binario externo) para la exportación Word (`utilidades_tfg.py`).
+Python **3.10+** y `pip`. Pandoc (binario externo) solo para exportar la memoria Word.
 
 ## Utilidades locales
 
 Por defecto **regenera la memoria** y **limpia al final**:
 
 ```bash
-python utilidades_tfg.py
-python utilidades_tfg.py --sin-exe             # sin juego_grafico.exe
-python utilidades_tfg.py --solo-memoria
-python utilidades_tfg.py --solo-memoria --con-exe
-python utilidades_tfg.py --solo-exe
-python utilidades_tfg.py --solo-limpieza
-python utilidades_tfg.py --dry-run            # listar limpieza sin borrar; luego exporta
+python Docs/utilidades_tfg.py
+python Docs/utilidades_tfg.py --sin-exe             # sin juego_grafico.exe
+python Docs/utilidades_tfg.py --solo-memoria
+python Docs/utilidades_tfg.py --solo-memoria --con-exe
+python Docs/utilidades_tfg.py --solo-exe
+python Docs/utilidades_tfg.py --solo-limpieza
+python Docs/utilidades_tfg.py --dry-run            # listar limpieza sin borrar; luego exporta
 ```
 
 Limpieza acotada:
 
 ```bash
-python utilidades_tfg.py --solo-limpieza --solo-pycache
-python utilidades_tfg.py --solo-limpieza --solo-juego
-python utilidades_tfg.py --solo-limpieza --solo-txt
-python utilidades_tfg.py --solo-limpieza --solo-entrega
+python Docs/utilidades_tfg.py --solo-limpieza --solo-pycache
+python Docs/utilidades_tfg.py --solo-limpieza --solo-juego
+python Docs/utilidades_tfg.py --solo-limpieza --solo-txt
+python Docs/utilidades_tfg.py --solo-limpieza --solo-entrega
 ```
 
 La limpieza final recorre el proyecto (`__pycache__`, runtime en `Data/Juego/`, intermedios de `Docs/Entrega/`, restos de PyInstaller en `Juego/`).

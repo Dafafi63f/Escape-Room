@@ -24,7 +24,7 @@ Docs/Entrega/*.toc
 Docs/Entrega/*.fls
 Docs/Entrega/*.fdb_latexmk
 Docs/Entrega/*.synctex.gz
-# --- Plantilla Pandoc (regenerable con utilidades_tfg.py --solo-memoria) ---
+# --- Plantilla Pandoc (regenerable con Docs/utilidades_tfg.py --solo-memoria) ---
 Docs/Entrega/pandoc_reference.docx
 Docs/Entrega/pandoc_reference_default.docx
 Docs/Entrega/pandoc_reference.tmp.docx

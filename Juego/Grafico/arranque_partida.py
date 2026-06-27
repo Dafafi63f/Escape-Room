@@ -78,7 +78,7 @@ def iniciar_pantalla_preset(
         if not pool:
             raise ValueError("No hay preguntas disponibles para el escape room.")
         reglas = aplicar_preset(preset, None)
-        semilla = semilla_partida_escape(nombre=nombre)
+        semilla = semilla_partida_escape()
         return PartidaEscapeRoom(
             nombre=nombre,
             preset=preset,

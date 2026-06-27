@@ -14,7 +14,7 @@ Política de limpieza
 | presets, pool resistencia | no tocar         | no tocar         |
 +---------------------------+------------------+------------------+
 
-Desde fuera: ``python utilidades_tfg.py --solo-limpieza`` (``Juego/Comun/borrar_temporales.py``).
+Desde fuera: ``python Docs/utilidades_tfg.py --solo-limpieza`` (``Files/borrar_temporales.py``).
 """
 
 from __future__ import annotations

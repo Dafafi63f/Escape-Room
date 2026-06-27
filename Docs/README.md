@@ -9,6 +9,8 @@ Todo lo relacionado con la memoria, el seguimiento del proyecto y los artefactos
 | [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md) | Estado del TFG, feedback del tutor, historial técnico |
 | [`CHANGELOG_JUEGO.md`](CHANGELOG_JUEGO.md) | Novedades visibles para quien juega (hub Info del juego gráfico) |
 | [`CHECKLIST.md`](CHECKLIST.md) | Pendientes e ideas futuras |
+| [`../Juego/COMO_JUGAR.md`](../Juego/COMO_JUGAR.md) | Requisitos para jugar (Python, zip, `.exe`) — ver también [`Juego/`](../Juego/README.md) |
+| [`utilidades_tfg.py`](utilidades_tfg.py) | Memoria Word, limpieza, `.exe` y zip portable |
 | [`generar_figuras_memoria.py`](generar_figuras_memoria.py) | Regenera PNG en `Figuras/` |
 
 ## Subcarpetas (solo estas dos)
@@ -22,9 +24,9 @@ Todo lo relacionado con la memoria, el seguimiento del proyecto y los artefactos
 
 ```bash
 python Docs/generar_figuras_memoria.py   # opcional, figuras
-python utilidades_tfg.py                 # memoria + .exe → limpieza final
-python utilidades_tfg.py --sin-exe       # memoria sin .exe (más rápido)
-python utilidades_tfg.py --solo-limpieza --solo-entrega   # borrar también los .docx regenerables
+python Docs/utilidades_tfg.py                 # memoria + .exe → limpieza final
+python Docs/utilidades_tfg.py --sin-exe       # memoria sin .exe (más rápido)
+python Docs/utilidades_tfg.py --solo-limpieza --solo-entrega   # borrar también los .docx regenerables
 ```
 
 Salida Word: `Docs/Entrega/Memoria_TFG_markdown.docx` y `Memoria_TFG_latex.docx` (secciones numeradas, pie de página). Estructura de páginas:

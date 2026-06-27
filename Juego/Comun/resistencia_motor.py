@@ -5,16 +5,35 @@ from __future__ import annotations
 import random
 import time
 from dataclasses import dataclass, field, replace
+from typing import TYPE_CHECKING
 
-from Comun.config_historia import GRUPOS_TEMATICOS, etiqueta_grupo_tematico
-from Comun.emojis_escape import (
-    EMOJI_NIEBLA_AMBOS,
-    EMOJI_NIEBLA_ENUNCIADO,
-    EMOJI_NIEBLA_OPCIONES,
-)
+from Comun.config_historia import GRUPOS_TEMATICOS, descripcion_ambito_curso_semestre, etiqueta_grupo_tematico
+from Comun.emojis_escape import EMOJI_NIEBLA_OPCIONES
+from Comun.emojis_partida import EMOJI_BLOQUE_FILTRO_RESISTENCIA
 from Comun.modelos import Pregunta
 from Comun.motor_nucleo import EstadoPartida, FeedbackRespuesta, ResultadoRespuesta, evaluar_respuesta
 from Comun.pool_libre import EstadoSeleccionPool
+from Comun.reglas_partida import sumar_puntos_arcade
+from Comun.objetos_partida import (
+    EMOJI_POWERUP,
+    LETRAS_OPCION,
+    MENSAJE_POWERUP_YA_USADO,
+    POWERUPS,
+    POWERUPS_INCOMPATIBLES_EN_PREGUNTA,
+    POWERUPS_LOOT,
+    descripcion_powerup,
+    emoji_powerup,
+    etiqueta_powerup,
+    letras_ocultas_bomba,
+    letras_ocultas_fifty_fifty,
+    letras_ocultas_por_cantidad,
+    puede_usar_powerup_en_pregunta,
+    revocar_powerup_usado,
+)
+from Comun.semillas import rng_desde_semilla, semilla_partida_aleatoria
+
+if TYPE_CHECKING:
+    from Comun.eventos_partida import ApuestaRiesgo, EventoSiNo
 
 
 # --- Probabilidades ---
@@ -116,7 +135,7 @@ def cuotas_banco_resistencia(
 # --- Mecánicas (tipos y constantes) ---
 
 _MALDIGIONES: tuple[tuple[str, str, str], ...] = (
-    ("niebla", "Maldición: niebla en el enunciado", EMOJI_NIEBLA_ENUNCIADO),
+    ("niebla", "Maldición: 1 respuesta oculta", EMOJI_NIEBLA_OPCIONES),
     ("sin_objetos", "Maldición: no puedes usar objetos", "⛔"),
     ("relampago", "Maldición: relámpago forzado", "⚡"),
 )
@@ -189,6 +208,7 @@ class BloqueFiltroActivo:
     grupo: str | None = None
     curso: str | None = None
     semestre: str | None = None
+    solo_revisadas: bool = False
 
 
 _ETIQUETA_TIPO: dict[str, str] = {
@@ -222,105 +242,18 @@ def _descripcion_tipo(tipo: str) -> str:
     return f"de tipo {etiqueta}"
 
 
+def _descripcion_tipo_bloque(tipo: str) -> str:
+    """Etiqueta de bloque por tipo: deja claro que no es una materia concreta."""
+    etiqueta = _ETIQUETA_TIPO.get(tipo, tipo)
+    return f"de tipo {etiqueta} (cualquier materia)"
+
+
 def _descripcion_curso(curso: str) -> str:
-    return f"del curso {curso}"
+    return descripcion_ambito_curso_semestre(curso, None)
 
 
 def _descripcion_semestre(curso: str, semestre: str) -> str:
-    if curso:
-        return f"del curso {curso} · semestre {semestre}"
-    return f"del semestre {semestre}"
-
-
-@dataclass(frozen=True)
-class RecompensaApuesta:
-    mult_puntos: int = 1
-    delta_vidas: int = 0
-    powerup_id: str | None = None
-    cantidad_powerup: int = 1
-    powerup_aleatorio: bool = False
-
-
-@dataclass(frozen=True)
-class CosteApuesta:
-    """Penalización si fallas la pregunta con apuesta activa."""
-
-    vidas_fallo: int = 1  # Total de vidas perdidas (1 = solo el fallo habitual)
-    puntos_perdidos: int = 0
-    pierde_powerup_aleatorio: bool = False
-    pierde_todos_objetos: bool = False
-    fin_partida: bool = False
-
-
-@dataclass(frozen=True)
-class ApuestaRiesgo:
-    etiqueta: str
-    recompensa: RecompensaApuesta
-    coste: CosteApuesta
-
-
-APUESTAS_DISPONIBLES: tuple[ApuestaRiesgo, ...] = (
-    ApuestaRiesgo(
-        "Doble o nada",
-        RecompensaApuesta(mult_puntos=2),
-        CosteApuesta(vidas_fallo=2),
-    ),
-    ApuestaRiesgo(
-        "Triple arriesgado",
-        RecompensaApuesta(mult_puntos=3),
-        CosteApuesta(vidas_fallo=2),
-    ),
-    ApuestaRiesgo(
-        "Cuádruple audaz",
-        RecompensaApuesta(mult_puntos=4),
-        CosteApuesta(vidas_fallo=3),
-    ),
-    ApuestaRiesgo(
-        "Todo o nada",
-        RecompensaApuesta(mult_puntos=5),
-        CosteApuesta(vidas_fallo=3),
-    ),
-    ApuestaRiesgo(
-        "Botín seguro",
-        RecompensaApuesta(powerup_aleatorio=True),
-        CosteApuesta(vidas_fallo=1),
-    ),
-    ApuestaRiesgo(
-        "Vida de la suerte",
-        RecompensaApuesta(delta_vidas=1),
-        CosteApuesta(puntos_perdidos=35),
-    ),
-    ApuestaRiesgo(
-        "Cofre arriesgado",
-        RecompensaApuesta(mult_puntos=2, powerup_aleatorio=True),
-        CosteApuesta(pierde_powerup_aleatorio=True),
-    ),
-    ApuestaRiesgo(
-        "Escudo de oro",
-        RecompensaApuesta(powerup_id="escudo"),
-        CosteApuesta(vidas_fallo=2, puntos_perdidos=20),
-    ),
-    ApuestaRiesgo(
-        "Impulso doble",
-        RecompensaApuesta(mult_puntos=2, delta_vidas=1),
-        CosteApuesta(pierde_powerup_aleatorio=True, vidas_fallo=1),
-    ),
-    ApuestaRiesgo(
-        "Ruleta roja",
-        RecompensaApuesta(mult_puntos=3),
-        CosteApuesta(pierde_todos_objetos=True, vidas_fallo=1),
-    ),
-    ApuestaRiesgo(
-        "Última carta",
-        RecompensaApuesta(mult_puntos=4),
-        CosteApuesta(fin_partida=True),
-    ),
-    ApuestaRiesgo(
-        "Riesgo mortal",
-        RecompensaApuesta(mult_puntos=3, powerup_aleatorio=True),
-        CosteApuesta(fin_partida=True),
-    ),
-)
+    return descripcion_ambito_curso_semestre(curso, semestre)
 
 
 @dataclass
@@ -332,7 +265,7 @@ class MaldicionActiva:
 
 # --- Estado ---
 
-VIDAS_MAX_INICIAL = 5
+VIDAS_MAX_INICIAL = 3
 VIDAS_MAX_ABSOLUTO = 9
 VIDAS_MIN_CAP = 2
 
@@ -351,16 +284,18 @@ class EstadoResistencia:
     mejor_racha: int = 0  # récord de la partida; solo ranking/resumen, no afecta al juego
     vidas_max: int = VIDAS_MAX_INICIAL
     inventario: dict[str, int] = field(default_factory=dict)
-    letras_ocultas: frozenset[str] = field(default_factory=frozenset)
-    fraccion_enunciado: float = 1.0
+    letras_ocultas: frozenset[str] = field(default_factory=frozenset)  # bomba / 50-50: sin botón
+    letras_niebla: frozenset[str] = field(default_factory=frozenset)  # niebla: botón con «???»
     tiempo_extra_seg: int = 0
     relampago_forzado_seg: int | None = None
     escudo_activo: bool = False
+    bonus_proximo_acierto: int = 0
     ultimo_evento: str = ""
     semilla_partida: int | None = None
     bloque_filtro: BloqueFiltroActivo | None = None
-    apuesta_oferta: ApuestaRiesgo | None = None
+    evento_si_no: EventoSiNo | None = None
     apuesta_activa: ApuestaRiesgo | None = None
+    preguntas_sin_evento_si_no: int = 0
     maldicion: MaldicionActiva | None = None
     ventana_resultados: list[bool] = field(default_factory=list)
     tiradas_recompensa: int = 0
@@ -373,7 +308,7 @@ class EstadoResistencia:
 
     def reset_pregunta(self) -> None:
         self.letras_ocultas = frozenset()
-        self.fraccion_enunciado = 1.0
+        self.letras_niebla = frozenset()
         self.tiempo_extra_seg = 0
         self.relampago_forzado_seg = None
         self.ultimo_evento = ""
@@ -472,25 +407,12 @@ def finalizar_partida_por_desafio_bloque(estado: EstadoPartida, er: EstadoResist
     return prefijar_emoji("Desafío de bloque: tiempo agotado.", "⏲️")
 
 
-# --- Powerups ---
-
-LETRAS_OPCION = ("A", "B", "C", "D")
+# --- Powerups (catálogo en objetos_partida) ---
 
 # Escala la prob. de premio por tirada (la curva buena va de ~90 % a ~3 %).
 FACTOR_TIRADA_RECOMPENSA = 0.20
 # Cupo de tiradas de recompensa tras cada acierto (independiente de eventos/popups).
 MAX_TIRADAS_RECOMPENSA_ACIERTO = 2
-
-POWERUPS: dict[str, tuple[str, str]] = {
-    "fifty_fifty": ("50/50", "Quita 2 respuestas incorrectas"),
-    "bomba": ("Bomba", "Destruyes una respuesta incorrecta"),
-    "skip": ("Saltar", "Siguiente pregunta sin perder vida (corta la racha)"),
-    "tiempo_extra": ("+Tiempo", "Añade 20 s a esta pregunta"),
-    "escudo": ("Escudo", "El próximo fallo no cuesta vida ni corta la racha"),
-    "cambio": ("Cambio", "Sustituye por una pregunta parecida (misma materia y tipo)"),
-}
-
-POWERUPS_LOOT = tuple(POWERUPS.keys())
 
 
 @dataclass(frozen=True)
@@ -500,110 +422,70 @@ class EventoRecompensaResistencia:
     delta_vidas_max: int = 0
     powerup_id: str | None = None
     cantidad_powerup: int = 1
+    bonus_proximo_acierto: int = 0
 
 
-def etiqueta_powerup(powerup_id: str) -> str:
-    return POWERUPS.get(powerup_id, (powerup_id, powerup_id))[0]
-
-
-def descripcion_powerup(powerup_id: str) -> str:
-    return POWERUPS.get(powerup_id, (powerup_id, ""))[1]
-
-
-MENSAJE_POWERUP_YA_USADO = "Solo puedes usar un objeto por pregunta."
-
-POWERUPS_INCOMPATIBLES_EN_PREGUNTA: dict[str, frozenset[str]] = {
-    "bomba": frozenset({"fifty_fifty"}),
-    "fifty_fifty": frozenset({"bomba"}),
-}
-
-
-def puede_usar_powerup_en_pregunta(powerup_id: str, usados: set[str]) -> str | None:
-    """Devuelve mensaje de error si el objeto no puede usarse en esta pregunta."""
-    if powerup_id in usados:
-        if powerup_id in POWERUPS:
-            return f"Ya usaste {etiqueta_powerup(powerup_id)} en esta pregunta."
-        return "Ya usaste este objeto en esta pregunta."
-    incompatibles = POWERUPS_INCOMPATIBLES_EN_PREGUNTA.get(powerup_id, frozenset())
-    for usado in usados:
-        if usado in incompatibles:
-            nom = etiqueta_powerup(powerup_id)
-            otro = etiqueta_powerup(usado) if usado in POWERUPS else usado
-            return f"No puedes combinar {nom} con {otro} en la misma pregunta."
-    return None
-
-
-def revocar_powerup_usado(usados: set[str], powerup_id: str) -> None:
-    usados.discard(powerup_id)
-
-
-def _incorrectas(p: Pregunta) -> list[str]:
-    correcta = p.correcta if p.correcta in LETRAS_OPCION else ""
-    return [letra for letra in LETRAS_OPCION if letra != correcta and p.opciones.get(letra)]
-
-
-def letras_ocultas_fifty_fifty(p: Pregunta, rng: random.Random | None = None) -> frozenset[str]:
-    rng = rng or random.Random()
-    malas = _incorrectas(p)
-    rng.shuffle(malas)
-    return frozenset(malas[:2])
-
-
-def letras_ocultas_bomba(p: Pregunta, rng: random.Random | None = None) -> frozenset[str]:
-    rng = rng or random.Random()
-    malas = _incorrectas(p)
-    if not malas:
-        return frozenset()
-    return frozenset({rng.choice(malas)})
-
-
-def letras_ocultas_por_cantidad(
+def letras_ocultas_niebla(
     p: Pregunta,
-    cantidad: int,
+    cantidad: int = 1,
     *,
     semilla: int,
 ) -> frozenset[str]:
+    """Oculta respuestas al azar (correcta o incorrecta); como máximo 1 en niebla."""
     if cantidad <= 0:
         return frozenset()
+    letras = list(p.opciones.keys())
     rng = random.Random(semilla * 31 + len(p.texto))
-    malas = _incorrectas(p)
-    rng.shuffle(malas)
-    return frozenset(malas[: min(cantidad, len(malas))])
-
-
-def texto_pregunta_visible(texto: str, fraccion: float) -> str:
-    """Recorta el enunciado y tapa el resto (evento niebla)."""
-    if fraccion >= 1.0 or not texto.strip():
-        return texto
-    fraccion = max(0.2, min(1.0, fraccion))
-    corte = max(8, int(len(texto) * fraccion))
-    visible = texto[:corte].rstrip()
-    if len(visible) >= len(texto):
-        return texto
-    resto = len(texto) - len(visible)
-    return f"{visible} {'▓' * min(48, max(8, resto))}"
+    rng.shuffle(letras)
+    return frozenset(letras[: min(cantidad, len(letras), 1)])
 
 
 def _generar_recompensa_aleatoria(
     rng: random.Random,
     *,
     numero_pregunta: int,
+    er: EstadoResistencia,
+    estado: EstadoPartida,
 ) -> EventoRecompensaResistencia:
 
     factor_bueno = max(0.08, factor_bueno_resistencia(numero_pregunta))
     factor_malo = max(0.08, factor_malo_resistencia(numero_pregunta))
-    tabla = [
-        (0.22 * factor_bueno, EventoRecompensaResistencia("¡Vida extra!", delta_vidas=1), False),
-        (0.12 * factor_bueno, EventoRecompensaResistencia("Corazón máximo +1", delta_vidas_max=1), False),
+    opciones: list[tuple[float, EventoRecompensaResistencia]] = []
+
+    vidas = estado.vidas_restantes
+    if vidas is not None and vidas < er.vidas_max:
+        opciones.append(
+            (
+                0.20 * factor_bueno,
+                EventoRecompensaResistencia("¡Vida extra!", delta_vidas=1),
+            )
+        )
+    opciones.append(
         (
-            0.16 * factor_malo,
+            0.10 * factor_bueno,
+            EventoRecompensaResistencia("Corazón máximo +1", delta_vidas_max=1),
+        )
+    )
+    opciones.append(
+        (
+            0.14 * factor_malo,
             EventoRecompensaResistencia("Corazón máximo −1", delta_vidas_max=-1),
-            True,
-        ),
-    ]
-    roll = rng.random()
+        )
+    )
+    opciones.append(
+        (
+            0.06 * factor_bueno,
+            EventoRecompensaResistencia(
+                "Amuleto arcade",
+                bonus_proximo_acierto=20,
+            ),
+        )
+    )
+
+    total = sum(p for p, _ in opciones)
+    roll = rng.random() * total
     acum = 0.0
-    for peso, evento, _es_malo in tabla:
+    for peso, evento in opciones:
         acum += peso
         if roll < acum:
             return evento
@@ -616,6 +498,7 @@ def _generar_recompensa_aleatoria(
 
 def tirar_recompensas_tras_acierto(
     er: EstadoResistencia,
+    estado: EstadoPartida,
     *,
     numero_pregunta: int,
 ) -> list[EventoRecompensaResistencia]:
@@ -628,25 +511,16 @@ def tirar_recompensas_tras_acierto(
         rng = rng_partida(er, er.tiradas_recompensa * 9973 + 42)
         if rng.random() > prob_tirada:
             continue
-        resultados.append(_generar_recompensa_aleatoria(rng, numero_pregunta=numero_pregunta))
+        resultados.append(
+            _generar_recompensa_aleatoria(
+                rng, numero_pregunta=numero_pregunta, er=er, estado=estado
+            )
+        )
     return resultados
 
 # --- Iconos ---
 
-EMOJI_POWERUP: dict[str, str] = {
-    "fifty_fifty": "✂️",
-    "bomba": "💣",
-    "skip": "⏭️",
-    "tiempo_extra": "⏱️",
-    "escudo": "🛡️",
-    "cambio": "🔄",
-}
-
 _SEPARADOR_EMOJI = "  "
-
-
-def emoji_powerup(powerup_id: str) -> str:
-    return EMOJI_POWERUP.get(powerup_id, "🎁")
 
 
 def etiqueta_powerup_con_emoji(powerup_id: str) -> str:
@@ -674,10 +548,6 @@ def emoji_evento_etiqueta(etiqueta: str) -> str:
     if etiqueta.startswith("Relámpago"):
         return "⚡"
     if etiqueta.startswith("Niebla:"):
-        if "enunciado y opciones" in etiqueta:
-            return EMOJI_NIEBLA_AMBOS
-        if "enunciado" in etiqueta:
-            return EMOJI_NIEBLA_ENUNCIADO
         return EMOJI_NIEBLA_OPCIONES
     if etiqueta == "Doble puntos":
         return "✨"
@@ -688,7 +558,7 @@ def emoji_evento_etiqueta(etiqueta: str) -> str:
     if etiqueta == "Pregunta extra difícil":
         return "☠️"
     if etiqueta.startswith("Bloque:"):
-        return "📚"
+        return EMOJI_BLOQUE_FILTRO_RESISTENCIA
     if "Maldición" in etiqueta:
         return "💀"
     if "Hito racha" in etiqueta:
@@ -703,10 +573,8 @@ def descripcion_evento_etiqueta(etiqueta: str) -> str:
     if etiqueta.startswith("Relámpago"):
         seg = etiqueta.split(":")[-1].strip() if ":" in etiqueta else ""
         return f"Menos tiempo para responder{f' ({seg})' if seg else ''}."
-    if etiqueta.startswith("Niebla:") and "enunciado" in etiqueta:
-        return "Solo verás parte del enunciado de la pregunta."
     if etiqueta.startswith("Niebla:"):
-        return "El juego ocultará una o más respuestas incorrectas."
+        return "Se ocultará 1 respuesta al azar (puede ser la correcta)."
     if etiqueta in {"Doble puntos", "Triple puntos"}:
         return f"Si aciertas, sumarás {etiqueta.lower()} en esta pregunta."
     if etiqueta == "Pregunta difícil":
@@ -717,21 +585,9 @@ def descripcion_evento_etiqueta(etiqueta: str) -> str:
 
 
 def emoji_recompensa_etiqueta(etiqueta: str) -> str:
-    if etiqueta.startswith("Objeto: "):
-        nombre = etiqueta.removeprefix("Objeto: ").strip()
-        for pid, (nom, _) in POWERUPS.items():
-            if nom == nombre:
-                return emoji_powerup(pid)
-        return "🎁"
-    if "Vida extra" in etiqueta:
-        return "❤️"
-    if "pierdes 1 vida" in etiqueta.lower():
-        return "💔"
-    if "máximo +1" in etiqueta or "maximo +1" in etiqueta.lower():
-        return "💖"
-    if "máximo −1" in etiqueta or ("maximo" in etiqueta.lower() and "−1" in etiqueta):
-        return "🩶"
-    return "🎁"
+    from Comun.emojis_partida import emoji_recompensa_por_etiqueta
+
+    return emoji_recompensa_por_etiqueta(etiqueta)
 
 
 def emoji_aviso_exclusiva() -> str:
@@ -764,9 +620,9 @@ def formatear_aviso_presion_racha(intensidad: float) -> str:
             "más allá del límite habitual."
         )
     elif intensidad < 0.35:
-        texto = "La racha aprieta: el enunciado será más difícil de leer."
+        texto = "La racha aprieta: puede ocultarse una respuesta."
     elif intensidad < 0.65:
-        texto = "Presión de la racha: menos margen y más niebla en esta pregunta."
+        texto = "Presión de la racha: menos margen y niebla en opciones."
     else:
         texto = "Presión de la racha: esta pregunta es especialmente exigente."
     return prefijar_emoji(texto, "⚖️")
@@ -799,17 +655,14 @@ def aplicar_presion_racha_modificadores(
     from Comun.eventos_partida import niebla_disponible_resistencia
 
     niebla_ok = niebla_disponible_resistencia(numero_pregunta)
-    if niebla_ok:
-        er.fraccion_enunciado = min(er.fraccion_enunciado, max(0.35, 1.0 - 0.35 * base))
     if base >= 0.25:
         seg = max(5, int(14 - 8 * base))
         if er.relampago_forzado_seg is None or er.relampago_forzado_seg > seg:
             er.relampago_forzado_seg = seg
     if niebla_ok and base >= 0.4:
-        n_ocultas = 1 if base < 0.7 else 2
-        er.letras_ocultas = er.letras_ocultas | letras_ocultas_por_cantidad(
+        er.letras_niebla = er.letras_niebla | letras_ocultas_niebla(
             p,
-            n_ocultas,
+            1,
             semilla=numero_pregunta + 9001,
         )
     if base >= 0.75:
@@ -821,29 +674,25 @@ def aplicar_presion_racha_modificadores(
         return
 
     exceso = t - 1.0
-    if niebla_ok:
-        er.fraccion_enunciado = min(er.fraccion_enunciado, max(0.15, 0.30 - 0.08 * min(exceso, 2.0)))
     seg_ext = max(3, int(6 - 2 * min(exceso, 1.5)))
     if er.relampago_forzado_seg is None or er.relampago_forzado_seg > seg_ext:
         er.relampago_forzado_seg = seg_ext
     if niebla_ok:
-        n_extra = min(2, 1 + int(exceso))
-        er.letras_ocultas = er.letras_ocultas | letras_ocultas_por_cantidad(
+        er.letras_niebla = er.letras_niebla | letras_ocultas_niebla(
             p,
-            n_extra,
+            1,
             semilla=numero_pregunta + 17003 + er.racha,
         )
     er.objetos_bloqueados = True
-    if niebla_ok and exceso >= 0.5:
-        er.fraccion_enunciado = min(er.fraccion_enunciado, 0.22)
 
 def rng_partida(er: EstadoResistencia, clave: int) -> random.Random:
-    base = er.semilla_partida if er.semilla_partida is not None else 0
-    return random.Random(base * 1_000_003 + clave * 104_729)
+    return rng_desde_semilla(er.semilla_partida, clave)
 
 
 def configurar_partida_resistencia(er: EstadoResistencia, *, preset_id: str) -> None:
-    del er, preset_id
+    del preset_id
+    if er.semilla_partida is None:
+        er.semilla_partida = semilla_partida_aleatoria()
 
 
 def texto_progreso_resistencia(er: EstadoResistencia, numero_pregunta: int) -> str:
@@ -852,6 +701,8 @@ def texto_progreso_resistencia(er: EstadoResistencia, numero_pregunta: int) -> s
 
 def _pregunta_cumple_bloque(p: Pregunta, bloque: BloqueFiltroActivo) -> bool:
     if bloque.materia and p.materia != bloque.materia:
+        return False
+    if bloque.solo_revisadas and p.fuente != "dataset":
         return False
     if bloque.tipo and p.tipo != bloque.tipo:
         return False
@@ -862,6 +713,47 @@ def _pregunta_cumple_bloque(p: Pregunta, bloque: BloqueFiltroActivo) -> bool:
     if bloque.semestre and p.semestre != bloque.semestre:
         return False
     return True
+
+
+def _contar_preguntas_bloque(pool: list[Pregunta], bloque: BloqueFiltroActivo) -> int:
+    return sum(1 for p in pool if _pregunta_cumple_bloque(p, bloque))
+
+
+def _bloque_viable_en_pool(
+    pool: list[Pregunta],
+    bloque: BloqueFiltroActivo,
+    *,
+    minimo: int,
+) -> bool:
+    return _contar_preguntas_bloque(pool, bloque) >= minimo
+
+
+def _bloque_filtro_grupo(
+    pool: list[Pregunta],
+    grupo: str,
+    n: int,
+) -> BloqueFiltroActivo:
+    clave = str(grupo).strip()
+    if clave in GRUPOS_TEMATICOS:
+        return BloqueFiltroActivo(
+            etiqueta=_etiqueta_bloque(n, f"de {GRUPOS_TEMATICOS[clave]}"),
+            preguntas_restantes=n,
+            grupo=grupo,
+        )
+    materias = sorted({p.materia for p in pool if p.grupo == grupo and p.materia})
+    if len(materias) == 1:
+        materia = materias[0]
+        return BloqueFiltroActivo(
+            etiqueta=_etiqueta_bloque(n, f"de {materia}"),
+            preguntas_restantes=n,
+            materia=materia,
+            solo_revisadas=True,
+        )
+    return BloqueFiltroActivo(
+        etiqueta=_etiqueta_bloque(n, _descripcion_grupo_tematico(grupo, pool)),
+        preguntas_restantes=n,
+        grupo=grupo,
+    )
 
 
 def consumir_bloque_filtro(er: EstadoResistencia) -> None:
@@ -881,6 +773,7 @@ def consumir_bloque_filtro(er: EstadoResistencia) -> None:
         grupo=bf.grupo,
         curso=bf.curso,
         semestre=bf.semestre,
+        solo_revisadas=bf.solo_revisadas,
     )
 
 
@@ -926,31 +819,26 @@ def _generar_bloque_filtro(
                 etiqueta=_etiqueta_bloque(n, f"de {mat}"),
                 preguntas_restantes=n,
                 materia=mat,
+                solo_revisadas=True,
             )
         )
     opciones.append(
         BloqueFiltroActivo(
-            etiqueta=_etiqueta_bloque(n, _descripcion_tipo("Calculo")),
+            etiqueta=_etiqueta_bloque(n, _descripcion_tipo_bloque("Calculo")),
             preguntas_restantes=n,
             tipo="Calculo",
         )
     )
     opciones.append(
         BloqueFiltroActivo(
-            etiqueta=_etiqueta_bloque(n, _descripcion_tipo("Teoria")),
+            etiqueta=_etiqueta_bloque(n, _descripcion_tipo_bloque("Teoria")),
             preguntas_restantes=n,
             tipo="Teoria",
         )
     )
     if grupos:
         g = rng.choice(grupos)
-        opciones.append(
-            BloqueFiltroActivo(
-                etiqueta=_etiqueta_bloque(n, _descripcion_grupo_tematico(g, pool)),
-                preguntas_restantes=n,
-                grupo=g,
-            )
-        )
+        opciones.append(_bloque_filtro_grupo(pool, g, n))
     cursos = _cursos_en_pool(pool)
     if cursos:
         curso = rng.choice(cursos)
@@ -972,102 +860,25 @@ def _generar_bloque_filtro(
                 semestre=semestre,
             )
         )
-    return rng.choice(opciones)
-
-
-def _riesgo_apuesta(apuesta: ApuestaRiesgo) -> float:
-    r = apuesta.recompensa
-    c = apuesta.coste
-    score = (c.vidas_fallo - 1) * 1.25
-    score += c.puntos_perdidos / 30.0
-    if c.pierde_powerup_aleatorio:
-        score += 1.0
-    if c.pierde_todos_objetos:
-        score += 2.0
-    if c.fin_partida:
-        score += 5.0
-    score -= (r.mult_puntos - 1) * 0.35
-    score -= r.delta_vidas * 0.9
-    if r.powerup_id or r.powerup_aleatorio:
-        score -= 0.7
-    return max(0.4, score)
-
-
-def _elegir_apuesta(rng: random.Random, numero_pregunta: int) -> ApuestaRiesgo:
-    """Elige una apuesta; al avanzar la partida pesan más las de mayor riesgo."""
-    t = factor_progreso_resistencia(numero_pregunta)
-    centro = 1.0 + t * 4.5
-    pesos = [1.0 / (0.6 + abs(_riesgo_apuesta(ap) - centro)) for ap in APUESTAS_DISPONIBLES]
-    return rng.choices(APUESTAS_DISPONIBLES, weights=pesos, k=1)[0]
-
-
-def oferta_apuesta_para_pregunta(
-    numero_pregunta: int,
-    er: EstadoResistencia,
-) -> ApuestaRiesgo | None:
-    if numero_pregunta < 8:
+    viables = [
+        bloque
+        for bloque in opciones
+        if _bloque_viable_en_pool(pool, bloque, minimo=n)
+    ]
+    if not viables:
         return None
-    if er.maldicion is not None:
-        return None
-    if er.apuesta_activa is not None:
-        return None
-    rng = rng_partida(er, numero_pregunta * 53 + 4049)
-
-    prob = probabilidad_buena_resistencia(numero_pregunta) * 0.34
-    if rng.random() > prob:
-        return None
-    return _elegir_apuesta(rng, numero_pregunta)
-
-
-def _texto_recompensa_apuesta(recompensa: RecompensaApuesta) -> str:
-
-    partes: list[str] = []
-    if recompensa.mult_puntos > 1:
-        partes.append(f"×{recompensa.mult_puntos} puntos")
-    if recompensa.delta_vidas > 0:
-        n = recompensa.delta_vidas
-        partes.append(f"+{n} vida" + ("s" if n > 1 else ""))
-    if recompensa.powerup_id:
-        nom = etiqueta_powerup(recompensa.powerup_id)
-        if recompensa.cantidad_powerup > 1:
-            partes.append(f"{recompensa.cantidad_powerup}× {nom}")
-        else:
-            partes.append(f"objeto {nom}")
-    elif recompensa.powerup_aleatorio:
-        partes.append("un objeto al azar")
-    return ", ".join(partes) if partes else "sin bonus extra"
-
-
-def _texto_coste_apuesta(coste: CosteApuesta) -> str:
-    if coste.fin_partida:
-        return "la partida termina al instante"
-    partes: list[str] = []
-    if coste.vidas_fallo <= 1:
-        partes.append("pierdes 1 vida como de costumbre")
-    else:
-        partes.append(f"pierdes {coste.vidas_fallo} vidas")
-    if coste.puntos_perdidos > 0:
-        partes.append(f"−{coste.puntos_perdidos} puntos")
-    if coste.pierde_todos_objetos:
-        partes.append("pierdes todos los objetos")
-    elif coste.pierde_powerup_aleatorio:
-        partes.append("pierdes un objeto al azar")
-    return "; ".join(partes)
-
-
-def formatear_aviso_apuesta(apuesta: ApuestaRiesgo) -> str:
-    recomp = _texto_recompensa_apuesta(apuesta.recompensa)
-    coste = _texto_coste_apuesta(apuesta.coste)
-    texto = f"{apuesta.etiqueta}: si aciertas, {recomp}; si fallas, {coste}."
-    return prefijar_emoji(texto, "🎰")
+    return rng.choice(viables)
 
 
 def preparar_eventos_nuevo_turno(
     er: EstadoResistencia,
     pool: list[Pregunta],
     numero_pregunta: int,
+    estado: EstadoPartida,
 ) -> list[str]:
-    """Eventos al cargar una pregunta nueva (presión de racha, bloque, apuesta)."""
+    """Eventos al cargar una pregunta nueva (presión de racha, bloque, evento sí/no)."""
+    from Comun.eventos_partida import elegir_evento_si_no
+
     avisos: list[str] = []
     aviso_presion = preparar_presion_racha_turno(er, numero_pregunta)
     if aviso_presion:
@@ -1076,8 +887,8 @@ def preparar_eventos_nuevo_turno(
     if bloque:
         er.bloque_filtro = bloque
         avisos.append(formatear_aviso_bloque(bloque.etiqueta))
-    if not er.apuesta_oferta:
-        er.apuesta_oferta = oferta_apuesta_para_pregunta(numero_pregunta, er)
+    if not er.evento_si_no:
+        er.evento_si_no = elegir_evento_si_no(numero_pregunta, er, estado)
     aviso_bloque = _intentar_activar_desafio_bloque(er, numero_pregunta)
     if aviso_bloque:
         avisos.append(aviso_bloque)
@@ -1085,7 +896,7 @@ def preparar_eventos_nuevo_turno(
 
 
 def formatear_aviso_bloque(etiqueta: str) -> str:
-    return prefijar_emoji(etiqueta, "📚")
+    return prefijar_emoji(etiqueta, EMOJI_BLOQUE_FILTRO_RESISTENCIA)
 
 
 def formatear_aviso_maldicion(etiqueta: str) -> str:
@@ -1114,12 +925,21 @@ def _activar_maldicion(er: EstadoResistencia, numero_pregunta: int) -> Maldicion
     return MaldicionActiva(id=cid, etiqueta=etiqueta, preguntas_restantes=duracion)
 
 
-def aplicar_efectos_maldicion(er: EstadoResistencia) -> None:
+def aplicar_efectos_maldicion(
+    er: EstadoResistencia,
+    p: Pregunta | None = None,
+    *,
+    numero_pregunta: int = 0,
+) -> None:
     if not er.maldicion:
         return
     cid = er.maldicion.id
-    if cid == "niebla":
-        er.fraccion_enunciado = min(er.fraccion_enunciado, 0.45)
+    if cid == "niebla" and p is not None:
+        er.letras_niebla = er.letras_niebla | letras_ocultas_niebla(
+            p,
+            1,
+            semilla=numero_pregunta + 5501,
+        )
     elif cid == "sin_objetos":
         er.objetos_bloqueados = True
     elif cid == "relampago":
@@ -1153,7 +973,7 @@ def procesar_post_turno_resistencia(
     avisos.extend(_tick_desafio_bloque_tras_acierto(er, acierto=acierto))
 
     er.apuesta_activa = None
-    er.apuesta_oferta = None
+    er.evento_si_no = None
     return avisos
 
 
@@ -1168,6 +988,14 @@ def pregunta_compatible_bloque(p: Pregunta, er: EstadoResistencia) -> bool:
 def formatear_aviso_recompensa(etiqueta: str) -> str:
     if etiqueta.startswith("Objeto: "):
         texto = f"¡Obtuviste {etiqueta.removeprefix('Objeto: ')}!"
+    elif "Amuleto arcade" in etiqueta:
+        texto = "¡Amuleto activado! +20 pts en tu próximo acierto."
+    elif "Vida extra" in etiqueta:
+        texto = "¡Recompensa! +1 vida."
+    elif "máximo +1" in etiqueta or "maximo +1" in etiqueta.lower():
+        texto = "¡Recompensa! Corazón máximo +1."
+    elif "máximo −1" in etiqueta or ("maximo" in etiqueta.lower() and "−1" in etiqueta):
+        texto = "¡Recompensa! Corazón máximo −1."
     else:
         texto = etiqueta
     return prefijar_emoji(texto, emoji_recompensa_etiqueta(etiqueta))
@@ -1180,10 +1008,7 @@ def formatear_aviso_evento(etiqueta: str) -> str:
     elif etiqueta in {"Doble puntos", "Triple puntos"}:
         texto = f"¡{etiqueta} en esta pregunta!"
     elif etiqueta.startswith("Niebla:"):
-        if "enunciado" in etiqueta:
-            texto = "¡Parte del enunciado estará oculta!"
-        else:
-            texto = f"¡{etiqueta}!"
+        texto = f"¡{etiqueta}!"
     elif etiqueta in {"Pregunta difícil", "Pregunta extra difícil"}:
         texto = f"¡{etiqueta}!"
     else:
@@ -1196,6 +1021,8 @@ def formatear_aviso_evento(etiqueta: str) -> str:
 def aviso_apuesta_activa(er: EstadoResistencia) -> str | None:
     if not er.apuesta_activa:
         return None
+    from Comun.eventos_partida import formatear_aviso_apuesta
+
     return formatear_aviso_apuesta(er.apuesta_activa)
 
 
@@ -1209,7 +1036,7 @@ class ResultadoTurnoResistencia:
 
 def crear_estado_resistencia(vidas_iniciales: int) -> EstadoResistencia:
     er = EstadoResistencia()
-    er.vidas_max = max(vidas_iniciales, er.vidas_max)
+    er.vidas_max = vidas_iniciales
     return er
 
 
@@ -1219,21 +1046,16 @@ def aplicar_modificadores_visuales_escalada(
     p: Pregunta,
     numero_pregunta: int,
 ) -> None:
-    """Oculta respuestas o parte del enunciado según eventos de la escalada."""
-    er.fraccion_enunciado = escalada.fraccion_enunciado
+    """Oculta respuestas según eventos de la escalada (niebla solo en opciones)."""
     if escalada.opciones_ocultas > 0:
-        ocultas = letras_ocultas_por_cantidad(
+        ocultas = letras_ocultas_niebla(
             p,
-            escalada.opciones_ocultas,
+            min(escalada.opciones_ocultas, 1),
             semilla=numero_pregunta,
         )
-        er.letras_ocultas = er.letras_ocultas | ocultas
+        er.letras_niebla = er.letras_niebla | ocultas
     aplicar_presion_racha_modificadores(er, p, numero_pregunta)
-    aplicar_efectos_maldicion(er)
-
-
-def texto_pregunta_para_turno(p: Pregunta, er: EstadoResistencia) -> str:
-    return texto_pregunta_visible(p.texto, er.fraccion_enunciado)
+    aplicar_efectos_maldicion(er, p, numero_pregunta=numero_pregunta)
 
 
 def tiempo_pregunta_efectivo(reglas_seg: int | None, er: EstadoResistencia) -> int | None:
@@ -1260,6 +1082,8 @@ def aplicar_recompensa(
             estado.vidas_restantes = er.vidas_max
     if evento.delta_vidas and estado.vidas_restantes is not None:
         estado.vidas_restantes = max(0, min(er.vidas_max, estado.vidas_restantes + evento.delta_vidas))
+    if evento.bonus_proximo_acierto:
+        er.bonus_proximo_acierto = evento.bonus_proximo_acierto
     if evento.powerup_id:
         er.agregar_powerup(evento.powerup_id, evento.cantidad_powerup)
     er.ultimo_evento = evento.etiqueta
@@ -1270,7 +1094,7 @@ def usar_powerup(
     er: EstadoResistencia,
     p: Pregunta,
 ) -> str | None:
-    """Consume un comodín; devuelve mensaje de error o None si OK."""
+    """Consume un powerup almacenable; devuelve mensaje de error o None si OK."""
     if er.objetos_bloqueados:
         return "Maldición activa: no puedes usar objetos."
     err_uso = puede_usar_powerup_en_pregunta(powerup_id, er.powerups_usados_en_pregunta)
@@ -1292,6 +1116,7 @@ def usar_powerup(
     elif powerup_id == "cambio":
         pass
     else:
+        er.agregar_powerup(powerup_id)
         return f"Objeto desconocido: {powerup_id}"
     er.powerups_usados_en_pregunta.add(powerup_id)
     return None
@@ -1332,7 +1157,7 @@ def aplicar_bonificaciones_puntos_resistencia(
     if mult_apuesta > 1:
         extra += delta * (mult_apuesta - 1)
     if extra > 0:
-        estado.puntos_arcade += int(extra)
+        estado.puntos_arcade, _ = sumar_puntos_arcade(estado.puntos_arcade, int(extra))
 
 
 def _aplicar_recompensa_apuesta_exito(
@@ -1389,8 +1214,11 @@ def _aplicar_penalizacion_apuesta(
     if extra > 0 and estado.vidas_restantes is not None:
         estado.vidas_restantes = max(0, estado.vidas_restantes - extra)
     if coste.puntos_perdidos > 0:
-        estado.puntos_arcade = max(0, estado.puntos_arcade - coste.puntos_perdidos)
-        avisos.append(f"Apuesta: −{coste.puntos_perdidos} puntos")
+        estado.puntos_arcade, aplicado = sumar_puntos_arcade(
+            estado.puntos_arcade, -coste.puntos_perdidos
+        )
+        if aplicado < 0:
+            avisos.append(f"Apuesta: {aplicado} puntos")
     if coste.pierde_todos_objetos and er.inventario:
         er.inventario.clear()
         avisos.append("Apuesta: pierdes todos los objetos")
@@ -1436,6 +1264,11 @@ def procesar_turno_resistencia(
 
     feedback = evaluar_respuesta(p, estado, resultado)
 
+    if acierto and er.bonus_proximo_acierto:
+        bonus = er.bonus_proximo_acierto
+        estado.puntos_arcade, _ = sumar_puntos_arcade(estado.puntos_arcade, bonus)
+        er.bonus_proximo_acierto = 0
+
     _fin_apuesta, avisos_apuesta_fallo = _aplicar_penalizacion_apuesta(
         estado,
         er,
@@ -1456,7 +1289,9 @@ def procesar_turno_resistencia(
                 estado, er, numero_pregunta=indice_pregunta
             )
         )
-        for recompensa in tirar_recompensas_tras_acierto(er, numero_pregunta=indice_pregunta):
+        for recompensa in tirar_recompensas_tras_acierto(
+            er, estado, numero_pregunta=indice_pregunta
+        ):
             aplicar_recompensa(estado, er, recompensa)
             avisos_post.append(formatear_aviso_recompensa(recompensa.etiqueta))
     elif fallo:
@@ -1491,10 +1326,7 @@ def procesar_turno_resistencia(
 
 
 __all__ = [
-    "APUESTAS_DISPONIBLES",
-    "ApuestaRiesgo",
     "BloqueFiltroActivo",
-    "CosteApuesta",
     "CuotasBancoResistencia",
     "DesafioBloqueTiempoResistencia",
     "EMOJI_POWERUP",
@@ -1515,7 +1347,6 @@ __all__ = [
     "PROB_BUENA_INICIAL",
     "PROB_MALA_FINAL",
     "PROB_MALA_INICIAL",
-    "RecompensaApuesta",
     "ResultadoTurnoResistencia",
     "VIDAS_MAX_ABSOLUTO",
     "VIDAS_MAX_INICIAL",
@@ -1547,7 +1378,6 @@ __all__ = [
     "factor_progreso_resistencia",
     "finalizar_partida_por_desafio_bloque",
     "formatear_aviso_desafio_bloque",
-    "formatear_aviso_apuesta",
     "formatear_aviso_bloque",
     "formatear_aviso_evento",
     "formatear_aviso_maldicion",
@@ -1556,8 +1386,8 @@ __all__ = [
     "intensidad_presion_racha",
     "letras_ocultas_bomba",
     "letras_ocultas_fifty_fifty",
+    "letras_ocultas_niebla",
     "letras_ocultas_por_cantidad",
-    "oferta_apuesta_para_pregunta",
     "preparar_eventos_nuevo_turno",
     "preparar_presion_racha_turno",
     "presion_racha_umbral",
@@ -1573,8 +1403,6 @@ __all__ = [
     "prefijar_emoji",
     "rng_partida",
     "separar_emoji_mensaje",
-    "texto_pregunta_para_turno",
-    "texto_pregunta_visible",
     "texto_progreso_resistencia",
     "texto_segmento_desafio_bloque",
     "tiempo_pregunta_efectivo",

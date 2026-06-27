@@ -8,4 +8,6 @@ Regenerar (desde la raíz del proyecto):
 python Docs/generar_figuras_memoria.py
 ```
 
+Incluye figuras de arquitectura, modo historia, Monte Carlo (§5.7) y análisis de pity (§5.8).
+
 Requisito: `matplotlib` (`pip install -r requirements.txt`).

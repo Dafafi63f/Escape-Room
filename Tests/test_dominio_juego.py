@@ -190,6 +190,36 @@ class TestDominioJuego(unittest.TestCase):
         )
         self.assertEqual(resultado.vidas_restantes, 2)
 
+    def test_fallo_arcade_no_deja_puntos_negativos(self) -> None:
+        from Comun.reglas_partida import SistemaPuntuacion, sumar_puntos_arcade
+
+        self.assertEqual(sumar_puntos_arcade(0, -10), (0, 0))
+        self.assertEqual(sumar_puntos_arcade(3, -10), (0, -3))
+
+        reglas = self._backend.reglas_libre(
+            ConfigReglasLibre(
+                modo_infinito=False,
+                n_preguntas=5,
+                vidas=3,
+                sistema=SistemaPuntuacion.ARCADE,
+            )
+        )
+        from Comun.motor_nucleo import EstadoPartida, ResultadoRespuesta, evaluar_respuesta
+
+        estado = EstadoPartida(
+            nombre="Test",
+            reglas=reglas,
+            vidas_restantes=reglas.vidas,
+            puntos_arcade=0,
+        )
+        fb = evaluar_respuesta(
+            self._backend.pregunta_ejemplo(),
+            estado,
+            ResultadoRespuesta(acierto=False, respuesta="A"),
+        )
+        self.assertEqual(estado.puntos_arcade, 0)
+        self.assertIn("(0 puntos)", fb.mensaje)
+
     def test_evaluar_tiempo_agotado(self) -> None:
         from Comun.reglas_partida import SistemaPuntuacion
 
@@ -251,7 +281,7 @@ class TestDominioJuego(unittest.TestCase):
         self.assertIn("3/10", texto)
 
     def test_nombre_jugador_defecto(self) -> None:
-        from Comun.jugador import NOMBRE_JUGADOR_DEFECTO
+        from Comun.preferencias_grafico import NOMBRE_JUGADOR_DEFECTO
 
         self.assertEqual(self._backend.nombre_jugador_defecto(), NOMBRE_JUGADOR_DEFECTO)
 

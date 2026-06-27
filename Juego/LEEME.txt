@@ -1,0 +1,33 @@
+CUESTIONARIO MATCAD — Cómo jugar (zip portable)
+================================================
+
+Este paquete NO incluye Python. Debes instalarlo en el PC.
+
+PASOS (Windows)
+---------------
+1. Descomprime el zip en una carpeta (ej. Escritorio\MATCAD).
+   Debes ver Data\ y la carpeta Juego\ (con LEEME.txt y COMO_JUGAR.md).
+2. Instala Python 3.10 o superior desde https://www.python.org/downloads/
+   Marca "Add python.exe to PATH" en el instalador.
+3. Abre CMD o PowerShell en la carpeta descomprimida (donde esta Data\)
+   y ejecuta:
+     pip install -r Juego\requirements.txt
+4. Arranca el juego:
+     doble clic en Juego\Distribucion\Jugar.bat
+   O desde esa misma carpeta:
+     python Juego\juego_grafico.py
+
+REQUISITOS
+----------
+- Python 3.10+ con pip (obligatorio para este zip).
+- Red solo la primera vez (pip install). Luego el juego funciona offline.
+- Windows 10/11 recomendado; en Linux/macOS usa los mismos comandos con /.
+
+LIMITACIONES
+------------
+- Este zip no trae ejecutable (.exe) ni scripts de empaquetado.
+  Para la version .exe, usa el repositorio completo o la entrega con
+  juego_grafico.exe en Juego\Distribucion\ (ver COMO_JUGAR.md en Juego\).
+- Si no puedes instalar Python (politica del centro), este paquete no servira.
+
+Mas ayuda: Juego\COMO_JUGAR.md (en el zip) o el repositorio completo.

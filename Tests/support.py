@@ -21,6 +21,11 @@ def ensure_root_on_path() -> None:
     _prepend(ROOT)
 
 
+def ensure_files_path() -> None:
+    ensure_root_on_path()
+    _prepend(ROOT / "Files")
+
+
 def ensure_juego_path() -> None:
     ensure_root_on_path()
     _prepend(JUEGO_DIR)

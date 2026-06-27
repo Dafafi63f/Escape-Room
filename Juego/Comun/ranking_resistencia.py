@@ -10,7 +10,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from Comun.jugador import NOMBRE_JUGADOR_DEFECTO, nombre_jugador_efectivo
+from Comun.preferencias_grafico import NOMBRE_JUGADOR_DEFECTO, nombre_jugador_efectivo
 from Comun.preferencias_ranking import (
     ModoRetencionRanking,
     PreferenciasRanking,

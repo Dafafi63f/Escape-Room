@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Modo escape room: salas con tres puertas (rasgos de puerta + evento de contenido)."""
+"""Modo escape room: salas con tres puertas (rasgos de puerta + evento de contenido).
+
+Generación procedural por semilla aleatoria en cada partida (``semilla_partida_escape``).
+Pity de descanso, tienda y botín; la tienda se pospone si no hay puntos para comprar.
+Economía e inventario: ``economia_partida`` + ``objetos_partida`` vía ``tienda_escape``.
+"""
 
 from __future__ import annotations
 
@@ -54,7 +59,6 @@ OPCIONES_BANCO_ESCAPE = OPCIONES_BANCO_JUEGO
 __all__ = [
     "AjustesEscapeRoom",
     "ConfigEscapeRoom",
-    "GuionEscapeRoom",
     "ID_PRESET_ESCAPE_ROOM",
     "OPCIONES_BANCO_ESCAPE",
     "PUERTAS_POR_SALA",
@@ -78,7 +82,6 @@ __all__ = [
     "semilla_partida_escape",
     "tamanos_puerta_para_sala",
     "total_preguntas_escape",
-    "total_preguntas_guion",
 ]
 
 
@@ -215,6 +218,8 @@ def generar_puertas_sala(
     puertas_por_sala: int = PUERTAS_POR_SALA,
     n_salas: int = SALAS_DEFECTO,
     pity: PityPuertasEspecialesEscape | None = None,
+    estado=None,
+    vidas_max: int | None = None,
 ) -> tuple[tuple[PuertaEscape, ...], PityPuertasEspecialesEscape]:
     if not materias_pool:
         raise ValueError("El pool de materias del escape room está vacío.")
@@ -231,17 +236,165 @@ def generar_puertas_sala(
             puertas_por_sala=puertas_por_sala,
             n_salas=n_salas,
             pity=estado_pity,
+            estado=estado,
+            vidas_max=vidas_max,
         )
         firmas = [firma_puerta_escape(p) for p in puertas]
         if len(set(firmas)) == len(firmas):
             estado_pity = actualizar_pity_tras_sala(
-                estado_pity, puertas, numero_sala=sala_idx + 1
+                estado_pity,
+                puertas,
+                numero_sala=sala_idx + 1,
+                estado=estado,
+                vidas_max=vidas_max,
             )
             return puertas, estado_pity
     estado_pity = actualizar_pity_tras_sala(
-        estado_pity, puertas, numero_sala=sala_idx + 1
+        estado_pity,
+        puertas,
+        numero_sala=sala_idx + 1,
+        estado=estado,
+        vidas_max=vidas_max,
     )
     return puertas, estado_pity
+
+
+def _reconstruir_puerta_con_preguntas(
+    indice: int,
+    *,
+    plantilla,
+    perfil_id: str | None,
+    n_preg: int,
+    numero_sala: int,
+    sala_idx: int,
+    semilla: int,
+    materias_base: tuple[str, ...],
+    materias_pool: tuple[str, ...],
+    materias_puerta: tuple[str, ...],
+    grupos_base: tuple[str, ...],
+    grupos_pool: tuple[str, ...],
+    pool_preguntas: list[Pregunta],
+    n_salas: int,
+    rng: random.Random,
+    pity: PityPuertasEspecialesEscape,
+    estado=None,
+    vidas_max: int | None = None,
+) -> PuertaEscape:
+    mods = generar_modificadores_puerta(
+        numero_sala=numero_sala,
+        semilla=semilla + sala_idx * 1009,
+        indice_puerta=indice,
+        pausas_usadas=frozenset(RASGOS_PUERTA_SIN_PREGUNTA_ESCAPE),
+        pity=pity,
+        estado=estado,
+        vidas_max=vidas_max,
+    )
+    if mods.sin_pregunta:
+        n_preg = 0
+        evento = instanciar_evento_contenido(
+            evento_por_id("puerta_materia"),
+            materias_pool=materias_base,
+            grupos_pool=(),
+            semilla=semilla,
+            indice_puerta=sala_idx * 10 + indice,
+            materia_preferida=materias_base[indice % len(materias_base)],
+        )
+    else:
+        plantilla_usada = plantilla
+        perfil_usado = perfil_id
+        if (
+            n_preg >= 10
+            and numero_sala >= perfil_materia_por_id("dificil").nivel_min_sala
+            and rng.random() < 0.6
+        ):
+            perfil_dificil = perfil_materia_por_id("dificil")
+            opts_jefe = plantilla.contenido_escape
+            if opts_jefe and opts_jefe.usa_grupo:
+                plantilla_usada = definicion_grupo_con_perfil(perfil_dificil)
+            else:
+                plantilla_usada = definicion_materia_con_perfil(perfil_dificil)
+            perfil_usado = "dificil"
+        materia_pref = materias_puerta[indice] if indice < len(materias_puerta) else None
+        opts = plantilla_usada.contenido_escape
+        usa_grupo = bool(opts and opts.usa_grupo)
+        evento = instanciar_evento_contenido(
+            plantilla_usada,
+            materias_pool=materias_base if not usa_grupo else materias_pool,
+            grupos_pool=grupos_base if usa_grupo else grupos_pool,
+            semilla=semilla,
+            indice_puerta=sala_idx * 10 + indice,
+            materia_preferida=None if usa_grupo else materia_pref,
+            perfil_id=perfil_usado,
+        )
+    puerta = PuertaEscape(
+        indice=indice,
+        n_preguntas=n_preg if not mods.sin_pregunta else 0,
+        modificadores=mods,
+        evento=evento,
+    )
+    return asegurar_puerta_viable(
+        pool_preguntas,
+        puerta,
+        numero_sala=numero_sala,
+        n_salas=n_salas,
+        semilla=semilla + sala_idx * 1009,
+        indice_puerta=indice,
+        materias_pool=materias_base,
+        grupos_pool=grupos_base,
+    )
+
+
+def _normalizar_puertas_tienda_escape(
+    puertas: list[PuertaEscape],
+    *,
+    numero_sala: int,
+    semilla: int,
+    sala_idx: int,
+    materias_base: tuple[str, ...],
+    materias_pool: tuple[str, ...],
+    materias_puerta: tuple[str, ...],
+    grupos_base: tuple[str, ...],
+    grupos_pool: tuple[str, ...],
+    pool_preguntas: list[Pregunta],
+    plantillas,
+    tamanos: tuple[int, ...],
+    n_salas: int,
+    rng: random.Random,
+    pity: PityPuertasEspecialesEscape,
+    estado=None,
+    vidas_max: int | None = None,
+) -> None:
+    """Quita tiendas inviables y restaura una puerta con preguntas (sin convertir en descanso)."""
+    if estado is None:
+        return
+    from Comun.tienda_escape import puede_visitar_tienda_escape, puerta_es_tienda
+
+    if puede_visitar_tienda_escape(numero_sala, estado, vidas_max=vidas_max):
+        return
+    for i, puerta in enumerate(puertas):
+        if not puerta_es_tienda(puerta):
+            continue
+        plantilla, perfil_id = plantillas[i]
+        puertas[i] = _reconstruir_puerta_con_preguntas(
+            i,
+            plantilla=plantilla,
+            perfil_id=perfil_id,
+            n_preg=tamanos[i],
+            numero_sala=numero_sala,
+            sala_idx=sala_idx,
+            semilla=semilla,
+            materias_base=materias_base,
+            materias_pool=materias_pool,
+            materias_puerta=materias_puerta,
+            grupos_base=grupos_base,
+            grupos_pool=grupos_pool,
+            pool_preguntas=pool_preguntas,
+            n_salas=n_salas,
+            rng=rng,
+            pity=pity,
+            estado=estado,
+            vidas_max=vidas_max,
+        )
 
 
 def _insertar_puerta_especial_escape(
@@ -323,6 +476,8 @@ def _aplicar_hard_pity_puertas_especiales(
     semilla: int,
     sala_idx: int,
     materias_base: tuple[str, ...],
+    estado=None,
+    vidas_max: int | None = None,
 ) -> None:
     """Inserta descanso o tienda si el hard pity lo exige y aún no hay ninguno en la sala."""
     if debe_garantizar_descanso_escape(pity, numero_sala):
@@ -335,14 +490,22 @@ def _aplicar_hard_pity_puertas_especiales(
             materias_base=materias_base,
         )
     if debe_garantizar_tienda_escape(pity, numero_sala):
-        _insertar_puerta_especial_escape(
-            puertas,
-            pausa_id="tienda",
-            semilla=semilla,
-            sala_idx=sala_idx,
-            numero_sala=numero_sala,
-            materias_base=materias_base,
-        )
+        tienda_viable = True
+        if estado is not None:
+            from Comun.tienda_escape import puede_visitar_tienda_escape
+
+            tienda_viable = puede_visitar_tienda_escape(
+                numero_sala, estado, vidas_max=vidas_max
+            )
+        if tienda_viable:
+            _insertar_puerta_especial_escape(
+                puertas,
+                pausa_id="tienda",
+                semilla=semilla,
+                sala_idx=sala_idx,
+                numero_sala=numero_sala,
+                materias_base=materias_base,
+            )
     if debe_garantizar_botin_escape(pity, numero_sala):
         _insertar_botin_en_puerta_escape(
             puertas,
@@ -362,6 +525,8 @@ def _construir_puertas_sala(
     puertas_por_sala: int,
     n_salas: int,
     pity: PityPuertasEspecialesEscape,
+    estado=None,
+    vidas_max: int | None = None,
 ) -> tuple[PuertaEscape, ...]:
     del sala
     numero_sala = sala_idx + 1
@@ -395,6 +560,8 @@ def _construir_puertas_sala(
             indice_puerta=i,
             pausas_usadas=frozenset(pausas_usadas),
             pity=pity,
+            estado=estado,
+            vidas_max=vidas_max,
         )
         if mods.sin_pregunta:
             for eid in mods.eventos_ids:
@@ -452,18 +619,33 @@ def _construir_puertas_sala(
         semilla=semilla,
         sala_idx=sala_idx,
         materias_base=materias_base,
+        estado=estado,
+        vidas_max=vidas_max,
+    )
+    _normalizar_puertas_tienda_escape(
+        puertas,
+        numero_sala=numero_sala,
+        semilla=semilla,
+        sala_idx=sala_idx,
+        materias_base=materias_base,
+        materias_pool=materias_pool,
+        materias_puerta=materias_puerta,
+        grupos_base=grupos_base,
+        grupos_pool=grupos_pool,
+        pool_preguntas=pool_preguntas,
+        plantillas=plantillas,
+        tamanos=tamanos,
+        n_salas=n_salas,
+        rng=rng,
+        pity=pity,
+        estado=estado,
+        vidas_max=vidas_max,
     )
     return tuple(puertas)
 
 
-def semilla_partida_escape(*, nombre: str) -> int:
-    from datetime import date
+def semilla_partida_escape() -> int:
+    """Semilla aleatoria al iniciar cada partida de escape room."""
+    from Comun.semillas import semilla_partida_aleatoria
 
-    hoy = date.today().isoformat()
-    texto = f"{nombre}|escape|{hoy}"
-    return abs(hash(texto)) % (2**31)
-
-
-GuionEscapeRoom = ConfigEscapeRoom
-cargar_guion_escape_room = config_escape_room
-total_preguntas_guion = total_preguntas_escape
+    return semilla_partida_aleatoria()

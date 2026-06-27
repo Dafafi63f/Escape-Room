@@ -22,6 +22,34 @@ USO_PLANTILLA_DATASET = "dataset_480"
 
 # 12 preguntas por materia: 2FT 2MT 2DT 2FC 2MC 2DC (teoría luego cálculo, ladder F→D).
 PREGUNTAS_POR_MATERIA = 12
+
+# Total de extras reales en plantillas.json (12 por materia × 40).
+TARGET_EXTRA_PLANTILLAS = 480
+EXTRA_POR_MATERIA = 12
+
+# Filas JSON por materia: 12 dataset_480 + 12 extra = 24 (960 filas totales).
+OBJETIVO_FILAS_JSON = PREGUNTAS_POR_MATERIA + EXTRA_POR_MATERIA
+
+# Revisión manual: el CSV y las 480 filas dataset_480 del JSON están revisadas (enunciado + distractores).
+# Las 480 filas extra jugables tienen metadatos correctos; pendiente revisar enunciado y opciones A–D.
+# Pool del juego cerrado (2026-06-27): 1000 preguntas reales = 480 CSV + 480 extras JSON + 40 exclusivas
+# resistencia. Sin campo ``variaciones``; no añadir ni quitar ítems salvo override de emergencia.
+USOS_PLANTILLA_ESTRUCTURA_JSON = frozenset(
+    {"pool_extra", "ampliado_perm", "ampliado_num", "ampliado_var"}
+)
+USOS_PLANTILLA_EXTRA_JSON = frozenset(
+    {
+        "repuesto",
+        "internet",
+        "general",
+        "calculo",
+        "dificil",
+        "reserva",
+        "web_seed",
+    }
+)
+USOS_PLANTILLA_EXTRA = USOS_PLANTILLA_EXTRA_JSON | USOS_PLANTILLA_ESTRUCTURA_JSON
+
 SLOTS_CANONICOS_12: tuple[tuple[str, str], ...] = (
     ("Teoria", "Facil"),
     ("Teoria", "Facil"),
@@ -40,8 +68,7 @@ TEORIA_POR_MATERIA = 6
 CALCULO_POR_MATERIA = 6
 FMD_POR_MATERIA = (4, 4, 4)
 
-# El banco de plantillas debe ser más amplio que el CSV publicado (reserva para
-# sustituciones sin repetir enunciados del dataset activo).
+# El banco de plantillas JSON = dataset + mismo número de extras (480 + 480 = 960 jugables).
 MIN_PLANTILLAS_POR_MATERIA_FACTOR = 2
 
 

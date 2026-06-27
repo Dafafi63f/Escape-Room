@@ -12,16 +12,9 @@ from typing import Literal
 
 _COMUN_DIR = Path(__file__).resolve().parent
 _JUEGO_DIR = _COMUN_DIR.parent
-_FILES_DIR = _JUEGO_DIR.parent / "Files"
 
 _ZonaDatos = Literal["banco", "juego"]
 _LEGACY_DATA_SUBDIRS = ("CSV", "csv", "JSON", "json", "Informes", "Feedback")
-
-
-def registrar_scripts_en_path() -> None:
-    """Añade ``Files`` al path para importar utilidades compartidas con el juego."""
-    if _FILES_DIR.is_dir() and str(_FILES_DIR) not in sys.path:
-        sys.path.insert(0, str(_FILES_DIR))
 
 
 def juego_dir() -> Path:
@@ -193,7 +186,8 @@ def resolver_presets() -> Path:
         except FileNotFoundError:
             continue
     raise FileNotFoundError(
-        "No se encontró el catálogo de presets (presets.json o presets_historia.json)."
+        "No se encontró el catálogo de presets en Data/Juego/ (presets.json; "
+        "presets_historia.json solo como nombre legacy)."
     )
 
 

@@ -7,7 +7,7 @@ Uso seguro:
   python Files/duplicados.py revisar
   python Files/duplicados.py plantillas
 
-Bloqueado (modifica Preguntas.csv): todo --inplace, enunciado --inplace, exacto.
+Bloqueado: modifica Preguntas.csv (TFG_PERMITIR_CSV=1) o plantillas.json (TFG_PERMITIR_PLANTILLAS=1).
 Ver Files/README.md y Docs/Entrega/Memoria_TFG.md §5.4
 """
 
@@ -69,16 +69,19 @@ def main(argv: list[str] | None = None) -> int:
         if args.comando == "revisar":
             return ejecutar_revisar()
         if args.comando == "plantillas":
-            return ejecutar_plantillas()
+            from utils_banco_cerrado import rechazar_mutacion_plantillas
+
+            rechazar_mutacion_plantillas("duplicados.py plantillas")
         if args.comando == "exacto":
             from utils_banco_cerrado import rechazar_mutacion_dataset
 
             rechazar_mutacion_dataset("duplicados.py exacto")
         if args.comando == "todo":
-            from utils_banco_cerrado import rechazar_mutacion_dataset
+            from utils_banco_cerrado import rechazar_mutacion_dataset, rechazar_mutacion_plantillas
 
             if args.inplace:
                 rechazar_mutacion_dataset("duplicados.py todo --inplace")
+                rechazar_mutacion_plantillas("duplicados.py todo --inplace")
             if not args.inplace and not args.dry_run:
                 print("Indica --inplace o --dry-run")
                 return 2

@@ -15,7 +15,26 @@ from Comun.reglas_partida import (
     calcular_puntos_arcade,
     nota_sobre_diez,
     porcentaje_aciertos,
+    sumar_puntos_arcade,
 )
+from Comun.semillas import semilla_orden_opciones
+
+TEXTO_OPCION_NIEBLA = "???"
+
+
+def texto_opcion_visible_pantalla(
+    texto: str,
+    letra_dataset: str,
+    *,
+    letras_eliminadas: frozenset[str],
+    letras_niebla: frozenset[str],
+) -> str | None:
+    """Texto del botón en pantalla; None si la opción no se muestra (bomba/50-50)."""
+    if letra_dataset in letras_eliminadas:
+        return None
+    if letra_dataset in letras_niebla:
+        return TEXTO_OPCION_NIEBLA
+    return texto
 
 
 @dataclass
@@ -106,16 +125,6 @@ class PresentacionOpcionesPregunta:
             if origen == letra_dataset:
                 return etiq
         return None
-
-
-def semilla_orden_opciones(
-    *,
-    semilla_base: int,
-    numero_turno: int,
-    indice_pregunta: int = 0,
-) -> int:
-    """Semilla estable por turno para permutar opciones en pantalla."""
-    return semilla_base + numero_turno * 1_009 + indice_pregunta * 7_919
 
 
 def presentacion_opciones_pantalla(
@@ -228,7 +237,7 @@ def evaluar_respuesta(
         estado.aciertos += 1
         if reglas.sistema_puntuacion == SistemaPuntuacion.ARCADE:
             delta = calcular_puntos_arcade(p.dificultad, True)
-            estado.puntos_arcade += delta
+            estado.puntos_arcade, delta = sumar_puntos_arcade(estado.puntos_arcade, delta)
             return FeedbackRespuesta(mensaje=f"Correcto (+{delta} puntos)")
         return FeedbackRespuesta(mensaje="Correcto")
 
@@ -237,7 +246,7 @@ def evaluar_respuesta(
     estado.fallos_por_materia[p.materia] = estado.fallos_por_materia.get(p.materia, 0) + 1
     if reglas.sistema_puntuacion == SistemaPuntuacion.ARCADE:
         delta = calcular_puntos_arcade(p.dificultad, False)
-        estado.puntos_arcade += delta
+        estado.puntos_arcade, delta = sumar_puntos_arcade(estado.puntos_arcade, delta)
         mensaje = f"Incorrecto ({delta} puntos)"
     else:
         mensaje = "Incorrecto"

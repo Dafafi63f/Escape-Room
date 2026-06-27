@@ -9,8 +9,8 @@ from dataclasses import dataclass
 
 import pygame
 
-from Comun.changelog_juego import cargar_changelog_juego_grafico
-from Comun.contacto_creador import (
+from Grafico.changelog_juego import cargar_changelog_juego_grafico
+from Comun.feedback import (
     canales_contacto_alternativo,
     nota_contacto_jugador,
     texto_bloque_contacto_alternativo,
@@ -366,10 +366,10 @@ from collections.abc import Callable
 
 import pygame
 
-from Comun.feedback_opciones import AREAS_FEEDBACK, CATEGORIAS_FEEDBACK, indice_area_defecto
+from Comun.feedback import AREAS_FEEDBACK, CATEGORIAS_FEEDBACK, indice_area_defecto
 from Comun.preferencias_grafico import nombre_jugador_grafico
 from Comun.rutas import resolver_config_creador_privado
-from Comun.envio_feedback import (
+from Comun.feedback import (
     CategoriaFeedback,
     ReporteFeedback,
     describir_resultado_envio,

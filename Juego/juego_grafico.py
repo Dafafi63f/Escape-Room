@@ -7,7 +7,7 @@ Cuatro modos: libre, historia, resistencia y feedback.
 Controles: ratón para navegar; teclado solo para escribir texto cuando haga falta.
 
 Uso:
-  pip install -r requirements.txt
+  pip install -r Juego/requirements.txt
   python Juego/juego_grafico.py
 """
 
@@ -20,7 +20,7 @@ _JUEGO = Path(__file__).resolve().parent
 if str(_JUEGO) not in sys.path:
     sys.path.insert(0, str(_JUEGO))
 
-from Comun.datos import cargar_banco_todo, cargar_materias
+from Comun.datos import cargar_materias, cargar_preguntas
 from Comun.stdio_utf8 import configurar_stdio_utf8
 from Comun.rutas import PATH_MATERIAS, PATH_PREGUNTAS, resolver_plantillas
 from Grafico.app import AplicacionGrafica, DatosJuego
@@ -32,16 +32,13 @@ def main() -> None:
         import pygame  # noqa: F401 — comprobación temprana de dependencia
     except ImportError:
         print("Falta pygame. Instálalo con:")
-        print("  pip install -r requirements.txt")
+        print("  pip install -r Juego/requirements.txt")
+        print("  (desde la raíz del proyecto descomprimido)")
         return
 
     try:
         materias_meta = cargar_materias(PATH_MATERIAS)
-        preguntas = cargar_banco_todo(
-            PATH_PREGUNTAS,
-            resolver_plantillas(),
-            materias_meta,
-        )
+        preguntas = cargar_preguntas(PATH_PREGUNTAS, materias_meta)
     except FileNotFoundError as e:
         print(str(e))
         return

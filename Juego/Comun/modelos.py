@@ -26,11 +26,11 @@ ETIQUETAS_BANCO_CORTAS: dict[BancoPreguntas, str] = {
 ETIQUETA_BANCO: dict[BancoPreguntas, tuple[str, str]] = {
     BancoPreguntas.DATASET: (
         "MODO SEGURO",
-        "Data/Banco/Preguntas.csv — 480 preguntas revisadas",
+        "480 preguntas revisadas (Preguntas.csv)",
     ),
     BancoPreguntas.PLANTILLAS_TODO: (
         "MODO BETA",
-        "Dataset revisado + plantillas extra — 1440 preguntas",
+        "960 preguntas reales (480 revisadas + 480 extras JSON)",
     ),
 }
 

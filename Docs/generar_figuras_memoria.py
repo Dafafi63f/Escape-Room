@@ -28,6 +28,13 @@ from simulacion_evaluacion_azar import (  # noqa: E402
     ejecutar_simulacion,
     simular_examen,
 )
+from simulacion_pity import (  # noqa: E402
+    PARAMS_DESCANSO,
+    PARAMS_TIENDA,
+    ejecutar_simulacion as ejecutar_simulacion_pity,
+    prob_soft,
+    simular_modelo_simplificado,
+)
 from Comun.datos import cargar_materias, cargar_preguntas  # noqa: E402
 from Comun.rutas import resolver_dataset, resolver_listado_materias  # noqa: E402
 
@@ -266,6 +273,137 @@ def fig_monte_carlo_convergencia(preguntas, rng: random.Random) -> Path:
     return _guardar(fig, "monte_carlo_convergencia.png")
 
 
+def fig_pity_curva_probabilidad() -> Path:
+    xs = list(range(0, 11))
+    descanso = [
+        prob_soft(
+            s,
+            prob_base=PARAMS_DESCANSO["prob_base"],
+            incremento=PARAMS_DESCANSO["incremento"],
+            prob_max=PARAMS_DESCANSO["prob_max"],
+        )
+        for s in xs
+    ]
+    tienda = [
+        prob_soft(
+            s,
+            prob_base=PARAMS_TIENDA["prob_base"],
+            incremento=PARAMS_TIENDA["incremento"],
+            prob_max=PARAMS_TIENDA["prob_max"],
+        )
+        for s in xs
+    ]
+
+    fig, ax = plt.subplots(figsize=(8.2, 4.2))
+    ax.plot(xs, descanso, "o-", color="#2b6cb0", linewidth=1.8, label="Descanso")
+    ax.plot(xs, tienda, "s-", color="#c05621", linewidth=1.8, label="Tienda")
+    ax.axhline(PARAMS_DESCANSO["prob_base"], color="#2b6cb0", linestyle=":", alpha=0.5)
+    ax.axhline(PARAMS_TIENDA["prob_base"], color="#c05621", linestyle=":", alpha=0.5)
+    ax.set_xlabel("Salas consecutivas sin ver el evento ($s$)")
+    ax.set_ylabel(r"Probabilidad por sala $p_s$")
+    ax.set_title("Pity suave en escape room: $p_s = \\min(p_{\\max},\\, p_0 + s\\delta)$")
+    ax.set_xticks(xs)
+    ax.set_ylim(0, 0.52)
+    ax.legend(fontsize=9)
+    ax.grid(alpha=0.3)
+    return _guardar(fig, "pity_curva_probabilidad.png")
+
+
+def fig_pity_comparacion_modelo(rng: random.Random) -> Path:
+    n = 10_000
+    n_salas = 30
+    base = [
+        simular_modelo_simplificado(
+            rng,
+            n_salas=n_salas,
+            prob_base=PARAMS_DESCANSO["prob_base"],
+            incremento=0.0,
+            prob_max=PARAMS_DESCANSO["prob_base"],
+            hard_umbral_sin=None,
+            hard_sala=None,
+        )
+        for _ in range(n)
+    ]
+    rng2 = random.Random(SEMILLA + 99)
+    pity = [
+        simular_modelo_simplificado(
+            rng2,
+            n_salas=n_salas,
+            prob_base=PARAMS_DESCANSO["prob_base"],
+            incremento=PARAMS_DESCANSO["incremento"],
+            prob_max=PARAMS_DESCANSO["prob_max"],
+            hard_umbral_sin=PARAMS_DESCANSO["hard_umbral_sin"],
+            hard_sala=PARAMS_DESCANSO["hard_sala"],
+        )
+        for _ in range(n)
+    ]
+    frac_sin_base = sum(1 for r in base if r.primera_sala is None) / n
+    frac_sin_pity = sum(1 for r in pity if r.primera_sala is None) / n
+    p95_base = sorted(r.max_racha_sin for r in base)[int(0.95 * (n - 1))]
+    p95_pity = sorted(r.max_racha_sin for r in pity)[int(0.95 * (n - 1))]
+
+    fig, ax = plt.subplots(figsize=(7.5, 4.2))
+    etiquetas = ["Sin descanso\n(30 salas)", "Racha p95\nsin descanso"]
+    x = [0, 1]
+    w = 0.35
+    ax.bar(
+        [i - w / 2 for i in x],
+        [frac_sin_base * 100, p95_base],
+        width=w,
+        color="#a0aec0",
+        label="Prob. base fija (6 %)",
+    )
+    ax.bar(
+        [i + w / 2 for i in x],
+        [frac_sin_pity * 100, p95_pity],
+        width=w,
+        color="#2b6cb0",
+        label="Pity suave + hard (sala 5)",
+    )
+    ax.set_xticks(x)
+    ax.set_xticklabels(etiquetas)
+    ax.set_ylabel("Porcentaje / nº salas")
+    ax.set_title("Modelo simplificado — puerta descanso (10 000 réplicas)")
+    ax.legend(fontsize=8)
+    ax.grid(axis="y", alpha=0.3)
+    return _guardar(fig, "pity_comparacion_descanso.png")
+
+
+def fig_pity_distribucion_primer_descanso(rng: random.Random) -> Path:
+    n = 10_000
+    salas = [
+        simular_modelo_simplificado(
+            rng,
+            n_salas=30,
+            prob_base=PARAMS_DESCANSO["prob_base"],
+            incremento=PARAMS_DESCANSO["incremento"],
+            prob_max=PARAMS_DESCANSO["prob_max"],
+            hard_umbral_sin=PARAMS_DESCANSO["hard_umbral_sin"],
+            hard_sala=PARAMS_DESCANSO["hard_sala"],
+        ).primera_sala
+        for _ in range(n)
+    ]
+    salas_ok = [s for s in salas if s is not None]
+
+    fig, ax = plt.subplots(figsize=(8.2, 4.2))
+    ax.hist(
+        salas_ok,
+        bins=range(1, 8),
+        align="left",
+        color="#4299e1",
+        edgecolor="white",
+        density=True,
+        label="Simulación",
+    )
+    ax.axvline(PARAMS_DESCANSO["hard_sala"], color="#c53030", linestyle="--", linewidth=1.5, label="Hard pity (sala 5)")
+    ax.set_xlabel("Sala del primer descanso")
+    ax.set_ylabel("Densidad")
+    ax.set_title("Distribución del primer descanso con pity (modelo simplificado)")
+    ax.legend(fontsize=8)
+    ax.grid(axis="y", alpha=0.3)
+    return _guardar(fig, "pity_distribucion_primer_descanso.png")
+
+
 def main() -> int:
     path_csv = resolver_dataset()
     path_materias = resolver_listado_materias()
@@ -281,6 +419,9 @@ def main() -> int:
         fig_flujo_modo_historia(),
         fig_monte_carlo_histograma(preguntas, rng),
         fig_monte_carlo_convergencia(preguntas, random.Random(SEMILLA)),
+        fig_pity_curva_probabilidad(),
+        fig_pity_comparacion_modelo(random.Random(SEMILLA + 7)),
+        fig_pity_distribucion_primer_descanso(random.Random(SEMILLA + 11)),
     ]
 
     stats = ejecutar_simulacion(
@@ -297,6 +438,19 @@ def main() -> int:
     print(f"  Nota media examen: {stats['examen_nota_media']}/10")
     print(f"  Aciertos medios: {stats['examen_aciertos_frac_media']:.4f}")
     print(f"  Arcade agotan vidas: {stats['arcade_frac_agotado_vidas']:.1%}")
+    stats_pity = ejecutar_simulacion_pity(
+        iteraciones=N_ITER,
+        iteraciones_escape=0,
+        n_salas=30,
+        semilla=SEMILLA,
+    )
+    print()
+    print("Verificación pity (modelo descanso, semilla 42):")
+    pity = stats_pity["modelo_pity_descanso"]
+    base = stats_pity["modelo_base_descanso"]
+    print(f"  Sin pity — partidas sin descanso: {base['frac_sin_evento']:.1%}")
+    print(f"  Con pity — partidas sin descanso: {pity['frac_sin_evento']:.1%}")
+    print(f"  Con pity — sala media 1.er descanso: {pity['sala_media_primer_evento']}")
     return 0
 
 

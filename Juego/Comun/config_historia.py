@@ -219,6 +219,39 @@ def parse_periodo(valor: str) -> tuple[str, str]:
     return curso, semestre
 
 
+def clave_periodo_academico(curso: str, semestre: str) -> str:
+    """Clave interna curso-semestre (p. ej. ``3-2``)."""
+    return f"{curso}-{semestre}"
+
+
+def etiqueta_periodo_academico(curso: str, semestre: str) -> str:
+    """Texto unificado en UI: «Semestre 3-2» (curso 3, semestre 2)."""
+    return f"Semestre {clave_periodo_academico(curso, semestre)}"
+
+
+def etiqueta_periodo_desde_clave(clave: str) -> str:
+    curso, semestre = parse_periodo(clave)
+    return etiqueta_periodo_academico(curso, semestre)
+
+
+def etiqueta_curso_academico(curso: str) -> str:
+    return f"Curso {curso}"
+
+
+def descripcion_ambito_curso_semestre(
+    curso: str | None,
+    semestre: str | None,
+) -> str:
+    """Fragmento para bloques/filtros: «del semestre 3-2», «del curso 3»…"""
+    if curso and semestre:
+        return f"del {etiqueta_periodo_academico(curso, semestre).lower()}"
+    if curso:
+        return f"del {etiqueta_curso_academico(curso).lower()}"
+    if semestre:
+        return f"del semestre {semestre}"
+    return ""
+
+
 def periodo_valido(materias_meta: dict[str, dict[str, str]], valor: str) -> bool:
     return any(clave == str(valor) for clave, _, _ in periodos_academicos(materias_meta))
 

@@ -1,9 +1,9 @@
 {
-  "version": 1,
-  "descripcion": "Preguntas exclusivas del modo resistencia; solo aparecen al alcanzar la racha mínima.",
+  "version": 2,
+  "descripcion": "40 preguntas exclusivas del modo resistencia (1 por materia); pool total resistencia = 1000 reales (cerrado, sin variaciones).",
   "preguntas": [
     {
-      "id": "res_t1_01",
+      "id": "res_m01",
       "tier": 1,
       "racha_minima": 100,
       "materia": "Àlgebra Lineal",
@@ -19,7 +19,7 @@
       "correcta": "B"
     },
     {
-      "id": "res_t1_02",
+      "id": "res_m02",
       "tier": 1,
       "racha_minima": 100,
       "materia": "Càlcul en una Variable",
@@ -35,249 +35,25 @@
       "correcta": "C"
     },
     {
-      "id": "res_t1_03",
-      "tier": 1,
-      "racha_minima": 100,
-      "materia": "Probabilitat",
-      "dificultad": "Dificil",
-      "tipo": "Teoria",
-      "pregunta": "Si X e Y son independientes con Var(X)=4 y Var(Y)=9, ¿cuál es Var(2X−3Y)?",
-      "opciones": {
-        "A": "97",
-        "B": "25",
-        "C": "13",
-        "D": "85"
-      },
-      "correcta": "A"
-    },
-    {
-      "id": "res_t1_04",
+      "id": "res_m03",
       "tier": 1,
       "racha_minima": 100,
       "materia": "Fonaments de Computadors",
       "dificultad": "Dificil",
       "tipo": "Teoria",
-      "pregunta": "En un pipeline de 5 etapas con CPI ideal 1, ¿cuántos ciclos se necesitan para ejecutar 1000 instrucciones en el régimen estable?",
+      "pregunta": "En la ley de Amdahl, si la fracción paralelizable es p y hay N procesadores ideales, el speedup máximo está acotado por:",
       "opciones": {
-        "A": "5000",
-        "B": "1000",
-        "C": "1004",
-        "D": "5004"
+        "A": "N",
+        "B": "1/(1−p)",
+        "C": "p·N",
+        "D": "N²"
       },
-      "correcta": "C"
+      "correcta": "B"
     },
     {
-      "id": "res_t1_05",
+      "id": "res_m04",
       "tier": 1,
       "racha_minima": 100,
-      "materia": "Visualització 3D",
-      "dificultad": "Dificil",
-      "tipo": "Calculo",
-      "pregunta": "En ℝ³, ¿cuántos puntos equidistantes de los vértices de un tetraedro regular pueden existir además del centroide?",
-      "opciones": {
-        "A": "Ninguno más",
-        "B": "Exactamente 1",
-        "C": "Infinitos en una circunferencia",
-        "D": "Depende de la arista"
-      },
-      "correcta": "A"
-    },
-    {
-      "id": "res_t1_06",
-      "tier": 1,
-      "racha_minima": 100,
-      "materia": "Iniciació a la Programació",
-      "dificultad": "Dificil",
-      "tipo": "Teoria",
-      "pregunta": "La complejidad temporal de mergesort en el peor caso sobre n elementos es:",
-      "opciones": {
-        "A": "O(n)",
-        "B": "O(n log n)",
-        "C": "O(n²)",
-        "D": "O(log n)"
-      },
-      "correcta": "B"
-    },
-    {
-      "id": "res_t2_01",
-      "tier": 2,
-      "racha_minima": 250,
-      "materia": "Àlgebra Lineal",
-      "dificultad": "Dificil",
-      "tipo": "Teoria",
-      "pregunta": "Si A es simétrica real 2×2 con autovalores 1 y 4, ¿cuál es el máximo valor de xᵀAx con ‖x‖=1?",
-      "opciones": {
-        "A": "1",
-        "B": "4",
-        "C": "5",
-        "D": "2,5"
-      },
-      "correcta": "B"
-    },
-    {
-      "id": "res_t2_02",
-      "tier": 2,
-      "racha_minima": 250,
-      "materia": "Càlcul en una Variable",
-      "dificultad": "Dificil",
-      "tipo": "Calculo",
-      "pregunta": "La serie ∑_{n=1}^∞ 1/n converge:",
-      "opciones": {
-        "A": "Sí, a e",
-        "B": "Sí, a π²/6",
-        "C": "No",
-        "D": "Sí, a ln 2"
-      },
-      "correcta": "C"
-    },
-    {
-      "id": "res_t2_03",
-      "tier": 2,
-      "racha_minima": 250,
-      "materia": "Equacions Diferencials Ordinàries",
-      "dificultad": "Dificil",
-      "tipo": "Calculo",
-      "pregunta": "Para y''+4y=0 con y(0)=1 e y'(0)=0, ¿y(π/4)?",
-      "opciones": {
-        "A": "0",
-        "B": "1",
-        "C": "−1",
-        "D": "e"
-      },
-      "correcta": "A"
-    },
-    {
-      "id": "res_t2_04",
-      "tier": 2,
-      "racha_minima": 250,
-      "materia": "Modelització i Inferència",
-      "dificultad": "Dificil",
-      "tipo": "Teoria",
-      "pregunta": "En una regresión lineal simple, el coeficiente de determinación R² mide:",
-      "opciones": {
-        "A": "La pendiente ajustada",
-        "B": "La proporción de varianza de Y explicada por X",
-        "C": "El error estándar residual siempre",
-        "D": "La correlación sin elevar al cuadrado"
-      },
-      "correcta": "B"
-    },
-    {
-      "id": "res_t2_05",
-      "tier": 2,
-      "racha_minima": 250,
-      "materia": "Teoria de Jocs",
-      "dificultad": "Dificil",
-      "tipo": "Teoria",
-      "pregunta": "¿Cuántas permutaciones distintas tiene la palabra MATEMATICA?",
-      "opciones": {
-        "A": "9!",
-        "B": "9!/(2!·2!)",
-        "C": "9!/2!",
-        "D": "9!/(2!·2!·2!)"
-      },
-      "correcta": "B"
-    },
-    {
-      "id": "res_t2_06",
-      "tier": 2,
-      "racha_minima": 250,
-      "materia": "Física, Abstracció i Computació",
-      "dificultad": "Dificil",
-      "tipo": "Calculo",
-      "pregunta": "Un cuerpo de masa m en movimiento circular uniforme de radio r y velocidad v tiene energía cinética:",
-      "opciones": {
-        "A": "mvr",
-        "B": "mv²/r",
-        "C": "½mv²",
-        "D": "mω²r"
-      },
-      "correcta": "C"
-    },
-    {
-      "id": "res_t3_01",
-      "tier": 3,
-      "racha_minima": 500,
-      "materia": "Àlgebra Lineal",
-      "dificultad": "Dificil",
-      "tipo": "Teoria",
-      "pregunta": "El rango de una matriz m×n y el de su transpuesta verifican:",
-      "opciones": {
-        "A": "rank(A)=rank(Aᵀ) siempre",
-        "B": "rank(Aᵀ)=n siempre",
-        "C": "rank(A)+rank(Aᵀ)=m+n",
-        "D": "Solo coinciden si A es cuadrada"
-      },
-      "correcta": "A"
-    },
-    {
-      "id": "res_t3_02",
-      "tier": 3,
-      "racha_minima": 500,
-      "materia": "Càlcul en una Variable",
-      "dificultad": "Dificil",
-      "tipo": "Calculo",
-      "pregunta": "Si f es derivable en a y f'(a)=0, f''(a)>0, entonces en a hay:",
-      "opciones": {
-        "A": "Máximo local",
-        "B": "Punto de inflexión",
-        "C": "Mínimo local",
-        "D": "Nada se puede afirmar"
-      },
-      "correcta": "C"
-    },
-    {
-      "id": "res_t3_03",
-      "tier": 3,
-      "racha_minima": 500,
-      "materia": "Probabilitat",
-      "dificultad": "Dificil",
-      "tipo": "Teoria",
-      "pregunta": "Para X~N(μ,σ²), el intervalo μ±1,96σ contiene aproximadamente el:",
-      "opciones": {
-        "A": "68% de la masa",
-        "B": "90% de la masa",
-        "C": "95% de la masa",
-        "D": "99% de la masa"
-      },
-      "correcta": "C"
-    },
-    {
-      "id": "res_t3_04",
-      "tier": 3,
-      "racha_minima": 500,
-      "materia": "Fonaments de Computadors",
-      "dificultad": "Dificil",
-      "tipo": "Calculo",
-      "pregunta": "Una caché direct-mapped de 32 KB con líneas de 64 B tiene cuántas líneas?",
-      "opciones": {
-        "A": "256",
-        "B": "512",
-        "C": "1024",
-        "D": "2048"
-      },
-      "correcta": "B"
-    },
-    {
-      "id": "res_t3_05",
-      "tier": 3,
-      "racha_minima": 500,
-      "materia": "Visualització 3D",
-      "dificultad": "Dificil",
-      "tipo": "Teoria",
-      "pregunta": "En geometría euclídea, la suma de los ángulos internos de un triángulo es:",
-      "opciones": {
-        "A": "Menor que π en todo triángulo",
-        "B": "Exactamente π radianes",
-        "C": "2π radianes",
-        "D": "Depende del área"
-      },
-      "correcta": "B"
-    },
-    {
-      "id": "res_t3_06",
-      "tier": 3,
-      "racha_minima": 500,
       "materia": "Iniciació a la Programació",
       "dificultad": "Dificil",
       "tipo": "Teoria",
@@ -291,41 +67,121 @@
       "correcta": "B"
     },
     {
-      "id": "res_t4_01",
-      "tier": 4,
-      "racha_minima": 750,
-      "materia": "Àlgebra Lineal",
+      "id": "res_m05",
+      "tier": 1,
+      "racha_minima": 100,
+      "materia": "Programari de Sistema",
       "dificultad": "Dificil",
       "tipo": "Teoria",
-      "pregunta": "Si A es ortogonal n×n, entonces det(A) vale:",
+      "pregunta": "Un deadlock requiere típicamente:",
       "opciones": {
-        "A": "Siempre 1",
-        "B": "±1",
-        "C": "0",
-        "D": "n"
+        "A": "Espera circular de recursos",
+        "B": "Solo un proceso",
+        "C": "Memoria infinita",
+        "D": "Ausencia de mutex"
       },
-      "correcta": "B"
+      "correcta": "A"
     },
     {
-      "id": "res_t4_02",
-      "tier": 4,
-      "racha_minima": 750,
-      "materia": "Càlcul en una Variable",
+      "id": "res_m06",
+      "tier": 1,
+      "racha_minima": 100,
+      "materia": "Algorítmia i Combinatòria en Grafs. Mètodes Heurístics",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "El algoritmo de Dijkstra requiere típicamente:",
+      "opciones": {
+        "A": "Pesos no negativos en aristas",
+        "B": "Grafo no dirigido sin pesos",
+        "C": "Solo ciclos negativos",
+        "D": "Matriz identidad"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m07",
+      "tier": 1,
+      "racha_minima": 100,
+      "materia": "Càlcul en Diverses Variables",
       "dificultad": "Dificil",
       "tipo": "Calculo",
-      "pregunta": "El límite lim_{x→0} (sin x)/x es:",
+      "pregunta": "El teorema de Green relaciona una integral de línea con:",
       "opciones": {
-        "A": "0",
-        "B": "1",
-        "C": "No existe",
-        "D": "∞"
+        "A": "Integral doble del rotacional/campo",
+        "B": "Solo series de potencias",
+        "C": "Determinante 3×3",
+        "D": "Entropía de Shannon"
       },
-      "correcta": "B"
+      "correcta": "A"
     },
     {
-      "id": "res_t4_03",
-      "tier": 4,
-      "racha_minima": 750,
+      "id": "res_m08",
+      "tier": 1,
+      "racha_minima": 100,
+      "materia": "Càlcul Numèric",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "El error de discretización temporal en simulación numérica depende típicamente de:",
+      "opciones": {
+        "A": "El paso h y el esquema numérico",
+        "B": "Solo del compilador",
+        "C": "La marca del monitor",
+        "D": "El color del gráfico"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m09",
+      "tier": 1,
+      "racha_minima": 100,
+      "materia": "Probabilitat",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "Para X~N(μ,σ²), el intervalo μ±1,96σ contiene aproximadamente el:",
+      "opciones": {
+        "A": "68% de la masa",
+        "B": "90% de la masa",
+        "C": "95% de la masa",
+        "D": "99% de la masa"
+      },
+      "correcta": "C"
+    },
+    {
+      "id": "res_m10",
+      "tier": 1,
+      "racha_minima": 100,
+      "materia": "Programació Orientada als Objectes",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "El polimorfismo en POO permite:",
+      "opciones": {
+        "A": "Tratar objetos de subtipos mediante una interfaz común",
+        "B": "Eliminar herencia",
+        "C": "Compilar sin clases",
+        "D": "Ocultar siempre la implementación"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m11",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Bases de Dades Relacionals",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "En SQL, una transacción ACID garantiza atomicidad, lo que implica:",
+      "opciones": {
+        "A": "Todo o nada en los cambios",
+        "B": "Solo lecturas repetibles",
+        "C": "Ausencia de índices",
+        "D": "Duplicar filas siempre"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m12",
+      "tier": 2,
+      "racha_minima": 250,
       "materia": "Equacions Diferencials Ordinàries",
       "dificultad": "Dificil",
       "tipo": "Teoria",
@@ -339,7 +195,423 @@
       "correcta": "A"
     },
     {
-      "id": "res_t4_04",
+      "id": "res_m13",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Modelització i Inferència",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "La varianza muestral sin corregir de [2,4,6] es:",
+      "opciones": {
+        "A": "8/3",
+        "B": "4",
+        "C": "2",
+        "D": "8"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m14",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Tècniques de Disseny d'Algoritmes",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "La programación dinámica resuelve problemas con:",
+      "opciones": {
+        "A": "Subestructura óptima y solapamiento de subproblemas",
+        "B": "Solo búsqueda exhaustiva",
+        "C": "Únicamente grafos bipartitos",
+        "D": "Sin memoria auxiliar"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m15",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Visualització 3D",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "En geometría euclídea, la suma de los ángulos internos de un triángulo es:",
+      "opciones": {
+        "A": "Menor que π en todo triángulo",
+        "B": "Exactamente π radianes",
+        "C": "2π radianes",
+        "D": "Depende del área"
+      },
+      "correcta": "B"
+    },
+    {
+      "id": "res_m16",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Anàlisi Complexa i de Fourier",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "Si f es holomorfa en ℂ entero y acotada, por Liouville es:",
+      "opciones": {
+        "A": "Constante",
+        "B": "Siempre polinomio de grado 10",
+        "C": "No analítica",
+        "D": "No continua"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m17",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Anàlisi de Dades Complexes",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "El PageRank mide:",
+      "opciones": {
+        "A": "Importancia de nodos por enlaces entrantes",
+        "B": "Solo temperatura de CPU",
+        "C": "La varianza de una serie",
+        "D": "El área bajo una gaussiana"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m18",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Intel·ligència Artificial",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "La búsqueda A* es óptima con heurística:",
+      "opciones": {
+        "A": "Admisible (no sobreestima)",
+        "B": "Siempre cero",
+        "C": "No consistente nunca",
+        "D": "Aleatoria sin límites"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m19",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Mètodes Numèrics i Probabilístics",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "El error cuadrático medio de un estimador combina:",
+      "opciones": {
+        "A": "Sesgo al cuadrado y varianza",
+        "B": "Solo la moda",
+        "C": "Únicamente el rango",
+        "D": "La entropía del dataset"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m20",
+      "tier": 2,
+      "racha_minima": 250,
+      "materia": "Optimització",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "En programación lineal, el método simplex busca:",
+      "opciones": {
+        "A": "Vértices factibles del politopo de restricciones",
+        "B": "Solo puntos interiores aleatorios",
+        "C": "La integral de Fourier",
+        "D": "Autovalores de AᵀA"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m21",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Aprenentatge Computacional",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "El sobreajuste (overfitting) en aprendizaje supervisado ocurre cuando:",
+      "opciones": {
+        "A": "El modelo memoriza ruido del entrenamiento",
+        "B": "La pérdida de entrenamiento diverge siempre",
+        "C": "No hay parámetros ajustables",
+        "D": "El dataset es demasiado grande"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m22",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Computació i Simulació d'Altes Prestacions",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "La ley de Amdahl limita la aceleración por:",
+      "opciones": {
+        "A": "La fracción secuencial del programa",
+        "B": "El color del cable de red",
+        "C": "Solo el tamaño de fuente",
+        "D": "La entropía de logs"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m23",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Equacions en Derivades Parcials",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "La ecuación del calor es parabólica porque:",
+      "opciones": {
+        "A": "Modela difusión sin propagación finita de información",
+        "B": "Es siempre hiperbólica",
+        "C": "No tiene derivadas espaciales",
+        "D": "Es solo algebraica"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m24",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Física, Abstracció i Computació",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "Un cuerpo de masa m en movimiento circular uniforme de radio r y velocidad v tiene energía cinética:",
+      "opciones": {
+        "A": "mvr",
+        "B": "mv²/r",
+        "C": "½mv²",
+        "D": "mω²r"
+      },
+      "correcta": "C"
+    },
+    {
+      "id": "res_m25",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Teoria de la Informació",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "La entropía de Shannon H(X) mide:",
+      "opciones": {
+        "A": "Incertidumbre media de una variable aleatoria",
+        "B": "Solo la energía del sistema",
+        "C": "El rango de una matriz",
+        "D": "La latencia de red"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m26",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Bases de Dades No Relacionals",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "En el teorema CAP, un sistema distribuido no puede garantizar simultáneamente:",
+      "opciones": {
+        "A": "Consistencia, disponibilidad y tolerancia a particiones",
+        "B": "Solo replicación",
+        "C": "Únicamente cifrado",
+        "D": "Compilación JIT"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m27",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Informació Quàntica",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "La medición en base computacional de un qubit colapsa:",
+      "opciones": {
+        "A": "La superposición a un resultado 0 o 1",
+        "B": "Siempre dos resultados",
+        "C": "El qubit a dimensión infinita",
+        "D": "La red clásica"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m28",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Modelització i Simulació",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "Un paso de Euler explícito para y'=f(t,y) usa:",
+      "opciones": {
+        "A": "y_{n+1} = y_n + h f(t_n, y_n)",
+        "B": "y_{n+1} = y_n",
+        "C": "y_{n+1} = f(t_n, y_n) sin h",
+        "D": "y_{n+1} = y_n − h f"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m29",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Sistemes Distribuïts i el Núvol",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "El teorema de Brewer (CAP) implica que ante partición de red suele sacrificarse:",
+      "opciones": {
+        "A": "Consistencia fuerte o disponibilidad",
+        "B": "Solo el ancho de banda",
+        "C": "Únicamente logs",
+        "D": "La compilación"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m30",
+      "tier": 3,
+      "racha_minima": 500,
+      "materia": "Xarxes Neuronals i Aprenentatge Profund",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "El gradiente desapareciente (vanishing) en redes profundas dificulta:",
+      "opciones": {
+        "A": "Entrenar capas iniciales por señal débil hacia atrás",
+        "B": "Solo la inferencia",
+        "C": "La normalización batch",
+        "D": "El uso de GPU"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m31",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Anàlisi de Dades Financeres",
+      "dificultad": "Dificil",
+      "tipo": "Calculo",
+      "pregunta": "El valor en riesgo (VaR) al 95% estima:",
+      "opciones": {
+        "A": "Un cuantil de pérdidas de la cartera",
+        "B": "La media de retornos",
+        "C": "Solo volatilidad anualizada sin cuantil",
+        "D": "El beta del mercado siempre"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m32",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Anàlisi de Dades Temporals",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "Una serie temporal estacionaria en media tiene:",
+      "opciones": {
+        "A": "Media constante en el tiempo",
+        "B": "Varianza infinita obligatoria",
+        "C": "Tendencia lineal siempre",
+        "D": "Solo valores positivos"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m33",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Anàlisi Topològica de Dades",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "La homología persistente resume:",
+      "opciones": {
+        "A": "Nacimiento y muerte de características topológicas al variar escala",
+        "B": "Solo medias aritméticas",
+        "C": "Autovalores de Markov",
+        "D": "Joins SQL"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m34",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Internet de les Coses",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "MQTT en IoT es un protocolo de mensajería:",
+      "opciones": {
+        "A": "Ligero publicar/suscribir",
+        "B": "Solo para video 4K",
+        "C": "Exclusivo de SQL",
+        "D": "De compilación de kernels"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m35",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Mètodes d Anàlisi en Ciències de la Salut",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "El odds ratio en un estudio de casos y controles compara:",
+      "opciones": {
+        "A": "Probabilidades de exposición entre casos y controles",
+        "B": "Solo medias de laboratorio",
+        "C": "Tamaño de fichero FASTQ",
+        "D": "Latencia de HPC"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m36",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Anàlisi de Dades en Astrofísica",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "La ley de Hubble relaciona distancia galáctica con:",
+      "opciones": {
+        "A": "Velocidad de alejamiento",
+        "B": "Masa del Sol únicamente",
+        "C": "Temperatura del CMB exacta",
+        "D": "Spin nuclear"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m37",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Bioinformàtica",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "BLAST busca secuencias similares mediante:",
+      "opciones": {
+        "A": "Heurísticas sobre seeds y extensión local",
+        "B": "Ordenación de burbuja de ADN",
+        "C": "Solo FFT de imágenes",
+        "D": "Cifrado asimétrico"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m38",
+      "tier": 4,
+      "racha_minima": 750,
+      "materia": "Informació i Seguretat",
+      "dificultad": "Dificil",
+      "tipo": "Teoria",
+      "pregunta": "El principio de mínimo privilegio en seguridad implica:",
+      "opciones": {
+        "A": "Otorgar solo permisos necesarios",
+        "B": "Admin root siempre",
+        "C": "Contraseña vacía",
+        "D": "Abrir todos los puertos"
+      },
+      "correcta": "A"
+    },
+    {
+      "id": "res_m39",
       "tier": 4,
       "racha_minima": 750,
       "materia": "Teoria de Jocs",
@@ -355,36 +627,20 @@
       "correcta": "C"
     },
     {
-      "id": "res_t4_05",
+      "id": "res_m40",
       "tier": 4,
       "racha_minima": 750,
-      "materia": "Modelització i Inferència",
+      "materia": "Visió per Computador",
       "dificultad": "Dificil",
       "tipo": "Calculo",
-      "pregunta": "La varianza muestral sin corregir de [2,4,6] es:",
+      "pregunta": "RANSAC en estimación robusta de modelos:",
       "opciones": {
-        "A": "8/3",
-        "B": "4",
-        "C": "2",
-        "D": "8"
+        "A": "Busca consenso ignorando outliers",
+        "B": "Elimina todos los inliers",
+        "C": "Solo ordena píxeles",
+        "D": "Cifra imágenes"
       },
       "correcta": "A"
-    },
-    {
-      "id": "res_t4_06",
-      "tier": 4,
-      "racha_minima": 750,
-      "materia": "Fonaments de Computadors",
-      "dificultad": "Dificil",
-      "tipo": "Teoria",
-      "pregunta": "En la ley de Amdahl, si la fracción paralelizable es p y hay N procesadores ideales, el speedup máximo está acotado por:",
-      "opciones": {
-        "A": "N",
-        "B": "1/(1−p)",
-        "C": "p·N",
-        "D": "N²"
-      },
-      "correcta": "B"
     }
   ]
 }

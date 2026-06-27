@@ -47,7 +47,7 @@ El nombre del jugador se configura en **Opciones** (icono ⚙️), no en el form
 ## Ejecutar
 
 ```bash
-pip install -r requirements.txt
+pip install -r Juego/requirements.txt
 python Juego/juego_grafico.py
 ```
 
@@ -56,9 +56,9 @@ python Juego/juego_grafico.py
 | Modo | Gráfico | Notas |
 |------|---------|-------|
 | **Libre** | Implementado | Wizard dos pasos; filtros; tooltips |
-| **Historia** | Implementado | Carrusel de 5 presets (`Data/Juego/presets_historia.json`) |
-| **Resistencia** | Implementado | Eventos, objetos, ranking local |
-| **Escape room** | Implementado | 30 salas, tienda, botín, inventario (pity descanso/tienda/botín) |
+| **Historia** | Implementado | Carrusel de 5 presets (`Data/Juego/presets.json`) |
+| **Resistencia** | Implementado | Eventos, objetos, ranking local; semilla aleatoria por partida |
+| **Escape room** | Implementado | 30 salas, tienda, botín, inventario; semilla aleatoria por partida |
 | **Feedback** | Implementado | Icono 📣 en barra; envío SMTP si hay config en `Data/Banco/creador_privado.json` |
 | **Info** | Implementado | Icono ℹ️: ranking, contacto del creador, changelog del juego |
 

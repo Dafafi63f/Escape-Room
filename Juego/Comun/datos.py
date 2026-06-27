@@ -11,13 +11,13 @@ import json
 from pathlib import Path
 
 from Comun.modelos import BancoPreguntas, Pregunta
-from Comun.rutas import registrar_scripts_en_path
-
-registrar_scripts_en_path()
-from utils_plantillas_core import (  # noqa: E402
+from Comun.preguntas_resistencia import USOS_PLANTILLA_BETA_JUEGO
+from Comun.utils_plantillas_core import (
     clave_contenido,
-    expandir_plantilla_instancias,
+    clave_contenido_sin_materia,
     claves_desde_csv,
+    expandir_plantilla_instancias,
+    quitar_etiqueta_materia_enunciado,
     tiene_placeholders,
 )
 
@@ -30,7 +30,7 @@ def _plantilla_a_pregunta(inst: dict, materias_meta: dict[str, dict[str, str]]) 
     correcta = inst["correcta"]
     if correcta not in {"A", "B", "C", "D"}:
         return None
-    texto = inst["pregunta"]
+    texto = quitar_etiqueta_materia_enunciado(inst["pregunta"], inst["materia"])
     opciones = inst["opciones"]
     if not texto or not all(opciones.values()):
         return None
@@ -55,12 +55,28 @@ def _plantilla_a_pregunta(inst: dict, materias_meta: dict[str, dict[str, str]]) 
     )
 
 
+def claves_contenido_dataset(path_csv: Path) -> set[tuple]:
+    """Claves de contenido del CSV sin materia (misma pregunta en otra asignatura)."""
+    claves: set[tuple] = set()
+    with path_csv.open("r", encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f, delimiter=";"):
+            opciones = {L: (row.get(L) or "").strip() for L in "ABCD"}
+            correcta = (row.get("Correcta") or "").strip().upper()
+            texto = (row.get("Pregunta") or "").strip()
+            if not texto:
+                continue
+            claves.add(clave_contenido_sin_materia(texto, opciones, correcta))
+    return claves
+
+
 def cargar_preguntas_plantillas(
     path_json: Path,
     materias_meta: dict[str, dict[str, str]],
     *,
     solo_fuera_dataset: bool,
     claves_ds: set[tuple],
+    usos_permitidos: frozenset[str] | None = None,
+    claves_contenido_ds: set[tuple] | None = None,
 ) -> list[Pregunta]:
     if not path_json.exists():
         raise FileNotFoundError(f"No se encontró plantillas: {path_json}")
@@ -77,6 +93,9 @@ def cargar_preguntas_plantillas(
             continue
         for t in items:
             for inst in expandir_plantilla_instancias(tema, t):
+                uso = (inst.get("uso") or "").strip().lower()
+                if usos_permitidos is not None and uso not in usos_permitidos:
+                    continue
                 k = clave_contenido(
                     inst["materia"],
                     inst["pregunta"],
@@ -85,6 +104,14 @@ def cargar_preguntas_plantillas(
                 )
                 if solo_fuera_dataset and k in claves_ds:
                     continue
+                if claves_contenido_ds is not None:
+                    k_sin = clave_contenido_sin_materia(
+                        inst["pregunta"],
+                        inst["opciones"],
+                        inst["correcta"],
+                    )
+                    if k_sin in claves_contenido_ds:
+                        continue
                 if k in vistos:
                     continue
                 p = _plantilla_a_pregunta(inst, materias_meta)
@@ -102,7 +129,12 @@ def cargar_banco_todo(
     claves = claves_dataset(path_csv)
     revisadas = cargar_preguntas(path_csv, materias_meta)
     extra = cargar_preguntas_plantillas(
-        path_plantillas, materias_meta, solo_fuera_dataset=True, claves_ds=claves
+        path_plantillas,
+        materias_meta,
+        solo_fuera_dataset=True,
+        claves_ds=claves,
+        usos_permitidos=USOS_PLANTILLA_BETA_JUEGO,
+        claves_contenido_ds=claves_contenido_dataset(path_csv),
     )
     return revisadas + extra
 
@@ -114,7 +146,12 @@ def contar_bancos(
     claves = claves_dataset(path_csv)
     n_extra = len(
         cargar_preguntas_plantillas(
-            path_plantillas, materias_meta, solo_fuera_dataset=True, claves_ds=claves
+            path_plantillas,
+            materias_meta,
+            solo_fuera_dataset=True,
+            claves_ds=claves,
+            usos_permitidos=USOS_PLANTILLA_BETA_JUEGO,
+            claves_contenido_ds=claves_contenido_dataset(path_csv),
         )
     )
     return {

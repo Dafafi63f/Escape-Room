@@ -312,6 +312,31 @@ def comparar_con_asignacion(
     )
 
 
+def entrada_coherente_con_materia(
+    entrada: dict,
+    materia: str,
+    *,
+    min_score_materia: float = 2.0,
+    margen_materia: float = 2.0,
+) -> bool:
+    """True si el contenido encaja en la materia (filtro catálogo internet / reclasificación)."""
+    fila = {
+        "Materia": materia,
+        "Pregunta": entrada.get("pregunta", ""),
+        "A": entrada.get("A", ""),
+        "B": entrada.get("B", ""),
+        "C": entrada.get("C", ""),
+        "D": entrada.get("D", ""),
+        "Correcta": entrada.get("correcta", "A"),
+    }
+    cmp = comparar_con_asignacion(
+        fila,
+        min_score_materia=min_score_materia,
+        margen_materia=margen_materia,
+    )
+    return "Materia" not in cmp.campos_incoherentes
+
+
 def metadatos_optimos(fila: dict) -> dict[str, str]:
     """Mejor tripleta Materia/Tipo/Dificultad inferida del contenido."""
     inf = clasificar_fila(fila)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Preferencias globales de la interfaz gráfica (persistidas en JSON)."""
+"""Preferencias globales de la interfaz gráfica (persistidas en JSON) y nombre de jugador."""
 
 from __future__ import annotations
 
@@ -8,10 +8,12 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from Comun.jugador import NOMBRE_JUGADOR_DEFECTO, nombre_jugador_efectivo
 from Comun.rutas import _ruta_json_escritura
 
+NOMBRE_JUGADOR_DEFECTO = "Anonimo"
+
 __all__ = [
+    "NOMBRE_JUGADOR_DEFECTO",
     "PreferenciasGrafico",
     "cargar_preferencias_grafico",
     "ciclar_emojis",
@@ -19,13 +21,24 @@ __all__ = [
     "ciclar_tooltips",
     "debe_saltar_bienvenida_grafico",
     "emojis_habilitados",
+    "es_nombre_anonimo",
     "guardar_informes_txt_habilitados",
     "guardar_preferencias_grafico",
     "nombre_inicial_grafico",
+    "nombre_jugador_efectivo",
     "nombre_jugador_grafico",
     "resolver_path_preferencias_grafico",
     "tooltips_habilitados",
 ]
+
+
+def nombre_jugador_efectivo(texto: str) -> str:
+    limpio = (texto or "").strip()
+    return limpio or NOMBRE_JUGADOR_DEFECTO
+
+
+def es_nombre_anonimo(nombre: str) -> bool:
+    return nombre_jugador_efectivo(nombre) == NOMBRE_JUGADOR_DEFECTO
 
 
 @dataclass

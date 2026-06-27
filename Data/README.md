@@ -17,7 +17,8 @@ Data/
 |---------|-----|
 | `Preguntas.csv` | Banco principal (**480** preguntas cerradas) |
 | `listado_materias.csv` | Metadatos de **40** materias |
-| `plantillas.json` | Plantillas / pool extra (modos beta) |
+| `plantillas.json` | **960** filas: **480** copias del CSV (`uso: dataset_480`) + **480** extra reales (modo beta, 12/materia) |
+
 | `criterios_clasificacion_materia.csv` | Palabras clave por materia |
 | `Historic_qualificacions_MatCAD_completo.csv` | Histórico — modo historia |
 | `creador_privado.json` | Datos personales y SMTP del creador (local, no se versiona) |
@@ -27,7 +28,7 @@ Data/
 | Fichero | Uso |
 |---------|-----|
 | `presets.json` | Catálogo unificado de modos (historia, escape room, resistencia; v28) |
-| `preguntas_resistencia.json` | Pool modo resistencia |
+| `preguntas_resistencia.json` | **40** exclusivas resistencia (1/materia); pool resistencia = **1000** reales |
 | `preferencias_grafico.json` | Nombre, emojis, tooltips (menú opciones) |
 | `ranking_resistencia.json` | Ranking resistencia |
 | `*.txt` | Informes de partida y copias de feedback |
@@ -62,7 +63,7 @@ Modos activos en el carrusel de historia (`contexto_reglas`: `historia_*`):
 | `repaso_historico`, `repaso_integral`, `vuelta_grado`, `repaso_express` | Unificados en `repaso` |
 | `semana_examenes`, `simulacro_curso` | Unificados en `simulacro` |
 
-Semilla diaria compartida (`DDMMYYYY`, p. ej. `22062026`; en UI siempre 8 dígitos) y examen fijo: [`modos_diarios.py`](../Juego/Comun/modos_diarios.py).
+Semilla diaria compartida (`DDMMYYYY`, p. ej. `22062026`; en UI siempre 8 dígitos) **solo** para el **Examen del día** (`examen_fijo` con `origen_semilla: diario`). Escape room, resistencia y examen aleatorio usan semilla aleatoria en cada partida. No está previsto reto diario para escape ni resistencia. Ver [`semillas.py`](../Juego/Comun/semillas.py) y [`modos_diarios.py`](../Juego/Comun/modos_diarios.py).
 
 ## Esquema de `Preguntas.csv`
 
@@ -102,7 +103,15 @@ Definidos en [`Files/objetivos_balanceo.py`](../Files/objetivos_balanceo.py):
 
 ## Revisión manual del banco
 
-**Progreso: 480 / 480** — banco cerrado (redacción genérica; revisión manual completada). Plantillas beta en `Banco/plantillas.json` (no todas en producción). Estado del TFG: [`CHANGELOG_PROYECTO.md`](../Docs/CHANGELOG_PROYECTO.md) y checklist en [`CHECKLIST.md`](../Docs/CHECKLIST.md).
+**Base (480):** `Preguntas.csv` y las filas `dataset_480` de `plantillas.json` — revisión manual completada (enunciado, distractores, metadatos).
+
+**Beta (480 extras en JSON):** filas extra reales (`internet`, `repuesto`, `general`, …) — materia, tipo y dificultad equilibrados; **pendiente revisar enunciado y opciones A–D**.
+
+`plantillas.json` está **cerrado** (960 filas = 480 dataset + 480 extra, sin `variaciones`, 2026-06-27). No regenerar salvo `TFG_PERMITIR_PLANTILLAS=1`.
+
+En el juego: **modo seguro** = 480 (CSV); **modo beta** = 960 (480 revisadas + 480 extras JSON); **resistencia** = **1000** reales (480 + 480 extras + 40 exclusivas), desbloqueo progresivo por capas. Pool cerrado: solo revisión manual.
+
+Auditoría: `python Files/mantenimiento.py auditar-distractores` (beta) o `--solo-dataset` (base). Cobertura: `auditar-plantillas`. Estado del TFG: [`CHANGELOG_PROYECTO.md`](../Docs/CHANGELOG_PROYECTO.md) y [`CHECKLIST.md`](../Docs/CHECKLIST.md).
 
 ## Evolución futura del modelo de datos
 
@@ -253,23 +262,23 @@ flowchart LR
 - Secretos de GitHub (`github`: usuario, repo, token).
 - SMTP del modo feedback (`feedback_smtp`).
 
-La plantilla por defecto está en código: [`Juego/Comun/config_creador.py`](../Juego/Comun/config_creador.py).
+La plantilla por defecto está en código: [`Juego/Comun/feedback.py`](../Juego/Comun/feedback.py).
 
 ```bash
 cd Juego
-python -m Comun.config_creador
+python -m Comun.feedback
 ```
 
 Rellena tus datos reales en el fichero generado. En Gmail, `smtp_password` es una contraseña de aplicación de 16 caracteres.
 
-Los informes y el feedback del jugador se guardan en `Data/Juego/` en tiempo de ejecución (`.txt` generados por [`Comun/informe_examen.py`](../Comun/informe_examen.py) y [`Comun/envio_feedback.py`](../Comun/envio_feedback.py)).
+Los informes y el feedback del jugador se guardan en `Data/Juego/` en tiempo de ejecución (`.txt` generados por [`Comun/informe_examen.py`](../Comun/informe_examen.py) y [`Comun/feedback.py`](../Comun/feedback.py)).
 
 ## Limpieza de datos locales
 
 Informes `.txt`, preferencias y rankings en `Data/Juego/` se pueden borrar desde la raíz del proyecto:
 
 ```bash
-python utilidades_tfg.py --solo-limpieza
+python Docs/utilidades_tfg.py --solo-limpieza
 ```
 
-Ver también [`utilidades_tfg.py`](../utilidades_tfg.py) y [`Juego/Comun/datos_locales_juego.py`](../Juego/Comun/datos_locales_juego.py).
+Ver también [`Docs/utilidades_tfg.py`](../Docs/utilidades_tfg.py) y [`Juego/Comun/datos_locales_juego.py`](../Juego/Comun/datos_locales_juego.py).

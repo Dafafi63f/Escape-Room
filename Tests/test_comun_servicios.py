@@ -14,7 +14,7 @@ from Tests.support import ensure_juego_path
 
 ensure_juego_path()
 
-from Comun.config_creador import (  # noqa: E402
+from Comun.feedback import (  # noqa: E402
     PLANTILLA_CREADOR_PRIVADO,
     escribir_plantilla_creador_privado,
     mensaje_crear_creador_privado,
@@ -49,7 +49,7 @@ class TestConfigCreador(unittest.TestCase):
                 escribir_plantilla_creador_privado(destino)
 
     def test_mensaje_apunta_a_comun(self) -> None:
-        self.assertIn("Comun.config_creador", mensaje_crear_creador_privado())
+        self.assertIn("Comun.feedback", mensaje_crear_creador_privado())
         self.assertNotIn("Consola", mensaje_crear_creador_privado())
 
 
@@ -107,7 +107,7 @@ class TestInformeExamenUtilidades(unittest.TestCase):
 
 class TestImportsModulosMigrados(unittest.TestCase):
     def test_envio_feedback_desde_comun(self) -> None:
-        from Comun.envio_feedback import CategoriaFeedback, ReporteFeedback
+        from Comun.feedback import CategoriaFeedback, ReporteFeedback
 
         reporte = ReporteFeedback(
             categoria=CategoriaFeedback.BUG,

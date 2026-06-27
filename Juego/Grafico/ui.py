@@ -8,7 +8,7 @@ from collections.abc import Callable
 
 import pygame
 
-from Comun.jugador import nombre_jugador_efectivo
+from Comun.preferencias_grafico import nombre_jugador_efectivo
 from Grafico.fuentes import FamiliaFuente, crear_fuente
 from Grafico.tema import ALTO, ANCHO, COLOR_ACENTO, COLOR_PANEL, COLOR_TEXTO, COLOR_TITULO
 from Grafico.texto import (
@@ -246,6 +246,64 @@ def rects_botones_apilados(
         rects.append(pygame.Rect(x, y, ancho, alto))
         y += alto + gap
     return rects
+
+
+def _ancho_texto_fuente(fuente: pygame.font.Font, texto: str) -> int:
+    texto = preparar_texto_ui(texto)
+    if not texto:
+        return 0
+    tamano = fuente.get_height()
+    if texto_requiere_fuentes_mixtas(texto):
+        return medir_texto_mixto(texto, tamano)[0]
+    return fuente.size(texto)[0]
+
+
+def truncar_texto_fuente(
+    fuente: pygame.font.Font,
+    texto: str,
+    ancho_max: int,
+    *,
+    sufijo: str = "…",
+) -> str:
+    """Acorta ``texto`` con ``sufijo`` si supera ``ancho_max`` píxeles."""
+    texto = preparar_texto_ui(texto)
+    if ancho_max <= 0:
+        return ""
+    if _ancho_texto_fuente(fuente, texto) <= ancho_max:
+        return texto
+    if _ancho_texto_fuente(fuente, sufijo) > ancho_max:
+        return sufijo if _ancho_texto_fuente(fuente, sufijo) <= ancho_max else ""
+    lo, hi = 0, len(texto)
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if _ancho_texto_fuente(fuente, texto[:mid] + sufijo) <= ancho_max:
+            lo = mid
+        else:
+            hi = mid - 1
+    return texto[:lo] + sufijo if lo < len(texto) else texto[:lo]
+
+
+def unir_partes_cabientes(
+    partes: list[str],
+    fuente: pygame.font.Font,
+    ancho_max: int,
+    *,
+    separador: str = " · ",
+) -> str:
+    """Une fragmentos completos mientras quepan; omite el resto sin truncar."""
+    partes_limpias = [preparar_texto_ui(p.strip()) for p in partes if p and p.strip()]
+    if not partes_limpias or ancho_max <= 0:
+        return ""
+    elegidas: list[str] = []
+    for parte in partes_limpias:
+        candidato = separador.join(elegidas + [parte]) if elegidas else parte
+        if _ancho_texto_fuente(fuente, candidato) <= ancho_max:
+            elegidas.append(parte)
+        else:
+            break
+    if not elegidas:
+        return truncar_texto_fuente(fuente, partes_limpias[0], ancho_max)
+    return separador.join(elegidas)
 
 
 def partir_texto(fuente: pygame.font.Font, texto: str, ancho_max: int) -> list[str]:

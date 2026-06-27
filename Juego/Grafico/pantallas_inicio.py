@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from Comun.jugador import es_nombre_anonimo, nombre_jugador_efectivo
+from Comun.preferencias_grafico import es_nombre_anonimo, nombre_jugador_efectivo
 from Comun.preferencias_grafico import (
     PreferenciasGrafico,
     cargar_preferencias_grafico,

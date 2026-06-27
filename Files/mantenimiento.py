@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CLI unificada de mantenimiento (banco cerrado 480 preguntas).
+CLI unificada de mantenimiento (banco cerrado: 480 CSV + pool juego 1000).
 
   python Files/mantenimiento.py validar [--detalle] [--estricto]
   python Files/mantenimiento.py revision [--estadisticas]
   python Files/mantenimiento.py dataset [--variedad]
   python Files/mantenimiento.py auditar-distractores [--json PATH] [--solo-dataset]
   python Files/mantenimiento.py auditar-plantillas
-  python Files/mantenimiento.py plantillas {inyectar|limpiar|repuesto|comprobar|pipeline} ...
+  python Files/mantenimiento.py plantillas {comprobar|reclasificar} ...
   python Files/mantenimiento.py duplicados ...
-  python Files/mantenimiento.py criterios [--corregir-ids-permutados]
-  python utilidades_tfg.py [--solo-limpieza] [--dry-run]   (raíz del TFG)
+  python Docs/utilidades_tfg.py [--solo-limpieza] [--dry-run]   (raíz del TFG)
 
-El CSV está cerrado; escritura solo con TFG_PERMITIR_CSV=1.
+Bancos cerrados (solo revisión manual; sin altas/bajas):
+  Preguntas.csv, plantillas.json (960 filas, sin variaciones), preguntas_resistencia.json (40).
+Overrides: TFG_PERMITIR_CSV=1 | TFG_PERMITIR_PLANTILLAS=1 | TFG_PERMITIR_RESISTENCIA=1.
 """
 
 from __future__ import annotations
@@ -71,20 +72,31 @@ def cmd_auditar_plantillas(_args: argparse.Namespace) -> int:
 
 
 def cmd_plantillas(args: argparse.Namespace) -> int:
-    import plantillas_sync as ps
+    from utils_banco_cerrado import rechazar_mutacion_plantillas
 
     sub = args.plantillas_cmd
-    if sub == "inyectar":
-        return ps.inyectar_dataset()
-    if sub == "limpiar":
-        return ps.limpiar_plantillas(inplace=args.inplace, dry_run=args.dry_run)
-    if sub == "repuesto":
-        ps.sincronizar_repuesto(inplace=args.inplace, dry_run=args.dry_run)
-        return 0
+    if sub == "reclasificar" and args.aplicar:
+        rechazar_mutacion_plantillas("mantenimiento.py plantillas reclasificar --aplicar")
+
     if sub == "comprobar":
-        return ps.comprobar_cobertura(solo_comprobar=args.solo_comprobar)
-    if sub == "pipeline":
-        return ps.pipeline_completo()
+        from auditoria import comprobar_cobertura_plantillas
+
+        return comprobar_cobertura_plantillas()
+    if sub == "reclasificar":
+        import reclasificar_plantillas as rp
+
+        argv = []
+        if args.aplicar:
+            argv.append("--aplicar")
+        if args.solo_internet:
+            argv.append("--solo-internet")
+        argv.extend(["--min-score", str(args.min_score), "--margen", str(args.margen)])
+        old_argv = sys.argv
+        try:
+            sys.argv = ["reclasificar_plantillas.py", *argv]
+            return rp.main()
+        finally:
+            sys.argv = old_argv
     return 2
 
 
@@ -94,19 +106,10 @@ def cmd_duplicados(args: argparse.Namespace) -> int:
     return dup_main(args.duplicados_argv)
 
 
-def cmd_criterios(args: argparse.Namespace) -> int:
-    import subprocess
-
-    cmd = [sys.executable, str(_FILES / "exportar_criterios_clasificacion_materia.py")]
-    if args.corregir_ids_permutados:
-        cmd.append("--corregir-ids-permutados")
-    return subprocess.call(cmd)
-
-
 def cmd_temporales(args: argparse.Namespace) -> int:
     import subprocess
 
-    cmd = [sys.executable, str(ROOT / "utilidades_tfg.py"), "--solo-limpieza"]
+    cmd = [sys.executable, str(ROOT / "Docs" / "utilidades_tfg.py"), "--solo-limpieza"]
     if args.dry_run:
         cmd.append("--dry-run")
     if args.solo_pycache:
@@ -146,18 +149,17 @@ def main(argv: list[str] | None = None) -> int:
     p_ap = sub.add_parser("auditar-plantillas", help="Cobertura de plantillas.json")
     p_ap.set_defaults(func=cmd_auditar_plantillas)
 
-    p_pl = sub.add_parser("plantillas", help="Sincronización de plantillas.json")
+    p_pl = sub.add_parser("plantillas", help="Comprobación y auditoría de plantillas.json")
     pl_sub = p_pl.add_subparsers(dest="plantillas_cmd", required=True)
-    pl_sub.add_parser("inyectar", help="Vuelca el CSV al pool (uso dataset_480)")
-    pl_sub.add_parser("pipeline", help="limpiar → inyectar → repuesto → dedup plantillas")
-    p_limp = pl_sub.add_parser("limpiar", help="Dedup del JSON")
-    p_limp.add_argument("--inplace", action="store_true")
-    p_limp.add_argument("--dry-run", action="store_true")
-    p_rep = pl_sub.add_parser("repuesto", help="Catálogo repuesto")
-    p_rep.add_argument("--inplace", action="store_true")
-    p_rep.add_argument("--dry-run", action="store_true")
-    p_comp = pl_sub.add_parser("comprobar", help="Cobertura mínima por materia")
-    p_comp.add_argument("--solo-comprobar", action="store_true")
+    pl_sub.add_parser("comprobar", help="Cobertura mínima por materia (solo lectura)")
+    p_recl = pl_sub.add_parser(
+        "reclasificar",
+        help="Audita materia de plantillas según contenido (criterios_clasificacion_materia.csv)",
+    )
+    p_recl.add_argument("--aplicar", action="store_true")
+    p_recl.add_argument("--solo-internet", action="store_true")
+    p_recl.add_argument("--min-score", type=float, default=2.0)
+    p_recl.add_argument("--margen", type=float, default=2.0)
     p_pl.set_defaults(func=cmd_plantillas)
 
     p_dup = sub.add_parser(
@@ -166,10 +168,6 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_dup.add_argument("duplicados_argv", nargs=argparse.REMAINDER)
     p_dup.set_defaults(func=cmd_duplicados)
-
-    p_crit = sub.add_parser("criterios", help="Actualiza criterios_clasificacion_materia.csv")
-    p_crit.add_argument("--corregir-ids-permutados", action="store_true")
-    p_crit.set_defaults(func=cmd_criterios)
 
     p_tmp = sub.add_parser(
         "temporales",

@@ -10,7 +10,7 @@ from Tests.support import ensure_juego_path
 
 ensure_juego_path()
 
-from Comun.changelog_juego import (
+from Grafico.changelog_juego import (
     cargar_changelog_juego,
     cargar_changelog_juego_grafico,
     cargar_changelog_proyecto,

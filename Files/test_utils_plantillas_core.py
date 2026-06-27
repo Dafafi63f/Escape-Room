@@ -20,6 +20,7 @@ from utils_plantillas_core import (  # noqa: E402
     expandir_plantilla_base,
     expandir_plantilla_csv_filas,
     expandir_plantilla_instancias,
+    quitar_etiqueta_materia_enunciado,
     tiene_placeholders,
 )
 
@@ -33,7 +34,7 @@ class TestClaveContenido(unittest.TestCase):
 
 
 class TestExpandirPlantilla(unittest.TestCase):
-    def test_sin_variaciones(self) -> None:
+    def test_una_fila_una_pregunta(self) -> None:
         tpl = {
             "pregunta": "¿2+2?",
             "A": "3",
@@ -49,7 +50,7 @@ class TestExpandirPlantilla(unittest.TestCase):
         self.assertEqual(inst[0]["pregunta"], "¿2+2?")
         self.assertEqual(inst[0]["correcta"], "B")
 
-    def test_con_variaciones(self) -> None:
+    def test_rechaza_campo_variaciones_legacy(self) -> None:
         tpl = {
             "pregunta": "¿Cuánto es {n}+{n}?",
             "A": "{n}",
@@ -60,9 +61,8 @@ class TestExpandirPlantilla(unittest.TestCase):
             "variaciones": [{"n": "2", "doble": "4"}, {"n": "3", "doble": "6"}],
         }
         inst = expandir_plantilla_base(tpl)
-        self.assertEqual(len(inst), 2)
-        self.assertEqual(inst[0]["pregunta"], "¿Cuánto es 2+2?")
-        self.assertEqual(inst[1]["opciones"]["B"], "6")
+        self.assertEqual(len(inst), 1)
+        self.assertEqual(inst[0]["pregunta"], "¿Cuánto es {n}+{n}?")
 
     def test_instancias_incluyen_materia(self) -> None:
         tpl = {
@@ -95,6 +95,19 @@ class TestPlaceholders(unittest.TestCase):
     def test_detecta_placeholder(self) -> None:
         self.assertTrue(tiene_placeholders("Hola {nombre}"))
         self.assertFalse(tiene_placeholders("Hola mundo"))
+
+
+class TestEtiquetaMateria(unittest.TestCase):
+    def test_quita_sufijo_catalogo_internet(self) -> None:
+        raw = "Una distribución Normal estándar tiene: [Probabilitat]"
+        self.assertEqual(
+            quitar_etiqueta_materia_enunciado(raw, "Probabilitat"),
+            "Una distribución Normal estándar tiene:",
+        )
+
+    def test_no_toca_corchetes_matematicos(self) -> None:
+        texto = "Var(X)=E[X²]-(E[X])² requiere:"
+        self.assertEqual(quitar_etiqueta_materia_enunciado(texto, "Probabilitat"), texto)
 
 
 if __name__ == "__main__":

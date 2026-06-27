@@ -33,16 +33,15 @@ __all__ = [
     "elegir_indice_resistencia",
     "elegir_indice_similar",
     "escalada_para_pregunta",
-    "escalada_para_racha",
     "es_preset_resistencia",
     "etiqueta_tier_exclusiva",
     "eventos_aleatorios_para_pregunta",
-    "eventos_aleatorios_para_racha",
     "parametros_eventos_aleatorios",
     "actualizar_pity_eventos_resistencia",
     "prob_gate_evento_resistencia_con_pity",
     "pool_resistencia_desde_dataset",
     "probabilidad_pregunta_exclusiva",
+    "partes_texto_efectos_escalada",
     "texto_efectos_escalada",
 ]
 
@@ -63,8 +62,6 @@ _EVENTOS_BUENOS = ids_eventos_buenos_resistencia()
 _MALOS_PITY_RESISTENCIA = frozenset({
     "relampago",
     "opciones_ocultas",
-    "enunciado_oculto",
-    "niebla_ambos",
 })
 _KINDS_PITY_RESISTENCIA = _MALOS_PITY_RESISTENCIA | frozenset({"doble"})
 
@@ -111,14 +108,8 @@ def kind_de_evento_resistencia(evento: EventoAleatorioResistencia) -> str | None
         return "relampago"
     if evento.multiplicador_puntos is not None:
         return "doble"
-    tiene_opc = (evento.opciones_ocultas or 0) > 0
-    tiene_enun = evento.fraccion_enunciado is not None and evento.fraccion_enunciado < 1.0
-    if tiene_opc and tiene_enun:
-        return "niebla_ambos"
-    if tiene_opc:
+    if (evento.opciones_ocultas or 0) > 0:
         return "opciones_ocultas"
-    if tiene_enun:
-        return "enunciado_oculto"
     return None
 
 
@@ -181,7 +172,6 @@ class EventoAleatorioResistencia:
     dificultades_permitidas: frozenset[str] | None = None
     max_complejidad: int | None = None
     opciones_ocultas: int | None = None
-    fraccion_enunciado: float | None = None
     min_max_complejidad: int | None = None
     unir_dificultades: frozenset[str] | None = None
 
@@ -194,7 +184,6 @@ class BaselineEscaladaResistencia:
     tiempo_pregunta_seg: int | None
     max_complejidad: int
     dificultades_permitidas: frozenset[str]
-    fraccion_enunciado: float
     opciones_ocultas: int
     efectos: tuple[str, ...]
 
@@ -209,7 +198,6 @@ class EscaladaResistencia:
     dificultades_permitidas: frozenset[str]
     multiplicador_puntos: int
     opciones_ocultas: int = 0
-    fraccion_enunciado: float = 1.0
     efectos: tuple[str, ...] = ()
 
     @property
@@ -339,7 +327,6 @@ def eventos_aleatorios_para_pregunta(
     kinds = malos_resistencia_vigentes(
         numero_pregunta,
         tiempo_baseline=baseline.tiempo_pregunta_seg,
-        fraccion_baseline=baseline.fraccion_enunciado,
         opciones_baseline=baseline.opciones_ocultas,
     )
     base = semilla_partida or 0
@@ -427,9 +414,8 @@ def _fusionar_evento_en_escalada(
     permitidas: frozenset[str],
     mult: int,
     opciones_ocultas: int,
-    fraccion_enunciado: float,
     efectos: list[str],
-) -> tuple[int | None, int, frozenset[str], int, int, float]:
+) -> tuple[int | None, int, frozenset[str], int, int]:
     efectos.append(evento.etiqueta)
     if evento.tiempo_pregunta is not None:
         if tiempo is None:
@@ -450,9 +436,7 @@ def _fusionar_evento_en_escalada(
         max_cx = max(max_cx, evento.min_max_complejidad)
     if evento.opciones_ocultas is not None:
         opciones_ocultas = max(opciones_ocultas, evento.opciones_ocultas)
-    if evento.fraccion_enunciado is not None:
-        fraccion_enunciado = min(fraccion_enunciado, evento.fraccion_enunciado)
-    return tiempo, max_cx, permitidas, mult, opciones_ocultas, fraccion_enunciado
+    return tiempo, max_cx, permitidas, mult, opciones_ocultas
 
 
 def baseline_escalada_resistencia(numero_pregunta: int) -> BaselineEscaladaResistencia:
@@ -463,7 +447,6 @@ def baseline_escalada_resistencia(numero_pregunta: int) -> BaselineEscaladaResis
     permitidas = frozenset(_DIFICULTADES)
     nivel = 0
     opciones_ocultas = 0
-    fraccion_enunciado = 1.0
     efectos: list[str] = []
 
     if progreso >= 700:
@@ -507,30 +490,15 @@ def baseline_escalada_resistencia(numero_pregunta: int) -> BaselineEscaladaResis
         permitidas = frozenset({"Media", "Dificil"})
         efectos.append("Sin preguntas fáciles")
 
-    if progreso >= 600:
-        fraccion_enunciado = min(fraccion_enunciado, 0.35)
-        opciones_ocultas = max(opciones_ocultas, 2)
-        efectos.append("Niebla densa en enunciado y opciones")
-    elif progreso >= 350:
-        fraccion_enunciado = min(fraccion_enunciado, 0.45)
+    if progreso >= 150:
         opciones_ocultas = max(opciones_ocultas, 1)
-        efectos.append("Niebla en enunciado y opciones")
-    elif progreso >= 150:
-        fraccion_enunciado = min(fraccion_enunciado, 0.55)
-        efectos.append("Niebla en el enunciado")
-    elif progreso >= 50:
-        fraccion_enunciado = min(fraccion_enunciado, 0.72)
-        efectos.append("Bruma leve en el enunciado")
-    elif progreso >= 25:
-        fraccion_enunciado = min(fraccion_enunciado, 0.88)
-        efectos.append("Bruma leve en el enunciado")
+        efectos.append("Niebla: 1 respuesta oculta")
 
     return BaselineEscaladaResistencia(
         nivel=nivel,
         tiempo_pregunta_seg=tiempo,
         max_complejidad=max_cx,
         dificultades_permitidas=permitidas,
-        fraccion_enunciado=fraccion_enunciado,
         opciones_ocultas=opciones_ocultas,
         efectos=tuple(efectos),
     )
@@ -550,7 +518,6 @@ def escalada_para_pregunta(
     permitidas = base.dificultades_permitidas
     mult = 1
     opciones_ocultas = base.opciones_ocultas
-    fraccion_enunciado = base.fraccion_enunciado
     efectos = list(base.efectos)
 
     for evento in eventos_aleatorios_para_pregunta(
@@ -566,7 +533,6 @@ def escalada_para_pregunta(
             permitidas,
             mult,
             opciones_ocultas,
-            fraccion_enunciado,
         ) = _fusionar_evento_en_escalada(
             evento,
             tiempo=tiempo,
@@ -574,7 +540,6 @@ def escalada_para_pregunta(
             permitidas=permitidas,
             mult=mult,
             opciones_ocultas=opciones_ocultas,
-            fraccion_enunciado=fraccion_enunciado,
             efectos=efectos,
         )
 
@@ -585,17 +550,8 @@ def escalada_para_pregunta(
         dificultades_permitidas=permitidas,
         multiplicador_puntos=mult,
         opciones_ocultas=opciones_ocultas,
-        fraccion_enunciado=fraccion_enunciado,
         efectos=tuple(efectos),
     )
-
-
-def escalada_para_racha(racha: int) -> EscaladaResistencia:
-    """Alias histórico (no usar la racha para dificultad)."""
-    return escalada_para_pregunta(racha + 1)
-
-
-eventos_aleatorios_para_racha = eventos_aleatorios_para_pregunta
 
 
 def aplicar_escalada_a_reglas(base: ReglasPartida, escalada: EscaladaResistencia) -> ReglasPartida:
@@ -611,12 +567,16 @@ def aplicar_escalada_a_reglas(base: ReglasPartida, escalada: EscaladaResistencia
     )
 
 
+def partes_texto_efectos_escalada(escalada: EscaladaResistencia) -> list[str]:
+    if escalada.efectos:
+        return list(escalada.efectos)
+    if escalada.nivel == 0:
+        return ["Inicio: fácil, sin límite de tiempo"]
+    return [f"Nivel {escalada.nivel_visible}"]
+
+
 def texto_efectos_escalada(escalada: EscaladaResistencia) -> str:
-    if not escalada.efectos:
-        if escalada.nivel == 0:
-            return "Inicio: fácil, sin límite de tiempo"
-        return f"Nivel {escalada.nivel_visible}"
-    return " · ".join(escalada.efectos)
+    return " · ".join(partes_texto_efectos_escalada(escalada))
 
 
 def indices_candidatos_resistencia(
@@ -807,7 +767,6 @@ def avisos_pre_pregunta_resistencia(
 ) -> list[str]:
     """Mensajes para popup antes de mostrar la pregunta."""
     from Comun.resistencia_motor import (
-        aviso_apuesta_activa,
         emoji_aviso_exclusiva,
         formatear_aviso_evento,
         prefijar_emoji,
@@ -816,10 +775,6 @@ def avisos_pre_pregunta_resistencia(
     avisos: list[str] = []
     if avisos_extra:
         avisos.extend(avisos_extra)
-    if er is not None:
-        apuesta_aviso = aviso_apuesta_activa(er)
-        if apuesta_aviso:
-            avisos.append(apuesta_aviso)
     for evento in eventos_aleatorios_para_pregunta(
         numero_pregunta,
         semilla_partida=er.semilla_partida if er else None,

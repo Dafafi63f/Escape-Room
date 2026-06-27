@@ -432,10 +432,7 @@ def _construir_seleccion_plantillas_materia(
     n_preguntas: int | None = None,
 ) -> list:
     """Una pregunta aleatoria por plantilla del banco (contenido distinto en cada partida)."""
-    from Comun.rutas import registrar_scripts_en_path
-
-    registrar_scripts_en_path()
-    from utils_plantillas_core import clave_contenido, expandir_plantilla_instancias
+    from Comun.utils_plantillas_core import clave_contenido, expandir_plantilla_instancias
 
     pool_materia = [p for p in preguntas if getattr(p, "materia", "") == materia]
     por_clave: dict[tuple, object] = {}

@@ -42,6 +42,10 @@ class ReglasPartida:
     def tiene_vidas(self) -> bool:
         return self.vidas is not None and self.vidas > 0
 
+    def vidas_iniciales(self) -> int:
+        """Vidas al empezar la partida (restantes = máximo en el arranque)."""
+        return self.vidas if self.tiene_vidas() else 3
+
     def tiene_tiempo(self) -> bool:
         return (self.tiempo_por_pregunta_seg or 0) > 0 or (self.tiempo_total_seg or 0) > 0
 
@@ -61,6 +65,11 @@ class ReglasPartida:
         if self.correccion_al_final:
             partes.append("corrección al final (sin pistas durante el examen)")
         return " · ".join(partes)
+
+
+def vidas_iniciales_partida(reglas: ReglasPartida) -> int:
+    """Vidas de arranque: restantes y tope inicial coinciden."""
+    return reglas.vidas_iniciales()
 
 
 def preset_libre_arcade() -> ReglasPartida:
@@ -132,6 +141,12 @@ def preset_resistencia() -> ReglasPartida:
 def calcular_puntos_arcade(dificultad: str, acierto: bool) -> int:
     base = {"Facil": 10, "Media": 20, "Dificil": 30}.get(dificultad, 15)
     return base if acierto else -max(5, base // 2)
+
+
+def sumar_puntos_arcade(saldo: int, delta: int) -> tuple[int, int]:
+    """Aplica delta al saldo sin permitir negativos. Devuelve (nuevo_saldo, delta_aplicado)."""
+    nuevo = max(0, saldo + delta)
+    return nuevo, nuevo - saldo
 
 
 def nota_sobre_diez(aciertos: int, total: int) -> float:

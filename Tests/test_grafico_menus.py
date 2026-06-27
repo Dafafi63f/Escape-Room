@@ -436,7 +436,7 @@ class TestFlujosMenusGrafico(unittest.TestCase):
 
     def test_libre_sin_nombre_usa_anonimo(self) -> None:
         """Sin nombre guardado, el modo libre usa el jugador anónimo por defecto."""
-        from Comun.jugador import NOMBRE_JUGADOR_DEFECTO
+        from Comun.preferencias_grafico import NOMBRE_JUGADOR_DEFECTO
         from Comun.preferencias_grafico import PreferenciasGrafico, guardar_preferencias_grafico
         from Grafico.pantallas_libre import ConfigFiltrosLibre, ConfigOpcionesLibre
 
