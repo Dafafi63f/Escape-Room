@@ -1,122 +1,315 @@
 # Checklist — TFG MATCAD
 
-Checklist **único** de trabajo pendiente e ideas futuras. El historial y el estado del proyecto están en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
+Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial detallado está en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
 
-**Última actualización:** 2026-06-27
+**Última actualización:** 2026-06-28
 
 ## Cómo mantenerlo
 
-1. **Nueva idea o tarea** → añádela con `- [ ]` en la sección que toque.
-2. **Hecha o descartada** → bórrala de aquí; si importa, una línea en el changelog de [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md) §4.
-3. **No dupliques** aquí el estado del proyecto ni el feedback del tutor (eso va en `CHANGELOG_PROYECTO.md`).
+1. **Nueva idea** → `- [ ]` en la sección que toque.
+2. **Completada** → pasa a `[x]` (no la borres; así se ve el progreso acumulado).
+3. **Descartada** → muévela a §VIII o bórrala; una línea en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md) §4 si importa.
+4. **No dupliques** aquí el feedback del tutor ni el estado narrativo del proyecto (eso va en el changelog).
+
+### Resumen rápido
+
+| Área | Hecho | Pendiente |
+|------|-------|-----------|
+| TFG / memoria | Borrador, figuras, CI docs | PDF final, piloto usuarios |
+| Banco y datos | 480 + plantillas + pool 1000 | Revisar beta, Moodle, prerrequisitos |
+| Juego (5 modos) | Libre, historia, resistencia, escape, feedback | Mapas/UI visual, muchas ideas UX |
+| Estadísticas locales | v1 (panel simplificado + JSON) | Gráficos, repaso, botones acción |
+| Ingeniería | 468 tests, CI, zips, scripts | Docker |
 
 ---
 
-## Memoria y entrega
+## Hecho — núcleo del entregable
 
-- [x] Regenerar figuras (`Docs/generar_figuras_memoria.py`) y Word (`Docs/utilidades_tfg.py --solo-memoria`)
-- [x] Limpieza de temporales del repo (`Docs/utilidades_tfg.py --solo-limpieza`)
-- [x] Merge de la migración «solo pygame» en `main`
-- [ ] Editar maquetación en Word y exportar PDF de entrega
+*(Lo que ya forma parte del TFG funcional; referencia rápida antes de las listas por bloque.)*
+
+### Documentación y pipeline
+
+- [x] Memoria Markdown / LaTeX / Word regenerables (`Docs/Entrega/`, `utilidades_tfg.py`)
+- [x] **9 figuras** de memoria + capturas pygame (`Docs/generar_figuras_memoria.py`)
+- [x] README raíz, `Data/`, `Juego/`, `Files/`, `Tests/`, `Docs/`
+- [x] Changelogs proyecto y jugador (`CHANGELOG_PROYECTO.md`, `CHANGELOG_JUEGO.md`)
+- [x] Esquemas JSON locales del jugador (`persistencia.py`, `--esquemas-juego`)
+- [x] Zip portable + `Jugar.bat` + scripts PowerShell de entorno
+
+### Banco y mantenimiento
+
+- [x] **480** preguntas revisadas en `Preguntas.csv` (balance, metadatos curriculares)
+- [x] **960** plantillas JSON (480 dataset + 480 extras); pool jugable **1000** ítems
+- [x] `mantenimiento.py validar` / `auditar-distractores` / deduplicación (`duplicados.py`)
+- [x] Histórico qualificaciones MatCAD integrado (modo historia, §5.6 memoria)
+- [x] Simulación Monte Carlo (azar) y simulación pity (escape/resistencia)
+
+### Juego pygame — modos y sistemas
+
+- [x] Lanzador único `juego_grafico.py` (migración «solo pygame»)
+- [x] **Modo libre:** filtros curso/semestre/materia, banco seguro/beta, informe `.txt` al cerrar
+- [x] **Modo historia:** carrusel presets, examen balanceado por histórico
+- [x] **Modo resistencia:** racha, apuestas, maldiciones, bloques temáticos, objetos, eventos sí/no + pity
+- [x] **Modo escape room:** salas 5–50, 3 puertas, tienda/botín/descanso/jefe, inventario, pity, economía arcade
+- [x] **Modo feedback:** formulario en pantalla + copia local + SMTP opcional
+- [x] **Modos diarios / examen del día** (semilla fija diaria)
+- [x] Barra superior: pausa, diarios, info (ℹ️), feedback (📣), opciones
+- [x] Opciones: nombre jugador, tooltips, emojis, guardar informes `.txt`, restablecer preferencias/estadísticas, limpiar `.txt`
+- [x] Informes `.txt` por partida en `Data/Juego/` (independientes por sesión)
+- [x] **Estadísticas locales v1** (`estadisticas_jugador.json`, pantalla «Mis estadísticas»)
+- [x] Esquemas JSON documentados (`persistencia.py`, `--esquemas-juego`)
+
+### Ingeniería
+
+- [x] **468** tests unitarios (`Tests/`)
+- [x] CI GitHub Actions: pre-commit, tests, integración, mypy, SonarCloud (opcional)
+- [x] `pre-commit`, `mypy.ini`, `.python-version` (3.14 en CI)
+- [x] Zip portable (`MATCAD_juego_portable.zip`) y mínimo (`MATCAD_juego_minimal.zip`)
+
+---
+
+## I. TFG — entrega y documentación
+
+### Memoria
+
+- [x] Regenerar figuras y Word (`utilidades_tfg.py --solo-memoria`)
+- [x] Limpieza de temporales del repo (`--solo-limpieza`)
+- [x] Merge migración «solo pygame» en `main`
+- [x] Marco teórico, hipótesis H1–H3, cumplimiento objetivos en memoria (feedback tutor)
+- [ ] Editar maquetación en Word y exportar **PDF de entrega**
 - [ ] Releer el PDF final completo antes de entregar
-- [ ] Confirmar con el tutor si la estructura actual de la memoria es aceptable antes de pulir redacción
+- [ ] Confirmar con el tutor estructura de memoria antes de pulir redacción
+- [ ] Apéndice glosario términos MatCAD
+- [ ] Diagrama de arquitectura (Comun / Grafico / Files / Data)
+- [ ] Tabla comparativa Kahoot / Quizlet / Moodle vs MATCAD
+
+### Defensa y difusión
+
+- [ ] Vídeo demo (~3 min): menú → libre → escape → informe
+- [ ] Manual del profesor (1 pág.) en `Docs/`
+- [ ] Badge «reproducible» en README (DOI Zenodo opcional)
+
+### Piloto académico
+
+- [ ] Piloto usabilidad con estudiantes (SUS, motivación, validez predictiva)
+- [ ] Diseño pre/post: SUS + IMI + tiempo de práctica
+- [ ] Grupo control: PDF estático vs gamificado
+- [ ] Métricas automáticas: preguntas/partida, abandono, materias falladas
+- [ ] Entrevista breve (n≈5)
+- [ ] Informe piloto como apéndice o §6 ampliada
+- [ ] Anonimización de logs (opt-in)
 
 ---
 
-## Banco de preguntas y datos
+## II. Contenido y datos
 
-- [x] `plantillas.json` cerrado: **960** filas (480 `dataset_480` + 480 extra reales, 12/materia)
-- [x] Metadatos del pool beta equilibrados (materia, tipo, dificultad)
-- [x] Pool del juego cerrado: **1000** preguntas reales (480 + 480 JSON + 40 resistencia); sin `variaciones`
-- [ ] Revisar **enunciado y distractores** del pool beta jugable (`auditar-distractores`)
-- [ ] Campos `Materias_relacionadas` y `Prerequisitos` en el esquema del banco (evolución futura del CSV)
+### Banco de producción (480 ítems)
 
----
+- [x] Pool cerrado y revisado manualmente
+- [x] Validación estructural y auditoría distractores (scripts)
+- [x] Deduplicación: 0 pares similares en producción (2026-06-15)
+- [ ] Campos `Materias_relacionadas` y `Prerequisitos` en el CSV
 
-## Juego (general)
+### Pool ampliado (plantillas + resistencia)
 
-- [x] Modo escape room jugable (salas, puertas, tienda, botín, inventario, pity)
-- [ ] Piloto de usabilidad con estudiantes del grado (SUS, motivación, validez predictiva)
-- [x] Retirar consola — migración «solo pygame» integrada en `main`
+- [x] `plantillas.json`: 960 filas equilibradas
+- [x] Pool juego: 1000 preguntas reales; sin `variaciones`
+- [x] 40 exclusivas resistencia embebidas en `preguntas_resistencia_exclusivas_datos.py`
+- [ ] Revisar enunciado y distractores del pool **beta** (`auditar-distractores`)
+- [ ] Conmutador global «solo banco producción» (ocultar beta en todos los modos)
 
----
+### Integración y mantenimiento
 
-## Modo escape room — ideas futuras
-
-Implementado en 2026-06-26 y **ya no listado aquí:** salas configurables (5–50), tres puertas por sala, escalada de dificultad, cronómetros y niebla, puertas descanso/tienda/botín, pity de especiales, economía en puntos arcade, inventario reutilizando objetos de resistencia, puertas jefe.
-
-### Progresión y metajuego
-
-- [ ] Checkpoints (guardar sala y estado; reanudar partida a medias)
-- [ ] Ranking local escape (mejor run: salas superadas, puntos arcade, tiempo total)
-- [ ] Mutadores al empezar («sin tienda», «solo dataset», «1 vida», «doble precio en tienda»…)
-- [ ] Logros persistentes (primera victoria 30 salas, comprar los 3 artículos en una visita, superar puerta jefe sin objetos…)
-- [ ] Sala final / cierre de run (pantalla de resumen al completar el guion)
-
-### Valor pedagógico
-
-- [ ] Filtros de partida por curso, semestre o grupo temático (como en historia/libre)
-- [ ] Informe al cerrar: materias y tipos (Teoría/Cálculo) con más fallos en la run
-- [ ] Puertas de repaso adaptativo (priorizar materias débiles según histórico de qualificacions)
-- [ ] Modo «examen escape»: solo banco revisado, sin objetos ni tienda
-
-### UX y presentación
-
-- [ ] Mapa de progreso visual (salas 1→N con iconos de puertas superadas)
-- [ ] Diferenciación gráfica por tipo de puerta (jefe, tienda, descanso, desafío normal)
-- [ ] Transiciones entre salas (animación o panel de «siguiente planta»)
-- [ ] Feedback más claro del pity (cuándo toca descanso/tienda/botín garantizado)
-
-### Contenido y mecánicas
-
-- [ ] Más artículos exclusivos de tienda (no reexportados de resistencia)
-- [ ] Eventos de sala completos (afectan las tres puertas a la vez: niebla global, bonus puntos…)
-- [ ] Puertas encadenadas o excluyentes (elegir una ruta cierra otras en la misma sala)
-- [ ] Bonificación por racha de puertas limpias (multiplicador arcade o botín extra)
-- [ ] Variantes de tamaño de puerta según fase (más bloques de 10 en salas finales)
+- [x] Modo feedback con copia local de reportes
+- [x] Plantilla `creador_privado.json` para SMTP/GitHub
+- [ ] Panel agregado de feedback para profesorado (CSV/HTML)
+- [ ] Etiquetas en reportes (typo, enunciado, distractor…)
+- [ ] Exportación Moodle (GIFT/QTI)
 
 ---
 
-## Modo resistencia — ideas futuras
+## III. Juego — experiencia común
 
-Implementado en 2026-06-18 y **ya no listado aquí:** hitos de racha, apuestas, maldiciones, bloques temáticos, objeto Cambio, eventos sobre la pregunta actual, barra de estado gráfica con chips emoji.
+### Completado
 
-### Progresión y metajuego
+- [x] Cinco modos jugables (libre, historia, resistencia, escape, feedback)
+- [x] Pantalla bienvenida + nombre en opciones (salta bienvenida si ya hay nombre)
+- [x] Menú pausa con volver a menú / continuar
+- [x] Tooltips configurables (on/off)
+- [x] Emojis configurables (on/off)
+- [x] Changelog del juego visible en Info (ℹ️)
 
-- [ ] Checkpoints cada 25 preguntas (guardar progreso y reanudar)
-- [ ] Jefes de materia (bloques 3–5 preguntas de una asignatura con multiplicador alto)
-- [ ] Mutadores al empezar («solo Cálculo», «sin objetos ×1,5 puntos», etc.)
-- [ ] Logros locales persistentes (medallas: exclusiva Legendario, 50 preguntas sin objetos…)
-- [ ] Ranking filtrado (p. ej. por mutador o curso)
-- [ ] Duelo hot-seat (dos jugadores alternando en la misma pantalla)
+### Onboarding y accesibilidad
 
-### Valor pedagógico
+- [ ] Tutorial interactivo primera vez
+- [ ] Tamaño de fuente y alto contraste
+- [ ] Indicadores daltonismo en A–D
+- [ ] Atajos de teclado en partida (1–4, Esc, Enter)
 
-- [ ] Resistencia adaptativa (ponderar materias según histórico `Historic_qualificacions_MatCAD_completo.csv`)
-- [ ] Informe por materia al final de partida (desglose Teoría/Cálculo y grupos)
-- [ ] Rotación curricular obligatoria (penalizar misma materia dos veces seguidas)
+### Informes y compartición
 
-### UX y presentación
-
-- [ ] Mapa de escalada (barra visual umbrales 10 → 25 → 50 → … → 700)
-- [ ] Cooldown de objetos (limitar 50/50 o bomba cada X preguntas)
-- [ ] Intensidad visual (fondo o música según nivel)
-
-### Economía y eventos sí/no
-
-- [x] **Eventos sí/no** (mismo popup ✅/❌): el título indica «Apuesta» (riesgo al responder) u «Oferta» (gasto en pts); No → no pasa nada; Sí deshabilitado sin puntos suficientes
-- [x] Pity suave si llevas varias preguntas sin evento sí/no
-- [x] Exclusión mutua: un solo evento sí/no por turno
-
-### Contenido
-
-- [ ] Sets rotativos de exclusivas («Semana de Probabilidad», «Maratón de Programación»)
-- [ ] Más tiers de exclusivas (más allá de Élite → Imposible)
+- [x] Informe `.txt` detallado al cerrar partida (configurable en opciones)
+- [x] Estadísticas por materia en informe `.txt`
+- [ ] Exportar informe a PDF/CSV desde pantalla de cierre
+- [ ] Código de partida (semilla + filtros exportables)
+- [ ] Presets libre guardados por el jugador
 
 ---
 
-## Descartado por diseño (no implementar)
+## Estadísticas locales del usuario
 
-- **Reto del día escape o resistencia** — semilla fija diaria comparable entre jugadores; solo el **Examen del día** (`examen_fijo`) usa semilla diaria.
-- **Avisos sobre preguntas futuras** — solo efectos sobre la pregunta actual o bloques en curso.
-- **Eventos que cambian la selección del pool** — los eventos modifican la pregunta ya elegida; la segmentación va en bloques temáticos.
+*v1 — 2026-06-28*
+
+### Completado
+
+- [x] Pantalla «Mis estadísticas» (Info → 📊)
+- [x] `estadisticas_jugador.json` (creado al arrancar si falta)
+- [x] Registro al cerrar partida (todos los modos, vía `ResumenPartida`)
+- [x] Restablecer estadísticas desde Opciones (⚙️)
+- [x] Totales globales, evolución semanal, desglose por modo
+- [x] Récords resistencia (máx. pregunta y puntos) y escape; mejor sesión %
+- [x] Ranking materias débiles y fuertes (mín. 3 intentos); Teoría vs Cálculo
+- [x] Panel siempre visible (ceros si no hay datos); sin historial partida a partida ni ranking JSON
+
+### Pendiente
+
+- [ ] Tarjeta «Sigue por aquí»
+- [ ] Gráficos semanales (% y volumen) + filtro por modo
+- [ ] Tendencia por materia (↑ ↓ →)
+- [ ] Mejor nota historia/libre por preset; hitos desbloqueados
+- [ ] Botón «ver informe» `.txt`; export stats CSV
+- [ ] Opt-out «no registrar estadísticas»
+- [ ] Preguntas repetidas mal; botón «Practica {materia}»
+- [ ] Pestañas detalle por modo; repaso espaciado / solo mis fallos
+
+---
+
+## IV. Por modo
+
+### Modo libre
+
+**Completado**
+
+- [x] Asistente filtros (curso, semestre, materia, tipo, dificultad)
+- [x] Modo seguro (480) y beta (plantillas)
+- [x] Partida finita e infinita
+- [x] Informe al cerrar con desglose
+
+**Pendiente**
+
+- [ ] Tercer panel de configuración en modo libre: eventos y powerups de modos especiales (resistencia / escape) activables en partida libre
+- [x] Registrar duración de partida (tiempo global ya configurable) en informes `.txt` y en `estadisticas_jugador.json` / panel «Mis estadísticas»
+
+### Modo historia
+
+**Completado**
+
+- [x] Presets configurables (`Juego/presets.json`)
+- [x] Ponderación por histórico qualificacions
+- [x] Informe examen con nota y materias a reforzar
+
+**Pendiente**
+
+- [ ] Tras cerrar un simulacro/examen (historia o examen fijo): botón «Otro examen dirigido» que genera un nuevo test usando los **aciertos y fallos de esa sesión** (materias/temas débiles del jugador), no solo el histórico institucional del grado
+
+### Modo resistencia
+
+**Completado**
+
+- [x] Partida continua con vidas y puntos arcade
+- [x] Hitos de racha, apuestas, maldiciones, bloques temáticos
+- [x] Objetos (bomba, 50/50, escudo, salto, cambio, amuleto…)
+- [x] Eventos sobre pregunta (niebla, relámpago, doble puntos…)
+- [x] Eventos sí/no (Apuesta/Oferta) + pity + exclusión mutua
+- [x] Barra de estado con chips emoji
+- [x] Preguntas exclusivas por tier/racha
+
+**Pendiente**
+
+- [ ] Checkpoints cada 25 preguntas
+- [ ] Jefes de materia
+- [ ] Mutadores al empezar
+- [ ] Logros persistentes
+- [ ] Duelo hot-seat
+- [ ] Adaptativa según qualificacions; informe por materia al cerrar
+- [ ] Rotación curricular; sets rotativos; más tiers
+- [ ] Mapa escalada (ver §V mapas); cooldown objetos; intensidad visual/audio
+
+### Modo escape room
+
+**Completado**
+
+- [x] Salas configurables 5–50, tres puertas por sala
+- [x] Escalada dificultad, cronómetros, niebla
+- [x] Puertas descanso / tienda / botín / jefe
+- [x] Pity suave + hard pity por tipo
+- [x] Economía arcade y tienda (precio mínimo viable)
+- [x] Inventario compartido con resistencia
+- [x] Semilla aleatoria por partida
+- [x] Informe `.txt` al terminar
+
+**Pendiente**
+
+- [ ] Checkpoints y reanudar
+- [ ] Mutadores; logros; sala final / resumen de run
+- [ ] Filtros curriculares; informe materias débiles; modo examen escape
+- [ ] Mapa progreso (ver §V mapas); iconografía por tipo puerta; transiciones; pity visible
+- [ ] Artículos tienda exclusivos; eventos sala global; puertas encadenadas
+- [ ] Bonificación racha puertas; puertas más largas en fases finales
+
+---
+
+## V. Dirección artística (UI visual)
+
+*(Sin capa narrativa prevista: no guion, personajes ni bocadillos. Objetivo a medio plazo: **mapas y arte** para orientar por imagen y reducir texto/tooltips.)*
+
+- [ ] **Mapas de juego** (menú, escape, resistencia, etc.): progreso y elecciones en pantalla en lugar de listas largas; menos texto explicativo y tooltips de por medio
+- [ ] Fondos o escenas por sala/modo (arte estático + hotspots; **sin** diálogos ni historia)
+- [ ] Inventario con sprites propios (sustituir emojis)
+- [ ] Música/FX opcionales + toggle
+
+---
+
+## VI. Experiencia de juego
+
+*(Ideas lúdicas sin lente académico — todo pendiente.)*
+
+### Sensación («juice»), audio, modos alternativos, metajuego, social, anti-frustración, curiosidades
+
+- [ ] Ver listado completo en historial git / notas anteriores; ningún ítem de §VI implementado aún
+- [ ] Candidatos prioritarios: combo visual racha, SFX acierto/fallo, barra pity visible resistencia, récord personal al superar marca
+
+---
+
+## VII. Ingeniería y mantenimiento
+
+### Completado
+
+- [x] Suite tests unitarios (468 tests)
+- [x] CI: tests.yml (pre-commit, unit, integration, mypy, summary)
+- [x] CI: sonarcloud.yml, pr_agent.yml (opcionales)
+- [x] mypy en `Juego/Comun` y `Files/`
+- [x] `utilidades_tfg.py` + `crear_zip_minimal.py`
+- [x] Tests dominio: libre, historia, resistencia, escape, semillas, eventos, informes
+- [x] Tests UI gráfica parciales (menús, preferencias, estadísticas, lanzador)
+
+### Pendiente
+
+- [x] Tests UI ampliados (flujos escape/resistencia con semilla fija en navegación)
+- [x] mypy extendido a todo `Juego/Grafico/`
+- [x] CI: job de empaquetado de zips en Windows
+- [x] Script «health check» único (datos + tests + validar banco)
+- [ ] Docker desarrollo
+- [ ] Benchmark arranque pool 1000 preguntas
+
+---
+
+## VIII. Descartado por diseño
+
+- **Reto del día escape o resistencia** — solo **Examen del día** usa semilla diaria fija.
+- **Avisos sobre preguntas futuras** — solo efectos sobre pregunta actual o bloques en curso.
+- **Eventos que cambian selección del pool** — segmentación vía bloques temáticos.
+- **Ranking JSON / pantalla dedicada** — sustituido por récords en `estadisticas_jugador.json` (2026-06-28).
+- **Ranking online obligatorio** — no previsto.
+- **Microtransacciones** — economía 100 % in-game.
+- **Narrativa / historia / texto de ambientación** — no previsto (guion por salas, personaje guía, bocadillos, transiciones narrativas, estilo Inka Games). Sí se contempla UI visual (mapas, fondos, sprites) sin relato.

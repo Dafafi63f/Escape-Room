@@ -7,7 +7,7 @@ from __future__ import annotations
 import random
 import unittest
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 

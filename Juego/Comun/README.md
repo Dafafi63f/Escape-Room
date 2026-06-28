@@ -4,39 +4,56 @@ Paquete **`Comun`** (`Juego/Comun/`). Dominio del juego: modelos, datos, reglas,
 
 Se importa con `Juego/` en el `sys.path` (véase [`juego_grafico.py`](../juego_grafico.py)).
 
+## Juego completo vs mínimo
+
+Al arrancar, [`contenido.py`](contenido.py) construye un [`PerfilContenido`](perfil_contenido.py) según los datos disponibles. La UI y el motor consultan **propiedades del perfil** (`modo_minimo`, `banco_beta_disponible`, `filtros_libre_disponibles`, `modo_disponible()`, etc.) en lugar de ramificar por rutas globales.
+
+| Módulo | Responsabilidad |
+|--------|-----------------|
+| `contenido.py` | Marcadores de paquete, validación CSV, bootstrap y degradación automática |
+| `perfil_contenido.py` | Capacidades activas según datos y modo |
+
+Rutas resueltas en carga (`path_listado_materias`, `path_plantillas_json`, `path_historico`) viajan en `DatosJuego`; no usar `PATH_MATERIAS` ni `resolver_plantillas()` en pantallas si hay datos cargados.
+
+Distribución:
+
+| Zip | Marcador | Comportamiento |
+|-----|----------|----------------|
+| `MATCAD_juego_minimal.zip` | `.matcad-paquete-minimo` | Datos de usuario: solo CSV mínimo junto al paquete |
+| `MATCAD_juego_portable.zip` | `.matcad-paquete-completo` | Juego MATCAD completo del autor |
+| Repositorio (dev) | ninguno | Completo si `Data/` cumple requisitos; avisos si falta algo |
+
 ## Módulos — núcleo
 
 | Módulo | Responsabilidad |
 |--------|-----------------|
 | `modelos.py` | `Pregunta`, `BancoPreguntas`, etiquetas |
-| `rutas.py` | Rutas a `Data/Banco/`, `Data/Juego/`, PyInstaller |
+| `rutas.py` | Rutas a `Data/Banco/`, `Data/Juego/` |
 | `datos.py` | Carga CSV/JSON, conteo de bancos |
-| `reglas_partida.py` | Presets, puntuación arcade/nota/porcentaje y mínimos globales |
-| `reglas_libre.py` | Compatibilidad, configuración y API del wizard del modo libre |
-| `politica_reglas.py` | Validación y clasificación por contexto |
-| `dificultad.py` | Complejidad y dificultad progresiva |
+| `reglas.py` | Presets, puntuación, modo libre, validación por contexto y complejidad |
 | `pool_libre.py` | Pool, filtros, elección de siguiente pregunta |
-| `motor_nucleo.py` | `EstadoPartida`, evaluación de respuestas (sin E/S) |
+| `motor_nucleo.py` | `EstadoPartida`, evaluación de respuestas, `NavegacionFinPartida` (sin E/S) |
 | `semillas.py` | Semilla diaria (examen del día), semilla de partida, `RngPartida` y `resolver_semillas_partida()` |
 | `preferencias_grafico.py` | Preferencias globales gráficas y nombre de jugador |
 | `textos_ui.py` | Etiquetas, emojis y textos compartidos (UI gráfica) |
 | `informe_examen.py` | Informes `.txt` y metadatos al cerrar partida |
-| `stdio_utf8.py` | UTF-8 en stdout/stderr (Windows) |
+| `util.py` | UTF-8 en stdout/stderr (Windows) y utilidades transversales |
+| `utils_plantillas_core.py` | Claves de contenido y expansión de plantillas (reexportado desde `Files/`) |
 
 ## Módulos — modo historia, resistencia y especiales
 
 | Módulo | Responsabilidad |
 |--------|-----------------|
-| `config_historia.py` | Opciones y validación de presets historia (v27) |
-| `presets_historia.py` | Carga de `Data/Juego/presets.json` (catálogo unificado) |
+| `config_historia.py` | Opciones y validación de presets historia |
+| `presets_historia.py` | Carga de `Juego/presets.json` (catálogo unificado) |
 | `generador_examen_historia.py` | Plan de examen balanceado y perfiles pedagógicos (modo historia) |
 | `resistencia_partida.py` | Pool, escalada y selección de preguntas del modo resistencia |
 | `resistencia_motor.py` | Probabilidades, estado, powerups, iconos, mecánicas y turnos del modo resistencia |
 | `preguntas_resistencia.py` | Pool exclusivo de preguntas resistencia |
+| `preguntas_resistencia_exclusivas_datos.py` | 40 preguntas exclusivas (datos embebidos) |
 | `modos_diarios.py` | Examen del día y examen fijo (`semilla_diaria` vía `semillas.py`) |
-| `ranking_resistencia.py` | Ranking local (`ranking_resistencia.json`) |
-| `preferencias_ranking.py` | Retención interna del ranking (sin fichero ni UI) |
-| `datos_locales_juego.py` | Creación al inicio y limpieza desde el juego (`Data/Juego/`) |
+| `estadisticas_jugador.py` | Estadísticas locales agregadas (`estadisticas_jugador.json`) |
+| `persistencia.py` | Esquemas JSON, valores por defecto e inicialización/limpieza de `Data/Juego/` |
 | `feedback.py` | Formulario, envío SMTP, contacto público y plantilla `creador_privado.json` |
 | `eventos_partida.py` | Catálogo común; `rol_escape` puerta vs contenido; botín y pity escape; eventos sí/no resistencia |
 | `escape_room.py` | Salas, generación de puertas, pity y semilla aleatoria por partida |
@@ -67,11 +84,11 @@ Detalle en [`semillas.py`](semillas.py) y [`modos_diarios.py`](modos_diarios.py)
 
 | Ubicación | Contenido |
 |-----------|-----------|
-| [`Grafico/`](../Grafico/README.md) | Pantallas pygame, widgets, tema, tooltips, [`changelog_juego.py`](../Grafico/changelog_juego.py) |
+| [`Grafico/`](../Grafico/README.md) | Pantallas pygame, widgets, tema, tooltips, [`modo_preset.py`](../Grafico/modo_preset.py) (`construir_navegacion_fin_partida`), [`changelog_juego.py`](../Grafico/changelog_juego.py) |
 | [`Files/borrar_temporales.py`](../../Files/borrar_temporales.py) | Limpieza externa del repo (CLI: [`Docs/utilidades_tfg.py`](../../Docs/utilidades_tfg.py)) |
 
 El gráfico elige banco en [`Grafico/pantallas_libre.py`](../Grafico/pantallas_libre.py).
 
 ## Pruebas de dominio
 
-Los tests en [`Tests/test_dominio_juego.py`](../../Tests/test_dominio_juego.py), [`Tests/test_escape_room.py`](../../Tests/test_escape_room.py), [`Tests/test_eventos_partida.py`](../../Tests/test_eventos_partida.py) y [`Tests/test_semillas.py`](../../Tests/test_semillas.py) cubren dominio, escape, eventos y semillas.
+Los tests en [`Tests/test_dominio_juego.py`](../../Tests/test_dominio_juego.py), [`Tests/test_escape_room.py`](../../Tests/test_escape_room.py), [`Tests/test_eventos_partida.py`](../../Tests/test_eventos_partida.py), [`Tests/test_carga_contenido.py`](../../Tests/test_carga_contenido.py) y [`Tests/test_semillas.py`](../../Tests/test_semillas.py) cubren dominio, escape, eventos, contenido y semillas. Soporte en [`Tests/Fixtures/`](../../Tests/README.md#fixtures-soporte-no-tests).

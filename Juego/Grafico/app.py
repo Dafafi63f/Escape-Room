@@ -12,6 +12,7 @@ import math
 import pygame
 
 from Comun.modelos import Pregunta
+from Comun.perfil_contenido import PerfilContenido
 from Grafico.textos_grafico import (
     BTN_CONTINUAR,
     BTN_CONTINUAR_PARTIDA,
@@ -36,24 +37,25 @@ from Grafico.tema import (
 )
 from Grafico.ui import Boton, dibujar_panel, dibujar_tooltips_botones, dibujar_overlay_atenuacion, rects_botones_apilados
 from Grafico.tooltips_ui import (
-    TOOLTIP_DIARIOS,
     TOOLTIP_FEEDBACK,
     TOOLTIP_OPCIONES,
     TOOLTIP_PAUSA,
     TOOLTIP_RANKING,
+    tooltip_barra_diarios,
     tooltips_menu_pausa,
 )
 from Grafico.menu_opciones import OverlayOpcionesGrafico
-from Comun.ranking_resistencia import finalizar_ranking_al_salir, inicializar_ranking_sesion
 from Comun.preferencias_grafico import debe_saltar_bienvenida_grafico
 from Grafico.pantallas import MenuPrincipal, Pantalla, PartidaModoLibre
 from Grafico.pantallas_sistema import PantallaFeedback, PantallaInfoHub, PantallaInfoTexto
 from Grafico.pantallas_inicio import PantallaBienvenida
-from Grafico.pantallas_historia import PartidaModoHistoria, PartidaResistenciaHistoria
+from Grafico.pantallas_examen_fijo import PartidaModoHistoria
+from Grafico.pantallas_resistencia_partida import PartidaResistencia
 
 _ETIQUETA_ICONO_FIJO_SIN_EMOJI: dict[str, str] = {
     "pausa": "PA",
     "diarios": "DI",
+    "examen_fijo": "EF",
     "ranking": "IN",
     "feedback": "FB",
     "opciones": "OP",
@@ -61,11 +63,17 @@ _ETIQUETA_ICONO_FIJO_SIN_EMOJI: dict[str, str] = {
 
 _ICONOS_FIJOS_CFG: tuple[tuple[str, str], ...] = (
     ("pausa", TOOLTIP_PAUSA),
-    ("diarios", TOOLTIP_DIARIOS),
+    ("diarios", ""),
     ("ranking", TOOLTIP_RANKING),
     ("feedback", TOOLTIP_FEEDBACK),
     ("opciones", TOOLTIP_OPCIONES),
 )
+
+
+def _clave_icono_barra(tipo: str, perfil: PerfilContenido) -> str:
+    if tipo == "diarios" and perfil.examen_fijo_barra_completo:
+        return "examen_fijo"
+    return tipo
 
 
 def crear_botones_iconos_fijos(
@@ -181,7 +189,11 @@ class DatosJuego:
     preguntas: list[Pregunta]
     materias_meta: dict[str, dict[str, str]]
     path_preguntas_csv: Path
-    path_plantillas_json: Path
+    path_plantillas_json: Path | None = None
+    path_listado_materias: Path | None = None
+    path_historico: Path | None = None
+    perfil: PerfilContenido = field(default_factory=PerfilContenido.completo)
+    avisos_carga: tuple[str, ...] = ()
     abrir_feedback: Callable[[], None] | None = field(default=None, repr=False, compare=False)
 
 
@@ -189,7 +201,6 @@ class AplicacionGrafica:
     """Ventana pygame con menú y modos jugables."""
 
     def __init__(self, datos: DatosJuego, *, saltar_bienvenida: bool = False) -> None:
-        inicializar_ranking_sesion()
         pygame.init()
         pygame.display.set_caption(TITULO_VENTANA)
         self.pantalla = pygame.display.set_mode((ANCHO, ALTO))
@@ -207,6 +218,7 @@ class AplicacionGrafica:
         self._overlay_opciones: OverlayOpcionesGrafico | None = None
         self._anterior: Pantalla | None = None
         self._botones_fijos = self._crear_botones_fijos()
+        self._aplicar_perfil_barra_fija()
         self._botones_pausa: list[Boton] = []
 
     def _ir_a(self, pantalla: Pantalla) -> None:
@@ -241,7 +253,7 @@ class AplicacionGrafica:
     def _en_partida(self) -> bool:
         return isinstance(
             self._pantalla_en_contexto(),
-            (PartidaModoLibre, PartidaModoHistoria, PartidaResistenciaHistoria),
+            (PartidaModoLibre, PartidaModoHistoria, PartidaResistencia),
         )
 
     def _crear_botones_fijos(self) -> list[tuple[Boton, str]]:
@@ -367,22 +379,10 @@ class AplicacionGrafica:
             self.actual = pantalla_previa
             pantalla_previa.restaurar_vista_completa()
 
-        def abrir_ranking(volver_al_hub: Callable[[], None]) -> None:
-            from Grafico.pantallas_historia import RankingResistenciaHistoria
-
-            preset_id = self._preset_ranking_desde_pantalla(pantalla_previa)
-            self.actual = RankingResistenciaHistoria(
-                self.datos,
-                self._navegar_auxiliar,
-                self._salir,
-                volver_a=volver_al_hub,
-                preset_id_inicial=preset_id,
-            )
-
         self.actual = PantallaInfoHub(
             volver,
             navegar=self._navegar_auxiliar,
-            abrir_ranking=abrir_ranking,
+            perfil=self.datos.perfil,
         )
 
     def _abrir_feedback(self) -> None:
@@ -402,50 +402,37 @@ class AplicacionGrafica:
 
         self.actual = PantallaFeedback(volver)
 
+    def _aplicar_perfil_barra_fija(self) -> None:
+        for boton, tipo in self._botones_fijos:
+            if tipo != "diarios":
+                continue
+            if not self.datos.perfil.modos_diarios_disponibles:
+                boton.activo = False
+            else:
+                boton.tooltip = tooltip_barra_diarios(self.datos.perfil)
+
     def _abrir_diarios(self) -> None:
         if self._overlay_abierto():
+            return
+        if not self.datos.perfil.modos_diarios_disponibles:
+            return
+        if self.datos.perfil.examen_fijo_barra_completo:
+            from Comun.modos_diarios import ID_PRESET_EXAMEN_FIJO
+            from Grafico.pantallas_examen_fijo import ConfigOpcionesHistoria
+            from Grafico.pantallas_modos import abrir_config_examen_fijo
+
+            if (
+                isinstance(self.actual, ConfigOpcionesHistoria)
+                and self.actual.preset.id == ID_PRESET_EXAMEN_FIJO
+            ):
+                return
+            abrir_config_examen_fijo(self.datos, self._ir_a, self._salir)
             return
         from Grafico.pantallas_modos import ConfigModosDiarios
 
         if isinstance(self.actual, ConfigModosDiarios):
             return
         self._ir_a(ConfigModosDiarios(self.datos, self._ir_a, self._salir))
-
-    def _abrir_ranking(self) -> None:
-        """Atajo directo al ranking (p. ej. desde código o tests)."""
-        if self._overlay_abierto():
-            return
-        from Grafico.pantallas_historia import RankingResistenciaHistoria
-
-        if isinstance(self.actual, RankingResistenciaHistoria):
-            return
-
-        pantalla_previa = self.actual
-        preset_id = self._preset_ranking_desde_pantalla(pantalla_previa)
-
-        def volver() -> None:
-            self.actual = pantalla_previa
-            pantalla_previa.restaurar_vista_completa()
-
-        self._navegar_auxiliar(
-            RankingResistenciaHistoria(
-                self.datos,
-                self._navegar_auxiliar,
-                self._salir,
-                volver_a=volver,
-                preset_id_inicial=preset_id,
-            )
-        )
-
-    def _preset_ranking_desde_pantalla(self, pantalla: Pantalla) -> str | None:
-        from Grafico.pantallas_modos import ConfigModosEspeciales
-        from Grafico.pantallas_historia import ResumenResistenciaHistoria
-
-        if isinstance(pantalla, ResumenResistenciaHistoria):
-            return pantalla.preset.id
-        if isinstance(pantalla, ConfigModosEspeciales):
-            return "ranking_resistencia"
-        return None
 
     def _manejar_hover_fijos(self, pos: tuple[int, int]) -> None:
         if self._barra_fija_bloqueada():
@@ -533,13 +520,13 @@ class AplicacionGrafica:
 
             for b, tipo in self._botones_fijos:
                 b.dibujar(self.pantalla, self.fuentes["menu"])
-                dibujar_icono_fijo_en(self.pantalla, self.fuentes, tipo, b.rect)
+                clave = _clave_icono_barra(tipo, self.datos.perfil)
+                dibujar_icono_fijo_en(self.pantalla, self.fuentes, clave, b.rect)
 
             self._dibujar_overlays_y_tooltips()
 
             pygame.display.flip()
             self.reloj.tick(FPS)
-        finalizar_ranking_al_salir()
         pygame.quit()
 
     def _dibujar_contenido_menu_pausa(self) -> None:

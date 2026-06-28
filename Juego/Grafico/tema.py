@@ -82,6 +82,8 @@ COLOR_PANEL = (26, 58, 110)
 COLOR_TEXTO_PANEL = (170, 190, 220)
 COLOR_ACENTO = (70, 130, 210)
 
+TAMANO_FUENTE_PEQUENA = 16
+
 
 def crear_fuentes() -> dict[str, pygame.font.Font]:
     return {
@@ -91,7 +93,7 @@ def crear_fuentes() -> dict[str, pygame.font.Font]:
         "menu": crear_fuente(24, familia="texto"),
         "opcion": crear_fuente(20, familia="texto"),
         "pie": crear_fuente(18, familia="texto"),
-        "pequena": crear_fuente(16, familia="texto"),
+        "pequena": crear_fuente(TAMANO_FUENTE_PEQUENA, familia="texto"),
         # Iconos de la barra fija: símbolos (⏯) y emojis (📣).
         "icono": crear_fuente(22, familia="simbolos"),
         "icono_emoji": crear_fuente(22, familia="emoji"),

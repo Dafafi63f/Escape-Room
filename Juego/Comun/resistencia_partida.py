@@ -7,7 +7,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field
 
-from Comun.dificultad import complejidad_pregunta, max_complejidad_pool
+from Comun.reglas import complejidad_pregunta, max_complejidad_pool
 from Comun.modelos import Pregunta
 from Comun.pool_libre import EstadoSeleccionPool, crear_estado_seleccion
 from Comun.preguntas_resistencia import (
@@ -17,7 +17,7 @@ from Comun.preguntas_resistencia import (
     pool_resistencia_desde_dataset,
 )
 from Comun.resistencia_motor import PREGUNTA_MIN_EVENTOS_ALEATORIOS
-from Comun.reglas_partida import ReglasPartida
+from Comun.reglas import ReglasPartida
 
 __all__ = [
     "BancoResistencia",
@@ -42,7 +42,9 @@ __all__ = [
     "pool_resistencia_desde_dataset",
     "probabilidad_pregunta_exclusiva",
     "partes_texto_efectos_escalada",
+    "partes_texto_barra_resistencia",
     "texto_efectos_escalada",
+    "texto_meta_pregunta_resistencia",
 ]
 
 _DIFICULTADES = ("Facil", "Media", "Dificil")
@@ -436,8 +438,21 @@ def _fusionar_evento_en_escalada(
     return tiempo, max_cx, permitidas, mult, opciones_ocultas
 
 
-def baseline_escalada_resistencia(numero_pregunta: int) -> BaselineEscaladaResistencia:
+def baseline_escalada_resistencia(
+    numero_pregunta: int,
+    *,
+    solo_eventos: bool = False,
+) -> BaselineEscaladaResistencia:
     """Reglas fijas por progreso: tiempo y niebla pasan a ser permanentes en fases altas."""
+    if solo_eventos:
+        return BaselineEscaladaResistencia(
+            nivel=0,
+            tiempo_pregunta_seg=None,
+            max_complejidad=99,
+            dificultades_permitidas=frozenset(_DIFICULTADES),
+            opciones_ocultas=0,
+            efectos=(),
+        )
     progreso = max(0, numero_pregunta - 1)
     tiempo: int | None = None
     max_cx = 2
@@ -510,7 +525,8 @@ def escalada_para_pregunta(
     """Calcula reglas vigentes según el número de pregunta (1 = inicio fácil, sin tiempo)."""
     from Comun.resistencia_motor import rng_partida
 
-    base = baseline_escalada_resistencia(numero_pregunta)
+    solo_eventos = er is not None and getattr(er, "sin_escalada_dificultad", False)
+    base = baseline_escalada_resistencia(numero_pregunta, solo_eventos=solo_eventos)
     tiempo = base.tiempo_pregunta_seg
     max_cx = base.max_complejidad
     permitidas = base.dificultades_permitidas
@@ -568,16 +584,113 @@ def aplicar_escalada_a_reglas(base: ReglasPartida, escalada: EscaladaResistencia
     )
 
 
-def partes_texto_efectos_escalada(escalada: EscaladaResistencia) -> list[str]:
+def _efecto_barra_resistencia_visible(etiqueta: str) -> bool:
+    """Etiquetas de escalada que tienen sentido en CSV mínimo (sin metadatos de dificultad)."""
+    if not etiqueta:
+        return False
+    lower = etiqueta.lower()
+    bloqueados = (
+        "preguntas fáciles",
+        "preguntas faciles",
+        "preguntas difíciles",
+        "preguntas dificiles",
+        "sin preguntas",
+        "solo preguntas",
+        "nivel extremo",
+        "dificultad:",
+        "pregunta difícil",
+        "pregunta extra difícil",
+    )
+    if any(fragmento in lower for fragmento in bloqueados):
+        return False
+    if lower.startswith("nivel "):
+        return False
+    if lower == "sin límite de tiempo":
+        return False
+    return True
+
+
+def partes_texto_barra_resistencia(
+    escalada: EscaladaResistencia,
+    er,
+    *,
+    limite_tiempo_seg: int | None = None,
+) -> list[str]:
+    """Texto naranja bajo la barra: tiempo, eventos y ayudas de la pregunta (paquete mínimo)."""
+    partes: list[str] = []
+    tiene_tiempo = False
+    for etiqueta in escalada.efectos:
+        if not _efecto_barra_resistencia_visible(etiqueta):
+            continue
+        partes.append(etiqueta)
+        if etiqueta.startswith(("Relámpago", "Tiempo:")):
+            tiene_tiempo = True
+    if limite_tiempo_seg is not None and not tiene_tiempo:
+        partes.append(f"Tiempo: {limite_tiempo_seg} s")
+    if er is None:
+        return partes
+    if er.maldicion is not None:
+        partes.append(er.maldicion.etiqueta)
+    if er.escudo_activo:
+        partes.append("Escudo activo")
+    if er.objetos_bloqueados:
+        partes.append("Objetos bloqueados")
+    if er.bonus_proximo_acierto > 0:
+        partes.append(f"+{er.bonus_proximo_acierto} pts si aciertas")
+    from Comun.resistencia_motor import aviso_apuesta_activa, etiqueta_powerup
+
+    apuesta = aviso_apuesta_activa(er)
+    if apuesta:
+        partes.append(apuesta)
+    for pid in sorted(er.powerups_usados_en_pregunta):
+        partes.append(etiqueta_powerup(pid))
+    return partes
+
+
+def partes_texto_efectos_escalada(
+    escalada: EscaladaResistencia,
+    *,
+    solo_eventos: bool = False,
+) -> list[str]:
+    if solo_eventos:
+        return [
+            e for e in escalada.efectos if _efecto_barra_resistencia_visible(e)
+        ]
     if escalada.efectos:
         return list(escalada.efectos)
+    if escalada.tiempo_pregunta_seg is not None:
+        return [f"Tiempo: {escalada.tiempo_pregunta_seg} s por pregunta"]
     if escalada.nivel == 0:
-        return ["Inicio: fácil, sin límite de tiempo"]
+        return ["Sin límite de tiempo"]
     return [f"Nivel {escalada.nivel_visible}"]
 
 
-def texto_efectos_escalada(escalada: EscaladaResistencia) -> str:
-    return " · ".join(partes_texto_efectos_escalada(escalada))
+def texto_efectos_escalada(
+    escalada: EscaladaResistencia,
+    *,
+    solo_eventos: bool = False,
+) -> str:
+    return " · ".join(partes_texto_efectos_escalada(escalada, solo_eventos=solo_eventos))
+
+
+def texto_meta_pregunta_resistencia(
+    pregunta: Pregunta,
+    escalada: EscaladaResistencia,
+    *,
+    solo_eventos: bool = False,
+) -> str:
+    """Subtítulo bajo la pregunta: metadatos del CSV o efectos de resistencia (paquete mínimo)."""
+    if solo_eventos:
+        partes = partes_texto_efectos_escalada(escalada, solo_eventos=True)
+        if escalada.tiempo_pregunta_seg is not None and not any(
+            p.startswith(("Relámpago", "Tiempo:")) for p in partes
+        ):
+            partes.append(f"Tiempo: {escalada.tiempo_pregunta_seg} s")
+        return " · ".join(partes)
+    return (
+        f"{pregunta.materia} · {pregunta.tipo} / {pregunta.dificultad}"
+        f" · Nivel {escalada.nivel_visible}"
+    )
 
 
 def indices_candidatos_resistencia(
@@ -609,6 +722,7 @@ def _indices_candidatos(
     candidatas: list[int] = []
     progreso = max(0, numero_pregunta - 1)
     banco = getattr(er, "banco_resistencia", None) if er is not None else None
+    sin_esc = er is not None and getattr(er, "sin_escalada_dificultad", False)
     for idx, p in enumerate(pool):
         if banco is not None and not banco.indice_habilitado(idx, numero_pregunta):
             continue
@@ -616,10 +730,11 @@ def _indices_candidatos(
             continue
         if p.racha_minima_resistencia > progreso:
             continue
-        if p.dificultad not in escalada.dificultades_permitidas:
-            continue
-        if complejidad_pregunta(p) > escalada.max_complejidad:
-            continue
+        if not sin_esc:
+            if p.dificultad not in escalada.dificultades_permitidas:
+                continue
+            if complejidad_pregunta(p) > escalada.max_complejidad:
+                continue
         if er is not None and not pregunta_compatible_bloque(p, er):
             continue
         if solo_no_usadas and idx in estado.usadas:

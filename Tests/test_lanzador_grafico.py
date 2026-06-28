@@ -12,11 +12,11 @@ from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 
-from Tests.adaptador_juego import crear_backend  # noqa: E402
+from Tests.Fixtures.adaptador_juego import crear_backend  # noqa: E402
 
 _JUEGO = Path(__file__).resolve().parents[1] / "Juego"
 
@@ -66,9 +66,13 @@ class TestLanzadorGrafico(unittest.TestCase):
     def test_main_sin_datos_imprime_error(self) -> None:
         modulo = _importar_lanzador()
         buf = StringIO()
-        with patch.object(modulo, "cargar_materias", side_effect=FileNotFoundError("sin CSV")):
+        with patch.object(
+            modulo,
+            "cargar_contenido_juego",
+            side_effect=FileNotFoundError("sin CSV"),
+        ):
             with patch("sys.stdout", buf):
-                modulo.main()
+                modulo.main([])
         self.assertIn("sin CSV", buf.getvalue())
 
 

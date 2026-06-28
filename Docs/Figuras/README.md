@@ -14,7 +14,7 @@ Capturas pygame (menú + escape room; también incluidas en el script anterior):
 python Docs/capturar_pantallas_juego.py
 ```
 
-Las capturas del juego incluyen la **barra fija superior** (pausa, diarios, ranking, feedback, opciones), igual que al ejecutar `juego_grafico.py`.
+Las capturas del juego incluyen la **barra fija superior** (pausa, diarios, estadísticas, feedback, opciones), igual que al ejecutar `juego_grafico.py`.
 
 ## Numeración global en la memoria
 

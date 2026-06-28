@@ -25,7 +25,7 @@ if str(_JUEGO) not in sys.path:
 from Comun.semillas import RngPartida  # noqa: E402
 from Comun.datos import cargar_materias, cargar_preguntas  # noqa: E402
 from Comun.modelos import Pregunta  # noqa: E402
-from Comun.reglas_partida import calcular_puntos_arcade, nota_sobre_diez  # noqa: E402
+from Comun.reglas import calcular_puntos_arcade, nota_sobre_diez  # noqa: E402
 from Comun.rutas import resolver_dataset, resolver_listado_materias  # noqa: E402
 
 _LETRAS = ("A", "B", "C", "D")

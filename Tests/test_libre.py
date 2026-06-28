@@ -18,24 +18,24 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 
 # --- test_compatibilidad_reglas_libre.py ---
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 
-from Comun.reglas_libre import (
+from Comun.reglas import (
     MIN_PREGUNTAS_CALIFICACION,
     alcance_para_contexto,
     opciones_reglas_libre,
     sanitizar_reglas_libre,
 )
-from Comun.politica_reglas import ContextoPartida, validar_reglas
-from Comun.reglas_partida import ReglasPartida, SistemaPuntuacion
+from Comun.reglas import ContextoPartida, validar_reglas
+from Comun.reglas import ReglasPartida, SistemaPuntuacion
 
 
 class TestCompatibilidadReglasLibre(unittest.TestCase):
@@ -111,13 +111,13 @@ class TestCompatibilidadReglasLibre(unittest.TestCase):
 
 # --- test_configuracion_libre.py ---
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 
-from Comun.reglas_libre import sanitizar_reglas_libre
-from Comun.politica_reglas import ContextoPartida, validar_reglas
-from Comun.reglas_partida import ReglasPartida, SistemaPuntuacion
+from Comun.reglas import sanitizar_reglas_libre
+from Comun.reglas import ContextoPartida, validar_reglas
+from Comun.reglas import ReglasPartida, SistemaPuntuacion
 
 
 class TestConfiguracionLibre(unittest.TestCase):
@@ -150,7 +150,7 @@ class TestConfiguracionLibre(unittest.TestCase):
 
 # --- test_rango_complejidad_libre.py ---
 
-from Comun.dificultad import (  # noqa: E402
+from Comun.reglas import (  # noqa: E402
     complejidad_pregunta,
     normalizar_niveles_seleccionados,
     techo_complejidad_partida,

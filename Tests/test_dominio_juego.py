@@ -12,11 +12,11 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 
-from Tests.adaptador_juego import (
+from Tests.Fixtures.adaptador_juego import (
     ConfigReglasLibre,
     crear_backend,
     tupla_opciones,
@@ -57,7 +57,7 @@ class TestDominioJuego(unittest.TestCase):
             self._backend.contexto_libre(modo_infinito=False, n_preguntas=4)
 
     def test_reglas_arcade_sin_vidas_bloque_10(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
 
         cfg = ConfigReglasLibre(
             modo_infinito=False,
@@ -68,7 +68,7 @@ class TestDominioJuego(unittest.TestCase):
         tupla_reglas(self._backend.reglas_libre(cfg))
 
     def test_reglas_arcade_con_vidas(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
 
         cfg = ConfigReglasLibre(
             modo_infinito=False,
@@ -80,7 +80,7 @@ class TestDominioJuego(unittest.TestCase):
         tupla_reglas(self._backend.reglas_libre(cfg))
 
     def test_reglas_nota_sin_vidas_bloque_largo(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
 
         cfg = ConfigReglasLibre(
             modo_infinito=False,
@@ -92,7 +92,7 @@ class TestDominioJuego(unittest.TestCase):
         tupla_reglas(self._backend.reglas_libre(cfg))
 
     def test_reglas_nota_con_vidas_fuerza_arcade(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
 
         cfg = ConfigReglasLibre(
             modo_infinito=False,
@@ -104,7 +104,7 @@ class TestDominioJuego(unittest.TestCase):
         self.assertEqual(reglas.sistema_puntuacion, SistemaPuntuacion.ARCADE)
 
     def test_reglas_infinito_solo_arcade(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
 
         cfg = ConfigReglasLibre(
             modo_infinito=True,
@@ -117,7 +117,7 @@ class TestDominioJuego(unittest.TestCase):
         self.assertEqual(reglas.sistema_puntuacion, SistemaPuntuacion.ARCADE)
 
     def test_reglas_pocas_preguntas_rechaza_partida_corta(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
 
         cfg = ConfigReglasLibre(
             modo_infinito=False,
@@ -129,7 +129,7 @@ class TestDominioJuego(unittest.TestCase):
             self._backend.reglas_libre(cfg)
 
     def test_opciones_con_vidas_bloquean_nota(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
 
         opts = self._backend.opciones_libre(
             modo_infinito=False,
@@ -140,7 +140,7 @@ class TestDominioJuego(unittest.TestCase):
         tupla_opciones(opts)
 
     def test_opciones_nota_bloquean_vidas(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
 
         opts = self._backend.opciones_libre(
             modo_infinito=False,
@@ -151,7 +151,7 @@ class TestDominioJuego(unittest.TestCase):
         self.assertFalse(opts.permitir_con_vidas)
 
     def test_evaluar_acierto_arcade(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
 
         reglas = self._backend.reglas_libre(
             ConfigReglasLibre(
@@ -172,7 +172,7 @@ class TestDominioJuego(unittest.TestCase):
         self.assertIn("Correcto", resultado.mensaje)
 
     def test_evaluar_fallo_con_vidas(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
 
         reglas = self._backend.reglas_libre(
             ConfigReglasLibre(
@@ -191,7 +191,7 @@ class TestDominioJuego(unittest.TestCase):
         self.assertEqual(resultado.vidas_restantes, 2)
 
     def test_fallo_arcade_no_deja_puntos_negativos(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion, sumar_puntos_arcade
+        from Comun.reglas import SistemaPuntuacion, sumar_puntos_arcade
 
         self.assertEqual(sumar_puntos_arcade(0, -10), (0, 0))
         self.assertEqual(sumar_puntos_arcade(3, -10), (0, -3))
@@ -221,7 +221,7 @@ class TestDominioJuego(unittest.TestCase):
         self.assertIn("(0 puntos)", fb.mensaje)
 
     def test_evaluar_tiempo_agotado(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
 
         reglas = self._backend.reglas_libre(
             ConfigReglasLibre(
@@ -242,7 +242,7 @@ class TestDominioJuego(unittest.TestCase):
         self.assertEqual(resultado.vidas_restantes, 1)
 
     def test_linea_estado_arcade_infinito(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
 
         reglas = self._backend.reglas_libre(
             ConfigReglasLibre(
@@ -262,7 +262,7 @@ class TestDominioJuego(unittest.TestCase):
         self.assertIn("Pregunta", texto)
 
     def test_linea_estado_nota_en_curso(self) -> None:
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
 
         reglas = self._backend.reglas_libre(
             ConfigReglasLibre(
@@ -295,7 +295,7 @@ class TestDominioJuego(unittest.TestCase):
         self.assertTrue(t[6])  # correccion_al_final
 
     def test_reglas_historia_resistencia(self) -> None:
-        t = self._backend.reglas_historia_preset("ranking_resistencia")
+        t = self._backend.reglas_historia_preset("resistencia")
         self.assertEqual(t[0], 3)
 
 

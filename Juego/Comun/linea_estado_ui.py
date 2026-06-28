@@ -8,7 +8,7 @@ import sys
 from dataclasses import dataclass
 
 from Comun.motor_nucleo import EstadoPartida
-from Comun.reglas_partida import SistemaPuntuacion, nota_sobre_diez, porcentaje_aciertos
+from Comun.reglas import SistemaPuntuacion, nota_sobre_diez, porcentaje_aciertos
 
 __all__ = [
     "EMOJI_TIEMPO_PREG",

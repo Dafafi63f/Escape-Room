@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from Comun.dificultad import (
+from Comun.reglas import (
     max_complejidad_pool,
     niveles_en_pool,
     normalizar_niveles_seleccionados,
@@ -19,10 +19,11 @@ from Comun.dificultad import (
     techo_complejidad_partida,
 )
 from Comun.modelos import Pregunta
-from Comun.reglas_partida import ReglasPartida, vidas_iniciales_partida
+from Comun.reglas import ReglasPartida, vidas_iniciales_partida
 from Comun.motor_nucleo import (
     EstadoPartida,
     ResultadoRespuesta,
+    PresentacionOpcionesPregunta,
     evaluar_respuesta,
     linea_estado,
     marcar_botones_opciones_tras_respuesta,
@@ -32,7 +33,7 @@ from Comun.motor_nucleo import (
 from Comun.semillas import crear_rng_partida, semilla_partida_aleatoria
 from Comun.informe_examen import CierreInformePartida
 from Comun.preferencias_grafico import es_nombre_anonimo
-from Comun.navegacion_fin_partida import NavegacionFinPartida
+from Comun.motor_nucleo import NavegacionFinPartida
 from Comun.pool_libre import crear_estado_seleccion, elegir_indice_siguiente
 from Comun.preferencias_grafico import guardar_informes_txt_habilitados
 from Grafico.informe_partida import guardar_informe_cierre, lineas_resumen_breve
@@ -85,6 +86,13 @@ ALTURA_BARRA_PARTIDA = 58
 GAP_BAJO_BARRA_PARTIDA = 20
 Y_PANEL_PREGUNTA = ALTURA_BARRA_PARTIDA + GAP_BAJO_BARRA_PARTIDA
 ALTO_PANEL_PREGUNTA = 150
+
+
+def rect_enunciado_panel_pregunta(panel: pygame.Rect, *, con_meta: bool) -> pygame.Rect:
+    """Área del texto de la pregunta dentro del panel (con o sin línea de metadatos)."""
+    if con_meta:
+        return pygame.Rect(panel.x + 8, panel.y + 36, panel.width - 16, panel.height - 44)
+    return pygame.Rect(panel.x + 8, panel.y + 10, panel.width - 16, panel.height - 18)
 ALTO_OPCION_PARTIDA = 64
 SEP_OPCIONES_PARTIDA = 8
 ALTO_BARRA_PROGRESO_PARTIDA = 8
@@ -164,9 +172,25 @@ class MenuPrincipal(Pantalla):
         self.ir_a = ir_a
         self.salir_app = salir_app
         self.abrir_feedback = abrir_feedback or datos.abrir_feedback
-        self.mensaje = (
-            f"{datos.num_preguntas} preguntas · {datos.num_materias} materias"
-        )
+        perfil = datos.perfil
+        if perfil.tipo_paquete == "minimo":
+            self.mensaje = f"{datos.num_preguntas} preguntas · MATCAD mínimo"
+        elif perfil.tipo_paquete == "completo":
+            self.mensaje = (
+                f"{datos.num_preguntas} preguntas · {datos.num_materias} materias · MATCAD completo"
+            )
+        elif perfil.paquete_completo:
+            self.mensaje = (
+                f"{datos.num_preguntas} preguntas · {datos.num_materias} materias · juego completo"
+            )
+        elif perfil.solo_csv:
+            self.mensaje = (
+                f"{datos.num_preguntas} preguntas · juego mínimo (CSV portable)"
+            )
+        else:
+            self.mensaje = f"{datos.num_preguntas} preguntas · juego mínimo"
+        if datos.avisos_carga and perfil.tipo_paquete == "desarrollo":
+            self.mensaje += " · revisa la consola al arrancar"
         self.fuentes = crear_fuentes()
         self.botones = self._crear_botones()
 
@@ -185,19 +209,23 @@ class MenuPrincipal(Pantalla):
         botones: list[Boton] = []
         for opcion, rect in zip(self.OPCIONES, rects, strict=True):
             etiq = etiqueta_opcion_menu(opcion)
-            botones.append(
-                Boton(
-                    etiq,
-                    rect,
-                    capturar(self._al_pulsar, opcion.id),
-                    tooltip=tooltip_menu_principal(opcion.id),
-                )
+            boton = Boton(
+                etiq,
+                rect,
+                capturar(self._al_pulsar, opcion.id),
+                tooltip=tooltip_menu_principal(opcion.id, self.datos.perfil),
             )
+            if not self.datos.perfil.modo_disponible(opcion.id):
+                boton.activo = False
+            botones.append(boton)
         return botones
 
     def _al_pulsar(self, opcion_id: str) -> None:
         if opcion_id == "salir":
             self.salir_app()
+            return
+        if not self.datos.perfil.modo_disponible(opcion_id):
+            self.mensaje = self.datos.perfil.motivo_modo_no_disponible(opcion_id)
             return
         if opcion_id == "libre":
             from Grafico.pantallas_libre import ConfigOpcionesLibre
@@ -316,7 +344,7 @@ class PartidaModoLibre(Pantalla):
         self.feedback_ok = False
         self.respuesta_elegida = ""
         self.botones_opcion: list[BotonOpcion] = []
-        self._presentacion_opciones = None
+        self._presentacion_opciones: PresentacionOpcionesPregunta | None = None
         self.seleccion_pool = crear_estado_seleccion(len(self.pool))
         self.semilla_partida = semilla_partida_aleatoria()
         self._rng_partida = crear_rng_partida(self.semilla_partida)
@@ -644,17 +672,19 @@ class PartidaModoLibre(Pantalla):
         p = self._pregunta_actual()
         panel = pygame.Rect(MARGEN, Y_PANEL_PREGUNTA, ANCHO - 2 * MARGEN, ALTO_PANEL_PREGUNTA)
         dibujar_panel(superficie, panel)
-        meta = self.fuentes["pequena"].render(
-            self._meta_pregunta(p),
-            True,
-            COLOR_ACENTO,
-        )
-        superficie.blit(meta, (panel.x + 12, panel.y + 10))
+        mostrar_meta = self.datos.perfil.mostrar_metadatos_pregunta
+        if mostrar_meta:
+            meta = self.fuentes["pequena"].render(
+                self._meta_pregunta(p),
+                True,
+                COLOR_ACENTO,
+            )
+            superficie.blit(meta, (panel.x + 12, panel.y + 10))
         dibujar_texto_multilinea(
             superficie,
             self.fuentes["cuerpo"],
             p.texto,
-            pygame.Rect(panel.x + 8, panel.y + 36, panel.width - 16, panel.height - 44),
+            rect_enunciado_panel_pregunta(panel, con_meta=mostrar_meta),
             COLOR_TITULO,
         )
 
@@ -779,7 +809,18 @@ class ResumenPartida(Pantalla):
         )
         return lineas
 
+    def _persistir_estadisticas_si_procede(self) -> None:
+        if not self.cierre_informe or not self.cierre_informe.registros:
+            return
+        try:
+            from Comun.estadisticas_jugador import registrar_cierre_partida
+
+            registrar_cierre_partida(self.estado, self.cierre_informe)
+        except OSError:
+            pass
+
     def _guardar_informe_si_procede(self) -> bool:
+        self._persistir_estadisticas_si_procede()
         if not self.cierre_informe or not self.cierre_informe.registros:
             return True
         if not guardar_informes_txt_habilitados():

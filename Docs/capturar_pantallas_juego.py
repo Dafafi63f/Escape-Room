@@ -148,7 +148,7 @@ def _crear_partida_escape(*, semilla: int = SEMILLA_CAPTURA):
     from Comun.escape_partida import construir_pool_escape, materias_del_pool
     from Comun.escape_room import config_escape_room, total_preguntas_escape
     from Comun.presets_historia import aplicar_preset, buscar_preset
-    from Grafico.pantallas_modos import PartidaEscapeRoom
+    from Grafico.pantallas_escape import PartidaEscapeRoom
 
     datos = _crear_datos_juego()
     preset = buscar_preset("escape_room")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Modo resistencia: partida, ranking, motor, exclusivas e iconos."""
+"""Modo resistencia: partida, motor, exclusivas e iconos."""
 
 from __future__ import annotations
 
@@ -12,31 +12,21 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 
 from Comun.datos import cargar_materias, cargar_preguntas  # noqa: E402
 from Comun.modelos import Pregunta  # noqa: E402
 from Comun.motor_nucleo import EstadoPartida, ResultadoRespuesta  # noqa: E402
-from Comun.politica_reglas import ContextoPartida, validar_reglas  # noqa: E402
+from Comun.reglas import ContextoPartida, validar_reglas  # noqa: E402
 from Comun.preguntas_resistencia import (  # noqa: E402
+    TARGET_EXCLUSIVAS_RESISTENCIA,
     cargar_preguntas_exclusivas_resistencia,
     construir_banco_resistencia,
 )
 from Comun.presets_historia import aplicar_preset, cargar_presets_especiales  # noqa: E402
-from Comun.preferencias_ranking import ModoRetencionRanking, PreferenciasRanking  # noqa: E402
-from Comun.ranking_resistencia import (  # noqa: E402
-    RecordResistencia,
-    aplicar_retencion,
-    finalizar_ranking_al_salir,
-    inicializar_ranking_sesion,
-    invalidar_cache_ranking,
-    registrar_partida,
-    top_records,
-    variante_desde_preset,
-)
-from Comun.reglas_partida import preset_resistencia  # noqa: E402
+from Comun.reglas import preset_resistencia  # noqa: E402
 from Comun.resistencia_motor import EstadoResistencia, PREGUNTAS_HASTA_EXTREMO_PROB  # noqa: E402
 from Comun.resistencia_motor import texto_progreso_resistencia  # noqa: E402
 from Comun.resistencia_partida import (  # noqa: E402
@@ -55,7 +45,6 @@ from Comun.rutas import (  # noqa: E402
     resolver_listado_materias,
     resolver_plantillas,
     resolver_presets,
-    resolver_preguntas_resistencia,
 )
 
 
@@ -73,7 +62,7 @@ class TestResistenciaPartida(unittest.TestCase):
         cls.pool = cls.banco.pool_completo()
         cls.preset = next(
             p for p in cargar_presets_especiales(resolver_presets())
-            if p.id == "ranking_resistencia"
+            if p.id == "resistencia"
         )
 
     def test_preset_en_catalogo_especiales(self) -> None:
@@ -440,107 +429,6 @@ class TestResistenciaPartida(unittest.TestCase):
             self.assertTrue(banco.indice_habilitado(idx, 1))
 
 
-def _reset_estado_ranking() -> None:
-    import Comun.ranking_resistencia as rr
-
-    rr.invalidar_cache_ranking()
-    rr._modo_sesion_activo = False
-
-
-class TestRankingResistencia(unittest.TestCase):
-    def setUp(self) -> None:
-        _reset_estado_ranking()
-
-    def tearDown(self) -> None:
-        _reset_estado_ranking()
-
-    def test_guarda_y_ordena(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "ranking.json"
-            registrar_partida(path, nombre="Ana", racha=10, puntos=100, respondidas=50)
-            registrar_partida(path, nombre="Bob", racha=25, puntos=400, respondidas=26)
-            registrar_partida(path, nombre="Ana", racha=15, puntos=200, respondidas=16)
-            top = top_records(path, limite=10)
-            self.assertEqual(top[0].nombre, "Ana")
-            self.assertEqual(top[0].respondidas, 50)
-            data = json.loads(path.read_text(encoding="utf-8"))
-            self.assertEqual(data["version"], 1)
-            self.assertLessEqual(len(data["records"]), 500)
-
-    def test_registro_en_variante_resistencia(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            path_ranking = Path(tmp) / "ranking_resistencia.json"
-
-            with patch(
-                "Comun.ranking_resistencia.path_ranking_para_preset",
-                return_value=path_ranking,
-            ):
-                registrar_partida(
-                    path_ranking,
-                    nombre="Ana",
-                    racha=3,
-                    puntos=50,
-                    respondidas=5,
-                    preset_id="ranking_resistencia",
-                )
-                self.assertEqual(len(top_records(path_ranking)), 1)
-
-    def test_modo_sesion_no_persiste_al_salir(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            path_ranking = Path(tmp) / "ranking_resistencia.json"
-            path_ranking.write_text('{"version": 1, "records": []}', encoding="utf-8")
-
-            with (
-                patch("Comun.ranking_resistencia._path_ranking", return_value=path_ranking),
-                patch(
-                    "Comun.datos_locales_juego.inicializar_datos_locales_juego",
-                    lambda: None,
-                ),
-                patch(
-                    "Comun.ranking_resistencia.cargar_preferencias",
-                    lambda: PreferenciasRanking(modo=ModoRetencionRanking.SESION),
-                ),
-            ):
-                inicializar_ranking_sesion()
-                registrar_partida(
-                    path_ranking,
-                    nombre="Ana",
-                    racha=3,
-                    puntos=50,
-                    respondidas=5,
-                )
-                finalizar_ranking_al_salir()
-                invalidar_cache_ranking()
-                self.assertEqual(json.loads(path_ranking.read_text())["records"], [])
-
-    def test_retencion_7_dias_podas_antiguos(self) -> None:
-        viejo = RecordResistencia(
-            id="a",
-            nombre="Ana",
-            racha=1,
-            puntos=10,
-            respondidas=2,
-            fecha_iso=(datetime.now(timezone.utc) - timedelta(days=10)).isoformat(),
-        )
-        reciente = RecordResistencia(
-            id="b",
-            nombre="Bob",
-            racha=2,
-            puntos=20,
-            respondidas=4,
-            fecha_iso=datetime.now(timezone.utc).isoformat(),
-        )
-        filtrados = aplicar_retencion(
-            [viejo, reciente],
-            ModoRetencionRanking.DIAS_7,
-        )
-        self.assertEqual(len(filtrados), 1)
-
-    def test_variante_desde_preset(self) -> None:
-        self.assertEqual(variante_desde_preset("ranking_resistencia"), "resistencia")
-        self.assertEqual(variante_desde_preset("otro"), "resistencia")
-
-
 class TestMecanicasResistencia(unittest.TestCase):
     def test_texto_progreso_resistencia(self) -> None:
         er = EstadoResistencia(racha=3)
@@ -695,7 +583,7 @@ class TestMecanicasResistencia(unittest.TestCase):
             formatear_aviso_apuesta,
         )
         from Comun.motor_nucleo import EstadoPartida
-        from Comun.reglas_partida import preset_resistencia
+        from Comun.reglas import preset_resistencia
         from Comun.resistencia_motor import rng_partida
 
         tipos_recompensa = {
@@ -802,7 +690,7 @@ class TestMecanicasResistencia(unittest.TestCase):
         )
         from Comun.modelos import Pregunta
         from Comun.motor_nucleo import EstadoPartida
-        from Comun.reglas_partida import preset_resistencia
+        from Comun.reglas import preset_resistencia
 
         er = EstadoResistencia(semilla_partida=9, racha=50)
         estado = EstadoPartida(
@@ -987,7 +875,7 @@ from Comun.resistencia_motor import (  # noqa: E402
     usar_powerup,
 )
 from Comun.resistencia_motor import etiqueta_powerup, letras_ocultas_bomba, letras_ocultas_fifty_fifty  # noqa: E402
-from Comun.reglas_partida import preset_resistencia  # noqa: E402
+from Comun.reglas import preset_resistencia  # noqa: E402
 
 
 def _pregunta() -> Pregunta:
@@ -1301,6 +1189,7 @@ from Comun.datos import cargar_materias, cargar_preguntas  # noqa: E402
 from Comun.modelos import Pregunta  # noqa: E402
 from Comun.resistencia_motor import EstadoResistencia  # noqa: E402
 from Comun.preguntas_resistencia import (  # noqa: E402
+    TARGET_EXCLUSIVAS_RESISTENCIA,
     cargar_preguntas_exclusivas_resistencia,
     construir_banco_resistencia,
     construir_pool_resistencia,
@@ -1315,7 +1204,6 @@ from Comun.rutas import (  # noqa: E402
     resolver_dataset,
     resolver_listado_materias,
     resolver_plantillas,
-    resolver_preguntas_resistencia,
 )
 
 
@@ -1333,9 +1221,8 @@ class TestPreguntasExclusivasResistencia(unittest.TestCase):
         )
         cls.pool = cls.banco.pool_completo()
 
-    def test_archivo_exclusivas_cargado(self) -> None:
-        self.assertTrue(resolver_preguntas_resistencia().exists())
-        self.assertEqual(len(self.exclusivas), 40)
+    def test_exclusivas_embebidas_cargadas(self) -> None:
+        self.assertEqual(len(self.exclusivas), TARGET_EXCLUSIVAS_RESISTENCIA)
         materias = {p.materia for p in self.exclusivas}
         self.assertEqual(len(materias), 40)
         for p in self.exclusivas:
@@ -1512,7 +1399,7 @@ class TestIconosResistencia(unittest.TestCase):
     def test_eventos_si_no_variedad_y_puntos(self) -> None:
         from Comun.tienda_escape import precio_resistencia_articulo
         from Comun.motor_nucleo import EstadoPartida
-        from Comun.reglas_partida import preset_resistencia
+        from Comun.reglas import preset_resistencia
         from Comun.eventos_partida import (
             EventoSiNo,
             aceptar_evento_si_no,
@@ -1605,7 +1492,7 @@ class TestIconosResistencia(unittest.TestCase):
 
     def test_compra_oferta_puede_ser_bonificacion(self) -> None:
         from Comun.eventos_partida import EventoSiNo, aceptar_evento_si_no
-        from Comun.reglas_partida import preset_resistencia
+        from Comun.reglas import preset_resistencia
 
         estado = EstadoPartida(
             nombre="T",
@@ -1631,7 +1518,7 @@ class TestIconosResistencia(unittest.TestCase):
     def test_oferta_amuleto_aplica_al_instante(self) -> None:
         from Comun.eventos_partida import EventoSiNo, aceptar_evento_si_no
         from Comun.motor_nucleo import ResultadoRespuesta
-        from Comun.reglas_partida import preset_resistencia
+        from Comun.reglas import preset_resistencia
 
         estado = EstadoPartida(
             nombre="T",
@@ -1663,7 +1550,7 @@ class TestIconosResistencia(unittest.TestCase):
     def test_oferta_vida_no_sale_con_tope_lleno(self) -> None:
         from Comun.eventos_partida import _candidatos_evento_si_no
         from Comun.motor_nucleo import EstadoPartida
-        from Comun.reglas_partida import preset_resistencia
+        from Comun.reglas import preset_resistencia
 
         estado = EstadoPartida(
             nombre="T",
@@ -1678,7 +1565,7 @@ class TestIconosResistencia(unittest.TestCase):
 
     def test_evento_si_no_exclusion_mutua_en_turno(self) -> None:
         from Comun.motor_nucleo import EstadoPartida
-        from Comun.reglas_partida import preset_resistencia
+        from Comun.reglas import preset_resistencia
         from Comun.resistencia_motor import preparar_eventos_nuevo_turno
         from Comun.modelos import Pregunta
 
@@ -1729,6 +1616,140 @@ class TestIconosResistencia(unittest.TestCase):
             any(p.texto.startswith("Pregunta de ampliación") for p in pool)
         )
         self.assertTrue(all(p.fuente == "plantilla" for p in pool))
+
+
+class TestResistenciaSoloEventos(unittest.TestCase):
+    def test_meta_pregunta_sin_nivel_ni_materia(self) -> None:
+        from Comun.perfil_contenido import PerfilContenido
+        from Comun.modelos import Pregunta
+        from Comun.resistencia_partida import (
+            EscaladaResistencia,
+            texto_meta_pregunta_resistencia,
+        )
+
+        perfil = PerfilContenido(csv_minimal=True)
+        self.assertFalse(perfil.mostrar_metadatos_pregunta)
+
+        p = Pregunta(
+            texto="¿2+2?",
+            materia="Sin materia",
+            tematica="",
+            dificultad="Media",
+            tipo="Teoria",
+            grupo="",
+            nivel="",
+            curso="",
+            semestre="",
+            correcta="B",
+            opciones={"A": "3", "B": "4", "C": "5", "D": "6"},
+        )
+        escalada = EscaladaResistencia(
+            nivel=0,
+            tiempo_pregunta_seg=None,
+            max_complejidad=99,
+            dificultades_permitidas=frozenset({"Facil", "Media", "Dificil"}),
+            multiplicador_puntos=1,
+            opciones_ocultas=0,
+            efectos=(),
+        )
+        meta = texto_meta_pregunta_resistencia(p, escalada, solo_eventos=True)
+        self.assertNotIn("Nivel", meta)
+        self.assertNotIn("Sin materia", meta)
+        self.assertNotIn("fácil", meta.lower())
+        self.assertEqual(meta, "")
+
+    def test_barra_minimal_filtra_dificultad_y_muestra_eventos(self) -> None:
+        from Comun.resistencia_motor import EstadoResistencia
+        from Comun.resistencia_partida import (
+            EscaladaResistencia,
+            partes_texto_barra_resistencia,
+        )
+
+        escalada = EscaladaResistencia(
+            nivel=0,
+            tiempo_pregunta_seg=15,
+            max_complejidad=99,
+            dificultades_permitidas=frozenset({"Facil", "Media", "Dificil"}),
+            multiplicador_puntos=1,
+            opciones_ocultas=0,
+            efectos=(
+                "Sin preguntas fáciles",
+                "Relámpago: 15 s por pregunta",
+                "Doble puntos",
+            ),
+        )
+        er = EstadoResistencia()
+        er.sin_escalada_dificultad = True
+        partes = partes_texto_barra_resistencia(escalada, er, limite_tiempo_seg=15)
+        self.assertIn("Relámpago: 15 s por pregunta", partes)
+        self.assertIn("Doble puntos", partes)
+        self.assertFalse(any("fácil" in p.lower() for p in partes))
+
+    def test_barra_minimal_vacia_sin_efectos_ni_tiempo(self) -> None:
+        from Comun.resistencia_motor import EstadoResistencia
+        from Comun.resistencia_partida import (
+            EscaladaResistencia,
+            partes_texto_barra_resistencia,
+        )
+
+        escalada = EscaladaResistencia(
+            nivel=0,
+            tiempo_pregunta_seg=None,
+            max_complejidad=99,
+            dificultades_permitidas=frozenset({"Facil", "Media", "Dificil"}),
+            multiplicador_puntos=1,
+            opciones_ocultas=0,
+            efectos=(),
+        )
+        er = EstadoResistencia()
+        er.sin_escalada_dificultad = True
+        self.assertEqual(partes_texto_barra_resistencia(escalada, er), [])
+
+    def test_preparar_turno_sin_bloques_filtro(self) -> None:
+        from Comun.modelos import Pregunta
+        from Comun.motor_nucleo import EstadoPartida
+        from Comun.reglas import preset_resistencia
+        from Comun.resistencia_motor import (
+            configurar_partida_resistencia,
+            preparar_eventos_nuevo_turno,
+            EstadoResistencia,
+        )
+
+        estado = EstadoPartida(
+            nombre="T",
+            reglas=preset_resistencia(),
+            vidas_restantes=3,
+            puntos_arcade=0,
+        )
+        er = EstadoResistencia(semilla_partida=99)
+        configurar_partida_resistencia(er, preset_id="resistencia", sin_escalada_dificultad=True)
+        pool = [
+            Pregunta(
+                texto="¿2+2?",
+                materia="Mat",
+                tematica="",
+                dificultad="Facil",
+                tipo="Teoria",
+                grupo="10",
+                nivel="",
+                curso="1",
+                semestre="1",
+                correcta="B",
+                opciones={"A": "3", "B": "4", "C": "5", "D": "6"},
+            )
+        ]
+        with patch(
+            "Comun.resistencia_motor._generar_bloque_filtro",
+            return_value=MagicMock(etiqueta="Bloque test"),
+        ) as mock_bloque, patch(
+            "Comun.resistencia_motor._intentar_activar_desafio_bloque",
+            return_value="Desafío bloque",
+        ) as mock_desafio:
+            avisos = preparar_eventos_nuevo_turno(er, pool, 25, estado)
+        mock_bloque.assert_not_called()
+        mock_desafio.assert_not_called()
+        self.assertIsNone(er.bloque_filtro)
+        self.assertFalse(any("Bloque" in a for a in avisos))
 
 
 if __name__ == "__main__":

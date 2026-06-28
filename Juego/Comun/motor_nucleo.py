@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass, field
 
 from Comun.modelos import Pregunta
-from Comun.reglas_partida import (
+from Comun.reglas import (
     ReglasPartida,
     SistemaPuntuacion,
     calcular_puntos_arcade,
@@ -18,6 +18,20 @@ from Comun.reglas_partida import (
     sumar_puntos_arcade,
 )
 TEXTO_OPCION_NIEBLA = "???"
+
+
+def formatear_duracion_seg(segundos: int) -> str:
+    """Texto legible para informes y estadísticas (p. ej. ``12 min 5 s``)."""
+    s = max(0, int(segundos))
+    if s < 60:
+        return f"{s} s"
+    minutos, resto = divmod(s, 60)
+    if minutos < 60:
+        return f"{minutos} min {resto} s" if resto else f"{minutos} min"
+    horas, min_rest = divmod(minutos, 60)
+    if min_rest:
+        return f"{horas} h {min_rest} min"
+    return f"{horas} h"
 
 
 def texto_opcion_visible_pantalla(
@@ -56,6 +70,9 @@ class EstadoPartida:
     def tiempo_transcurrido_seg(self) -> int:
         """Segundos desde el inicio de la partida (tiempo activo sin límite global)."""
         return max(0, int(time.monotonic() - self.inicio_total))
+
+    def duracion_partida_seg(self) -> int:
+        return self.tiempo_transcurrido_seg()
 
     def debe_continuar(self, total_previsto: int | None) -> bool:
         if self.reglas.tiene_vidas() and (self.vidas_restantes or 0) <= 0:
@@ -253,3 +270,21 @@ def evaluar_respuesta(
         solucion=solucion,
         sin_vidas=reglas.tiene_vidas() and (estado.vidas_restantes or 0) <= 0,
     )
+
+# --- navegacion_fin_partida ---
+
+
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from Grafico.pantallas import Pantalla
+
+
+@dataclass
+class NavegacionFinPartida:
+    """Pantallas a las que puede ir el jugador desde el resumen final."""
+
+    repetir: Callable[[], Pantalla] | None = None
+    configurar: Callable[[], Pantalla] | None = None

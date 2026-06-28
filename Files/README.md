@@ -12,8 +12,8 @@ No se prevén altas ni bajas; solo **revisión** de enunciados y distractores.
 | Archivo | Estado | Override |
 |---------|--------|----------|
 | `Data/Banco/Preguntas.csv` | 480 preguntas revisadas (2026-06-03) | `TFG_PERMITIR_CSV=1` |
-| `Data/Banco/plantillas.json` | 960 filas (480 `dataset_480` + 480 extra, 2026-06-27) | `TFG_PERMITIR_PLANTILLAS=1` |
-| `Data/Juego/preguntas_resistencia.json` | 40 exclusivas (1/materia); pool resistencia = **1000** | `TFG_PERMITIR_RESISTENCIA=1` |
+| `Data/Banco/plantillas.json` | 960 filas (480 revisadas + 480 extras); **repo del autor**, no zip portable | `TFG_PERMITIR_PLANTILLAS=1` |
+| 40 exclusivas resistencia | `Juego/Comun/preguntas_resistencia_exclusivas_datos.py` | Editar el `.py` (pool = **1000**) |
 
 Rutas canónicas: [`rutas_data.py`](rutas_data.py) (`DATA_BANCO`, `DATA_JUEGO`).
 
@@ -94,16 +94,19 @@ Figuras: `python Docs/generar_figuras_memoria.py`
 |--------|------------|
 | **Modificar `Preguntas.csv`** | `TFG_PERMITIR_CSV=1` |
 | **Modificar `plantillas.json`** | `TFG_PERMITIR_PLANTILLAS=1` |
-| **Modificar `preguntas_resistencia.json`** | `TFG_PERMITIR_RESISTENCIA=1` |
+| **Modificar exclusivas resistencia** | Editar `Juego/Comun/preguntas_resistencia_exclusivas_datos.py` |
 | **Solo lectura (seguros)** | `validar`, `revision`, `auditar-*`, `clasificar_pregunta.py`, `duplicados revisar` |
 
-## Pruebas
+## Verificación
+
+Validación del banco (no forma parte de la suite de tests del juego):
 
 ```bash
-python -m unittest discover -s Files -p "test_*.py" -v
+python Files/mantenimiento.py validar
+python Files/health_check.py
 ```
 
-Tests del juego: [`Tests/`](../Tests/README.md). CI: `.github/workflows/tests.yml`.
+Suite del juego: [`Tests/`](../Tests/README.md). CI: `.github/workflows/tests.yml`.
 
 ## Limpieza de temporales
 

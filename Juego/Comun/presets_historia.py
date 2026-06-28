@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Catálogo y resolución de partidas del modo historia."""
+"""Cat?logo de presets (historia y modos especiales) y resoluci?n de partidas."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ from Comun.config_historia import (
     validar_config,
 )
 from Comun.generador_examen_historia import PerfilPedagogico
-from Comun.politica_reglas import (
+from Comun.reglas import (
     ContextoPartida,
     PoliticaReglas,
     politica_escape,
@@ -35,7 +35,7 @@ from Comun.politica_reglas import (
     politica_historia_simulacro,
     validar_reglas,
 )
-from Comun.reglas_partida import ReglasPartida
+from Comun.reglas import ReglasPartida
 
 
 ORDEN_PREGUNTAS_VALIDOS = frozenset({
@@ -51,7 +51,7 @@ def resolver_orden_preguntas(
     preset: PresetHistoria,
     cfg: ConfigPresetHistoria | None = None,
 ) -> str:
-    """Orden explícito de preguntas en partida (independiente del azar de contenido)."""
+    """Orden expl?cito de preguntas en partida (independiente del azar de contenido)."""
     from Comun.modos_diarios import es_id_examen_fijo, orden_preguntas_examen_fijo
 
     if cfg is not None and es_id_examen_fijo(preset.id):
@@ -60,7 +60,7 @@ def resolver_orden_preguntas(
     if raw:
         if raw not in ORDEN_PREGUNTAS_VALIDOS:
             raise ValueError(
-                f"orden_preguntas inválido en {preset.id!r}: {raw!r} "
+                f"orden_preguntas inv?lido en {preset.id!r}: {raw!r} "
                 f"(use: {', '.join(sorted(ORDEN_PREGUNTAS_VALIDOS))})."
             )
         return raw
@@ -129,7 +129,7 @@ _IDS_PRESET_SIMULACROS: frozenset[str] = frozenset({
     "examen_fijo",
 })
 
-# IDs retirados del catálogo activo (documentación, tests y tabla en Data/README.md).
+# IDs retirados del cat?logo activo (documentaci?n, tests y tabla en Data/README.md).
 PRESETS_HISTORIA_RETIRADOS = frozenset({
     "examen_dia_historia",
     "examen_aleatorio_historia",
@@ -141,7 +141,19 @@ PRESETS_HISTORIA_RETIRADOS = frozenset({
     "simulacro_curso",
 })
 
+# Paquete m?nimo: sin carrusel de historia (examen fijo v?a barra superior).
+PRESETS_HISTORIA_PORTABLE = frozenset()
+
+PRESETS_ESPECIALES_PORTABLE = frozenset({
+    "resistencia",
+})
+
 NUM_MODOS_HISTORIA_CARRUSEL = 5
+NUM_MODOS_HISTORIA_CARRUSEL_PORTABLE = 0
+
+PRESETS_JSON_MINIMO = frozenset({
+    "examen_fijo",
+})
 
 _CONTEXTOS_ESPECIALES = frozenset({
     ContextoPartida.ESCAPE.value,
@@ -167,7 +179,7 @@ def _grupo_catalogo_historia(preset_id: str) -> int:
 
 
 def _clave_orden_catalogo(preset: PresetHistoria) -> tuple[int, int, int, str]:
-    """Diarios primero; dentro del catálogo, repasos y simulacros en bloques."""
+    """Diarios primero; dentro del cat?logo, repasos y simulacros en bloques."""
     from Comun.modos_diarios import prioridad_orden_preset
 
     return (
@@ -185,14 +197,14 @@ def _cargar_presets_desde_json(
     catalogo_historia: bool = False,
 ) -> list[PresetHistoria]:
     if not path.exists():
-        raise FileNotFoundError(f"No se encontró el catálogo: {path}")
+        raise FileNotFoundError(f"No se encontr? el cat?logo: {path}")
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
-        raise ValueError(f"JSON inválido en {path}: {e}") from e
+        raise ValueError(f"JSON inv?lido en {path}: {e}") from e
     items = data.get("presets")
     if not isinstance(items, list) or not items:
-        raise ValueError(f"El catálogo {path} no contiene presets.")
+        raise ValueError(f"El cat?logo {path} no contiene presets.")
     presets = [_parse_preset(x, catalogo_historia=catalogo_historia) for x in items]
     presets.sort(key=clave_orden)
     ids = [p.id for p in presets]
@@ -216,8 +228,14 @@ def _cargar_todos_presets(path: Path | None = None) -> list[PresetHistoria]:
     return _cargar_presets_historia_archivo(ruta)
 
 
-def cargar_presets_historia(path: Path | None = None) -> list[PresetHistoria]:
-    """Catálogo del carrusel (modos historia visibles, sin atajos ni especiales)."""
+def cargar_presets_historia(
+    path: Path | None = None,
+    *,
+    perfil=None,
+) -> list[PresetHistoria]:
+    """Cat?logo del carrusel (modos historia visibles, sin atajos ni especiales)."""
+    if perfil is not None and perfil.historia_restringida:
+        return []
     visibles = [
         p
         for p in _cargar_todos_presets(path)
@@ -233,26 +251,100 @@ def cargar_presets_historia(path: Path | None = None) -> list[PresetHistoria]:
     return visibles
 
 
-def cargar_presets_especiales(path: Path | None = None) -> list[PresetHistoria]:
+# --- modos_especiales ---
+
+
+from functools import lru_cache
+
+ID_MODO_RESISTENCIA = "resistencia"
+ID_MODO_ESCAPE_ROOM = "escape_room"
+
+_MODOS_ESPECIALES_ORDEN = (ID_MODO_ESCAPE_ROOM, ID_MODO_RESISTENCIA)
+
+
+@lru_cache(maxsize=1)
+def modos_especiales_builtin():
+    """Instancias ``PresetHistoria`` de resistencia y escape room."""
+    return [
+        PresetHistoria(
+            id=ID_MODO_ESCAPE_ROOM,
+            nombre="Escape room",
+            descripcion=(
+                "30 salas, 3 puertas. Descanso, tienda y bot?n. Inventario de objetos "
+                "como en resistencia. Tres vidas por partida."
+            ),
+            categoria="Escape room",
+            orden=0,
+            perfil="balanceado",
+            contexto_reglas="escape",
+            seleccion_determinista=True,
+            n_materias=None,
+            curso_filtro=None,
+            semestre_filtro=None,
+            grupo_filtro=None,
+            preguntas_por_materia=None,
+            opciones=(),
+            usa_analisis_historico=False,
+        ),
+        PresetHistoria(
+            id=ID_MODO_RESISTENCIA,
+            nombre="Resistencia",
+            descripcion=(
+                "Banco completo, 3 vidas. Escalada, rachas y eventos aleatorios. "
+                "Sin tope de preguntas."
+            ),
+            categoria="Resistencia",
+            orden=1,
+            perfil="balanceado",
+            contexto_reglas="resistencia",
+            seleccion_determinista=False,
+            n_materias=None,
+            curso_filtro=None,
+            semestre_filtro=None,
+            grupo_filtro=None,
+            preguntas_por_materia=None,
+            opciones=(),
+            usa_analisis_historico=False,
+        ),
+    ]
+
+
+def buscar_modo_especial(modo_id: str):
+    for modo in modos_especiales_builtin():
+        if modo.id == modo_id:
+            return modo
+    raise KeyError(f"Modo especial no encontrado: {modo_id!r}")
+
+
+def catalogo_modos_especiales(*, perfil=None):
     from Comun.modos_diarios import prioridad_orden_preset
 
-    especiales = [p for p in _cargar_todos_presets(path) if _es_preset_especial(p)]
-    especiales.sort(
+    modos = list(modos_especiales_builtin())
+    modos.sort(
         key=lambda preset: (
             prioridad_orden_preset(preset.id),
             preset.orden,
             preset.nombre,
         )
     )
-    return especiales
+    return modos
+
+
+def cargar_presets_especiales(
+    path: Path | None = None,
+    *,
+    perfil=None,
+) -> list[PresetHistoria]:
+    _ = path  # compatibilidad; los especiales ya no vienen del JSON
+    return catalogo_modos_especiales(perfil=perfil)
 
 
 def buscar_preset(preset_id: str) -> PresetHistoria:
-    """Busca un preset en el catálogo unificado."""
+    """Busca un preset del JSON o un modo especial definido en c?digo."""
     for preset in _cargar_todos_presets():
         if preset.id == preset_id:
             return preset
-    raise KeyError(f"Preset no encontrado: {preset_id!r}")
+    return buscar_modo_especial(preset_id)
 
 
 def _parse_preset(item: dict, *, catalogo_historia: bool = False) -> PresetHistoria:
@@ -267,7 +359,7 @@ def _parse_preset(item: dict, *, catalogo_historia: bool = False) -> PresetHisto
         or c in (ContextoPartida.RESISTENCIA, ContextoPartida.ESCAPE)
     }:
         raise ValueError(f"contexto_reglas desconocido: {contexto!r}")
-    # Por defecto el catálogo historia usa MatCAD; un preset puede desactivarlo en JSON.
+    # Por defecto el cat?logo historia usa MatCAD; un preset puede desactivarlo en JSON.
     usa_historico = bool(item.get("usa_analisis_historico", catalogo_historia))
     return PresetHistoria(
         id=str(item["id"]),
@@ -303,11 +395,15 @@ def config_defecto(
     *,
     materias_meta: dict[str, dict[str, str]],
     materias_orden: list[str],
+    path_plantillas: Path | None = None,
+    perfil=None,
 ) -> ConfigPresetHistoria:
     return defectos_config(
-        opciones_config_historia(preset),
+        opciones_config_historia(preset, perfil=perfil),
         materias_meta=materias_meta,
         materias_orden=materias_orden,
+        path_plantillas=path_plantillas,
+        perfil=perfil,
     )
 
 
@@ -420,7 +516,7 @@ def contenido_examen_estable(
     cfg: ConfigPresetHistoria | None = None,
     semilla: int | None = None,
 ) -> bool:
-    """True si las preguntas no cambian entre entradas (p. ej. examen del día).
+    """True si las preguntas no cambian entre entradas (p. ej. examen del d?a).
 
     Solo entonces tiene sentido ``variar_orden_cada_partida``: una sola fuente de azar.
     """
@@ -433,13 +529,43 @@ def contenido_examen_estable(
     return False
 
 
+def _ajustes_generador_examen_fijo_csv_minimo(
+    preset: PresetHistoria,
+    perfil_datos,
+    cfg: ConfigPresetHistoria,
+) -> dict[str, object] | None:
+    """CSV m?nimo: muestra plana de N preguntas; la semilla define la selecci?n."""
+    from Comun.modos_diarios import (
+        PREGUNTAS_EXAMEN_BALANCEADO,
+        es_id_examen_fijo,
+        orden_preguntas_examen_fijo,
+    )
+
+    if perfil_datos is None or not perfil_datos.csv_minimal:
+        return None
+    if not es_id_examen_fijo(preset.id):
+        return None
+
+    orden = orden_preguntas_examen_fijo(cfg)
+    if orden == "dificultad":
+        orden = "aleatorio"
+
+    return {
+        "seleccion_plana": True,
+        "n_preguntas": PREGUNTAS_EXAMEN_BALANCEADO,
+        "exigir_balance_completo": False,
+        "orden_preguntas": orden,
+    }
+
+
 def argumentos_generador(
     preset: PresetHistoria,
     config: ConfigPresetHistoria | None = None,
     *,
     materias_meta: dict[str, dict[str, str]] | None = None,
+    perfil_datos=None,
 ) -> dict:
-    """Parámetros nombrados para ``generar_examen``."""
+    """Par?metros nombrados para ``generar_examen``."""
     cfg = config or ConfigPresetHistoria()
     curso, semestre = curso_semestre_desde_valores(cfg.valores)
     curso = curso or preset.curso_filtro
@@ -487,7 +613,7 @@ def argumentos_generador(
             n_preguntas = cfg.get_int("n_preguntas", int(op.defecto or 12))
             break
 
-    return {
+    kwargs = {
         "perfil": perfil,
         "n_materias": n_materias if n_materias is not None else MATERIAS_POR_SEMESTRE,
         "curso_filtro": curso,
@@ -500,7 +626,14 @@ def argumentos_generador(
         "seleccion_determinista": seleccion_det,
         "orden_preguntas": resolver_orden_preguntas(preset, cfg),
         "exigir_balance_completo": preset.exigir_balance_completo,
-        "usar_analisis_historico": usar_analisis_historico_desde_config(preset, cfg),
+        "usar_analisis_historico": usar_analisis_historico_desde_config(
+            preset, cfg, perfil=perfil_datos
+        ),
         "usar_plantillas_materia": preset.usar_plantillas_materia,
         "n_preguntas": n_preguntas,
+        "seleccion_plana": False,
     }
+    ajustes = _ajustes_generador_examen_fijo_csv_minimo(preset, perfil_datos, cfg)
+    if ajustes:
+        kwargs.update(ajustes)
+    return kwargs

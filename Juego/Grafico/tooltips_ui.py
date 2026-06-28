@@ -46,9 +46,6 @@ TOOLTIP_CONTINUAR = (
     "Continúa con el preset seleccionado (configuración extra si el reto lo permite)."
 )
 
-TOOLTIP_RANKING = (
-    "Info del juego: ranking, contacto y novedades."
-)
 TOOLTIP_FEEDBACK = (
     "Formulario rápido de avisos al creador (bugs, sugerencias)."
 )
@@ -64,7 +61,7 @@ TOOLTIP_MENU_PRINCIPAL: dict[str, str] = {
         "Presets guiados: simulacros de examen, repasos y retos con datos históricos."
     ),
     "especiales": (
-        "Modos aparte del catálogo de historia: escape room y resistencia."
+        "Modos aparte del carrusel historia: escape room y resistencia."
     ),
     "feedback": (
         "Envía avisos al creador (bugs, sugerencias) o consulta los contactos alternativos."
@@ -78,8 +75,8 @@ TOOLTIP_MODOS_ESPECIALES: dict[str, str] = {
         "Partida distinta cada vez (semilla aleatoria). Objetos en la banda inferior. "
         "Fallar cuesta 1 vida pero avanzas."
     ),
-    "ranking_resistencia": (
-        "Banco completo, 3 vidas. Escalada, rachas, eventos y ranking local. "
+    "resistencia": (
+        "Banco completo, 3 vidas. Escalada, rachas y eventos aleatorios. "
         "Sin tope de preguntas."
     ),
 }
@@ -107,8 +104,8 @@ TOOLTIP_ABANDONAR_HISTORIA = (
 )
 
 TOOLTIP_ABANDONAR_RESISTENCIA = (
-    "Termina la partida y registra tu resultado en el ranking local "
-    "(preguntas alcanzadas). Si no has respondido ninguna, vuelves al menú."
+    "Termina la partida. Si ya respondiste preguntas, verás el resumen "
+    "y podrás guardar un informe .txt con lo jugado."
 )
 TOOLTIP_APUESTA_SI = "Aceptar la apuesta arriesgada."
 TOOLTIP_APUESTA_NO = "Rechazar la apuesta y jugar con las reglas normales."
@@ -126,7 +123,7 @@ TOOLTIP_GUARDAR_INFORME = (
 from Comun.textos_ui import emoji_icono
 
 TOOLTIP_RANKING = (
-    "Ranking local de resistencia. "
+    "Estadísticas locales y récords de partida. "
     f"Borrado local desde Opciones ({emoji_icono('opciones', contexto='grafico')})."
 )
 TOOLTIP_VER_RANKING = TOOLTIP_RANKING
@@ -168,11 +165,44 @@ _TOOLTIP_OPCION_HISTORIA_ID: dict[str, str] = {
 }
 
 
-def tooltip_menu_principal(opcion_id: str) -> str | None:
+TOOLTIP_MENU_PRINCIPAL_MINIMO: dict[str, str] = {
+    "libre": (
+        "Partida personalizada con el CSV cargado: vidas, tiempo y número de preguntas."
+    ),
+    "historia": (
+        "No disponible en el paquete mínimo. Usa Examen fijo en la barra superior."
+    ),
+    "especiales": (
+        "Resistencia y escape room (no disponible en el paquete mínimo)."
+    ),
+    "diarios": (
+        "Examen fijo: del día, aleatorio o semilla numérica."
+    ),
+}
+
+def tooltip_barra_diarios(perfil=None) -> str:
+    if perfil is not None and perfil.examen_fijo_barra_completo:
+        return (
+            "Examen fijo: del día (semilla de hoy), aleatorio o semilla numérica."
+        )
+    return TOOLTIP_DIARIOS
+
+
+def tooltip_menu_principal(opcion_id: str, perfil=None) -> str | None:
+    if perfil is not None and perfil.modo_minimo:
+        if opcion_id in TOOLTIP_MENU_PRINCIPAL_MINIMO:
+            return TOOLTIP_MENU_PRINCIPAL_MINIMO[opcion_id]
     return TOOLTIP_MENU_PRINCIPAL.get(opcion_id)
 
 
-def tooltip_modo_especial(preset_id: str) -> str | None:
+def tooltip_modo_especial(preset_id: str, perfil=None) -> str | None:
+    if perfil is not None and not perfil.modo_especial_disponible(preset_id):
+        return perfil.motivo_modo_especial_no_disponible(preset_id)
+    if perfil is not None and perfil.modo_minimo and preset_id == "resistencia":
+        return (
+            "Partida infinita con eventos aleatorios. Sin escalada por dificultad "
+            "ni banco beta."
+        )
     return TOOLTIP_MODOS_ESPECIALES.get(preset_id)
 
 

@@ -1,5 +1,4 @@
 {
-  "version": 29,
   "presets": [
     {
       "id": "repaso",
@@ -14,10 +13,32 @@
       "orden_preguntas": "aleatorio",
       "n_materias": 5,
       "opciones": [
-        {"id": "periodo", "tipo": "periodo", "etiqueta": "Semestre académico", "obligatorio": false},
-        {"id": "curso", "tipo": "curso", "etiqueta": "Curso (opcional)", "obligatorio": false},
-        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre (opcional)", "obligatorio": false},
-        {"id": "n_materias", "tipo": "entero", "etiqueta": "Asignaturas en el examen", "min": 2, "max": 40, "defecto": 5}
+        {
+          "id": "periodo",
+          "tipo": "periodo",
+          "etiqueta": "Semestre académico",
+          "obligatorio": false
+        },
+        {
+          "id": "curso",
+          "tipo": "curso",
+          "etiqueta": "Curso (opcional)",
+          "obligatorio": false
+        },
+        {
+          "id": "semestre",
+          "tipo": "semestre",
+          "etiqueta": "Semestre (opcional)",
+          "obligatorio": false
+        },
+        {
+          "id": "n_materias",
+          "tipo": "entero",
+          "etiqueta": "Asignaturas en el examen",
+          "min": 2,
+          "max": 40,
+          "defecto": 5
+        }
       ]
     },
     {
@@ -34,7 +55,13 @@
       "n_materias": null,
       "grupo_filtro": null,
       "opciones": [
-        {"id": "grupo", "tipo": "grupo", "etiqueta": "Grupo temático", "obligatorio": true, "defecto": "1"}
+        {
+          "id": "grupo",
+          "tipo": "grupo",
+          "etiqueta": "Grupo temático",
+          "obligatorio": true,
+          "defecto": "1"
+        }
       ]
     },
     {
@@ -50,16 +77,61 @@
       "orden_preguntas": "materia",
       "n_materias": 5,
       "opciones": [
-        {"id": "periodo", "tipo": "periodo", "etiqueta": "Semestre académico", "obligatorio": false, "defecto": "1-1"},
-        {"id": "curso", "tipo": "curso", "etiqueta": "Curso", "obligatorio": false},
-        {"id": "semestre", "tipo": "semestre", "etiqueta": "Semestre", "obligatorio": false},
-        {"id": "n_materias", "tipo": "entero", "etiqueta": "Asignaturas en la ronda", "min": 2, "max": 40, "defecto": 5},
-        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 240, "defecto": 90},
-        {"id": "enfoque", "tipo": "eleccion", "etiqueta": "Tipo de preguntas", "defecto": "mixto", "valores": [
-          {"valor": "mixto", "etiqueta": "Teoría y cálculo"},
-          {"valor": "teoria", "etiqueta": "Solo teoría"},
-          {"valor": "calculo", "etiqueta": "Solo cálculo"}
-        ]}
+        {
+          "id": "periodo",
+          "tipo": "periodo",
+          "etiqueta": "Semestre académico",
+          "obligatorio": false,
+          "defecto": "1-1"
+        },
+        {
+          "id": "curso",
+          "tipo": "curso",
+          "etiqueta": "Curso",
+          "obligatorio": false
+        },
+        {
+          "id": "semestre",
+          "tipo": "semestre",
+          "etiqueta": "Semestre",
+          "obligatorio": false
+        },
+        {
+          "id": "n_materias",
+          "tipo": "entero",
+          "etiqueta": "Asignaturas en la ronda",
+          "min": 2,
+          "max": 40,
+          "defecto": 5
+        },
+        {
+          "id": "tiempo_total_min",
+          "tipo": "entero",
+          "etiqueta": "Tiempo total (min; 0 = sin límite)",
+          "min": 0,
+          "max": 240,
+          "defecto": 90
+        },
+        {
+          "id": "enfoque",
+          "tipo": "eleccion",
+          "etiqueta": "Tipo de preguntas",
+          "defecto": "mixto",
+          "valores": [
+            {
+              "valor": "mixto",
+              "etiqueta": "Teoría y cálculo"
+            },
+            {
+              "valor": "teoria",
+              "etiqueta": "Solo teoría"
+            },
+            {
+              "valor": "calculo",
+              "etiqueta": "Solo cálculo"
+            }
+          ]
+        }
       ]
     },
     {
@@ -76,14 +148,48 @@
       "orden_preguntas": "plantilla",
       "n_materias": 1,
       "opciones": [
-        {"id": "materia", "tipo": "materia", "etiqueta": "Materia", "obligatorio": true},
-        {"id": "enfoque", "tipo": "eleccion", "etiqueta": "Tipo de preguntas", "defecto": "mixto", "valores": [
-          {"valor": "mixto", "etiqueta": "Teoría y cálculo"},
-          {"valor": "teoria", "etiqueta": "Solo teoría"},
-          {"valor": "calculo", "etiqueta": "Solo cálculo"}
-        ]},
-        {"id": "n_preguntas", "tipo": "entero", "etiqueta": "Preguntas en el examen", "min": 5, "max": 999, "defecto": 12},
-        {"id": "tiempo_total_min", "tipo": "entero", "etiqueta": "Tiempo total (min; 0 = sin límite)", "min": 0, "max": 180, "defecto": 60}
+        {
+          "id": "materia",
+          "tipo": "materia",
+          "etiqueta": "Materia",
+          "obligatorio": true
+        },
+        {
+          "id": "enfoque",
+          "tipo": "eleccion",
+          "etiqueta": "Tipo de preguntas",
+          "defecto": "mixto",
+          "valores": [
+            {
+              "valor": "mixto",
+              "etiqueta": "Teoría y cálculo"
+            },
+            {
+              "valor": "teoria",
+              "etiqueta": "Solo teoría"
+            },
+            {
+              "valor": "calculo",
+              "etiqueta": "Solo cálculo"
+            }
+          ]
+        },
+        {
+          "id": "n_preguntas",
+          "tipo": "entero",
+          "etiqueta": "Preguntas en el examen",
+          "min": 5,
+          "max": 999,
+          "defecto": 12
+        },
+        {
+          "id": "tiempo_total_min",
+          "tipo": "entero",
+          "etiqueta": "Tiempo total (min; 0 = sin límite)",
+          "min": 0,
+          "max": 180,
+          "defecto": 60
+        }
       ]
     },
     {
@@ -101,12 +207,33 @@
       "n_materias": 4,
       "preguntas_por_materia": 6,
       "opciones": [
-        {"id": "origen_semilla", "tipo": "eleccion", "etiqueta": "Contenido del examen", "defecto": "diario", "valores": [
-          {"valor": "diario", "etiqueta": "Examen del día"},
-          {"valor": "aleatorio", "etiqueta": "Aleatorio"},
-          {"valor": "semilla", "etiqueta": "Semilla fija"}
-        ]},
-        {"id": "semilla", "tipo": "entero", "etiqueta": "Semilla numérica", "min": 1, "max": 2147483646}
+        {
+          "id": "origen_semilla",
+          "tipo": "eleccion",
+          "etiqueta": "Contenido del examen",
+          "defecto": "diario",
+          "valores": [
+            {
+              "valor": "diario",
+              "etiqueta": "Examen del día"
+            },
+            {
+              "valor": "aleatorio",
+              "etiqueta": "Aleatorio"
+            },
+            {
+              "valor": "semilla",
+              "etiqueta": "Semilla fija"
+            }
+          ]
+        },
+        {
+          "id": "semilla",
+          "tipo": "entero",
+          "etiqueta": "Semilla numérica",
+          "min": 1,
+          "max": 2147483646
+        }
       ]
     },
     {

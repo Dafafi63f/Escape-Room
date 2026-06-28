@@ -1,6 +1,6 @@
 # Intenta preparar Python + pygame para jugar. Puede pedir permisos de administrador.
-# Uso: powershell -ExecutionPolicy Bypass -File Juego\scripts\instalar_entorno.ps1
-#      powershell -ExecutionPolicy Bypass -File Juego\scripts\instalar_entorno.ps1 -SoloComprobar
+# Uso: powershell -ExecutionPolicy Bypass -File Juego\Scripts\instalar_entorno.ps1
+#      powershell -ExecutionPolicy Bypass -File Juego\Scripts\instalar_entorno.ps1 -SoloComprobar
 
 param(
     [switch]$SoloComprobar,

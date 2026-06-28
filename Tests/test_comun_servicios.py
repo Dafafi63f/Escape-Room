@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 
@@ -66,7 +66,7 @@ class TestCierreInforme(unittest.TestCase):
 
     def test_meta_cierre_historia_resistencia(self) -> None:
         meta = meta_cierre_historia(
-            preset_id="ranking_resistencia",
+            preset_id="resistencia",
             preset_nombre="Ranking",
             perfil="resistencia",
             materias=["Alg", "Calc"],
@@ -117,7 +117,7 @@ class TestImportsModulosMigrados(unittest.TestCase):
 
     def test_generador_examen_desde_comun(self) -> None:
         from Comun.generador_examen_historia import PREGUNTAS_POR_MATERIA_DEFECTO
-        from Comun.reglas_partida import MIN_PREGUNTAS_PARTIDA
+        from Comun.reglas import MIN_PREGUNTAS_PARTIDA
 
         self.assertEqual(PREGUNTAS_POR_MATERIA_DEFECTO, 4)
         self.assertGreaterEqual(MIN_PREGUNTAS_PARTIDA, 5)

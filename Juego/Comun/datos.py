@@ -140,9 +140,16 @@ def cargar_banco_todo(
 
 
 def contar_bancos(
-    path_csv: Path, path_plantillas: Path, materias_meta: dict
+    path_csv: Path,
+    path_plantillas: Path | None,
+    materias_meta: dict,
 ) -> dict[BancoPreguntas, int]:
     n_ds = len(cargar_preguntas(path_csv, materias_meta))
+    if path_plantillas is None:
+        return {
+            BancoPreguntas.DATASET: n_ds,
+            BancoPreguntas.PLANTILLAS_TODO: n_ds,
+        }
     claves = claves_dataset(path_csv)
     n_extra = len(
         cargar_preguntas_plantillas(
@@ -198,9 +205,9 @@ def cargar_materias(path_csv: Path) -> dict[str, dict[str, str]]:
     return materias
 
 
-def cargar_plantillas_materia(path_json: Path, materia: str) -> list[dict]:
+def cargar_plantillas_materia(path_json: Path | None, materia: str) -> list[dict]:
     """Plantillas base de ``plantillas.json`` para una asignatura (sin expandir)."""
-    if not path_json.exists():
+    if path_json is None or not path_json.exists():
         return []
     try:
         data = json.loads(path_json.read_text(encoding="utf-8"))
@@ -216,6 +223,9 @@ def cargar_preguntas(path_csv: Path, materias_meta: dict[str, dict[str, str]]) -
     if not path_csv.exists():
         raise FileNotFoundError(f"No se encontró el dataset: {path_csv}")
 
+    from Comun.contenido import es_csv_minimal, leer_cabeceras_csv
+
+    csv_minimal = es_csv_minimal(leer_cabeceras_csv(path_csv))
     preguntas: list[Pregunta] = []
     with path_csv.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f, delimiter=";")
@@ -223,19 +233,28 @@ def cargar_preguntas(path_csv: Path, materias_meta: dict[str, dict[str, str]]) -
             correcta = (row.get("Correcta") or "").strip().upper()
             if correcta not in {"A", "B", "C", "D"}:
                 continue
-            materia = (row.get("Materia") or row.get("Tema") or "Sin materia").strip()
-            mm = materias_meta.get(materia, {})
+            materia_raw = (row.get("Materia") or row.get("Tema") or "").strip()
+            if not materia_raw and not csv_minimal:
+                materia_raw = "Sin materia"
+            mm = materias_meta.get(materia_raw, {})
 
             def _campo(csv_key: str, meta_key: str) -> str:
                 v = (row.get(csv_key) or "").strip()
                 return v if v else mm.get(meta_key, "")
 
+            dificultad_raw = (row.get("Dificultad") or "").strip()
+            if not dificultad_raw and not csv_minimal:
+                dificultad_raw = "Desconocida"
+            tipo_raw = (row.get("Tipo") or "").strip()
+            if not tipo_raw and not csv_minimal:
+                tipo_raw = "General"
+
             pregunta = Pregunta(
                 texto=(row.get("Pregunta") or "").strip(),
-                materia=materia,
+                materia=materia_raw,
                 tematica=_campo("Tematica", "tematica"),
-                dificultad=(row.get("Dificultad") or "Desconocida").strip(),
-                tipo=(row.get("Tipo") or "General").strip(),
+                dificultad=dificultad_raw,
+                tipo=tipo_raw,
                 grupo=_campo("Grupo", "grupo"),
                 nivel=_campo("Nivel", "nivel"),
                 curso=_campo("Curso", "curso"),

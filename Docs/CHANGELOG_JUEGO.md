@@ -2,9 +2,17 @@
 
 Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygame. El historial técnico del TFG está en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
 
-**Última actualización:** 2026-06-27
+**Última actualización:** 2026-06-28
 
 ---
+
+## 2026-06-28 (estadísticas locales)
+
+- **Mis estadísticas:** en Info del juego (ℹ️) → «📊 Mis estadísticas». Muestra totales, evolución semanal, récords (máx. pregunta y puntos en resistencia; salas y puntos en escape), desglose por modo, materias fuertes/débiles y teoría vs cálculo.
+- Los datos se guardan en `Data/Juego/estadisticas_jugador.json` al cerrar cualquier partida (independiente del informe `.txt`). El fichero se crea vacío al arrancar el juego si no existe.
+- **Opciones (⚙️):** botón «Restablecer estadísticas» (como un guardado nuevo).
+- **Eliminado:** ranking local (`ranking_resistencia.json`), pantalla de ranking y posición en el resumen de resistencia. Los récords pasan a las estadísticas agregadas.
+- Esquema de los JSON locales en [`Juego/Comun/persistencia.py`](../Juego/Comun/persistencia.py) (`python Docs/utilidades_tfg.py --esquemas-juego`).
 
 ## 2026-06-27 (escape room y economía)
 
@@ -26,12 +34,12 @@ Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygam
 
 - Eliminada la versión en terminal; **único lanzador:** `python Juego/juego_grafico.py`.
 - Informes, feedback y generador de historia viven en `Juego/Comun/`.
-- Suite de tests reorientada al backend gráfico (**424** tests: 416 en `Tests/` + 8 en `Files/`).
+- Suite de tests reorientada al backend gráfico (**424** tests: 416 en `Tests/` + 8 en `Files/`). *Conteo histórico (junio 2026); suite actual del juego: 468 en `Tests/`.*
 
 ## 2026-06-19 (interfaz gráfica)
 
 - **Modo feedback** integrado: formulario (tipo de aviso, zona, mensaje, contacto opcional); copia en `Data/Juego/` y envío por correo si hay SMTP configurado.
-- **Info del juego** (icono ℹ️ en la barra): ranking local, contacto del creador en pantalla y **novedades del juego** (este fichero).
+- **Info del juego** (icono ℹ️ en la barra): contacto del creador en pantalla, **Mis estadísticas** (desde 2026-06-28) y **novedades del juego** (este fichero).
 - **Barra superior fija:** pausa, retos del día, info, avisos (feedback) y opciones.
 - Nombre del jugador tomado de **Opciones** (ya no hay campo nombre en feedback).
 - Popup de **apuesta** en resistencia: botones ✅ / ❌.
@@ -42,7 +50,7 @@ Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygam
 
 - **Resistencia:** apuestas (doble o nada), maldiciones, bloques temáticos temporales, power-ups (bomba, escudo, 50/50, saltar…).
 - **Barra de partida:** tiempo, número de pregunta, racha y estado de resistencia más claros (chips con emoji).
-- Rankings locales de resistencia y examen del día.
+- Rankings locales de resistencia y examen del día *(retirados el 2026-06-28; véase entrada de estadísticas)*.
 
 ## 2026-06-17
 

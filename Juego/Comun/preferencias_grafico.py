@@ -8,6 +8,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from Comun.persistencia import preferencias_grafico_vacio
 from Comun.rutas import _ruta_json_escritura
 
 NOMBRE_JUGADOR_DEFECTO = "Anonimo"
@@ -86,7 +87,7 @@ def nombre_inicial_grafico() -> str:
 
 
 def nombre_jugador_grafico() -> str:
-    """Nombre efectivo para partidas y rankings (desde preferencias guardadas)."""
+    """Nombre efectivo para partidas e informes (desde preferencias guardadas)."""
     return nombre_jugador_efectivo(cargar_preferencias_grafico().nombre_jugador)
 
 
@@ -121,11 +122,9 @@ def guardar_preferencias_grafico(prefs: PreferenciasGrafico) -> None:
     nombre = nombre_jugador_efectivo(prefs.nombre_jugador)
     if nombre == NOMBRE_JUGADOR_DEFECTO:
         nombre = ""
-    payload = {
-        "version": 4,
-        "nombre_jugador": nombre,
-        "mostrar_tooltips": prefs.mostrar_tooltips,
-        "mostrar_emojis": prefs.mostrar_emojis,
-        "guardar_informes_txt": prefs.guardar_informes_txt,
-    }
+    payload = dict(preferencias_grafico_vacio())
+    payload["nombre_jugador"] = nombre
+    payload["mostrar_tooltips"] = prefs.mostrar_tooltips
+    payload["mostrar_emojis"] = prefs.mostrar_emojis
+    payload["guardar_informes_txt"] = prefs.guardar_informes_txt
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

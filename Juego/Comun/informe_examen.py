@@ -10,8 +10,8 @@ from datetime import datetime
 from pathlib import Path
 
 from Comun.modelos import Pregunta
-from Comun.motor_nucleo import EstadoPartida
-from Comun.reglas_partida import (
+from Comun.motor_nucleo import EstadoPartida, formatear_duracion_seg
+from Comun.reglas import (
     SistemaPuntuacion,
     formatear_resultado_puntuacion,
     nota_sobre_diez,
@@ -280,13 +280,18 @@ def _lineas_resumen(
     prev = f"{total}/{total_previsto}"
     if incompleto:
         prev += " (incompleto)"
-    return [
+    lineas = [
         "",
         "RESUMEN",
         "-" * 40,
         resultado,
         f"Preguntas: {prev} · Aciertos: {estado.aciertos}/{total}",
+        f"Duración: {formatear_duracion_seg(estado.duracion_partida_seg())}",
     ]
+    limite = estado.reglas.tiempo_total_seg
+    if limite:
+        lineas.append(f"Tiempo global configurado: {formatear_duracion_seg(limite)}")
+    return lineas
 
 
 def _estadisticas_por_materia(registros: list[RegistroRespuesta]) -> list[str]:

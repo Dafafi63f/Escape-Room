@@ -2,18 +2,19 @@
 # -*- coding: utf-8 -*-
 """Utilidad **externa**: elimina artefactos temporales y ficheros runtime del juego.
 
-Política de limpieza (complemento de ``datos_locales_juego``)
---------------------------------------------------------------
+Política de limpieza (complemento de ``Comun.persistencia``)
+------------------------------------------------------------
 
-Desde **fuera** (esta utilidad): borra del disco ``preferencias_*.json``,
-``ranking_*.json`` y ``*.txt`` en ``Data/Juego/`` (raíz del repo), más ``__pycache__`` y cachés.
-El árbol ``Juego/Data/`` creado por ``juego_grafico.exe`` se elimina **entero** (incluye
+Desde **fuera** (esta utilidad): borra del disco ``preferencias_grafico.json``,
+``estadisticas_jugador.json``, ``ranking_*.json`` legado y ``*.txt`` en ``Data/Juego/``
+(raíz del repo), más ``__pycache__`` y cachés.
+El árbol ``Juego/Data/`` residual (p. ej. de despliegues antiguos) se elimina **entero** (incluye
 ``Juego/Data/Juego/``). También se quitan **directorios vacíos** anidados en el repo
 (p. ej. ``test/a/b/z``). Al abrir el juego, los JSON de runtime se recrean. Si
 ``Data/Juego/`` (raíz) queda vacía tras el borrado selectivo, también se elimina.
 
-Desde **dentro** del juego: solo ``datos_locales_juego`` — borra ``.txt`` y vacía
-el contenido de preferencias y rankings (los ``.json`` se conservan).
+Desde **dentro** del juego: solo ``Comun.persistencia`` — borra ``.txt`` y vacía
+el contenido de preferencias y estadísticas (los ``.json`` se conservan).
 
 CLI: ``python Docs/utilidades_tfg.py`` (lógica en ``Files/borrar_temporales.py``).
 """
@@ -73,7 +74,7 @@ def dir_data_juego() -> Path:
 
 
 def dir_data_junto_al_exe(raiz: Path | None = None) -> Path:
-    """``Juego/Data/`` junto a ``juego_grafico.exe`` (artefacto del empaquetado)."""
+    """``Juego/Data/`` residual junto al paquete desplegado (legacy; no es la ruta canónica del repo)."""
     base = raiz or raiz_proyecto()
     return base / "Juego" / "Data"
 
@@ -98,7 +99,7 @@ def _ficheros_runtime_en(carpeta: Path) -> tuple[list[Path], list[Path], list[Pa
     preferencias = sorted(
         (
             *carpeta.glob("preferencias_grafico.json"),
-            *carpeta.glob("preferencias_ranking.json"),
+            *carpeta.glob("estadisticas_jugador.json"),
         )
     )
     rankings = sorted(p for p in carpeta.glob("ranking_*.json") if p.is_file())
@@ -138,7 +139,7 @@ def listar_ficheros_runtime_juego() -> tuple[list[Path], list[Path], list[Path]]
 
 
 def _rutas_limpieza_data_juego(raiz: Path) -> list[tuple[Path, Path]]:
-    """Pares (hoja, límite) para vaciar ``Data/Juego/`` canónico (no ``Juego/Data/`` del .exe)."""
+    """Pares (hoja, límite) para vaciar ``Data/Juego/`` canónico (no ``Juego/Data/`` residual)."""
     return [(raiz / "Data" / "Juego", raiz / "Data")]
 
 
@@ -211,7 +212,7 @@ def _limpiar_arbol_vacios(carpeta: Path) -> tuple[int, int]:
 
 
 def _eliminar_data_junto_al_exe(raiz: Path) -> tuple[int, int]:
-    """Elimina por completo ``Juego/Data/`` (estado local del ``.exe``)."""
+    """Elimina por completo ``Juego/Data/`` (árbol residual de despliegues antiguos)."""
     data_exe = dir_data_junto_al_exe(raiz)
     if not data_exe.is_dir():
         return 0, 0
@@ -329,7 +330,7 @@ def _carpetas_data_juego_vacias_hacia_limite(hoja: Path, limite: Path) -> list[P
 
 
 def listar_carpetas_data_juego_vacias(raiz: Path | None = None) -> list[Path]:
-    """Carpetas en ``Data/Juego/`` (raíz y junto al ``.exe``) que se eliminarían."""
+    """Carpetas ``Data/Juego/`` vacías que se eliminarían tras la limpieza."""
     base = raiz or raiz_proyecto()
     resultado: list[Path] = []
     for hoja, limite in _rutas_limpieza_data_juego(base):
@@ -696,7 +697,7 @@ def _imprimir_carpetas_data_juego_vacias(carpetas_vacias: list[Path]) -> None:
 
 
 def _imprimir_data_exe(data_junto_al_exe: Path) -> None:
-    print("Juego/Data/ (árbol del .exe, se eliminará entero):")
+    print("Juego/Data/ (árbol residual, se eliminará entero):")
     print(f" - {data_junto_al_exe}")
 
 
@@ -761,9 +762,9 @@ def _parser_borrar_temporales() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Utilidad externa: borra __pycache__, cachés y elimina del disco los "
-            "ficheros runtime en Data/Juego/ (raíz del repo): preferencias_*.json, "
-            "ranking_*.json, *.txt; elimina también Juego/Data/ (árbol del .exe) y "
-            "directorios vacíos anidados en el repo. "
+            "ficheros runtime en Data/Juego/ (raíz del repo): preferencias_grafico.json, "
+            "estadisticas_jugador.json, ranking_*.json legado, *.txt; elimina también "
+            "Juego/Data/ (árbol residual) y directorios vacíos anidados en el repo. "
             "Desde el juego solo se vacía el contenido de los JSON, no se borran."
         ),
     )

@@ -19,7 +19,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from Tests.support import emoji_font_disponible, ensure_files_path, ensure_juego_path
+from Tests.Fixtures.support import emoji_font_disponible, ensure_files_path, ensure_juego_path
 
 ensure_juego_path()
 ensure_files_path()
@@ -276,9 +276,9 @@ class TestPreferenciasGrafico(unittest.TestCase):
                 self.assertEqual(nombre_jugador_grafico(), NOMBRE_JUGADOR_DEFECTO)
 
 
-# --- test_datos_locales_juego.py ---
+# --- persistencia / datos locales ---
 
-from Comun.datos_locales_juego import (  # noqa: E402
+from Comun.persistencia import (  # noqa: E402
     borrar_txt_informes_feedback,
     inicializar_datos_locales_juego,
     listar_txt_informes_feedback,
@@ -305,13 +305,11 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             juego = raiz / "Data" / "Juego"
             juego.mkdir(parents=True)
             (juego / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
-            (juego / "presets.json").write_text("{}", encoding="utf-8")
 
             with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 self.assertEqual(len(listar_ficheros_runtime_juego()[0]), 1)
                 resumen = borrar_temporales(raiz, incluir_pycache=False)
                 self.assertEqual(resumen.json_preferencias_borrados, 1)
-                self.assertTrue((juego / "presets.json").is_file())
                 self.assertEqual(listar_ficheros_runtime_juego()[0], [])
 
     def test_dir_data_juego(self) -> None:
@@ -334,7 +332,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             juego_exe = raiz / "Juego" / "Data" / "Juego"
             juego_exe.mkdir(parents=True)
             (juego_exe / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
-            (juego_exe / "ranking_resistencia.json").write_text("{}", encoding="utf-8")
+            (juego_exe / "ranking_obsoleto.json").write_text("{}", encoding="utf-8")
 
             with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 self.assertEqual(len(listar_ficheros_runtime_juego()[0]), 0)
@@ -350,7 +348,7 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             (data_exe / "Banco").mkdir(parents=True)
             (data_exe / "Banco" / "creador_privado.json").write_text("{}", encoding="utf-8")
             (data_exe / "Juego").mkdir(parents=True)
-            (data_exe / "Juego" / "ranking_resistencia.json").write_text("{}", encoding="utf-8")
+            (data_exe / "Juego" / "ranking_obsoleto.json").write_text("{}", encoding="utf-8")
 
             with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 resumen = borrar_temporales(raiz, incluir_pycache=False)
@@ -398,20 +396,19 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
                 self.assertFalse((raiz / "Juego" / "Data").exists())
                 self.assertGreaterEqual(resumen.carpetas_vacias_borradas, 2)
 
-    def test_no_borra_data_juego_si_quedan_presets(self) -> None:
+    def test_elimina_runtime_y_borra_carpeta_vacia(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             raiz = Path(tmp)
             juego = raiz / "Data" / "Juego"
             juego.mkdir(parents=True)
             (juego / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
-            (juego / "presets.json").write_text("{}", encoding="utf-8")
+            (juego / "estadisticas_jugador.json").write_text("{}", encoding="utf-8")
 
             with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
                 resumen = borrar_temporales(raiz, incluir_pycache=False)
-                self.assertEqual(resumen.json_preferencias_borrados, 1)
-                self.assertEqual(resumen.carpetas_vacias_borradas, 0)
-                self.assertTrue(juego.is_dir())
-                self.assertTrue((juego / "presets.json").is_file())
+                self.assertEqual(resumen.json_preferencias_borrados, 2)
+                self.assertGreaterEqual(resumen.carpetas_vacias_borradas, 1)
+                self.assertFalse(juego.exists())
 
     def test_elimina_directorios_vacios_anidados(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -505,16 +502,13 @@ class TestRutasDataEscritura(unittest.TestCase):
 
 
 class TestDatosLocalesJuego(unittest.TestCase):
-    def test_plantillas_defaults_coinciden_con_codigo(self) -> None:
-        from Tests.support import ROOT
+    def test_esquemas_coinciden_con_modulos(self) -> None:
+        from Comun.persistencia import (
+            estadisticas_jugador_vacio,
+            preferencias_grafico_vacio,
+        )
         from Comun.estadisticas_jugador import vaciar_estadisticas_jugador
         from Comun.preferencias_grafico import PreferenciasGrafico, guardar_preferencias_grafico
-
-        defaults = ROOT / "Data" / "Juego" / "defaults"
-        prefs_plantilla = defaults / "preferencias_grafico.json"
-        stats_plantilla = defaults / "estadisticas_jugador.json"
-        self.assertTrue(prefs_plantilla.is_file())
-        self.assertTrue(stats_plantilla.is_file())
 
         with tempfile.TemporaryDirectory() as tmp:
             path_prefs = Path(tmp) / "preferencias_grafico.json"
@@ -523,11 +517,8 @@ class TestDatosLocalesJuego(unittest.TestCase):
                 return_value=path_prefs,
             ):
                 guardar_preferencias_grafico(PreferenciasGrafico())
-                esperado_prefs = json.loads(path_prefs.read_text(encoding="utf-8"))
-            self.assertEqual(
-                json.loads(prefs_plantilla.read_text(encoding="utf-8")),
-                esperado_prefs,
-            )
+                guardado_prefs = json.loads(path_prefs.read_text(encoding="utf-8"))
+            self.assertEqual(guardado_prefs, preferencias_grafico_vacio())
 
             path_stats = Path(tmp) / "estadisticas_jugador.json"
             with patch(
@@ -535,11 +526,8 @@ class TestDatosLocalesJuego(unittest.TestCase):
                 return_value=path_stats,
             ):
                 vaciar_estadisticas_jugador()
-                esperado_stats = json.loads(path_stats.read_text(encoding="utf-8"))
-            self.assertEqual(
-                json.loads(stats_plantilla.read_text(encoding="utf-8")),
-                esperado_stats,
-            )
+                guardado_stats = json.loads(path_stats.read_text(encoding="utf-8"))
+            self.assertEqual(guardado_stats, estadisticas_jugador_vacio())
 
     def test_borrar_txt_informes_y_feedback(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -547,7 +535,7 @@ class TestDatosLocalesJuego(unittest.TestCase):
             juego.mkdir()
             (juego / "a.txt").write_text("a", encoding="utf-8")
             (juego / "b.txt").write_text("b", encoding="utf-8")
-            with patch("Comun.datos_locales_juego.resolver_dir_informes", return_value=juego):
+            with patch("Comun.persistencia.resolver_dir_informes", return_value=juego):
                 self.assertEqual(len(listar_txt_informes_feedback()), 2)
                 resumen = borrar_txt_informes_feedback()
                 self.assertEqual(resumen.borrados, 2)
@@ -573,7 +561,7 @@ class TestDatosLocalesJuego(unittest.TestCase):
 
             with (
                 patch(
-                    "Comun.datos_locales_juego.resolver_path_preferencias_grafico",
+                    "Comun.persistencia.resolver_path_preferencias_grafico",
                     return_value=path_graf,
                 ),
                 patch(
@@ -581,7 +569,7 @@ class TestDatosLocalesJuego(unittest.TestCase):
                     return_value=path_graf,
                 ),
                 patch(
-                    "Comun.datos_locales_juego.resolver_path_estadisticas_jugador",
+                    "Comun.persistencia.resolver_path_estadisticas_jugador",
                     side_effect=_crear_stats,
                 ),
                 patch(
@@ -599,7 +587,7 @@ class TestDatosLocalesJuego(unittest.TestCase):
             juego.mkdir()
             (juego / "informe.txt").write_text("a", encoding="utf-8")
             (juego / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
-            with patch("Comun.datos_locales_juego.resolver_dir_informes", return_value=juego):
+            with patch("Comun.persistencia.resolver_dir_informes", return_value=juego):
                 self.assertEqual([p.name for p in listar_txt_informes_feedback()], ["informe.txt"])
 
     def test_vaciar_preferencias_conserva_fichero(self) -> None:
@@ -823,7 +811,7 @@ from Comun.linea_estado_ui import (  # noqa: E402
     segmentos_linea_estado,
 )
 from Comun.motor_nucleo import EstadoPartida, linea_estado  # noqa: E402
-from Comun.reglas_partida import ReglasPartida, SistemaPuntuacion, preset_libre_arcade, preset_libre_contrarreloj  # noqa: E402
+from Comun.reglas import ReglasPartida, SistemaPuntuacion, preset_libre_arcade, preset_libre_contrarreloj  # noqa: E402
 
 
 class TestBarraEstado(unittest.TestCase):
@@ -901,7 +889,7 @@ class TestBarraEstado(unittest.TestCase):
         self.assertLess(ids.index("tiempo_total"), ids.index("tiempo_preg"))
 
     def test_progreso_puerta_escape_en_barra(self) -> None:
-        from Comun.reglas_partida import preset_escape
+        from Comun.reglas import preset_escape
 
         estado = EstadoPartida(nombre="Ana", reglas=preset_escape(), vidas_restantes=3)
         segs = segmentos_linea_estado(

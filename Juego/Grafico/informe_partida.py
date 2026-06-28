@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from Comun.informe_examen import CierreInformePartida
 from Comun.preferencias_grafico import guardar_informes_txt_habilitados
-from Comun.reglas_partida import SistemaPuntuacion, formatear_resultado_puntuacion
+from Comun.reglas import SistemaPuntuacion, formatear_resultado_puntuacion
 from Comun.informe_examen import RegistroRespuesta, publicar_informe_partida
 from Comun.motor_nucleo import EstadoPartida
 from Comun.rutas import ruta_informe_para_usuario

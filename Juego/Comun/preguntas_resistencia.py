@@ -4,12 +4,11 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from pathlib import Path
 
 from Comun.modelos import Pregunta
-from Comun.rutas import resolver_preguntas_resistencia
+from Comun.preguntas_resistencia_exclusivas_datos import PREGUNTAS_EXCLUSIVAS_RESISTENCIA
 
 TARGET_EXCLUSIVAS_RESISTENCIA = 40
 
@@ -94,31 +93,15 @@ def _parse_opciones(raw: dict | None) -> dict[str, str]:
 
 def cargar_preguntas_exclusivas_resistencia(
     materias_meta: dict[str, dict[str, str]],
-    *,
-    path: Path | None = None,
 ) -> list[Pregunta]:
-    """Carga el banco extra solo para resistencia avanzada."""
-    ruta = path or resolver_preguntas_resistencia()
-    if not ruta.exists():
-        return []
-    try:
-        data = json.loads(ruta.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return []
-
-    items = data.get("preguntas", [])
-    if not isinstance(items, list):
-        return []
-
+    """Carga el banco extra solo para resistencia avanzada (embebido en código)."""
     resultado: list[Pregunta] = []
-    for item in items:
-        if not isinstance(item, dict):
-            continue
+    for item in PREGUNTAS_EXCLUSIVAS_RESISTENCIA:
         correcta = str(item.get("correcta", "")).strip().upper()
         if correcta not in {"A", "B", "C", "D"}:
             continue
         opciones = _parse_opciones(item.get("opciones"))
-        if not all(opciones.get(l) for l in "ABCD"):
+        if not all(opciones.get(letra) for letra in "ABCD"):
             continue
         texto = str(item.get("pregunta", "")).strip()
         if not texto:
@@ -190,7 +173,6 @@ def construir_banco_resistencia(
     *,
     path_plantillas: Path | None = None,
     path_preguntas_csv: Path | None = None,
-    path_exclusivas: Path | None = None,
 ) -> BancoResistencia:
     """Banco en capas: dataset revisado + plantillas beta + exclusivas."""
     revisadas = tuple(pool_resistencia_desde_dataset(preguntas_dataset))
@@ -211,11 +193,7 @@ def construir_banco_resistencia(
                 path_preguntas_csv=path_preguntas_csv,
             )
         )
-    exclusivas = tuple(
-        cargar_preguntas_exclusivas_resistencia(
-            materias_meta, path=path_exclusivas
-        )
-    )
+    exclusivas = tuple(cargar_preguntas_exclusivas_resistencia(materias_meta))
     return BancoResistencia(
         revisadas=revisadas,
         plantillas=plantillas,
@@ -229,7 +207,6 @@ def construir_pool_resistencia(
     *,
     path_plantillas: Path | None = None,
     path_preguntas_csv: Path | None = None,
-    path_exclusivas: Path | None = None,
 ) -> list[Pregunta]:
     """Pool completo (todas las capas); la selección filtra por banco dinámico."""
     return construir_banco_resistencia(
@@ -237,5 +214,4 @@ def construir_pool_resistencia(
         materias_meta,
         path_plantillas=path_plantillas,
         path_preguntas_csv=path_preguntas_csv,
-        path_exclusivas=path_exclusivas,
     ).pool_completo()

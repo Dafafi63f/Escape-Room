@@ -1,9 +1,8 @@
-# Dependencias del proyecto (desarrollo, tests, memoria, mantenimiento, empaquetado).
+# Dependencias del proyecto (desarrollo, tests, memoria, mantenimiento).
 # Jugar solo: pip install -r Juego/requirements.txt
 
 -r Juego/requirements.txt
 pandas>=2.0
 matplotlib>=3.7
-pyinstaller>=6.0
 mypy>=1.10
 pre-commit>=4.0

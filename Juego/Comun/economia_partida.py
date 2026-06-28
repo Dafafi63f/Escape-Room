@@ -21,7 +21,7 @@ from Comun.objetos_partida import (
     es_bonificacion,
     es_powerup,
 )
-from Comun.reglas_partida import sumar_puntos_arcade
+from Comun.reglas import sumar_puntos_arcade
 
 if TYPE_CHECKING:
     from Comun.escape_room import PuertaEscape

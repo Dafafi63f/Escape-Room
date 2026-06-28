@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Modos diarios: examen del día (semilla ``semilla_diaria``) y atajos de examen fijo."""
+"""Modos diarios: atajos del examen del día y aleatorio (preset ``examen_fijo``)."""
 
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ __all__ = [
     "PREGUNTAS_POR_MATERIA_DIA",
     "config_atajo_aleatorio",
     "config_atajo_diario",
+    "config_atajo_semilla",
     "contenido_estable_examen_fijo",
     "es_id_examen_fijo",
     "etiqueta_fecha_examen_dia",
@@ -112,3 +113,12 @@ def config_atajo_diario() -> ConfigPresetHistoria:
 
 def config_atajo_aleatorio() -> ConfigPresetHistoria:
     return ConfigPresetHistoria(valores={"origen_semilla": "aleatorio"})
+
+
+def config_atajo_semilla(semilla: int | None = None) -> ConfigPresetHistoria:
+    return ConfigPresetHistoria(
+        valores={
+            "origen_semilla": "semilla",
+            "semilla": semilla if semilla is not None else semilla_defecto_examen_fijo(),
+        }
+    )

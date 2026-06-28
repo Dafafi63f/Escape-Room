@@ -4,8 +4,6 @@ Data/Juego/preferencias_*.json
 Data/Juego/estadisticas_jugador.json
 Data/Juego/ranking_*.json
 Data/Juego/*.txt
-!Data/Juego/defaults/
-!Data/Juego/defaults/**
 # --- Temporales (limpiar con borrar_temporales.py) ---
 __pycache__/
 .mypy_cache/
@@ -13,7 +11,7 @@ __pycache__/
 .pytest_cache/
 .scannerwork/
 
-# --- Build PyInstaller (opcional) ---
+# --- Restos de build legacy (limpiar con borrar_temporales.py / utilidades_tfg.py) ---
 Juego/build/
 Juego/dist/
 Juego/*.spec

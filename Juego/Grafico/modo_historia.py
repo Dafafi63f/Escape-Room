@@ -4,25 +4,21 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from Comun.config_historia import ConfigPresetHistoria, validar_config
-from Comun.navegacion_fin_partida import NavegacionFinPartida
 from Comun.datos import cargar_orden_materias, cargar_plantillas_materia
 from Comun.presets_historia import (
     PresetHistoria,
     aplicar_preset,
     argumentos_generador,
     cargar_presets_historia,
-    cargar_presets_especiales,
     config_defecto,
     resolver_orden_preguntas,
 )
-from Comun.reglas_partida import ReglasPartida
+from Comun.reglas import ReglasPartida
 from Comun.semillas import resolver_semillas_partida
-from Grafico.arranque_partida import iniciar_pantalla_preset
-from Comun.rutas import PATH_MATERIAS, resolver_presets
+from Comun.rutas import resolver_presets
 from Comun.generador_examen_historia import (
     PlanExamen,
     cargar_estadisticas_historicas,
@@ -31,15 +27,20 @@ from Comun.generador_examen_historia import (
 
 if TYPE_CHECKING:
     from Grafico.app import DatosJuego
-    from Grafico.pantallas import Pantalla
 
 
-def cargar_catalogo_historia() -> list[PresetHistoria]:
-    return cargar_presets_historia(resolver_presets())
+def orden_materias_juego(datos: DatosJuego) -> list[str]:
+    """Orden curricular si hay listado; si no, claves del meta inferido del CSV."""
+    if datos.perfil.tiene_listado_materias and datos.path_listado_materias is not None:
+        try:
+            return cargar_orden_materias(datos.path_listado_materias)
+        except FileNotFoundError:
+            pass
+    return sorted(datos.materias_meta.keys())
 
 
-def cargar_catalogo_especiales() -> list[PresetHistoria]:
-    return cargar_presets_especiales(resolver_presets())
+def cargar_catalogo_historia(perfil=None) -> list[PresetHistoria]:
+    return cargar_presets_historia(resolver_presets(), perfil=perfil)
 
 
 def _kwargs_generador_examen(
@@ -47,10 +48,15 @@ def _kwargs_generador_examen(
     preset: PresetHistoria,
     cfg: ConfigPresetHistoria,
 ) -> dict:
-    kwargs = argumentos_generador(preset, cfg, materias_meta=datos.materias_meta)
+    kwargs = argumentos_generador(
+        preset,
+        cfg,
+        materias_meta=datos.materias_meta,
+        perfil_datos=datos.perfil,
+    )
     if kwargs.get("usar_plantillas_materia"):
         materia = kwargs.get("materia_fija")
-        if materia:
+        if materia and datos.path_plantillas_json and datos.perfil.tiene_plantillas:
             kwargs["plantillas_materia"] = cargar_plantillas_materia(
                 datos.path_plantillas_json,
                 materia,
@@ -65,17 +71,30 @@ def preparar_partida_historia(
     *,
     semilla: int | None = None,
 ) -> tuple[PlanExamen, ReglasPartida]:
-    orden = cargar_orden_materias(PATH_MATERIAS)
-    stats = cargar_estadisticas_historicas(materias_validas=set(datos.materias_meta))
+    orden = orden_materias_juego(datos)
+    stats: dict = {}
+    if datos.perfil.analisis_historico_disponible and datos.path_historico is not None:
+        try:
+            stats = cargar_estadisticas_historicas(
+                datos.path_historico,
+                materias_validas=set(datos.materias_meta),
+            )
+        except FileNotFoundError:
+            stats = {}
     cfg = config or config_defecto(
         preset,
         materias_meta=datos.materias_meta,
         materias_orden=orden,
+        perfil=datos.perfil,
+        path_plantillas=datos.path_plantillas_json,
     )
+    from Comun.config_historia import sanitizar_estrategia_config
+
+    sanitizar_estrategia_config(cfg, datos.perfil)
     plantillas_materia = None
     if any(o.id == "n_preguntas" for o in preset.opciones):
         materia = cfg.get_str("materia")
-        if materia:
+        if materia and datos.path_plantillas_json and datos.perfil.tiene_plantillas:
             plantillas_materia = cargar_plantillas_materia(
                 datos.path_plantillas_json,
                 materia,
@@ -112,57 +131,3 @@ def preparar_partida_historia(
     )
     reglas = aplicar_preset(preset, cfg)
     return plan, reglas
-
-
-def construir_navegacion_fin_partida_historia(
-    datos: DatosJuego,
-    preset: PresetHistoria,
-    config: ConfigPresetHistoria,
-    nombre: str,
-    ir_a: Callable[[Pantalla], None],
-    salir_app: Callable[[], None],
-    pantalla_configuracion: Callable[[], Pantalla],
-) -> NavegacionFinPartida:
-    """Repetir regenera la partida; configurar vuelve a la pantalla de ajustes previa."""
-    nav: NavegacionFinPartida
-
-    def repetir() -> Pantalla:
-        return iniciar_pantalla_partida_historia(
-            datos,
-            preset,
-            config,
-            nombre,
-            ir_a,
-            salir_app,
-            navegacion_fin=nav,
-        )
-
-    nav = NavegacionFinPartida(
-        repetir=repetir,
-        configurar=pantalla_configuracion,
-    )
-    return nav
-
-
-def iniciar_pantalla_partida_historia(
-    datos: DatosJuego,
-    preset: PresetHistoria,
-    config: ConfigPresetHistoria,
-    nombre: str,
-    ir_a: Callable[[Pantalla], None],
-    salir_app: Callable[[], None],
-    *,
-    navegacion_fin: NavegacionFinPartida | None = None,
-    ajustes_escape: AjustesEscapeRoom | None = None,
-) -> Pantalla:
-    """Alias de compatibilidad; usar ``iniciar_pantalla_preset``."""
-    return iniciar_pantalla_preset(
-        datos,
-        preset,
-        config,
-        nombre,
-        ir_a,
-        salir_app,
-        navegacion_fin=navegacion_fin,
-        ajustes_escape=ajustes_escape,
-    )

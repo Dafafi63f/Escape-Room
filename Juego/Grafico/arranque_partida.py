@@ -8,12 +8,13 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from Comun.config_historia import ConfigPresetHistoria
-from Comun.escape_room import AjustesEscapeRoom, es_preset_escape_room
-from Comun.navegacion_fin_partida import NavegacionFinPartida
+from Comun.motor_nucleo import NavegacionFinPartida
+from Comun.escape_room import es_preset_escape_room
 from Comun.presets_historia import PresetHistoria, aplicar_preset
 from Comun.resistencia_partida import construir_banco_resistencia, es_preset_resistencia
 
 if TYPE_CHECKING:
+    from Comun.escape_room import AjustesEscapeRoom
     from Grafico.app import DatosJuego
     from Grafico.pantallas import Pantalla
 
@@ -31,7 +32,7 @@ def iniciar_pantalla_preset(
 ) -> Pantalla:
     """Devuelve la pantalla de partida según el preset (examen, resistencia o escape room)."""
     if es_preset_resistencia(preset):
-        from Grafico.pantallas_historia import PartidaResistenciaHistoria
+        from Grafico.pantallas_resistencia_partida import PartidaResistencia
 
         banco = construir_banco_resistencia(
             datos.preguntas,
@@ -43,7 +44,7 @@ def iniciar_pantalla_preset(
         if not pool:
             raise ValueError("No hay preguntas disponibles para el modo resistencia.")
         reglas = aplicar_preset(preset, config)
-        return PartidaResistenciaHistoria(
+        return PartidaResistencia(
             nombre=nombre,
             preset=preset,
             pool=pool,
@@ -64,7 +65,7 @@ def iniciar_pantalla_preset(
             total_preguntas_escape,
         )
         from Comun.semillas import semilla_partida_aleatoria
-        from Grafico.pantallas_modos import PartidaEscapeRoom
+        from Grafico.pantallas_escape import PartidaEscapeRoom
 
         ajustes = ajustes_escape or AjustesEscapeRoom()
         config_escape = config_escape_room(n_salas=ajustes.n_salas)
@@ -95,7 +96,7 @@ def iniciar_pantalla_preset(
         )
 
     from Grafico.modo_historia import preparar_partida_historia
-    from Grafico.pantallas_historia import PartidaModoHistoria
+    from Grafico.pantallas_examen_fijo import PartidaModoHistoria
 
     plan, reglas = preparar_partida_historia(datos, preset, config)
     if not plan.preguntas:

@@ -11,20 +11,20 @@ from typing import TYPE_CHECKING
 import pygame
 
 from Comun.informe_examen import meta_cierre_libre
-from Comun.navegacion_fin_partida import NavegacionFinPartida
-from Comun.reglas_libre import (
+from Comun.motor_nucleo import NavegacionFinPartida
+from Comun.reglas import (
     normalizar_vidas_y_sistema,
     opciones_reglas_libre,
 )
-from Comun.reglas_partida import MIN_PREGUNTAS_PARTIDA
-from Comun.dificultad import (
+from Comun.reglas import MIN_PREGUNTAS_PARTIDA
+from Comun.reglas import (
     complejidad_pregunta,
     max_complejidad_pool,
     niveles_en_pool,
     normalizar_niveles_seleccionados,
 )
 from Comun.modelos import BancoPreguntas, ETIQUETAS_BANCO_CORTAS, OPCIONES_BANCO_JUEGO, Pregunta
-from Comun.politica_reglas import ContextoPartida, validar_reglas
+from Comun.reglas import ContextoPartida, validar_reglas
 from Comun.preferencias_grafico import nombre_jugador_grafico
 from Comun.pool_libre import (
     filtrar_pool,
@@ -32,13 +32,13 @@ from Comun.pool_libre import (
     opciones_tematica,
     opciones_tipo,
 )
-from Comun.reglas_libre import (
+from Comun.reglas import (
     ETIQUETAS_SISTEMA,
     alcance,
     contexto_partida,
     reglas_desde_combinacion,
 )
-from Comun.reglas_partida import ReglasPartida, SistemaPuntuacion
+from Comun.reglas import ReglasPartida, SistemaPuntuacion
 from Grafico.textos_grafico import (
     BTN_ATRAS,
     BTN_EMPEZAR,
@@ -170,6 +170,7 @@ class SnapshotConfigFiltrosLibre:
     semestres_sel: frozenset[str]
     tipos_sel: frozenset[str]
     niveles_sel: frozenset[int]
+    dificultad_progresiva: bool = False
 
 
 def _dibujar_cabecera_libre(
@@ -246,8 +247,14 @@ def _construir_reglas_paso1(
     return validar_reglas(reglas, ctx, modo_infinito=modo_infinito, n_preguntas=n)
 
 
+def _subtitulo_opciones_libre(datos: DatosJuego) -> str:
+    if datos.perfil.filtros_libre_disponibles:
+        return "Paso 1 de 2 — opciones de partida"
+    return "Opciones de partida"
+
+
 class ConfigOpcionesLibre(Pantalla):
-    """Paso 1: opciones de partida (selectores cíclicos)."""
+    """Opciones de partida (paso 1 si hay filtros; única pantalla en modo portable)."""
 
     def __init__(
         self,
@@ -264,7 +271,6 @@ class ConfigOpcionesLibre(Pantalla):
         tiempo_pregunta_inicial: int = 90,
         tiempo_total_inicial: int = 600,
         sistema_inicial: SistemaPuntuacion = SistemaPuntuacion.ARCADE,
-        dificultad_progresiva_inicial: bool = False,
     ) -> None:
         self.datos = datos
         self.ir_a = ir_a
@@ -273,6 +279,8 @@ class ConfigOpcionesLibre(Pantalla):
         self.mensaje = ""
 
         self.banco_elegido = banco_inicial
+        if not datos.perfil.banco_beta_disponible:
+            self.banco_elegido = BancoPreguntas.DATASET
         self.modo_infinito = modo_infinito_inicial
         self.total_elegido = (
             total_inicial if modo_infinito_inicial else max(total_inicial, MIN_PREGUNTAS_PARTIDA)
@@ -283,7 +291,6 @@ class ConfigOpcionesLibre(Pantalla):
         self.tiempo_pregunta = tiempo_pregunta_inicial
         self.tiempo_total = tiempo_total_inicial
         self.sistema_elegido = sistema_inicial
-        self.dificultad_progresiva = dificultad_progresiva_inicial
         self.scroll_filas = 0
 
         self._y_panel_top = 0
@@ -329,22 +336,37 @@ class ConfigOpcionesLibre(Pantalla):
             self._volver_menu,
             tooltip=TOOLTIP_ATRAS,
         )
-        self.boton_dificultad_progresiva = BotonMarcable(
-            "Dificultad progresiva",
-            pygame.Rect(0, 0, 220, 36),
-            self._toggle_dificultad_progresiva,
-            seleccionado=dificultad_progresiva_inicial,
-            tooltip=TOOLTIP_DIFICULTAD_PROGRESIVA,
-        )
         self._reconstruir_layout()
+
+    def _usa_dos_pasos(self) -> bool:
+        return self.datos.perfil.filtros_libre_disponibles
+
+    def _etiqueta_boton_avanzar(self) -> str:
+        if self._usa_dos_pasos():
+            return etiqueta(*BTN_SIGUIENTE)
+        return etiqueta(*BTN_EMPEZAR)
+
+    def _tooltip_boton_avanzar(self) -> str:
+        return TOOLTIP_SIGUIENTE if self._usa_dos_pasos() else TOOLTIP_EMPEZAR
+
+    def _recalcular_botones_navegacion(self) -> None:
+        fuente = self.fuentes["menu"]
+        etiq_avanzar = self._etiqueta_boton_avanzar()
+        etiq_atras = etiqueta(*BTN_ATRAS)
+        ancho_btns, alto_btns = tamano_grupo_botones(
+            [etiq_avanzar, etiq_atras],
+            fuente,
+            alto_min=44,
+        )
+        self.boton_siguiente.etiqueta = etiq_avanzar
+        self.boton_siguiente.tooltip = self._tooltip_boton_avanzar()
+        self.boton_siguiente.rect.width = ancho_btns
+        self.boton_siguiente.rect.height = alto_btns
+        self.boton_atras.rect.width = ancho_btns
+        self.boton_atras.rect.height = alto_btns
 
     def _reposicionar_botones_navegacion(self) -> None:
         y0 = self._rect_panel_opciones().bottom + GAP_PANEL_BTNS
-        if self.boton_dificultad_progresiva.activo:
-            rect = self.boton_dificultad_progresiva.rect
-            rect.midtop = (ANCHO // 2, y0)
-            self.boton_dificultad_progresiva.rect = rect
-            y0 = rect.bottom + GAP_PANEL_BTNS
         if len(self._filas_orden) > self._max_filas_visibles():
             y0 += 28
         posicionar_botones_fila(
@@ -353,20 +375,6 @@ class ConfigOpcionesLibre(Pantalla):
             x_centro=ANCHO // 2,
             gap=GAP_BTNS_NAVEGACION,
         )
-
-    def _actualizar_toggle_dificultad(self) -> None:
-        opts = self._opciones_compat()
-        self.boton_dificultad_progresiva.activo = opts.permitir_dificultad_progresiva
-        if not opts.permitir_dificultad_progresiva:
-            self.dificultad_progresiva = False
-            self.boton_dificultad_progresiva.seleccionado = False
-        else:
-            self.boton_dificultad_progresiva.seleccionado = self.dificultad_progresiva
-
-    def _toggle_dificultad_progresiva(self) -> None:
-        self.dificultad_progresiva = not self.dificultad_progresiva
-        self.boton_dificultad_progresiva.seleccionado = self.dificultad_progresiva
-        self._reposicionar_botones_navegacion()
 
     def _calcular_layout_panel(self) -> None:
         self._y_panel_top = Y_SUBTITULO_LIBRE + ALTO_ETIQUETA_MENU + GAP_CAMPO_PANEL
@@ -407,7 +415,10 @@ class ConfigOpcionesLibre(Pantalla):
 
     def _filas_visibles(self) -> list[str]:
         self._normalizar_reglas_ui()
-        filas = ["banco", "n_preguntas", "vidas"]
+        filas: list[str] = []
+        if self.datos.perfil.banco_beta_disponible:
+            filas.append("banco")
+        filas.extend(["n_preguntas", "vidas"])
         alc = self._alcance()
         if alc and (alc.permitir_tiempo_pregunta or alc.permitir_tiempo_total):
             filas.append("tiempo_modo")
@@ -464,7 +475,7 @@ class ConfigOpcionesLibre(Pantalla):
                 Boton("◀", rect_izq, capturar(self._ciclar_opcion, op_id, -1)),
                 Boton("▶", rect_der, capturar(self._ciclar_opcion, op_id, 1)),
             )
-        self._actualizar_toggle_dificultad()
+        self._recalcular_botones_navegacion()
         self._reposicionar_botones_navegacion()
 
     def _actualizar_hover_opcion_valor(self, pos: tuple[int, int]) -> None:
@@ -488,7 +499,95 @@ class ConfigOpcionesLibre(Pantalla):
         dibujar_tooltip(superficie, self.fuentes["pequena"], rect_val, tip)
 
     def _items_opcion_banco(self) -> list[tuple[str, str]]:
+        if not self.datos.perfil.banco_beta_disponible:
+            return [(BancoPreguntas.DATASET.value, ETIQUETAS_BANCO_CORTAS[BancoPreguntas.DATASET])]
         return [(b.value, etq) for b, etq in OPCIONES_BANCO]
+
+    def _empezar_partida_directa(self) -> None:
+        from Grafico.pantallas import PartidaModoLibre
+
+        nombre = nombre_jugador_grafico()
+        try:
+            reglas = _construir_reglas_paso1(
+                modo_infinito=self.modo_infinito,
+                total_elegido=self.total_elegido,
+                sin_vidas=self.sin_vidas,
+                vidas_count=self.vidas_count,
+                modo_tiempo=self.modo_tiempo,
+                tiempo_pregunta=self.tiempo_pregunta,
+                tiempo_total=self.tiempo_total,
+                sistema_elegido=self.sistema_elegido,
+            )
+        except ValueError as e:
+            self.mensaje = str(e)
+            return
+        pool = list(self.datos.preguntas)
+        if not pool:
+            self.mensaje = "No hay preguntas en el banco."
+            return
+        ctx = contexto_partida(
+            modo_infinito=self.modo_infinito,
+            n_preguntas=_n_preguntas_efectivas(self.modo_infinito, self.total_elegido),
+        )
+        try:
+            reglas = validar_reglas(
+                reglas,
+                ctx,
+                modo_infinito=self.modo_infinito,
+                n_preguntas=_n_preguntas_efectivas(self.modo_infinito, self.total_elegido),
+            )
+        except ValueError as e:
+            self.mensaje = str(e)
+            return
+        niveles = normalizar_niveles_seleccionados(None, pool)
+        n = self.total_elegido if not self.modo_infinito else max(1, len(pool))
+        meta = meta_cierre_libre(
+            banco=BancoPreguntas.DATASET.value,
+            filtro="Todas",
+            infinito=self.modo_infinito,
+            n_preguntas=n,
+        )
+        self.mensaje = ""
+        datos = self.datos
+        ir_a = self.ir_a
+        salir_app = self.salir_app
+
+        def configurar() -> ConfigOpcionesLibre:
+            return ConfigOpcionesLibre(
+                datos,
+                ir_a,
+                salir_app,
+                banco_inicial=BancoPreguntas.DATASET,
+                modo_infinito_inicial=self.modo_infinito,
+                total_inicial=self.total_elegido,
+                sin_vidas_inicial=self.sin_vidas,
+                vidas_count_inicial=self.vidas_count,
+                modo_tiempo_inicial=self.modo_tiempo,
+                tiempo_pregunta_inicial=self.tiempo_pregunta,
+                tiempo_total_inicial=self.tiempo_total,
+                sistema_inicial=self.sistema_elegido,
+            )
+
+        def repetir():
+            return PartidaModoLibre(
+                nombre=nombre,
+                pool=pool,
+                reglas=reglas,
+                ir_a=ir_a,
+                datos=datos,
+                salir_app=salir_app,
+                infinito=self.modo_infinito,
+                total_previsto=self.total_elegido,
+                niveles_complejidad=niveles,
+                meta_informe=meta,
+                navegacion_fin=nav,
+            )
+
+        nav = NavegacionFinPartida(repetir=repetir, configurar=configurar)
+        try:
+            self.ir_a(repetir())
+        except ValueError as e:
+            self.mensaje = str(e)
 
     def _items_opcion_n_preguntas(self) -> list[tuple[str, str]]:
         items: list[tuple[str, str]] = [("infinito", "Infinito (sin límite)")]
@@ -602,6 +701,9 @@ class ConfigOpcionesLibre(Pantalla):
         self._reconstruir_layout()
 
     def _siguiente(self) -> None:
+        if not self.datos.perfil.filtros_libre_disponibles:
+            self._empezar_partida_directa()
+            return
         nombre = nombre_jugador_grafico()
         try:
             reglas = _construir_reglas_paso1(
@@ -613,11 +715,6 @@ class ConfigOpcionesLibre(Pantalla):
                 tiempo_pregunta=self.tiempo_pregunta,
                 tiempo_total=self.tiempo_total,
                 sistema_elegido=self.sistema_elegido,
-                dificultad_progresiva=(
-                    self.dificultad_progresiva
-                    if self.boton_dificultad_progresiva.activo
-                    else False
-                ),
             )
         except ValueError as e:
             self.mensaje = str(e)
@@ -645,8 +742,6 @@ class ConfigOpcionesLibre(Pantalla):
         botones: list[Boton] = [self.boton_siguiente, self.boton_atras]
         for par in self.botones_ciclo.values():
             botones.extend(par)
-        if self.boton_dificultad_progresiva.activo:
-            botones.append(self.boton_dificultad_progresiva)
         return botones
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
@@ -690,7 +785,9 @@ class ConfigOpcionesLibre(Pantalla):
 
     def dibujar(self, superficie: pygame.Surface) -> None:
         superficie.fill(COLOR_FONDO)
-        _dibujar_cabecera_libre(superficie, self.fuentes, "Paso 1 de 2 — opciones de partida")
+        _dibujar_cabecera_libre(
+            superficie, self.fuentes, _subtitulo_opciones_libre(self.datos)
+        )
         dibujar_panel(superficie, self._rect_panel_opciones(), color=(255, 255, 255))
         for op_id, y in self._y_opcion.items():
             self._dibujar_fila_opcion(superficie, op_id, y)
@@ -704,8 +801,6 @@ class ConfigOpcionesLibre(Pantalla):
                 hint,
                 hint.get_rect(center=(ANCHO // 2, self._rect_panel_opciones().bottom + 18)),
             )
-        if self.boton_dificultad_progresiva.activo:
-            self.boton_dificultad_progresiva.dibujar(superficie, self.fuentes["menu"])
         if self.mensaje:
             aviso = self.fuentes["menu"].render(self.mensaje, True, COLOR_AVISO)
             superficie.blit(
@@ -716,12 +811,10 @@ class ConfigOpcionesLibre(Pantalla):
         self.boton_atras.dibujar(superficie, self.fuentes["menu"])
         self._dibujar_tooltip_opcion_valor(superficie)
         tips_nav = [self.boton_atras, self.boton_siguiente]
-        if self.boton_dificultad_progresiva.activo:
-            tips_nav.append(self.boton_dificultad_progresiva)
         dibujar_tooltips_botones(superficie, self.fuentes["pequena"], tips_nav)
 
     def titulo_pausa(self) -> str:
-        return "Modo libre — paso 1"
+        return "Modo libre — opciones"
 
 
 class ConfigFiltrosLibre(Pantalla):
@@ -823,7 +916,17 @@ class ConfigFiltrosLibre(Pantalla):
             tooltip=TOOLTIP_ATRAS,
         )
 
+        self.dificultad_progresiva = estado.reglas.dificultad_progresiva
+        self.boton_dificultad_progresiva = BotonMarcable(
+            "Dificultad progresiva",
+            pygame.Rect(0, 0, 220, 36),
+            self._toggle_dificultad_progresiva,
+            seleccionado=self.dificultad_progresiva,
+            tooltip=TOOLTIP_DIFICULTAD_PROGRESIVA,
+        )
+
         self._reconstruir_subfiltros()
+        self._actualizar_toggle_dificultad()
         self._reconstruir_niveles_ui()
 
     def _filas_subfiltro_visibles(self) -> int:
@@ -844,13 +947,49 @@ class ConfigFiltrosLibre(Pantalla):
     def _y_subfiltro_inferior(self) -> int | None:
         return self._y_grid_subfiltro_inferior()
 
-    def _y_niveles_lbl(self) -> int:
-        if self.modo_filtro == FILTRO_TODAS:
-            return self.Y_FILTRO_BTN + self.ALTO_FILTRO_PRINCIPAL + GAP_PANEL_BTNS
+    def _y_dificultad_toggle(self) -> int:
         sub_inferior = self._y_subfiltro_inferior()
         if sub_inferior is not None:
             return sub_inferior + GAP_PANEL_BTNS
         return self.Y_FILTRO_BTN + self.ALTO_FILTRO_PRINCIPAL + GAP_PANEL_BTNS
+
+    def _actualizar_toggle_dificultad(self) -> None:
+        opts = self._opciones_compat()
+        self.boton_dificultad_progresiva.activo = opts.permitir_dificultad_progresiva
+        if not opts.permitir_dificultad_progresiva:
+            self.dificultad_progresiva = False
+            self.boton_dificultad_progresiva.seleccionado = False
+        else:
+            self.boton_dificultad_progresiva.seleccionado = self.dificultad_progresiva
+        self._reposicionar_toggle_dificultad()
+
+    def _reposicionar_toggle_dificultad(self) -> None:
+        if not self.boton_dificultad_progresiva.activo:
+            return
+        rect = self.boton_dificultad_progresiva.rect
+        rect.midtop = (ANCHO // 2, self._y_dificultad_toggle())
+        self.boton_dificultad_progresiva.rect = rect
+
+    def _toggle_dificultad_progresiva(self) -> None:
+        self.dificultad_progresiva = not self.dificultad_progresiva
+        self.boton_dificultad_progresiva.seleccionado = self.dificultad_progresiva
+        self.mensaje = ""
+        if self.dificultad_progresiva and len(self.niveles_sel) < 2:
+            self.mensaje = "La dificultad progresiva requiere al menos 2 niveles."
+        self._reposicionar_botones_navegacion()
+
+    def _y_niveles_lbl(self) -> int:
+        if self.modo_filtro == FILTRO_TODAS:
+            y = self.Y_FILTRO_BTN + self.ALTO_FILTRO_PRINCIPAL + GAP_PANEL_BTNS
+        else:
+            sub_inferior = self._y_subfiltro_inferior()
+            if sub_inferior is not None:
+                y = sub_inferior + GAP_PANEL_BTNS
+            else:
+                y = self.Y_FILTRO_BTN + self.ALTO_FILTRO_PRINCIPAL + GAP_PANEL_BTNS
+        if self.boton_dificultad_progresiva.activo:
+            y = max(y, self._y_dificultad_toggle() + 36 + GAP_LBL_CAMPO)
+        return y
 
     def _y_niveles_ayuda(self) -> int:
         return self._y_niveles_lbl() + ALTO_ETIQUETA_MENU + GAP_LBL_CAMPO
@@ -862,7 +1001,7 @@ class ConfigFiltrosLibre(Pantalla):
         return self._y_niveles_fila() + self.ALTO_BTN_NIVEL + GAP_LBL_CAMPO
 
     def _y_niveles_inferior(self) -> int:
-        if self._selector_niveles_visible() and self.reglas.dificultad_progresiva:
+        if self._selector_niveles_visible() and self.dificultad_progresiva:
             return self._y_niveles_progresiva() + 22
         return self._y_niveles_fila() + self.ALTO_BTN_NIVEL + GAP_PANEL_BTNS
 
@@ -871,6 +1010,8 @@ class ConfigFiltrosLibre(Pantalla):
         sub_inferior = self._y_subfiltro_inferior()
         if sub_inferior is not None:
             y = max(y, sub_inferior)
+        if self.boton_dificultad_progresiva.activo:
+            y = max(y, self._y_dificultad_toggle() + 36)
         if self._selector_niveles_visible():
             y = max(y, self._y_niveles_inferior())
         return y
@@ -919,9 +1060,10 @@ class ConfigFiltrosLibre(Pantalla):
         else:
             self.niveles_sel.add(nivel)
         self.mensaje = ""
-        if self.reglas.dificultad_progresiva and len(self.niveles_sel) < 2:
+        if self.dificultad_progresiva and len(self.niveles_sel) < 2:
             self.mensaje = "La dificultad progresiva requiere al menos 2 niveles."
         self._actualizar_estado_botones_nivel()
+        self._reposicionar_botones_navegacion()
 
     def _actualizar_estado_botones_nivel(self) -> None:
         disponibles = self._niveles_disponibles_pool()
@@ -938,6 +1080,7 @@ class ConfigFiltrosLibre(Pantalla):
         if not visible:
             self.niveles_sel = set(disponibles)
             self.botones_nivel = []
+            self._actualizar_toggle_dificultad()
             self._reposicionar_botones_navegacion()
             return
 
@@ -965,6 +1108,7 @@ class ConfigFiltrosLibre(Pantalla):
             btn.nivel_valor = nivel  # type: ignore[attr-defined]
             self.botones_nivel.append(btn)
         self._actualizar_estado_botones_nivel()
+        self._actualizar_toggle_dificultad()
         self._reposicionar_botones_navegacion()
 
     def _pool_filtrado(self) -> list[Pregunta]:
@@ -1087,7 +1231,11 @@ class ConfigFiltrosLibre(Pantalla):
             sistema_puntuacion=base.sistema_puntuacion,
             mostrar_aciertos_en_curso=False,
             correccion_al_final=base.correccion_al_final,
-            dificultad_progresiva=base.dificultad_progresiva,
+            dificultad_progresiva=(
+                self.dificultad_progresiva
+                if self.boton_dificultad_progresiva.activo
+                else False
+            ),
         )
         ctx = contexto_partida(
             modo_infinito=self.modo_infinito,
@@ -1132,7 +1280,6 @@ class ConfigFiltrosLibre(Pantalla):
                 tiempo_pregunta_inicial=e.tiempo_pregunta,
                 tiempo_total_inicial=e.tiempo_total,
                 sistema_inicial=e.sistema_elegido,
-                dificultad_progresiva_inicial=e.reglas.dificultad_progresiva,
             )
         )
 
@@ -1144,6 +1291,7 @@ class ConfigFiltrosLibre(Pantalla):
             semestres_sel=frozenset(self.semestres_sel),
             tipos_sel=frozenset(self.tipos_sel),
             niveles_sel=frozenset(self.niveles_sel),
+            dificultad_progresiva=self.dificultad_progresiva,
         )
 
     @classmethod
@@ -1160,7 +1308,9 @@ class ConfigFiltrosLibre(Pantalla):
         pantalla.semestres_sel = set(snap.semestres_sel)
         pantalla.tipos_sel = set(snap.tipos_sel)
         pantalla.niveles_sel = set(snap.niveles_sel)
+        pantalla.dificultad_progresiva = snap.dificultad_progresiva
         pantalla._reconstruir_subfiltros()
+        pantalla._actualizar_toggle_dificultad()
         pantalla._reconstruir_niveles_ui()
         return pantalla
 
@@ -1222,7 +1372,7 @@ class ConfigFiltrosLibre(Pantalla):
         if not niveles:
             self.mensaje = "Selecciona al menos un nivel."
             return
-        if self.reglas.dificultad_progresiva and len(niveles) < 2:
+        if self.dificultad_progresiva and len(niveles) < 2:
             self.mensaje = "La dificultad progresiva requiere al menos 2 niveles."
             return
         try:
@@ -1248,6 +1398,8 @@ class ConfigFiltrosLibre(Pantalla):
             self.boton_empezar,
             self.boton_atras,
         ]
+        if self.boton_dificultad_progresiva.activo:
+            botones.append(self.boton_dificultad_progresiva)
         return botones
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
@@ -1289,6 +1441,9 @@ class ConfigFiltrosLibre(Pantalla):
             for boton in self.botones_subfiltro:
                 boton.dibujar(superficie, self.fuentes["pequena"])
 
+        if self.boton_dificultad_progresiva.activo:
+            self.boton_dificultad_progresiva.dibujar(superficie, self.fuentes["menu"])
+
         if self._selector_niveles_visible():
             niveles_lbl = self.fuentes["menu"].render(
                 etiqueta_campo("niveles_complejidad", "Niveles de complejidad:"),
@@ -1310,7 +1465,7 @@ class ConfigFiltrosLibre(Pantalla):
             )
             for boton in self.botones_nivel:
                 boton.dibujar(superficie, self.fuentes["menu"])
-            if self.reglas.dificultad_progresiva:
+            if self.dificultad_progresiva:
                 progresiva_txt = self.fuentes["pequena"].render(
                     "Progresiva: sube por los niveles marcados, en orden.",
                     True,
@@ -1329,11 +1484,10 @@ class ConfigFiltrosLibre(Pantalla):
 
         self.boton_empezar.dibujar(superficie, self.fuentes["menu"])
         self.boton_atras.dibujar(superficie, self.fuentes["menu"])
-        dibujar_tooltips_botones(
-            superficie,
-            self.fuentes["pequena"],
-            [self.boton_atras, self.boton_empezar, *self.botones_filtro],
-        )
+        tips_nav: list = [self.boton_atras, self.boton_empezar, *self.botones_filtro]
+        if self.boton_dificultad_progresiva.activo:
+            tips_nav.append(self.boton_dificultad_progresiva)
+        dibujar_tooltips_botones(superficie, self.fuentes["pequena"], tips_nav)
 
     def titulo_pausa(self) -> str:
         return "Modo libre — paso 2"

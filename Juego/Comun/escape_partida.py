@@ -15,7 +15,7 @@ import random
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
-from Comun.dificultad import complejidad_pregunta, niveles_en_pool
+from Comun.reglas import complejidad_pregunta, niveles_en_pool
 from Comun.config_historia import etiqueta_grupo_tematico
 from Comun.eventos_partida import (
     EventoContenidoInstanciado,

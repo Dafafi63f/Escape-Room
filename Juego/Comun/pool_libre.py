@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from Comun.datos import cargar_banco_todo
-from Comun.dificultad import (
+from Comun.reglas import (
     debe_filtrar_por_nivel,
     max_complejidad_pool,
     normalizar_niveles_seleccionados,
@@ -80,12 +80,14 @@ def cargar_pool_por_banco(
     *,
     preguntas_dataset: list[Pregunta],
     path_preguntas_csv: Path,
-    path_plantillas_json: Path,
+    path_plantillas_json: Path | None,
     materias_meta: dict[str, dict[str, str]],
 ) -> list[Pregunta]:
     if banco == BancoPreguntas.DATASET:
         return list(preguntas_dataset)
     if banco == BancoPreguntas.PLANTILLAS_TODO:
+        if path_plantillas_json is None:
+            return list(preguntas_dataset)
         try:
             return cargar_banco_todo(
                 path_preguntas_csv,

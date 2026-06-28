@@ -13,7 +13,7 @@ from Comun.emojis_partida import EMOJI_BLOQUE_FILTRO_RESISTENCIA
 from Comun.modelos import Pregunta
 from Comun.motor_nucleo import EstadoPartida, FeedbackRespuesta, ResultadoRespuesta, evaluar_respuesta
 from Comun.pool_libre import EstadoSeleccionPool
-from Comun.reglas_partida import sumar_puntos_arcade
+from Comun.reglas import sumar_puntos_arcade
 from Comun.objetos_partida import (
     EMOJI_POWERUP,
     LETRAS_OPCION,
@@ -281,7 +281,7 @@ class EstadoResistencia:
     """Racha de aciertos seguidos (se corta al fallar); vidas e inventario aparte."""
 
     racha: int = 0
-    mejor_racha: int = 0  # récord de la partida; solo ranking/resumen, no afecta al juego
+    mejor_racha: int = 0  # récord de la partida; solo resumen/estadísticas, no afecta al juego
     vidas_max: int = VIDAS_MAX_INICIAL
     inventario: dict[str, int] = field(default_factory=dict)
     letras_ocultas: frozenset[str] = field(default_factory=frozenset)  # bomba / 50-50: sin botón
@@ -303,6 +303,7 @@ class EstadoResistencia:
     objetos_bloqueados: bool = False
     powerups_usados_en_pregunta: set[str] = field(default_factory=set)
     banco_resistencia: object | None = None
+    sin_escalada_dificultad: bool = False
     presion_racha_intensidad: float = 0.0
     desafio_bloque: DesafioBloqueTiempoResistencia | None = None
     pity_eventos: object = field(default_factory=lambda: _pity_eventos_resistencia_nuevo())
@@ -693,8 +694,14 @@ def rng_partida(er: EstadoResistencia) -> RngPartida:
     return er.rng
 
 
-def configurar_partida_resistencia(er: EstadoResistencia, *, preset_id: str) -> None:
+def configurar_partida_resistencia(
+    er: EstadoResistencia,
+    *,
+    preset_id: str,
+    sin_escalada_dificultad: bool = False,
+) -> None:
     del preset_id
+    er.sin_escalada_dificultad = sin_escalada_dificultad
     if er.semilla_partida is None:
         er.semilla_partida = semilla_partida_aleatoria()
     if er.rng is None:
@@ -889,15 +896,17 @@ def preparar_eventos_nuevo_turno(
     aviso_presion = preparar_presion_racha_turno(er, numero_pregunta)
     if aviso_presion:
         avisos.append(aviso_presion)
-    bloque = _generar_bloque_filtro(pool, numero_pregunta, er)
-    if bloque:
-        er.bloque_filtro = bloque
-        avisos.append(formatear_aviso_bloque(bloque.etiqueta))
+    if not er.sin_escalada_dificultad:
+        bloque = _generar_bloque_filtro(pool, numero_pregunta, er)
+        if bloque:
+            er.bloque_filtro = bloque
+            avisos.append(formatear_aviso_bloque(bloque.etiqueta))
     if not er.evento_si_no:
         er.evento_si_no = elegir_evento_si_no(numero_pregunta, er, estado)
-    aviso_bloque = _intentar_activar_desafio_bloque(er, numero_pregunta)
-    if aviso_bloque:
-        avisos.append(aviso_bloque)
+    if not er.sin_escalada_dificultad:
+        aviso_bloque = _intentar_activar_desafio_bloque(er, numero_pregunta)
+        if aviso_bloque:
+            avisos.append(aviso_bloque)
     return avisos
 
 

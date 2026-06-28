@@ -19,7 +19,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 
@@ -122,7 +122,7 @@ class TestAppPausaGrafico(unittest.TestCase):
         from Comun.preferencias_grafico import PreferenciasGrafico, guardar_preferencias_grafico
         from Grafico.app import AplicacionGrafica
         from Grafico.pantallas_inicio import PantallaBienvenida
-        from Tests.helpers_navegacion_grafico import preferencias_grafico_aisladas
+        from Tests.Fixtures.helpers_navegacion_grafico import preferencias_grafico_aisladas
 
         with preferencias_grafico_aisladas():
             guardar_preferencias_grafico(
@@ -143,9 +143,9 @@ class TestAppPausaGrafico(unittest.TestCase):
         self.assertFalse(app._menu_opciones_abierto)
 
     def test_resistencia_aviso_bloquea_iconos_fijos(self) -> None:
-        from Grafico.pantallas_historia import PartidaResistenciaHistoria
+        from Grafico.pantallas_resistencia_partida import PartidaResistencia
 
-        partida = object.__new__(PartidaResistenciaHistoria)
+        partida = object.__new__(PartidaResistencia)
         partida.fase = "aviso"
         self.app.actual = partida
         self.assertTrue(self.app._barra_fija_bloqueada())
@@ -254,7 +254,6 @@ class TestBotonesMenusGrafico(unittest.TestCase):
         hub = PantallaInfoHub(
             lambda: None,
             navegar=lambda _p: None,
-            abrir_ranking=lambda _v: None,
         )
         self._assert_botones_validos("InfoHub", hub._botones_ui())
 
@@ -272,12 +271,10 @@ class TestBotonesMenusGrafico(unittest.TestCase):
 
         pantalla = ConfigOpcionesLibre(self.datos, self.ir_a, self.salir)
         self._assert_botones_validos("LibreP1", pantalla._botones_ui())
-        pantalla._toggle_dificultad_progresiva()
-        self._assert_botones_validos("LibreP1Dif", pantalla._botones_ui())
 
     def test_modo_libre_paso2(self) -> None:
         from Comun.modelos import BancoPreguntas
-        from Comun.reglas_partida import SistemaPuntuacion
+        from Comun.reglas import SistemaPuntuacion
         from Grafico.pantallas_libre import (
             ConfigFiltrosLibre,
             EstadoConfigLibrePaso1,
@@ -309,14 +306,13 @@ class TestBotonesMenusGrafico(unittest.TestCase):
         )
         pantalla = ConfigFiltrosLibre(self.datos, self.ir_a, self.salir, estado)
         self._assert_botones_validos("LibreP2", pantalla._botones_ui())
+        pantalla._toggle_dificultad_progresiva()
         self._assert_botones_validos("LibreP2Dif", pantalla._botones_ui())
 
     def test_modo_historia_menus(self) -> None:
-        from Grafico.pantallas_historia import (
-            ConfigModoHistoria,
-            ConfigOpcionesHistoria,
-            RankingResistenciaHistoria,
-        )
+        from Grafico.pantallas_estadisticas import PantallaEstadisticasJugador
+        from Grafico.pantallas_historia import ConfigModoHistoria
+        from Grafico.pantallas_examen_fijo import ConfigOpcionesHistoria
 
         carrusel = ConfigModoHistoria(self.datos, self.ir_a, self.salir)
         self._assert_botones_validos("HistoriaCarrusel", carrusel._botones_ui())
@@ -337,8 +333,8 @@ class TestBotonesMenusGrafico(unittest.TestCase):
             )
             self._assert_botones_validos("HistoriaOpciones", opciones._botones_ui())
 
-        ranking = RankingResistenciaHistoria(self.datos, self.ir_a, self.salir)
-        self._assert_botones_validos("Ranking", ranking._botones_ui())
+        stats = PantallaEstadisticasJugador(lambda: None)
+        self._assert_botones_validos("Estadisticas", [stats.boton_volver])
 
     def test_manejar_evento_clic_navegacion_libre(self) -> None:
         import pygame
@@ -358,7 +354,7 @@ class TestBotonesMenusGrafico(unittest.TestCase):
 
 # --- test_flujos_menus_grafico.py ---
 
-from Tests.helpers_navegacion_grafico import (
+from Tests.Fixtures.helpers_navegacion_grafico import (
     SecuenciaNavegacion,
     configurar_pygame_tests,
     crear_app_grafica_pruebas,
@@ -517,12 +513,9 @@ class TestFlujosMenusGrafico(unittest.TestCase):
 
     def test_historia_continuar_con_nombre(self) -> None:
         """Carrusel historia: Continuar → opciones o partida (nombre desde preferencias)."""
-        from Grafico.pantallas_historia import (
-            ConfigModoHistoria,
-            ConfigOpcionesHistoria,
-            PartidaModoHistoria,
-            PartidaResistenciaHistoria,
-        )
+        from Grafico.pantallas_historia import ConfigModoHistoria
+        from Grafico.pantallas_examen_fijo import ConfigOpcionesHistoria, PartidaModoHistoria
+        from Grafico.pantallas_resistencia_partida import PartidaResistencia
 
         self.app = crear_app_grafica_pruebas(self.datos, nombre_jugador="Carlos")
         self.nav = SecuenciaNavegacion(self.app)
@@ -534,12 +527,13 @@ class TestFlujosMenusGrafico(unittest.TestCase):
         self.nav.comprobar(
             ConfigOpcionesHistoria,
             PartidaModoHistoria,
-            PartidaResistenciaHistoria,
+            PartidaResistencia,
         )
 
     def test_historia_atras_conserva_carrusel(self) -> None:
         """Opciones → Atrás vuelve al mismo preset en el carrusel."""
-        from Grafico.pantallas_historia import ConfigModoHistoria, ConfigOpcionesHistoria
+        from Grafico.pantallas_historia import ConfigModoHistoria
+        from Grafico.pantallas_examen_fijo import ConfigOpcionesHistoria
 
         self.nav.pulsar_menu("historia")
         self.nav.comprobar(ConfigModoHistoria)
@@ -584,7 +578,7 @@ def _evento_motion(pos: tuple[int, int]):
 class TestHoverTooltipsGrafico(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        from Tests.helpers_navegacion_grafico import configurar_pygame_tests
+        from Tests.Fixtures.helpers_navegacion_grafico import configurar_pygame_tests
 
         configurar_pygame_tests()
 
@@ -621,10 +615,10 @@ class TestHoverTooltipsGrafico(unittest.TestCase):
         self.assertEqual(esperados[2], TOOLTIP_PAUSA_SALIR)
 
     def test_pausa_en_partida_texto_continuar_distinto(self) -> None:
-        from Comun.reglas_partida import ReglasPartida, SistemaPuntuacion
+        from Comun.reglas import ReglasPartida, SistemaPuntuacion
         from Grafico.pantallas import PartidaModoLibre
         from Grafico.tooltips_ui import TOOLTIP_PAUSA_CONTINUAR_PARTIDA
-        from Tests.helpers_navegacion_grafico import pregunta_minima
+        from Tests.Fixtures.helpers_navegacion_grafico import pregunta_minima
 
         p = pregunta_minima()
         reglas = ReglasPartida(
@@ -679,7 +673,8 @@ class TestHoverTooltipsGrafico(unittest.TestCase):
     def test_historia_config_hover_valor_y_navegacion(self) -> None:
         from Comun.presets_historia import cargar_presets_historia
         from Comun.rutas import resolver_presets
-        from Grafico.pantallas_historia import ConfigModoHistoria, ConfigOpcionesHistoria
+        from Grafico.pantallas_historia import ConfigModoHistoria
+        from Grafico.pantallas_examen_fijo import ConfigOpcionesHistoria
         from Grafico.tooltips_ui import TOOLTIP_ATRAS, TOOLTIP_CONTINUAR, TOOLTIP_EMPEZAR
 
         presets = cargar_presets_historia(resolver_presets())

@@ -10,11 +10,7 @@ from dataclasses import dataclass
 import pygame
 
 from Grafico.changelog_juego import cargar_changelog_juego_grafico
-from Comun.feedback import (
-    canales_contacto_alternativo,
-    nota_contacto_jugador,
-    texto_bloque_contacto_alternativo,
-)
+from Comun.feedback import texto_bloque_contacto_alternativo
 from Grafico.pantallas import Pantalla
 from Grafico.tema import (
     ALTO,
@@ -23,17 +19,18 @@ from Grafico.tema import (
     COLOR_TEXTO_PANEL,
     COLOR_TITULO,
     MARGEN,
+    TAMANO_FUENTE_PEQUENA,
     Y_INICIO_TITULO,
     crear_fuentes,
 )
-from Grafico.texto import dibujar_texto_centro, preparar_texto_ui, renderizar_texto_mixto, texto_requiere_fuentes_mixtas
+from Grafico.texto import dibujar_texto_centro, preparar_texto_ui, renderizar_texto_mixto
 from Grafico.textos_grafico import BTN_VOLVER, etiqueta, titulo_pantalla
 from Grafico.ui import (
     Boton,
     capturar,
     dibujar_panel,
     dibujar_tooltips_botones,
-    partir_texto,
+    partir_texto_con_sangria,
     posicionar_pila_inferior,
     rect_boton_etiqueta,
     rects_botones_apilados,
@@ -52,12 +49,7 @@ _ESPACIO_HINT_SCROLL = 36
 
 
 def _texto_contacto_hub() -> str:
-    if canales_contacto_alternativo():
-        return texto_bloque_contacto_alternativo()
-    return (
-        f"{nota_contacto_jugador()}\n\n"
-        "No hay canales de contacto configurados en esta instalación."
-    )
+    return texto_bloque_contacto_alternativo()
 
 
 @dataclass(frozen=True)
@@ -70,10 +62,10 @@ class SeccionInfo:
 
 SECCIONES_INFO: tuple[SeccionInfo, ...] = (
     SeccionInfo(
-        "ranking",
-        "Ver ranking local",
-        "🏆",
-        "Tabla de resistencia.",
+        "estadisticas",
+        "Mis estadísticas",
+        "📊",
+        "Evolucion, records y materias a repasar.",
     ),
     SeccionInfo(
         "changelog_juego",
@@ -136,7 +128,14 @@ class PantallaInfoTexto(Pantalla):
             if not bloque.strip():
                 lineas.append("")
                 continue
-            lineas.extend(partir_texto(fuente, bloque, ancho))
+            lineas.extend(
+                partir_texto_con_sangria(
+                    fuente,
+                    bloque,
+                    ancho,
+                    tamano_pt=TAMANO_FUENTE_PEQUENA,
+                )
+            )
         return lineas
 
     def _max_scroll(self) -> int:
@@ -168,23 +167,18 @@ class PantallaInfoTexto(Pantalla):
         fuente = self.fuentes["pequena"]
         alto_linea = fuente.get_linesize() + 4
         y = self._panel.y + 12 - self.scroll
-        tamano = fuente.get_height()
         for linea in self._lineas:
             if y + alto_linea >= self._panel.y and y <= self._panel.bottom:
                 if linea:
                     linea_ui = preparar_texto_ui(linea)
                     x = self._panel.x + 12
-                    if texto_requiere_fuentes_mixtas(linea_ui):
-                        renderizar_texto_mixto(
-                            superficie,
-                            linea_ui,
-                            (x, y),
-                            _COLOR_TEXTO_INFO,
-                            tamano,
-                        )
-                    else:
-                        txt = fuente.render(linea_ui, True, _COLOR_TEXTO_INFO)
-                        superficie.blit(txt, (x, y))
+                    renderizar_texto_mixto(
+                        superficie,
+                        linea_ui,
+                        (x, y),
+                        _COLOR_TEXTO_INFO,
+                        TAMANO_FUENTE_PEQUENA,
+                    )
             y += alto_linea
             if y > self._panel.bottom + alto_linea:
                 break
@@ -208,7 +202,7 @@ class PantallaInfoTexto(Pantalla):
 
 
 class PantallaInfoHub(Pantalla):
-    """Menú unificado: ranking y changelog, con contacto visible en pantalla."""
+    """Menú unificado: estadísticas, contacto y changelog."""
 
     def titulo_pausa(self) -> str:
         return "Info del juego"
@@ -218,11 +212,11 @@ class PantallaInfoHub(Pantalla):
         volver: Callable[[], None],
         *,
         navegar: Callable[[Pantalla], None],
-        abrir_ranking: Callable[[Callable[[], None]], None],
+        perfil=None,
     ) -> None:
         self.volver = volver
         self._navegar = navegar
-        self._abrir_ranking = abrir_ranking
+        self._perfil = perfil
         self.fuentes = crear_fuentes()
         self._lineas_contacto = self._construir_lineas_contacto()
         self._construir_layout_contacto()
@@ -267,13 +261,20 @@ class PantallaInfoHub(Pantalla):
             alto_min=48,
         )
         self.botones_seccion: list[Boton] = []
-        for seccion, rect in zip(SECCIONES_INFO, rects, strict=True):
+        secciones = SECCIONES_INFO
+        for seccion, rect in zip(secciones, rects, strict=True):
+            tooltip = seccion.tooltip
+            if seccion.id == "estadisticas" and self._perfil is not None and self._perfil.modo_minimo:
+                tooltip = (
+                    "Resumen, evolución semanal y récords "
+                    "(libre, examen fijo y resistencia)."
+                )
             self.botones_seccion.append(
                 Boton(
                     _etiqueta_seccion(seccion),
                     rect,
                     capturar(self._al_pulsar, seccion.id),
-                    tooltip=seccion.tooltip,
+                    tooltip=tooltip,
                 )
             )
         self.boton_volver = Boton(
@@ -298,8 +299,10 @@ class PantallaInfoHub(Pantalla):
         self._navegar(self)
 
     def _al_pulsar(self, seccion_id: str) -> None:
-        if seccion_id == "ranking":
-            self._abrir_ranking(self._volver_al_hub)
+        if seccion_id == "estadisticas":
+            from Grafico.pantallas_estadisticas import PantallaEstadisticasJugador
+
+            self._navegar(PantallaEstadisticasJugador(self._volver_al_hub, perfil=self._perfil))
             return
         if seccion_id == "changelog_juego":
             self._navegar(
@@ -334,7 +337,7 @@ class PantallaInfoHub(Pantalla):
             bold=True,
         )
         subt = self.fuentes["menu"].render(
-            "Ranking, contacto y novedades del juego.",
+            "Estadísticas, contacto y novedades del juego.",
             True,
             COLOR_TEXTO_PANEL,
         )
@@ -502,6 +505,7 @@ class PantallaFeedback(Pantalla):
         self._lineas_resultado: list[str] = []
         self._idx_categoria = 0
         self._idx_area = indice_area_defecto()
+        self._lineas_pie = self._lineas_pie_formulario()
         self._construir_layout()
         self._crear_botones()
 
@@ -519,7 +523,7 @@ class PantallaFeedback(Pantalla):
         y_panel_top = Y_INICIO_TITULO + 36
 
         self._y_botones = ALTO - _MARGEN_BOTONES - _ALTO_BOTON
-        lineas_pie = self._lineas_pie_formulario()
+        lineas_pie = self._lineas_pie
         alto_pie = self._medir_alto_pie(lineas_pie)
         pie_bottom = self._y_botones - _GAP_PIE_BOTONES
         pie_top = pie_bottom - alto_pie
@@ -754,7 +758,7 @@ class PantallaFeedback(Pantalla):
         fuente = self.fuentes["pequena"]
         ancho = self._rect_pie.width - 16
         y = self._rect_pie.y + 4
-        for linea in self._lineas_pie_formulario():
+        for linea in self._lineas_pie:
             for sub in partir_texto(fuente, linea, ancho):
                 txt = fuente.render(sub, True, _COLOR_PIE_FONDO)
                 superficie.blit(txt, (self._rect_pie.x + 8, y))

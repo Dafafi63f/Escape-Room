@@ -6,7 +6,7 @@ Banco de preguntas cerrado (480 filas CSV, revisado 2026-06-03).
 Sin campo ``variaciones``: cada fila es una pregunta real y definitiva.
 
 Pool del juego cerrado en **1000** preguntas reales (2026-06-27):
-  480 revisadas (CSV) + 480 extras JSON + 40 exclusivas resistencia.
+  480 revisadas (CSV) + 480 extras JSON + 40 exclusivas resistencia (embebidas en Python).
 No se prevén altas ni bajas; solo revisión manual de enunciados y distractores.
 
 Los scripts de regeneración/rebalanceo quedan desactivados para evitar
@@ -15,7 +15,6 @@ sobrescribir datos del juego por accidente.
 Override de emergencia:
   set TFG_PERMITIR_CSV=1           → Preguntas.csv
   set TFG_PERMITIR_PLANTILLAS=1    → plantillas.json
-  set TFG_PERMITIR_RESISTENCIA=1   → preguntas_resistencia.json
 """
 
 from __future__ import annotations
@@ -42,12 +41,8 @@ FECHA_CIERRE_POOL_JUEGO = "2026-06-27"
 TOTAL_POOL_JUEGO = 1000
 EXCLUSIVAS_RESISTENCIA = 40
 
-RESISTENCIA_CERRADA = True
-FECHA_CIERRE_RESISTENCIA = "2026-06-27"
-
 _ENV_OVERRIDE = "TFG_PERMITIR_CSV"
 _ENV_OVERRIDE_PLANTILLAS = "TFG_PERMITIR_PLANTILLAS"
-_ENV_OVERRIDE_RESISTENCIA = "TFG_PERMITIR_RESISTENCIA"
 
 SCRIPTS_SOLO_LECTURA = (
     "mantenimiento.py",
@@ -136,32 +131,3 @@ def guardar_plantillas_json(
     with dest.open("w", encoding="utf-8") as f:
         json.dump(plantillas, f, ensure_ascii=False, indent=2)
         f.write("\n")
-
-
-def escritura_resistencia_permitida(*, force: bool = False) -> bool:
-    if force or not RESISTENCIA_CERRADA:
-        return True
-    return os.environ.get(_ENV_OVERRIDE_RESISTENCIA, "").strip() in (
-        "1",
-        "true",
-        "yes",
-        "si",
-        "sí",
-    )
-
-
-def rechazar_mutacion_resistencia(origen: str, *, force: bool = False) -> None:
-    """Impide escribir preguntas_resistencia.json salvo override explícito."""
-    if escritura_resistencia_permitida(force=force):
-        return
-    msg = (
-        f"\n[RESISTENCIA CERRADA — {FECHA_CIERRE_RESISTENCIA}] "
-        f"No se puede modificar preguntas_resistencia.json.\n"
-        f"  Origen: {origen}\n"
-        f"  Estado: {EXCLUSIVAS_RESISTENCIA} exclusivas; pool total del modo "
-        f"resistencia = {TOTAL_POOL_JUEGO} preguntas reales.\n"
-        f"  Cerrado {FECHA_CIERRE_POOL_JUEGO}; no añadir ni quitar ítems del juego.\n"
-        f"  Override de emergencia: {_ENV_OVERRIDE_RESISTENCIA}=1\n"
-    )
-    print(msg, file=sys.stderr)
-    raise SystemExit(2)

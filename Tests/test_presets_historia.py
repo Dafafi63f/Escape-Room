@@ -16,7 +16,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 
@@ -117,7 +117,7 @@ class TestPresetsHistoria(unittest.TestCase):
         self,
         origen: str = "diario",
     ) -> tuple[PresetHistoria, ConfigPresetHistoria]:
-        preset = next(p for p in self.presets if p.id == "examen_fijo")
+        preset = buscar_preset("examen_fijo")
         cfg = self._validar(
             preset,
             ConfigPresetHistoria(valores={"origen_semilla": origen}),
@@ -141,8 +141,9 @@ class TestPresetsHistoria(unittest.TestCase):
                 "examen_fijo",
             ],
         )
+        buscar_preset("examen_fijo")
         ids = [p.id for p in self.presets]
-        self.assertNotIn("ranking_resistencia", ids)
+        self.assertNotIn("resistencia", ids)
         self.assertNotIn("reto_dia_resistencia", ids)
         self.assertNotIn("examen_dia_historia", ids)
         self.assertNotIn("examen_aleatorio_historia", ids)
@@ -153,12 +154,14 @@ class TestPresetsHistoria(unittest.TestCase):
         todos = [
             p
             for p in _cargar_presets_historia_archivo(resolver_presets())
-            if _es_preset_historia(p)
+            if _es_preset_historia(p) and not p.solo_atajo
         ]
         ids = {p.id for p in todos}
         self.assertEqual(len(todos), NUM_MODOS_HISTORIA_CARRUSEL)
         for retirado in PRESETS_HISTORIA_RETIRADOS:
             self.assertNotIn(retirado, ids)
+        self.assertNotIn("resistencia", ids)
+        self.assertNotIn("escape_room", ids)
         with self.assertRaises(KeyError):
             buscar_preset("examen_dia_historia")
 
@@ -579,7 +582,7 @@ class TestPresetsHistoria(unittest.TestCase):
                 self.assertEqual(len(plan.preguntas), max_v)
 
     def test_historia_rechaza_examenes_demasiado_pequenos(self) -> None:
-        from Comun.reglas_partida import MIN_PREGUNTAS_PARTIDA
+        from Comun.reglas import MIN_PREGUNTAS_PARTIDA
 
         repaso = next(p for p in self.presets if p.id == "repaso")
         with self.assertRaises(ValueError):
@@ -810,7 +813,7 @@ class TestPresetsHistoria(unittest.TestCase):
             240,
         )
 
-    def test_carrusel_historia_tiene_seis_modos(self) -> None:
+    def test_carrusel_historia_tiene_cinco_modos(self) -> None:
         self.assertEqual(NUM_MODOS_HISTORIA_CARRUSEL, 5)
         self.assertEqual(len(self.presets), NUM_MODOS_HISTORIA_CARRUSEL)
 
@@ -929,18 +932,19 @@ class TestPresetsHistoria(unittest.TestCase):
         todos = [
             p
             for p in _cargar_presets_historia_archivo(resolver_presets())
-            if _es_preset_historia(p)
+            if _es_preset_historia(p) and not p.solo_atajo
         ]
         self.assertEqual(len(todos), NUM_MODOS_HISTORIA_CARRUSEL)
         for preset in todos:
-            if preset.id in ("examen_asignatura", "examen_fijo"):
+            if preset.id in {"examen_asignatura", "examen_fijo"}:
                 self.assertFalse(preset.usa_analisis_historico)
                 continue
             self.assertTrue(preset.usa_analisis_historico, preset.id)
+        self.assertFalse(buscar_preset("examen_fijo").usa_analisis_historico)
         for preset in self.presets:
             cfg = self._validar(preset, self._config_defecto(preset))
             kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-            if preset.id in ("examen_asignatura", "examen_fijo"):
+            if preset.id in {"examen_asignatura", "examen_fijo"}:
                 self.assertFalse(kwargs["usar_analisis_historico"])
             else:
                 self.assertTrue(kwargs["usar_analisis_historico"], preset.id)
@@ -1167,7 +1171,7 @@ class TestPresetsHistoria(unittest.TestCase):
         )
 
     def test_examen_fijo_orden_por_origen_semilla(self) -> None:
-        preset = next(p for p in self.presets if p.id == "examen_fijo")
+        preset = buscar_preset("examen_fijo")
         cfg_dia = self._validar(preset, config_atajo_diario())
         cfg_alea = self._validar(preset, config_atajo_aleatorio())
         self.assertEqual(resolver_orden_preguntas(preset, cfg_dia), "variar")
@@ -1207,7 +1211,7 @@ class TestPresetsHistoria(unittest.TestCase):
         )
 
     def test_examen_fijo_diario_usa_semilla_del_dia_y_orden_variar(self) -> None:
-        preset = next(p for p in self.presets if p.id == "examen_fijo")
+        preset = buscar_preset("examen_fijo")
         cfg = self._validar(preset, self._config_defecto(preset))
         self.assertEqual(cfg.get_str("origen_semilla"), "diario")
         self.assertEqual(resolver_orden_preguntas(preset, cfg), "variar")
@@ -1240,7 +1244,7 @@ class TestPresetsHistoria(unittest.TestCase):
         )
 
     def test_examen_fijo_aleatorio_orden_dificultad_y_contenido_variable(self) -> None:
-        preset = next(p for p in self.presets if p.id == "examen_fijo")
+        preset = buscar_preset("examen_fijo")
         cfg = self._validar(
             preset,
             ConfigPresetHistoria(valores={"origen_semilla": "aleatorio"}),
@@ -1258,7 +1262,7 @@ class TestPresetsHistoria(unittest.TestCase):
         self.assertNotEqual(sem_a, sem_b)
 
     def test_examen_fijo_semilla_personalizada(self) -> None:
-        preset = next(p for p in self.presets if p.id == "examen_fijo")
+        preset = buscar_preset("examen_fijo")
         cfg = self._validar(
             preset,
             ConfigPresetHistoria(
@@ -1285,7 +1289,7 @@ class TestPresetsHistoria(unittest.TestCase):
             filtro_ambito_bloqueado,
         )
 
-        preset = next(p for p in self.presets if p.id == "examen_fijo")
+        preset = buscar_preset("examen_fijo")
         cfg = self._config_defecto(preset)
         self.assertTrue(
             filtro_ambito_bloqueado(
@@ -1311,7 +1315,7 @@ class TestPresetsEspeciales(unittest.TestCase):
         ids = [p.id for p in self.presets]
         self.assertEqual(
             ids,
-            ["escape_room", "ranking_resistencia"],
+            ["escape_room", "resistencia"],
         )
         escape = next(p for p in self.presets if p.id == "escape_room")
         self.assertEqual(escape.contexto_reglas, "escape")

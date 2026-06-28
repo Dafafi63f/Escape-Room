@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from Comun.reglas_partida import (
+from Comun.reglas import (
     MIN_PREGUNTAS_PARTIDA,
     PREGUNTAS_POR_MATERIA_HISTORIA,
     min_materias_para_minimo_preguntas,
@@ -124,11 +124,61 @@ def _ordenar_opciones_historia(
     return tuple(sorted(opciones, key=clave))
 
 
-def opciones_config_historia(preset) -> tuple[OpcionPreset, ...]:
-    """Opciones del preset en orden global; prioridad histórica canónica si usa MatCAD."""
+VALORES_ESTRATEGIA_SIN_HISTORICO: tuple[tuple[str, str], ...] = (
+    ("curricular", "Orden del plan de estudios"),
+    ("sin_historico", "Reparto equilibrado (sin histórico)"),
+)
+
+VALORES_ESTRATEGIA_CON_HISTORICO = VALORES_PRIORIDAD_HISTORICA
+
+_IDS_OPCION_CURRICULAR = frozenset({"periodo", "curso", "semestre"})
+_IDS_OPCION_GRUPO = frozenset({"grupo"})
+_IDS_OPCION_ENFOQUE = frozenset({"enfoque"})
+_IDS_ESTRATEGIA_HISTORICA = frozenset(
+    {"debilidades", "fortalezas", "equilibrado"}
+)
+
+
+def opcion_historia_soportada(op: OpcionPreset, perfil) -> bool:
+    if op.id in _IDS_OPCION_CURRICULAR and not perfil.tiene_metadatos_curriculares:
+        return False
+    if op.id in _IDS_OPCION_GRUPO and not perfil.tiene_grupos_tematicos:
+        return False
+    if op.id in _IDS_OPCION_ENFOQUE and not perfil.tiene_tipos_pregunta:
+        return False
+    return True
+
+
+def valores_estrategia_materias(perfil) -> tuple[tuple[str, str], ...]:
+    if perfil.analisis_historico_disponible:
+        return VALORES_ESTRATEGIA_CON_HISTORICO
+    return VALORES_ESTRATEGIA_SIN_HISTORICO
+
+
+def _opcion_prioridad_historica(perfil) -> OpcionPreset:
+    return OpcionPreset(
+        id=ID_ESTRATEGIA_MATERIAS,
+        tipo="eleccion",
+        etiqueta="Prioridad histórica",
+        defecto=(
+            ESTRATEGIA_MATERIAS_DEFECTO
+            if perfil.analisis_historico_disponible
+            else "sin_historico"
+        ),
+        valores=valores_estrategia_materias(perfil),
+    )
+
+
+def opciones_config_historia(preset, *, perfil=None) -> tuple[OpcionPreset, ...]:
+    """Opciones del preset en orden global; prioridad histórica si el preset la usa."""
     base = tuple(o for o in preset.opciones if o.id != ID_ESTRATEGIA_MATERIAS)
     if preset.usa_analisis_historico:
-        base = base + (_OPCION_PRIORIDAD_HISTORICA,)
+        if perfil is None:
+            base = base + (_OPCION_PRIORIDAD_HISTORICA,)
+        else:
+            base = base + (_opcion_prioridad_historica(perfil),)
+    if perfil is not None:
+        base = tuple(o for o in base if opcion_historia_soportada(o, perfil))
     return _ordenar_opciones_historia(base)
 
 
@@ -136,12 +186,29 @@ def estrategia_materias_desde_config(cfg: ConfigPresetHistoria) -> str | None:
     return cfg.get_str(ID_ESTRATEGIA_MATERIAS)
 
 
-def usar_analisis_historico_desde_config(preset, cfg: ConfigPresetHistoria) -> bool:
+def sanitizar_estrategia_config(cfg: ConfigPresetHistoria, perfil) -> None:
+    estrategia = cfg.get_str(ID_ESTRATEGIA_MATERIAS)
+    if not estrategia:
+        return
+    validas = {v for v, _ in valores_estrategia_materias(perfil)}
+    if estrategia not in validas:
+        cfg.valores[ID_ESTRATEGIA_MATERIAS] = valores_estrategia_materias(perfil)[0][0]
+
+
+def usar_analisis_historico_desde_config(
+    preset,
+    cfg: ConfigPresetHistoria,
+    *,
+    perfil=None,
+) -> bool:
     if not preset.usa_analisis_historico:
         return False
-    if estrategia_materias_desde_config(cfg) == "sin_historico":
+    if perfil is not None and not perfil.analisis_historico_disponible:
         return False
-    return True
+    estrategia = estrategia_materias_desde_config(cfg) or ESTRATEGIA_MATERIAS_DEFECTO
+    if estrategia in {"sin_historico", "curricular"}:
+        return False
+    return estrategia in _IDS_ESTRATEGIA_HISTORICA
 
 
 def _parse_opcion(raw: dict) -> OpcionPreset:
@@ -590,6 +657,8 @@ def defectos_config(
     *,
     materias_meta: dict[str, dict[str, str]],
     materias_orden: list[str],
+    path_plantillas: Path | None = None,
+    perfil=None,
 ) -> ConfigPresetHistoria:
     valores: dict[str, Any] = {}
     exclusion = tiene_exclusion_periodo_curso_semestre(opciones)
@@ -637,11 +706,12 @@ def defectos_config(
         valores["semilla"] = semilla_defecto_examen_fijo()
     if any(o.id == "n_preguntas" for o in opciones):
         from Comun.datos import cargar_plantillas_materia
-        from Comun.rutas import resolver_plantillas
 
         materia = valores.get("materia")
-        if materia:
-            plantillas = cargar_plantillas_materia(resolver_plantillas(), str(materia))
+        if materia and path_plantillas is not None and (
+            perfil is None or perfil.tiene_plantillas
+        ):
+            plantillas = cargar_plantillas_materia(path_plantillas, str(materia))
             ajustar_n_preguntas_examen_asignatura(valores, opciones, plantillas)
     return ConfigPresetHistoria(valores=valores)
 

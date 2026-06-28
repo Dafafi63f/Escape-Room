@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 
 import pygame
@@ -306,12 +307,18 @@ def unir_partes_cabientes(
     return separador.join(elegidas)
 
 
-def partir_texto(fuente: pygame.font.Font, texto: str, ancho_max: int) -> list[str]:
+def partir_texto(
+    fuente: pygame.font.Font,
+    texto: str,
+    ancho_max: int,
+    *,
+    tamano_pt: int | None = None,
+) -> list[str]:
     texto = preparar_texto_ui(texto)
     palabras = texto.split()
     if not palabras:
         return [""]
-    tamano = fuente.get_height()
+    tamano = tamano_pt if tamano_pt is not None else fuente.get_height()
     lineas: list[str] = []
     actual = palabras[0]
     for palabra in palabras[1:]:
@@ -328,6 +335,97 @@ def partir_texto(fuente: pygame.font.Font, texto: str, ancho_max: int) -> list[s
             actual = palabra
     lineas.append(actual)
     return lineas
+
+
+def _tamano_render(fuente: pygame.font.Font, tamano_pt: int | None) -> int:
+    return tamano_pt if tamano_pt is not None else fuente.get_height()
+
+
+_RE_VIÑETA_UI = re.compile(r"^(\s*)•\s+(.*)$", re.DOTALL)
+_RE_GUION_UI = re.compile(r"^(\s*)-\s+(.*)$", re.DOTALL)
+
+
+def _ancho_texto_ui(fuente: pygame.font.Font, texto: str, tamano: int) -> int:
+    if texto_requiere_fuentes_mixtas(texto):
+        return medir_texto_mixto(texto, tamano)[0]
+    return fuente.size(texto)[0]
+
+
+def _espacios_ancho_ui(fuente: pygame.font.Font, tamano: int, ancho_px: int) -> str:
+    if ancho_px <= 0:
+        return ""
+    ancho_espacio = _ancho_texto_ui(fuente, " ", tamano)
+    if ancho_espacio <= 0:
+        return "    "
+    return " " * max(1, round(ancho_px / ancho_espacio))
+
+
+def _partir_lista_marcada(
+    fuente: pygame.font.Font,
+    sangria_base: str,
+    marcador: str,
+    cuerpo: str,
+    ancho_max: int,
+    *,
+    tamano_pt: int | None = None,
+) -> list[str]:
+    """Primera línea con marcador; continuaciones alineadas bajo el texto."""
+    tamano = _tamano_render(fuente, tamano_pt)
+    prefijo = f"{sangria_base}{marcador} "
+    ancho_prefijo = _ancho_texto_ui(fuente, prefijo, tamano)
+    colgante = _espacios_ancho_ui(fuente, tamano, ancho_prefijo)
+    ancho_cuerpo = max(40, ancho_max - ancho_prefijo)
+    partes = partir_texto(fuente, cuerpo, ancho_cuerpo, tamano_pt=tamano_pt)
+    if not partes:
+        return [prefijo.rstrip()]
+    lineas = [prefijo + partes[0]]
+    lineas.extend(colgante + parte for parte in partes[1:])
+    return lineas
+
+
+def partir_texto_con_sangria(
+    fuente: pygame.font.Font,
+    texto: str,
+    ancho_max: int,
+    *,
+    tamano_pt: int | None = None,
+) -> list[str]:
+    """Parte en líneas manteniendo la sangría inicial en los saltos."""
+    texto = preparar_texto_ui(texto)
+    coincidencia_viñeta = _RE_VIÑETA_UI.match(texto)
+    if coincidencia_viñeta:
+        return _partir_lista_marcada(
+            fuente,
+            coincidencia_viñeta.group(1),
+            "•",
+            coincidencia_viñeta.group(2),
+            ancho_max,
+            tamano_pt=tamano_pt,
+        )
+    coincidencia_guion = _RE_GUION_UI.match(texto)
+    if coincidencia_guion:
+        return _partir_lista_marcada(
+            fuente,
+            coincidencia_guion.group(1),
+            "-",
+            coincidencia_guion.group(2),
+            ancho_max,
+            tamano_pt=tamano_pt,
+        )
+    coincidencia = re.match(r"^(\s+)", texto)
+    sangria = coincidencia.group(1) if coincidencia else ""
+    cuerpo = texto[len(sangria) :] if sangria else texto
+    if not cuerpo.strip():
+        return [texto]
+    tamano = _tamano_render(fuente, tamano_pt)
+    ancho_cuerpo = ancho_max
+    if sangria:
+        ancho_sangria = _ancho_texto_ui(fuente, sangria, tamano)
+        ancho_cuerpo = max(40, ancho_max - ancho_sangria)
+    partes = partir_texto(fuente, cuerpo, ancho_cuerpo, tamano_pt=tamano_pt)
+    if not sangria:
+        return partes
+    return [sangria + partes[0], *[sangria + parte for parte in partes[1:]]]
 
 
 def dibujar_texto_multilinea(

@@ -9,8 +9,11 @@ from collections.abc import Callable
 import pygame
 
 from Comun.preferencias_grafico import es_nombre_anonimo, nombre_jugador_efectivo
-from Comun.datos_locales_juego import borrar_txt_informes_feedback, vaciar_preferencias_locales
-from Comun.ranking_resistencia import vaciar_ranking_variante
+from Comun.persistencia import (
+    borrar_txt_informes_feedback,
+    vaciar_estadisticas_locales,
+    vaciar_preferencias_locales,
+)
 from Comun.preferencias_grafico import (
     PreferenciasGrafico,
     cargar_preferencias_grafico,
@@ -28,8 +31,8 @@ from Grafico.tema import (
 )
 from Grafico.texto import dibujar_texto_centro
 from Grafico.textos_grafico import (
-    BTN_BORRAR_RANKING,
     BTN_BORRAR_TXT_INFORMES,
+    BTN_VACIAR_ESTADISTICAS,
     BTN_VACIAR_PREFERENCIAS,
     etiqueta,
 )
@@ -151,10 +154,9 @@ class OverlayOpcionesGrafico:
 
     def _crear_botones_borrado(self) -> None:
         fuente_peq = self.fuentes["pequena"]
-        _, icono_borrar = BTN_BORRAR_RANKING
         etiq_txt = etiqueta(*BTN_BORRAR_TXT_INFORMES)
         etiq_prefs = etiqueta(*BTN_VACIAR_PREFERENCIAS)
-        etiq_resistencia = etiqueta("Vaciar ranking resistencia", icono_borrar)
+        etiq_stats = etiqueta(*BTN_VACIAR_ESTADISTICAS)
         self.boton_borrar_txt = Boton(
             etiq_txt,
             rect_boton_etiqueta(
@@ -179,17 +181,20 @@ class OverlayOpcionesGrafico:
             lambda: self._solicitar_borrado("preferencias"),
             tooltip="Restablece preferencias a valores por defecto (el .json se conserva).",
         )
-        self.boton_borrar_resistencia = Boton(
-            etiq_resistencia,
+        self.boton_vaciar_estadisticas = Boton(
+            etiq_stats,
             rect_boton_etiqueta(
-                etiq_resistencia,
+                etiq_stats,
                 fuente_peq,
                 x_centro=0,
                 y=0,
                 alto_min=36,
             ),
-            lambda: self._solicitar_borrado("resistencia"),
-            tooltip="Vacía el historial local del modo resistencia (el fichero JSON se conserva).",
+            lambda: self._solicitar_borrado("estadisticas"),
+            tooltip=(
+                "Restablece récords, totales y evolución acumulada "
+                "(el fichero estadisticas_jugador.json se conserva)."
+            ),
         )
 
     def _reposicionar_campo_y_restablecer(self) -> None:
@@ -213,24 +218,16 @@ class OverlayOpcionesGrafico:
     def _y_inferior_hint_borrado(self) -> int:
         fuente_peq = self.fuentes["pequena"]
         hint = fuente_peq.render(
-            "Borrar: .txt | Vaciar: rankings (los .json se conservan).",
+            "Borrar: .txt | Vaciar: estadísticas (los .json se conservan).",
             True,
             _COLOR_ETIQUETA_PANEL,
         )
         return self.panel.y + self._Y_BORRADO_LBL + self._GAP_HINT_BORRADO + hint.get_height()
 
     def _alto_bloque_borrado(self) -> int:
-        fila = [self.boton_borrar_resistencia]
-        gap_h = self._GAP_BORRADO_COLUMNAS
-        ancho_max = self.panel.width - 48
-        total_w = sum(boton.rect.width for boton in fila) + gap_h * (len(fila) - 1)
-        if total_w > ancho_max:
-            alto_ranking = sum(boton.rect.height for boton in fila) + self._GAP_BORRADO_FILAS * (
-                len(fila) - 1
-            )
-        else:
-            alto_ranking = max(boton.rect.height for boton in fila)
-        return self.boton_borrar_txt.rect.height + self._GAP_BORRADO_FILAS + alto_ranking
+        return self.boton_borrar_txt.rect.height + self._GAP_BORRADO_FILAS + (
+            self.boton_vaciar_estadisticas.rect.height
+        )
 
     def _reposicionar_botones_borrado(self, *, y_superior: int, y_inferior: int) -> None:
         alto_bloque = self._alto_bloque_borrado()
@@ -241,27 +238,10 @@ class OverlayOpcionesGrafico:
             y_bloque = y_superior
 
         self.boton_borrar_txt.rect.midtop = (ANCHO // 2, y_bloque)
-
-        fila = [self.boton_borrar_resistencia]
-        gap_h = self._GAP_BORRADO_COLUMNAS
-        y_ranking = y_bloque + self.boton_borrar_txt.rect.height + self._GAP_BORRADO_FILAS
-        ancho_max = self.panel.width - 48
-        total_w = sum(boton.rect.width for boton in fila) + gap_h * (len(fila) - 1)
-        if total_w > ancho_max:
-            y = y_ranking
-            for boton in fila:
-                boton.rect.midtop = (ANCHO // 2, y)
-                y = boton.rect.bottom + self._GAP_BORRADO_FILAS
-            return
-
-        alto_fila = max(boton.rect.height for boton in fila)
-        x = ANCHO // 2 - total_w // 2
-        for boton in fila:
-            boton.rect.topleft = (
-                x,
-                y_ranking + (alto_fila - boton.rect.height) // 2,
-            )
-            x += boton.rect.width + gap_h
+        self.boton_vaciar_estadisticas.rect.midtop = (
+            ANCHO // 2,
+            y_bloque + self.boton_borrar_txt.rect.height + self._GAP_BORRADO_FILAS,
+        )
 
     def _reposicionar_inferior(self) -> None:
         """Ancla «Listo» abajo y centra los botones de borrado entre el hint y «Listo»."""
@@ -299,7 +279,9 @@ class OverlayOpcionesGrafico:
             self.guardar_informes_txt = prefs.guardar_informes_txt
             self.campo_nombre.texto = ""
             return
-        vaciar_ranking_variante(accion)
+        if accion == "estadisticas":
+            vaciar_estadisticas_locales()
+            return
 
     def _texto_valor(self, clave: str) -> str:
         if clave == "tooltips":
@@ -330,7 +312,7 @@ class OverlayOpcionesGrafico:
             self.boton_listo,
             self.boton_borrar_txt,
             self.boton_vaciar_preferencias,
-            self.boton_borrar_resistencia,
+            self.boton_vaciar_estadisticas,
         ]
         for par in self._botones_ciclo.values():
             out.extend(par)
@@ -394,7 +376,7 @@ class OverlayOpcionesGrafico:
 
         lbl_borrado = fuente_peq.render("Limpiar datos locales:", True, _COLOR_ETIQUETA_PANEL)
         hint_borrado = fuente_peq.render(
-            "Borrar: .txt | Vaciar: rankings (los .json se conservan).",
+            "Borrar: .txt | Vaciar: estadísticas (los .json se conservan).",
             True,
             _COLOR_ETIQUETA_PANEL,
         )
@@ -410,7 +392,7 @@ class OverlayOpcionesGrafico:
         )
 
         self.boton_borrar_txt.dibujar(superficie, fuente_peq)
-        self.boton_borrar_resistencia.dibujar(superficie, fuente_peq)
+        self.boton_vaciar_estadisticas.dibujar(superficie, fuente_peq)
 
         self.boton_listo.dibujar(superficie, self.fuentes["menu"])
         dibujar_tooltips_botones(superficie, fuente_peq, self._botones())

@@ -9,11 +9,15 @@ Versión gráfica del juego. Reutiliza [`Comun/`](../Comun/README.md) (datos, re
 | [`pantallas.py`](pantallas.py) | Núcleo: clase `Pantalla`, menú principal, partida libre, resumen |
 | [`pantallas_inicio.py`](pantallas_inicio.py) | Bienvenida y nombre del jugador |
 | [`pantallas_libre.py`](pantallas_libre.py) | Wizard modo libre (paso 1: reglas; paso 2: filtros) |
-| [`pantallas_historia.py`](pantallas_historia.py) | Historia (carrusel de presets), opciones, partida y ranking |
+| [`pantallas_historia.py`](pantallas_historia.py) | Carrusel modo historia (solo paquete completo) |
+| [`pantallas_examen_fijo.py`](pantallas_examen_fijo.py) | Examen fijo: opciones, partida y resumen |
+| [`pantallas_resistencia_partida.py`](pantallas_resistencia_partida.py) | Partida y resumen del modo resistencia |
 | [`pantallas_modos.py`](pantallas_modos.py) | Modos diarios, modos especiales y escape room |
 | [`pantallas_sistema.py`](pantallas_sistema.py) | Info del juego (ℹ️) y formulario de feedback (📣) |
 | [`modo_libre.py`](modo_libre.py) | Utilidades del modo libre gráfico |
-| [`modo_historia.py`](modo_historia.py) | Catálogo y preparación de exámenes del modo historia |
+| [`modo_historia.py`](modo_historia.py) | Catálogo y preparación de exámenes del carrusel historia |
+| [`modo_preset.py`](modo_preset.py) | Arranque y navegación fin de partida por preset |
+| [`modo_especiales.py`](modo_especiales.py) | Catálogo de modos especiales (resistencia, escape) |
 | [`arranque_partida.py`](arranque_partida.py) | Arranque por preset (historia, resistencia, escape room) |
 | [`ui.py`](ui.py) | Botones, campos de texto, tooltips, texto multilínea |
 | [`tooltips_ui.py`](tooltips_ui.py) | Textos de ayuda al pasar el ratón |
@@ -56,11 +60,11 @@ python Juego/juego_grafico.py
 | Modo | Gráfico | Notas |
 |------|---------|-------|
 | **Libre** | Implementado | Wizard dos pasos; filtros; tooltips |
-| **Historia** | Implementado | Carrusel de 5 presets (`Data/Juego/presets.json`) |
-| **Resistencia** | Implementado | Eventos, objetos, ranking local; `RngPartida` por sesión |
+| **Historia** | Implementado | Carrusel de 5 presets (`Juego/presets.json`) |
+| **Resistencia** | Implementado | Eventos, objetos, récords en estadísticas; `RngPartida` por sesión |
 | **Escape room** | Implementado | 30 salas, tienda, botín, inventario; `RngPartida` por sesión |
 | **Feedback** | Implementado | Icono 📣 en barra; envío SMTP si hay config en `Data/Banco/creador_privado.json` |
-| **Info** | Implementado | Icono ℹ️: ranking, contacto del creador, changelog del juego |
+| **Info** | Implementado | Icono ℹ️: estadísticas, contacto del creador, changelog del juego |
 
 ## Barra superior fija (fuera de partida y en pausa)
 
@@ -68,7 +72,7 @@ python Juego/juego_grafico.py
 |-------|---------|
 | ⏸ | Pausa global |
 | 📅 | Modos diarios |
-| ℹ️ | Info del juego (ranking, contacto, novedades) |
+| ℹ️ | Info del juego (estadísticas, contacto, novedades) |
 | 📣 | Enviar aviso al creador |
 | ⚙️ | Opciones (nombre, tooltips, emojis) |
 

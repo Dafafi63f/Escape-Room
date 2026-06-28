@@ -7,7 +7,7 @@ from __future__ import annotations
 import unittest
 from dataclasses import replace
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 
@@ -30,7 +30,7 @@ from Comun.escape_partida import (  # noqa: E402
     reglas_partida_desde_desafio,
     seleccionar_preguntas_desafio,
 )
-from Comun.reglas_partida import preset_escape  # noqa: E402
+from Comun.reglas import preset_escape  # noqa: E402
 from Comun.escape_room import (  # noqa: E402
     PUERTAS_POR_SALA,
     SALAS_DEFECTO,
@@ -65,7 +65,7 @@ from Comun.eventos_partida import (  # noqa: E402
 )
 from Comun.presets_historia import aplicar_preset, buscar_preset  # noqa: E402
 from Comun.motor_nucleo import EstadoPartida  # noqa: E402
-from Comun.politica_reglas import ContextoPartida  # noqa: E402
+from Comun.reglas import ContextoPartida  # noqa: E402
 from Comun.rutas import PATH_PREGUNTAS, resolver_listado_materias  # noqa: E402
 
 
@@ -1054,7 +1054,7 @@ class TestEscapeRoom(unittest.TestCase):
 
     def test_aplicar_bonificacion_respeta_tope(self) -> None:
         from Comun.motor_nucleo import EstadoPartida
-        from Comun.reglas_partida import preset_escape
+        from Comun.reglas import preset_escape
 
         estado = EstadoPartida(
             nombre="t",
@@ -1072,7 +1072,7 @@ class TestEscapeRoom(unittest.TestCase):
 
     def test_aplicar_bonificacion_corazon_max(self) -> None:
         from Comun.motor_nucleo import EstadoPartida
-        from Comun.reglas_partida import preset_escape
+        from Comun.reglas import preset_escape
 
         estado = EstadoPartida(
             nombre="t",
@@ -1148,7 +1148,7 @@ class TestEscapeRoom(unittest.TestCase):
 
     def test_tienda_visita_garantiza_articulo_asequible(self) -> None:
         from Comun.motor_nucleo import EstadoPartida
-        from Comun.reglas_partida import preset_resistencia
+        from Comun.reglas import preset_resistencia
         from Comun.tienda_escape import seleccionar_articulos_tienda_visita
 
         estado = EstadoPartida(
@@ -1169,7 +1169,7 @@ class TestEscapeRoom(unittest.TestCase):
 
     def test_tienda_no_visitable_sin_puntos(self) -> None:
         from Comun.motor_nucleo import EstadoPartida
-        from Comun.reglas_partida import preset_resistencia
+        from Comun.reglas import preset_resistencia
         from Comun.tienda_escape import (
             puede_visitar_tienda_escape,
             seleccionar_articulos_tienda_visita,
@@ -1195,7 +1195,7 @@ class TestEscapeRoom(unittest.TestCase):
             evento_por_id,
         )
         from Comun.motor_nucleo import EstadoPartida
-        from Comun.reglas_partida import preset_resistencia
+        from Comun.reglas import preset_resistencia
         from Comun.tienda_escape import puerta_es_tienda
 
         sala = self.config.salas[9]
@@ -1225,7 +1225,7 @@ class TestEscapeRoom(unittest.TestCase):
     def test_hard_pity_tienda_pospone_hasta_tener_puntos(self) -> None:
         from Comun.eventos_partida import PityPuertasEspecialesEscape
         from Comun.motor_nucleo import EstadoPartida
-        from Comun.reglas_partida import preset_resistencia
+        from Comun.reglas import preset_resistencia
         from Comun.tienda_escape import precio_minimo_tienda_escape, puerta_es_tienda
 
         sala = self.config.salas[9]
@@ -1303,7 +1303,7 @@ class TestEscapeRoom(unittest.TestCase):
 
     def test_tienda_catalogo_y_economia(self) -> None:
         from Comun.motor_nucleo import EstadoPartida
-        from Comun.reglas_partida import ReglasPartida
+        from Comun.reglas import ReglasPartida
         from Comun.tienda_escape import (
             CATALOGO_TIENDA_ESCAPE,
             EstadoInventarioEscape,
@@ -1379,7 +1379,7 @@ class TestEscapeRoom(unittest.TestCase):
 
     def test_bonificacion_tienda_efecto_instantaneo(self) -> None:
         from Comun.motor_nucleo import EstadoPartida
-        from Comun.reglas_partida import ReglasPartida
+        from Comun.reglas import ReglasPartida
         from Comun.tienda_escape import (
             EstadoInventarioEscape,
             articulo_comprable_tienda_escape,
@@ -1749,7 +1749,7 @@ class TestLayoutInventarioEscape(unittest.TestCase):
         cls.materias_pool = materias_del_pool(cls.pool)
 
     def test_empaquetar_seis_botones_anchos_en_dos_filas(self) -> None:
-        from Grafico.pantallas_modos import empaquetar_filas_inventario
+        from Grafico.pantallas_escape import empaquetar_filas_inventario
         from Grafico.tema import ANCHO, MARGEN
 
         ancho_disp = ANCHO - 2 * MARGEN
@@ -1765,9 +1765,9 @@ class TestLayoutInventarioEscape(unittest.TestCase):
     def test_botones_inventario_no_salen_de_pantalla(self) -> None:
         from Comun.objetos_partida import POWERUPS
         from Comun.presets_historia import aplicar_preset, buscar_preset
-        from Grafico.pantallas_modos import PartidaEscapeRoom
+        from Grafico.pantallas_escape import PartidaEscapeRoom
         from Grafico.tema import ANCHO, MARGEN
-        from Tests.helpers_navegacion_grafico import configurar_pygame_tests
+        from Tests.Fixtures.helpers_navegacion_grafico import configurar_pygame_tests
 
         configurar_pygame_tests()
         preset = buscar_preset("escape_room")

@@ -64,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
         "--preset",
         type=str,
         default=None,
-        help="Id de preset en Data/Juego/presets.json (sustituye --perfil y filtros manuales)",
+        help="Id de preset en Juego/presets.json (sustituye --perfil y filtros manuales)",
     )
     p.add_argument(
         "--materias",

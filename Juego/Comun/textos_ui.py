@@ -29,10 +29,9 @@ __all__ = [
     "BTN_PANTALLA_TITULO",
     "BTN_SALIR_PROGRAMA",
     "BTN_SIGUIENTE",
-    "BTN_VER_RANKING",
-    "BTN_BORRAR_RANKING",
     "BTN_BORRAR_TXT_INFORMES",
     "BTN_VACIAR_PREFERENCIAS",
+    "BTN_VACIAR_ESTADISTICAS",
     "BTN_VOLVER",
     "BTN_VOLVER_MENU",
     "con_emoji",
@@ -81,6 +80,7 @@ def resolver_emoji(emoji: str | EmojiPar, *, contexto: ContextoUi = "grafico") -
 # Iconos sueltos de la barra fija / atajos.
 _EMOJI_ICONO: dict[str, EmojiPar] = {
     "diarios": _p("📅"),
+    "examen_fijo": _p("📕"),
     "feedback": _p("📣"),
     "info": _p("ℹ️", "📋"),
     "pausa": _p("⏯", "⏸️"),
@@ -152,7 +152,6 @@ _EMOJI_ETIQUETA: dict[str, EmojiPar] = {
     "sin_registros": _p("📭"),
     "jugador": _p("👤"),
     "racha": _p("🔥"),
-    "ranking_pos": _p("🏆"),
     "ayuda": _p("❓"),
     "banco_seguro": _p("🛡️"),
     "banco_beta": _p("🧪"),
@@ -384,10 +383,9 @@ BTN_CONTINUAR_PARTIDA = ("Continuar la partida", _EMOJI_ADELANTE)
 BTN_ABANDONAR = ("Abandonar", _p("🛑"))
 BTN_APUESTA_SI = ("✅", "")
 BTN_APUESTA_NO = ("❌", "")
-BTN_VER_RANKING = ("Ver ranking", _p("🏆"))
-BTN_BORRAR_RANKING = ("Vaciar historial", _p("🗑️"))
 BTN_BORRAR_TXT_INFORMES = ("Borrar informes y feedback", _p("🗑️"))
 BTN_VACIAR_PREFERENCIAS = ("Restablecer preferencias", _p("↺"))
+BTN_VACIAR_ESTADISTICAS = ("Restablecer estadísticas", _p("↺"))
 BTN_GUARDAR_INFORME = ("Guardar informe y volver", _p("💾"))
 BTN_REPETIR_PARTIDA = ("Repetir partida", _p("🔁"))
 BTN_CAMBIAR_OPCIONES = ("Cambiar opciones", _p("⚙️"))

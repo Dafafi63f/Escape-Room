@@ -18,13 +18,13 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 
 # --- test_informe_examen.py ---
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 
@@ -43,7 +43,7 @@ from Comun.motor_nucleo import (
     evaluar_respuesta,
     presentacion_opciones_pantalla,
 )
-from Comun.reglas_partida import preset_historia_examen, preset_libre_arcade
+from Comun.reglas import ReglasPartida, preset_historia_examen, preset_libre_arcade
 
 
 def _pregunta_simple() -> Pregunta:
@@ -103,6 +103,27 @@ class TestInformeExamen(unittest.TestCase):
         self.assertIn("Examen historia", texto)
         self.assertNotIn("Archivo:", texto)
         self.assertNotIn("Configuración elegida", texto)
+        self.assertIn("Duración:", texto)
+
+    def test_informe_muestra_limite_tiempo_global(self) -> None:
+        base = preset_historia_examen()
+        reglas = ReglasPartida(
+            sistema_puntuacion=base.sistema_puntuacion,
+            tiempo_total_seg=3600,
+        )
+        estado = EstadoPartida("Ana", reglas, vidas_restantes=None)
+        estado.aciertos = 1
+        estado.respondidas = 1
+        registros = [RegistroRespuesta(1, _pregunta_simple(), "B", True)]
+        texto = formatear_informe_examen(
+            estado,
+            registros,
+            titulo="FIN",
+            meta={"etiqueta_sesion": "Test"},
+            total_previsto=1,
+        )
+        self.assertIn("Duración:", texto)
+        self.assertIn("Tiempo global configurado: 1 h", texto)
 
     def test_nombres_archivo_distintos_por_id(self) -> None:
         id1 = generar_id_sesion()
@@ -245,7 +266,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from Tests.support import ensure_juego_path
+from Tests.Fixtures.support import ensure_juego_path
 
 ensure_juego_path()
 
@@ -369,77 +390,36 @@ class TestFeedback(unittest.TestCase):
 
 
 class TestContactoCreador(unittest.TestCase):
-    def test_canales_solo_correo_por_defecto(self) -> None:
-        import json
-        from Comun.feedback import canales_contacto_alternativo
-
-        privado = {
-            "creador": {"correo": "autor@uab.cat"},
-            "github": {
-                "usuario": "miusuario",
-                "repositorio": "mi-repo",
-                "url": "https://github.com/miusuario/mi-repo.git",
-            },
-        }
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "creador_privado.json"
-            path.write_text(json.dumps(privado), encoding="utf-8")
-            with patch(
-                "Comun.feedback.resolver_config_creador_privado",
-                return_value=path,
-            ):
-                canales = canales_contacto_alternativo()
-        self.assertEqual(canales, [("Correo", "autor@uab.cat")])
-
-    def test_canales_configurados_explicitamente(self) -> None:
-        import json
-        from Comun.feedback import canales_contacto_alternativo, nota_contacto_jugador
-
-        privado = {
-            "contacto_jugador": {
-                "nota": "Escríbeme por:",
-                "canales": [
-                    {"etiqueta": "LinkedIn", "valor": "https://linkedin.com/in/ejemplo"},
-                    {"etiqueta": "Correo", "valor": ""},
-                ],
-            },
-            "creador": {"correo": "autor@uab.cat"},
-        }
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "creador_privado.json"
-            path.write_text(json.dumps(privado), encoding="utf-8")
-            with patch(
-                "Comun.feedback.resolver_config_creador_privado",
-                return_value=path,
-            ):
-                self.assertEqual(nota_contacto_jugador(), "Escríbeme por:")
-                canales = canales_contacto_alternativo()
-        self.assertEqual(
-            canales,
-            [
-                ("LinkedIn", "https://linkedin.com/in/ejemplo"),
-                ("Correo", "autor@uab.cat"),
-            ],
+    def test_contacto_publico_estatico(self) -> None:
+        from Comun.feedback import (
+            CANALES_CONTACTO_JUGADOR,
+            NOTA_CONTACTO_JUGADOR,
+            canales_contacto_alternativo,
+            nota_contacto_jugador,
+            texto_bloque_contacto_alternativo,
         )
 
-    def test_describir_resultado_incluye_contacto(self) -> None:
-        import json
-        from Comun.feedback import ResultadoEnvioFeedback, describir_resultado_envio
+        self.assertEqual(nota_contacto_jugador(), NOTA_CONTACTO_JUGADOR)
+        self.assertEqual(canales_contacto_alternativo(), list(CANALES_CONTACTO_JUGADOR))
+        texto = texto_bloque_contacto_alternativo()
+        self.assertIn("dafafi63@gmail.com", texto)
+        self.assertNotIn("GitHub", texto)
+        self.assertNotIn("📣", texto)
 
-        privado = {"creador": {"correo": "autor@uab.cat"}}
+    def test_describir_resultado_incluye_contacto(self) -> None:
+        from Comun.feedback import (
+            CORREO_CONTACTO_CREADOR,
+            ResultadoEnvioFeedback,
+            describir_resultado_envio,
+        )
+
         with tempfile.TemporaryDirectory() as tmp:
-            path_priv = Path(tmp) / "creador_privado.json"
-            path_priv.write_text(json.dumps(privado), encoding="utf-8")
             archivo = Path(tmp) / "feedback.txt"
             archivo.write_text("ok", encoding="utf-8")
-            with patch(
-                "Comun.feedback.resolver_config_creador_privado",
-                return_value=path_priv,
-            ):
-                lineas = describir_resultado_envio(
-                    ResultadoEnvioFeedback(archivo=archivo, smtp_enviado=True, smtp_destino="x@y.z")
-                )
-        self.assertTrue(any("autor@uab.cat" in linea for linea in lineas))
+            lineas = describir_resultado_envio(
+                ResultadoEnvioFeedback(archivo=archivo, smtp_enviado=True, smtp_destino="x@y.z")
+            )
+        self.assertTrue(any(CORREO_CONTACTO_CREADOR in linea for linea in lineas))
 
 
 if __name__ == "__main__":

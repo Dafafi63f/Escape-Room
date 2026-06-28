@@ -58,32 +58,20 @@ def resolver_changelog_proyecto() -> Path | None:
         raiz / FICHERO_CHANGELOG_PROYECTO,
         raiz / _LEGACY_CHANGELOG_PROYECTO,
     ]
-    for base in (raiz, *raiz.parents):
-        for nombre in (FICHERO_CHANGELOG_PROYECTO, _LEGACY_CHANGELOG_PROYECTO):
-            p = base / nombre
-            if p not in candidatos:
-                candidatos.append(p)
     return _primer_existente(candidatos)
 
 
 def resolver_changelog_juego_grafico() -> Path | None:
-    """``CHANGELOG_JUEGO.md`` en ``Docs/`` (o raíz legada)."""
+    """``CHANGELOG_JUEGO.md`` en ``Docs/``, ``Juego/`` (mínimo) o rutas legadas."""
     raiz = _raiz_repo()
     docs = _docs_dir()
     candidatos = [
         docs / FICHERO_CHANGELOG_JUEGO,
+        juego_dir() / FICHERO_CHANGELOG_JUEGO,
         raiz / FICHERO_CHANGELOG_JUEGO,
         raiz / _LEGACY_CHANGELOG_JUEGO,
         juego_dir() / _LEGACY_CHANGELOG_JUEGO,
     ]
-    for base in (raiz, *raiz.parents):
-        for nombre in (FICHERO_CHANGELOG_JUEGO, _LEGACY_CHANGELOG_JUEGO):
-            p = base / nombre
-            if p not in candidatos:
-                candidatos.append(p)
-    legado_juego = juego_dir() / _LEGACY_CHANGELOG_JUEGO
-    if legado_juego not in candidatos:
-        candidatos.append(legado_juego)
     return _primer_existente(candidatos)
 
 
@@ -92,18 +80,33 @@ def resolver_changelog() -> Path | None:
     return resolver_changelog_proyecto()
 
 
+_TITULOS_H1_OMITIR = frozenset({"novedades del juego"})
+_PREFIJO_VIÑETA = "  • "
+_SANGRIA_SECCION = "  "
+
+
 def _anadir_parrafo_vacio(salida: list[str]) -> None:
     if salida and salida[-1] != "":
         salida.append("")
 
 
-def _procesar_titulo_md(limpia: str, salida: list[str]) -> None:
-    titulo = re.sub(r"^#+\s*", "", limpia).strip()
+def _nivel_titulo_md(bruta: str) -> int:
+    return len(bruta) - len(bruta.lstrip("#"))
+
+
+def _procesar_titulo_md(bruta: str, salida: list[str]) -> None:
+    nivel = _nivel_titulo_md(bruta)
+    titulo = re.sub(r"^#+\s*", "", bruta.strip()).strip()
     titulo = _limpiar_marcado_inline(titulo)
     if not titulo:
         return
+    if nivel == 1 and titulo.casefold() in _TITULOS_H1_OMITIR:
+        return
     _anadir_parrafo_vacio(salida)
-    salida.append(titulo)
+    if nivel >= 2:
+        salida.append(f"--- {titulo} ---")
+    else:
+        salida.append(titulo)
 
 
 def _limpiar_marcado_inline(texto: str) -> str:
@@ -116,11 +119,48 @@ def _limpiar_marcado_inline(texto: str) -> str:
     return texto
 
 
+def _limpiar_texto_plano(bruta: str) -> str:
+    texto = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", bruta)
+    texto = texto.replace("`", "")
+    texto = _limpiar_marcado_inline(texto)
+    return texto.strip()
+
+
+def _procesar_viñeta(limpia: str, salida: list[str]) -> bool:
+    if not limpia.startswith("- "):
+        return False
+    cuerpo = _limpiar_texto_plano(limpia[2:])
+    if cuerpo:
+        salida.append(f"{_PREFIJO_VIÑETA}{cuerpo}")
+    return True
+
+
+def _recortar_referencia_proyecto(texto: str) -> str:
+    partes = re.split(
+        r"\.\s*El historial técnico del TFG\b",
+        texto,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )
+    principal = partes[0].strip()
+    if not principal:
+        return ""
+    if not principal.endswith("."):
+        principal += "."
+    return principal
+
+
 def _procesar_linea_texto(bruta: str, salida: list[str]) -> None:
-    texto_linea = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", bruta)
-    texto_linea = texto_linea.replace("`", "")
-    texto_linea = _limpiar_marcado_inline(texto_linea)
-    salida.append(texto_linea.strip())
+    limpia = bruta.strip()
+    if _procesar_viñeta(limpia, salida):
+        return
+    texto_linea = _recortar_referencia_proyecto(_limpiar_texto_plano(bruta))
+    if texto_linea:
+        salida.append(texto_linea)
+
+
+def _es_nota_footer_desarrollo(limpia: str) -> bool:
+    return limpia.casefold().startswith("al añadir algo")
 
 
 def simplificar_changelog_para_ui(texto: str) -> str:
@@ -130,6 +170,8 @@ def simplificar_changelog_para_ui(texto: str) -> str:
     for linea in texto.splitlines():
         bruta = linea.rstrip()
         limpia = bruta.strip()
+        if _es_nota_footer_desarrollo(limpia):
+            break
         if limpia.startswith("```"):
             en_bloque_codigo = not en_bloque_codigo
             continue
@@ -141,12 +183,13 @@ def simplificar_changelog_para_ui(texto: str) -> str:
         if limpia.startswith("|"):
             continue
         if re.fullmatch(r"[-─—]{3,}", limpia):
-            salida.append("")
             continue
         if limpia.startswith("#"):
-            _procesar_titulo_md(limpia, salida)
+            _procesar_titulo_md(bruta, salida)
             continue
         _procesar_linea_texto(bruta, salida)
+    while salida and salida[-1] == "":
+        salida.pop()
     return "\n".join(salida).strip()
 
 

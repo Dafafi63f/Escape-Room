@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Resolución de rutas a datos y persistencia (script, exe, PyInstaller)."""
+"""Resolución de rutas a datos y persistencia (script o zip portable)."""
 
 from __future__ import annotations
 
@@ -21,32 +21,90 @@ def juego_dir() -> Path:
     return _JUEGO_DIR
 
 
+def _raiz_paquete() -> Path:
+    """Raíz del paquete desplegado (``MATCAD_minimal/``, repo del TFG, etc.)."""
+    return _JUEGO_DIR.parent
+
+
 def _roots_busqueda() -> list[Path]:
     candidatos: list[Path] = []
     vistos: set[Path] = set()
+    try:
+        paquete = _raiz_paquete().resolve()
+    except OSError:
+        paquete = _raiz_paquete()
 
-    rutas_base = [_JUEGO_DIR, Path.cwd()]
-    if getattr(sys, "frozen", False):
-        rutas_base.append(Path(sys.executable).resolve().parent)
-    meipass = getattr(sys, "_MEIPASS", None)
-    if meipass:
-        rutas_base.append(Path(meipass))
-
-    for base in rutas_base:
+    def _añadir(ruta: Path) -> None:
         try:
-            base = base.resolve()
+            resuelta = ruta.resolve()
         except OSError:
-            continue
-        for ruta in (base, *base.parents):
-            if ruta not in vistos and ruta.exists():
-                vistos.add(ruta)
-                candidatos.append(ruta)
+            return
+        if resuelta in vistos or not resuelta.exists():
+            return
+        vistos.add(resuelta)
+        candidatos.append(resuelta)
+
+    _añadir(paquete)
+    _añadir(_JUEGO_DIR)
+
+    try:
+        cwd = Path.cwd().resolve()
+    except OSError:
+        return candidatos
+
+    try:
+        cwd.relative_to(paquete)
+        dentro = True
+    except ValueError:
+        dentro = False
+
+    if dentro:
+        for ruta in (cwd, *cwd.parents):
+            _añadir(ruta)
+            try:
+                if ruta.resolve() == paquete:
+                    break
+            except OSError:
+                if ruta == paquete:
+                    break
+    else:
+        _añadir(cwd)
+        try:
+            paquete.relative_to(cwd)
+        except ValueError:
+            pass
+        else:
+            for ruta in (cwd, *cwd.parents):
+                _añadir(ruta)
+                try:
+                    if ruta.resolve() == paquete:
+                        break
+                except OSError:
+                    if ruta == paquete:
+                        break
+
     return candidatos
 
 
+def _bases_rglob_acotado(raiz: Path) -> list[Path]:
+    """Subárboles del proyecto donde tiene sentido buscar datos (nunca todo el perfil del usuario)."""
+    bases: list[Path] = []
+    for candidato in (raiz / "Data", raiz / "Juego", raiz):
+        try:
+            candidato = candidato.resolve()
+        except OSError:
+            continue
+        if not candidato.is_dir():
+            continue
+        if candidato in bases:
+            continue
+        if candidato == raiz and not (raiz / "Juego").is_dir() and not (raiz / "Data").is_dir():
+            continue
+        bases.append(candidato)
+    return bases
+
+
 def _data_root() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent / "Data"
     return _JUEGO_DIR.parent / "Data"
 
 
@@ -119,6 +177,14 @@ def _buscar_archivo(
     bajo_data: bool = True,
     zona: _ZonaDatos = "banco",
 ) -> Path:
+    try:
+        paquete_key = str(_raiz_paquete().resolve())
+    except OSError:
+        paquete_key = str(_raiz_paquete())
+    clave = (paquete_key, nombre, zona, bajo_data)
+    if clave in _archivos_no_encontrados:
+        raise FileNotFoundError(f"No se encontró '{nombre}' en rutas accesibles.")
+
     candidatos_raiz: list[Path] = []
     vistos: set[Path] = set()
     for raiz in _roots_busqueda():
@@ -138,18 +204,24 @@ def _buscar_archivo(
         if p.exists():
             return p
 
-    for raiz in candidatos_raiz:
-        coincidencias = sorted(
-            raiz.rglob(nombre),
+    coincidencias: list[Path] = []
+    for base in _bases_rglob_acotado(_raiz_paquete()):
+        try:
+            coincidencias.extend(base.rglob(nombre))
+        except OSError:
+            continue
+    if coincidencias:
+        elegida = sorted(
+            coincidencias,
             key=lambda p: (
                 0 if p.parent.name.lower() in {"data", "banco", "juego", "csv", "json"} else 1,
                 len(p.parts),
                 str(p),
             ),
-        )
-        if coincidencias:
-            return coincidencias[0]
+        )[0]
+        return elegida
 
+    _archivos_no_encontrados.add(clave)
     raise FileNotFoundError(f"No se encontró '{nombre}' en rutas accesibles.")
 
 
@@ -174,19 +246,19 @@ def resolver_plantillas() -> Path:
     return _buscar_archivo("plantillas.json", ("plantillas.json",), zona="banco")
 
 
-def resolver_preguntas_resistencia() -> Path:
-    return _buscar_archivo("preguntas_resistencia.json", ("preguntas_resistencia.json",), zona="juego")
-
-
 def resolver_presets() -> Path:
-    """Catálogo unificado de presets (historia, escape room, resistencia…)."""
+    """Catálogo de modos (historia, escape, resistencia…). Vive en ``Juego/presets.json``."""
+    canonico = _JUEGO_DIR / "presets.json"
+    if canonico.is_file():
+        return canonico
     for nombre in ("presets.json", "presets_historia.json"):
-        try:
-            return _buscar_archivo(nombre, (nombre,), zona="juego")
-        except FileNotFoundError:
-            continue
+        for zona in ("juego", "banco"):
+            try:
+                return _buscar_archivo(nombre, (nombre,), zona=zona)
+            except FileNotFoundError:
+                continue
     raise FileNotFoundError(
-        "No se encontró el catálogo de presets en Data/Juego/ (presets.json; "
+        "No se encontró el catálogo de presets (Juego/presets.json; "
         "presets_historia.json solo como nombre legacy)."
     )
 
@@ -198,15 +270,6 @@ def resolver_presets_historia() -> Path:
 def resolver_presets_especiales() -> Path:
     return resolver_presets()
 
-
-def resolver_ranking_resistencia() -> Path:
-    """JSON local del ranking de resistencia."""
-    base = _ruta_juego_escritura("ranking_resistencia.json")
-    if not base.exists():
-        base.write_text('{"version": 1, "records": []}', encoding="utf-8")
-    return base
-
-
 def resolver_historico_qualificacions() -> Path:
     return _buscar_archivo(
         "Historic_qualificacions_MatCAD_completo.csv",
@@ -217,14 +280,19 @@ def resolver_historico_qualificacions() -> Path:
 
 def resolver_config_creador_privado() -> Path | None:
     """JSON local del creador (datos personales y secretos; no se versiona)."""
-    try:
-        return _buscar_archivo(
-            "creador_privado.json",
-            ("creador_privado.json",),
-            zona="banco",
-        )
-    except FileNotFoundError:
-        return None
+    global _path_creador_privado
+    if _path_creador_privado is not _CREADOR_PRIVADO_SIN_RESOLVER:
+        return _path_creador_privado
+    canonico = _raiz_paquete() / "Data" / "Banco" / "creador_privado.json"
+    if canonico.is_file():
+        _path_creador_privado = canonico
+        return canonico
+    for p in _candidatos_bajo_data(_raiz_paquete(), "creador_privado.json", zona="banco"):
+        if p.is_file():
+            _path_creador_privado = p
+            return p
+    _path_creador_privado = None
+    return None
 
 
 def resolver_ruta_creador_privado_defecto() -> Path:
@@ -256,6 +324,9 @@ def ruta_feedback_para_usuario(archivo: Path) -> str:
 
 _path_preguntas: Path | None = None
 _path_materias: Path | None = None
+_CREADOR_PRIVADO_SIN_RESOLVER = object()
+_path_creador_privado: Path | None | object = _CREADOR_PRIVADO_SIN_RESOLVER
+_archivos_no_encontrados: set[tuple[str, str, _ZonaDatos, bool]] = set()
 
 
 def path_preguntas() -> Path:

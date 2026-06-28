@@ -20,7 +20,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Literal
 
 from Comun.motor_nucleo import EstadoPartida
-from Comun.reglas_partida import sumar_puntos_arcade
+from Comun.reglas import sumar_puntos_arcade
 
 from Comun.emojis_escape import (
     CAPAS_ICONO_PROTEGIDO_ESCAPE,

@@ -1,0 +1,481 @@
+Id;Pregunta;A;B;C;D;Correcta
+1;¿Qué es un espacio vectorial?;Conjunto con suma y producto por escalar sobre un cuerpo;Un grupo;Un anillo;Un cuerpo;A
+2;¿Qué es un subespacio vectorial?;Un conjunto cualquiera de vectores;Un subconjunto cerrado bajo suma y producto por escalar;Un conjunto de matrices invertibles;El conjunto de autovalores;B
+3;¿Cuál es el rango de una matriz 3×3 con determinante 0?;3;0;≤2;1;C
+4;Matriz ortogonal: ¿qué pasa con AᵀA?;A;0;A²;Identidad;D
+5;En la descomposición SVD de A=UΣVᵀ, las columnas de V son:;Autovectores de AᵀA;Autovectores de AAᵀ;Autovalores de A;Filas de U;A
+6;¿Qué condición debe cumplir una matriz para ser diagonalizable ortogonalmente?;Tener determinante no nulo;Ser simétrica;Ser triangular;Tener rango máximo;B
+7;¿Cuál es el módulo del vector (3,4)?;7;12;5;25;C
+8;Con A=[[1,0],[0,2]] y v=(3,4), ¿cuál es Av?;(4,6);(2,8);(3,4);(3,8);D
+9;¿Cuál es el determinante de [[2,1],[5,3]]?;1;2;3;4;A
+10;¿Cuál es el producto escalar (1,2)·(3,4)?;7;11;5;12;B
+11;Si dim(ker(A))=2 y A es 4x4, ¿cuál es el rango de A?;1;3;2;4;C
+12;Matriz 2×2 con autovalores 1 y 3. ¿traza?;2;3;6;4;D
+13;¿Qué mide la derivada de f en un punto?;La tasa de cambio instantánea;El área bajo la curva;El valor medio en todo el intervalo;El máximo global;A
+14;¿Qué es el límite de f(x) cuando x tiende a a?;El valor de f(a) siempre;El valor al que tiende f(x);La recta tangente;La derivada en a;B
+15;¿Cuál es la derivada de ln(x) para x>0?;x;ln(x);1/x;e^x;C
+16;¿Qué enuncia el teorema fundamental del cálculo (parte II)?;Toda función es derivable;Toda serie converge;El gradiente es cero;La integral de la derivada recupera la función (salvo constante);D
+17;Si f es continua en [a,b] y F'(x)=f(x), ¿qué afirma el teorema fundamental del cálculo?;∫ₐᵇ f = F(b)-F(a);F es derivable;f es integrable;F es continua;A
+18;¿Qué expresa el teorema del valor medio para derivadas en [a,b]?;f es constante en [a,b];Existe c en (a,b) con f'(c)=(f(b)-f(a))/(b-a);f tiene máximo en c;f'(a)=f'(b);B
+19;¿Cuál es la integral de e^x dx?;xe^x;e^x/x;e^x;e^(x+1);C
+20;¿Cuánto es ∫₀¹ x² dx?;1/2;1;2/3;1/3;D
+21;¿Cuál es la derivada de x·e^x respecto a x?;e^x(1+x);e^x;x·e^x;2e^x;A
+22;¿Cuál es el radio de convergencia de la serie Σ_{n=0}^∞ x^n?;0;1;2;∞;B
+23;Serie ∑1/n² converge a?;∞;1;π²/6;e;C
+24;Para la serie ∑1/n², ¿a qué converge?;∞;1;e;π²/6;D
+25;¿Qué unidad del procesador ejecuta operaciones aritméticas y lógicas?;ALU;Unidad de control;Registro de instrucciones;Bus del sistema;A
+26;¿Qué es la latencia?;Ancho de banda;Tiempo de respuesta;Throughput;Capacidad;B
+27;¿Qué es un sistema de archivos journaling?;Comprime archivos;Encripta;Registra cambios antes de aplicarlos;Replica;C
+28;¿Qué ventaja principal ofrece la memoria virtual?;Elimina la caché;Duplica el reloj del procesador;Obliga a usar solo memoria secuencial;Permite más espacio de direcciones lógico que RAM física;D
+29;¿Qué es el ciclo de instrucción?;Fetch, decode, execute, writeback;Solo execute;Solo fetch;2 fases;A
+30;¿Qué problema busca mitigar la política LRU en una caché?;Aumentar la frecuencia del reloj;Reducir fallos de caché al reutilizar datos recientes;Eliminar la memoria virtual;Duplicar el ancho de palabra;B
+31;Si un procesador ejecuta 2·10^9 ciclos/s con CPI medio 2, ¿cuántas instrucciones/s ejecuta?;2·10^9;4·10^9;10^9;5·10^8;C
+32;Un pipeline ideal de 5 etapas ejecuta 100 instrucciones. Si el llenado y vaciado añaden 4 ciclos, ¿ciclos totales?;100;500;96;104;D
+33;Si una CPU de 3 GHz tarda 6 ciclos en completar una instrucción concreta, ¿tiempo por instrucción?;2 ns;0.5 ns;6 ns;18 ns;A
+34;Si una caché tiene tasa de aciertos 95% y el acceso en fallo cuesta 100 ns extra, ¿penalización media por acceso?;95 ns;5 ns;100 ns;10 ns;B
+35;Un sistema rinde 1 TFLOPS (10^12 operaciones/s). ¿Cuánto tarda en ejecutar 10^12 operaciones?;0,1 s;10 s;1 s;1 ms;C
+36;Un bus de datos de 64 bits transfiere 8 bytes por ciclo. ¿Cuántos bytes se transfieren en 4 ciclos?;8;16;24;32;D
+37;¿Qué es un bucle while?;Itera mientras la condición sea verdadera;Itera un número fijo de veces;Itera solo sobre listas;No existe;A
+38;¿Qué es un condicional if?;Bucle;Ejecuta código si la condición es verdadera;Función;Asignación;B
+39;¿Qué es un bucle for?;Condicional;Función;Repite la ejecución sobre una secuencia o un rango;Clase;C
+40;¿Qué es un array (lista) en Python?;Un diccionario;Un conjunto sin orden;Una pila LIFO;Una secuencia indexada de elementos;D
+41;Dentro de una función, si asignas x=0 sin declarar global, ¿qué x lees al usar x en esa función?;La variable local de la función;Siempre la global;Una variable implícita None;La de otro módulo;A
+42;¿Qué es un efecto secundario (side effect) en una función?;Devolver un valor al llamador;Modificar estado fuera de la función (p. ej. una variable global);Declarar parámetros en la definición;Compilar el programa;B
+43;En Python, ¿qué imprime print(type([]))?;<class 'dict'>;<class 'tuple'>;<class 'list'>;<class 'set'>;C
+44;¿Cuántos valores puede tomar un bool?;1;0;Infinitos;2;D
+45;¿Cuántas iteraciones realiza for i in range(5)?;5;4;6;0;A
+46;¿Cuál es len([1, 2, 3, 4, 5]) en Python?;4;5;6;Error;B
+47;¿Qué hace el operador módulo (%)?;Potencia;División;Resto de la división entera;Multiplicación;C
+48;En Python, ¿qué imprime print(3 // 2)?;1,5;2;0;1;D
+49;¿Qué es un shell en Unix/Linux?;Interfaz que interpreta y ejecuta comandos del usuario;El núcleo del sistema operativo;Un compilador de C;Un gestor de paquetes;A
+50;¿Qué es la salida estándar (stdout)?;La entrada del teclado;Flujo donde un programa escribe su salida normal;Solo mensajes de error;Un archivo fijo en /tmp;B
+51;¿Qué hace el operador de tubería (pipe) `|` en una shell tipo Unix?;Crea siempre un archivo temporal en disco;Ejecuta el segundo comando antes que el primero;Conecta la salida estándar de un comando con la entrada estándar del siguiente;Duplica la entrada estándar al error estándar;C
+52;¿Qué es el contexto de un proceso?;Memoria asignada;Archivos abiertos;Prioridad;Estado del proceso (registros, PC, etc.);D
+53;¿Qué hace `git commit` en un repositorio local?;Registra una instantánea de los cambios preparados en el historial;Sube automáticamente al servidor remoto;Borra los cambios no guardados;Crea siempre una rama nueva;A
+54;¿Qué es un compilador?;Programa que ejecuta el código línea a línea sin traducir;Programa que traduce código fuente a código objeto o ejecutable;El intérprete de comandos del sistema;Una herramienta para clonar repositorios;B
+55;¿Qué comando sube un nivel de directorio?;cd /;cd -;cd ..;cd up;C
+56;¿Qué comando crea un archivo vacío?;mkfile;new;create;touch;D
+57;¿Qué comando lista archivos incluyendo ocultos?;ls -a;ls;dir;ls -l;A
+58;Si en un directorio hay 5 archivos y ejecutas `ls | wc -l`, ¿qué número imprime wc -l?;1;5;0;10;B
+59;Tras `gcc main.c -o ejecutable`, ¿cómo se llama el binario generado?;main.c;gcc;ejecutable;a.out siempre;C
+60;En bash, ¿qué hace `echo hola > fichero.txt`?;Muestra hola solo en pantalla;Añade hola al final del fichero sin borrarlo;Borra el directorio actual;Redirige la salida al fichero (crea o sobrescribe);D
+61;¿Qué es una heurística en optimización sobre grafos?;Criterio práctico que busca buenas soluciones sin garantizar el óptimo;Algoritmo que siempre encuentra el óptimo global;Regla que solo aplica a árboles;Medida del grado medio del grafo;A
+62;¿Qué es un árbol en teoría de grafos?;Grafo completo;Grafo conexo sin ciclos;Grafo con exactamente un ciclo por vértice;Grafo bipartito con raíz;B
+63;¿Qué papel tiene la función heurística h(n) en el algoritmo A*?;Garantiza optimalidad aunque h sea arbitraria;Sustituye el coste acumulado g(n) desde el origen;Estima el coste restante hasta la meta para guiar la expansión;Solo se aplica en grafos no ponderados;C
+64;¿Qué es un MDP?;Red bayesiana;Árbol de decisión;Grafo;Proceso de decisión de Markov;D
+65;¿Qué condición necesita un grafo conexo para tener un circuito euleriano?;Todos los vértices tienen grado par;Exactamente dos vértices tienen grado impar;Es bipartito;Tiene al menos un ciclo hamiltoniano;A
+66;En un grafo bipartito con partición (X, Y), ¿qué acota el tamaño del matching máximo?;max(|X|, |Y|);min(|X|, |Y|);|X| + |Y|;|E|;B
+67;¿Cuántos árboles de expansión (spanning trees) tiene el grafo completo K3?;1;2;3;4;C
+68;¿Cuántas aristas tiene el grafo completo K4?;4;5;3;6;D
+69;Grafo acíclico con 10 vértices y 7 aristas. ¿Cuántas componentes conexas?;3;1;2;4;A
+70;En A*, si para un nodo n se tiene g(n)=5 y h(n)=2, ¿cuál es f(n)=g(n)+h(n)?;3;7;10;2;B
+71;¿Qué calcula el algoritmo de Dijkstra desde un vértice origen s (pesos no negativos)?;Un matching bipartito máximo;Distancias mínimas entre todos los pares de vértices;Las distancias mínimas desde s hasta cada vértice alcanzable;Un ciclo hamiltoniano;C
+72;Un grafo planar conexo tiene 9 vértices y 17 aristas. En V−E+F=2, ¿cuántas caras F?;5;6;8;10;D
+73;¿Cuándo f es diferenciable en un punto?;Si existe plano tangente que aproxima bien;Si tiene derivadas parciales;Si es continua;Si tiene gradiente;A
+74;¿Qué son las coordenadas cilíndricas?;Solo (x,y,z);(r,θ,z) con x=r cos θ, y=r sin θ;Coordenadas esféricas;Coordenadas polares 3D;B
+75;∂²f/∂x∂y = ∂²f/∂y∂x bajo qué condición?;Siempre;Nunca;f C²;f lineal;C
+76;¿Qué es la derivada parcial de f respecto a x?;La derivada total;La integral de f;El gradiente;La derivada de f tratando las demás variables como constantes;D
+77;¿Qué es el gradiente de f(x,y)?;Vector (∂f/∂x, ∂f/∂y);La derivada;El hessiano;La integral;A
+78;En el plano, un campo F es conservativo si y solo si:;Su divergencia es siempre positiva;Existe potencial φ con F=∇φ (rotacional nulo en dominio simplemente conexo);Su rotacional es siempre máximo;Es siempre constante;B
+79;¿Cuál es la derivada parcial ∂/∂x de x²y?;x²;y²;2xy;2x+y;C
+80;Integral doble de 1 sobre [0,1]×[0,1]?;2;0;0.5;1;D
+81;¿Cuánto es ∫∫_D 1 dA si D es círculo radio 1?;π;1;2π;π/2;A
+82;Para x = r·cos(θ) e y = r·sin(θ), ¿cuál es el jacobiano |∂(x,y)/∂(r,θ)|?;r²;r;1;r/2;B
+83;¿Qué es el problema del vanishing gradient?;Gradientes muy pequeños en capas profundas;Exploding gradient;Overfitting;Underfitting;A
+84;∂/∂y de x²y³?;2xy³;x²y²;6xy;3x²y²;D
+85;¿Qué es la regla del trapecio?;Aproximación de integral por trapecios;Método de Simpson;Monte Carlo;Cuadratura de Gauss;A
+86;¿Qué es el error de redondeo?;Error de truncamiento;Error por precisión finita de coma flotante;Error de modelo;Error de medición;B
+87;¿Qué es el error de truncamiento en métodos numéricos?;Error por la precisión finita de coma flotante;Error de medición en el laboratorio;Error al aproximar el problema continuo (p. ej. truncar una serie o discretizar);Error debido solo al número de iteraciones de Newton;C
+88;¿Qué es el método de Newton-Raphson?;Integración numérica por trapecios;Resolución directa de sistemas lineales;Búsqueda de raíz dividiendo un intervalo a la mitad;Método iterativo que usa f(x) y f'(x) para aproximar una raíz de f(x)=0;D
+89;¿En qué se basa el método de Romberg para integración numérica?;Extrapolación de Richardson a partir de refinamientos del trapecio;Solo un paso de Simpson;Únicamente cuadratura de Gauss;Muestreo aleatorio sin refinamiento;A
+90;En cálculo numérico con aritmética finita, el error de redondeo aparece porque:;Toda función es analítica en ℝ;Solo existe un conjunto finito de números máquina representables;El método del trapecio siempre diverge;La derivada segunda es nula;B
+91;Si el valor real es 10 y la aproximación es 11, ¿cuál es el error relativo |real−aprox|/|real|?;1;0,01;0,1;10;C
+92;Error relativo si real=10 y aprox=11?;1;0.01;10;0.1;D
+93;Un paso de Newton-Raphson para f(x)=x²−2 con x₀=1 (f(1)=−1, f'(1)=2). ¿x₁?;1,5;2;1;0,5;A
+94;En bisección en [0,1], ¿cuántas particiones hacen falta para que la longitud del subintervalo sea < 0,001?;9;10;11;8;B
+95;Regla de Simpson para ∫₀¹ x² dx con 2 subintervalos. ¿Resultado?;1/2;1/4;1/3;1;C
+96;Si f es C² en [a,b], ¿cómo escala usualmente el error global de la regla del trapecio compuesto con paso h=(b-a)/n?;O(h³);O(h);O(1/h);O(h²);D
+97;¿Qué es la esperanza E(X)?;Media (valor medio) de la distribución de X;Medida de dispersión de X;Valor más probable de X;Mediana de X;A
+98;¿Cuándo son independientes dos eventos A y B?;Si P(A|B)=P(B|A);Si P(A∩B)=P(A)·P(B);Si P(A)+P(B)=1;Si P(A∪B)=P(A)+P(B);B
+99;Si P(B)>0, ¿qué expresa P(A|B)=P(A∩B)/P(B)?;Regla de la multiplicación;Ley de probabilidad total;Definición de probabilidad condicional;Definición de independencia;C
+100;P(A|B)=P(A∩B)/P(B) si P(B)>0. ¿Qué es?;Bayes;Ley total;Independencia;Definición probabilidad condicional;D
+101;¿Cuál es la fórmula de la probabilidad de la unión P(A∪B)?;P(A)+P(B)−P(A∩B);P(A)+P(B);P(A)·P(B);P(A)−P(B);A
+102;Si A₁,…,Aₙ forman una partición del espacio muestral, ¿cómo se expresa P(B)?;P(B|A₁) únicamente;Σᵢ P(B|Aᵢ)·P(Aᵢ) (ley de probabilidad total);P(A₁)+P(A₂);P(B)·P(Aᵢ);B
+103;¿Cuál es la varianza de la variable aleatoria constante X=5?;5;25;0;1;C
+104;Si X sigue Binomial(n=5, p=0,5), ¿cuál es E(X)?;2;5;1,25;2,5;D
+105;Si X~Poisson con λ=2, ¿cuál es P(X=0)?;e^(-2);0;1−e^(-2);2;A
+106;Con una moneda justa, ¿cuál es P(obtener 2 caras en 2 lanzamientos)?;0,5;0,25;1;0;B
+107;Si P(A)=0,1, P(B|A)=0,9 y P(B)=0,5, ¿cuál es P(A|B) según el teorema de Bayes?;0,9;0,05;0,18;0,5;C
+108;¿Cuál es P(A y B) si A y B independientes con P(A)=0.5 y P(B)=0.4?;1;0.1;0.9;0.2;D
+109;¿Qué es la herencia?;Una subclase hereda atributos y métodos de una superclase;Ocultar datos internos;Sustituir una implementación por otra;Definir varios métodos con el mismo nombre;A
+110;¿Qué es el encapsulamiento?;Herencia múltiple;Ocultar el estado interno y exponer una interfaz controlada;Crear instancias sin constructor;Importar módulos;B
+111;¿Qué es el polimorfismo?;Copiar código entre clases;Ejecutar código en paralelo;La misma interfaz con distintas implementaciones;Compilar a bytecode;C
+112;¿Qué caracteriza un método estático (@staticmethod) en Python?;Recibe self obligatorio;Es siempre privado;Solo existe en Java;No requiere instancia: se invoca desde la clase;D
+113;¿Qué es el acoplamiento en diseño de software?;Grado de dependencia entre módulos o clases;Número de métodos públicos;Tamaño de la jerarquía de herencia;Uso de tipado estático;A
+114;¿Qué es la cohesión en diseño de software?;Herencia entre clases;Grado en que los elementos de un módulo pertenecen juntos;Número de instancias creadas;Velocidad de ejecución;B
+115;En Python, si C es una clase, ¿cuántas instancias crea la expresión C()?;0;2;1;Depende del nombre de la clase;C
+116;En Python, en def metodo(self, x), ¿cuántos argumentos debe pasar el llamador (sin contar self)?;2;0;self;1;D
+117;En Python, si a=Foo() y b=Foo() con la misma clase Foo, ¿es cierto a is b?;No;Sí;Solo si Foo tiene __slots__;Solo en Python 2;A
+118;En Python, class C: def __init__(self): self.v=1. Tras c=C(), ¿cuál es c.v?;0;1;Ninguno;Error;B
+119;En Python, ¿cuántas definiciones efectivas de __init__ puede tener una misma clase?;Tantas como métodos heredados;Ilimitadas simultáneas;Una (la última definida sobrescribe las anteriores);Ninguna;C
+120;¿Cuántos constructores puede tener una clase?;Solo uno;Cero;Exactamente dos;Uno o más;D
+121;¿Qué hace GROUP BY?;Agrupa filas por valores de columnas;Ordena;Filtra;Une tablas;A
+122;¿Qué es una clave foránea?;Clave primaria;Referencia a clave primaria de otra tabla;Índice único;Check constraint;B
+123;¿Qué hace HAVING?;Filtra filas antes de agrupar;Ordena;Filtra grupos después de GROUP BY;Agrupa;C
+124;En el modelo entidad–relación, ¿qué elemento conecta dos tipos de entidad?;Atributo compuesto;Clave ajena aislada sin entidades;Índice bitmap obligatorio;Tipo de relación;D
+125;Al ejecutar DELETE sobre una fila referenciada por FK con ON DELETE RESTRICT, ¿qué ocurre?;Falla la operación si existen filas hijas;Se borran en cascada todas las hijas;La FK pasa a NULL;Se ignora la restricción;A
+126;¿Qué objetivo principal persigue la normalización en el diseño relacional?;Acelerar siempre las consultas;Reducir redundancia y anomalías de actualización;Cifrar los datos almacenados;Replicar tablas en varios servidores;B
+127;¿Máximo de columnas en clave compuesta?;1;2;Todas las de la tabla;10;C
+128;3 tablas con 2, 3, 4 filas. Producto cartesiano?;9;6;12;24;D
+129;¿Cuántas claves candidatas en tabla con 2 columnas ambas únicas?;2;1;4;0;A
+130;¿Cuántas filas en producto cartesiano de tablas con 3 y 4 filas?;1;12;4;7;B
+131;¿Resultado de SELECT COUNT(*) FROM ventas WHERE importe>100 si hay exactamente 12 filas que cumplen la condición?;1;0;12;COUNT;C
+132;¿Cuántos documentos en batch insert de 50?;1;25;100;50;D
+133;¿Qué es Runge-Kutta?;Familia de métodos de integración numérica;Euler;Diferencias finitas;Elementos finitos;A
+134;¿Qué indica el orden de una EDO?;El número de variables independientes;El orden de la derivada más alta que aparece;El número de soluciones distintas;El paso del método numérico;B
+135;¿Qué es una EDO autónoma?;Lineal;Homogénea;y'=f(y) sin dependencia explícita en t;Con coeficientes constantes;C
+136;¿Qué es una EDO lineal homogénea?;Con término independiente;No lineal;Autónoma;y''+p(x)y'+q(x)y=0;D
+137;¿Qué garantiza el teorema de existencia y unicidad (Picard-Lindelöf) para y'=f(t,y)?;Existencia y unicidad local si f es continua y Lipschitz en y;Existencia sin condiciones sobre f;Solución global obligatoria para cualquier f;Solo aplica a EDO lineales con coeficientes constantes;A
+138;Para EDO rígida, ¿qué tipo de método es preferible?;Explícito de un paso;Implícito;Adams-Bashforth;RK explícito;B
+139;¿Cuántas condiciones iniciales para EDO orden 2?;1;3;2;0;C
+140;¿Cuál es y(0) si y'=y e y(0)=2?;0;1;e;2;D
+141;¿Cuál es la solución general de y''-4y=0?;C1 e^{2x}+C2 e^{-2x};C1 cos(2x)+C2 sin(2x);C1+C2 x;e^{4x};A
+142;¿Cuál es la solución de y'=y, y(0)=1?;x;e^x;1;e;B
+143;Si y''+y=0 con y(0)=-1 e y'(0)=0, ¿cuál es y(π)?;-1;0;1;π;C
+144;Solución general de y''+y=0?;e^x;x;A e^x;A cos x + B sin x;D
+145;¿Qué es un modelo estadístico?;Representación matemática simplificada de un fenómeno;La verdad exacta del sistema real;Solo un gráfico exploratorio;Un programa informático sin datos;A
+146;¿Qué es el p-valor?;Nivel de significación;Probabilidad de observar datos o más extremos bajo H0;Potencia;Tamaño del efecto;B
+147;¿Qué es la potencia de un contraste?;P(error tipo I);P-valor;P(rechazar H0 cuando H1 es cierta);Nivel de significación;C
+148;¿Qué es un contraste de hipótesis?;Estimación puntual;IC;Regresión;Decidir entre H0 y H1 con datos;D
+149;¿Qué es un intervalo de confianza?;Rango que, con un nivel de confianza, contiene el parámetro;Probabilidad de que H0 sea cierta;Siempre coincide con la media muestral;Solo se usa en inferencia bayesiana;A
+150;¿Qué es el error tipo I en un contraste?;No rechazar H0 cuando H1 es cierta;Rechazar H0 cuando H0 es cierta;Confundir correlación con causalidad;Estimar mal la desviación típica;B
+151;IC 95% [0.5, 1.5] para OR. ¿Significativo?;Sí;Depende;No (contiene 1);No se puede;C
+152;Si p-valor=0.03 y α=0.05, ¿rechazar H0?;Depende;No se puede;No;Sí;D
+153;Desviación típica de 2, 4, 6 y 8 (aprox);2,24;2;3;1;A
+154;IC 95% con error estándar SE=0,05 y z≈1,96. ¿Margen de error aproximado?;0,05;0,10;0,02;0,25;B
+155;IC al 95% para la media: n=100, desviación típica σ=10, z≈1,96. ¿Margen de error (σ/√n)·z?;0,196;19,6;1,96;3,92;C
+156;¿Cuántas observaciones para estimar media con error 0.1 si σ=1?;100;50;1000;~400;D
+157;¿Qué es un algoritmo?;Secuencia finita de pasos para resolver un problema;Programa;Código;Función;A
+158;¿Qué estructura usa LIFO?;Cola;Pila;Lista;Árbol;B
+159;¿Qué es la subestructura óptima?;Elección voraz;Solapamiento;La solución óptima se compone de soluciones óptimas de subproblemas;Recursión;C
+160;¿En programación dinámica top-down, qué estrategia evita recalcular subproblemas?;Rellenar una tabla de abajo arriba iterativamente;Recursión pura sin almacenar resultados;Podar ramas del árbol de búsqueda;Guardar en una tabla o caché los resultados de subproblemas ya resueltos;D
+161;Además de la subestructura óptima, ¿qué condición típica hace útil la programación dinámica frente a un divide y vencerás puro?;Subproblemas superpuestos cuya solución se reutiliza al ensamblar la solución global;Que no exista ninguna relación de recurrencia;Que el grafo de subproblemas sea siempre un árbol binario perfecto;Que el coste greedy coincida siempre con el óptimo;A
+162;¿Qué describe un algoritmo voraz (greedy)?;Explorar todas las permutaciones posibles;En cada paso elegir la opción localmente óptima sin deshacer pasos previos;Garantizar siempre el óptimo global;Usar solo programación dinámica;B
+163;¿Cuál es la complejidad media de quicksort?;O(n);O(log n);O(n log n);O(n²);C
+164;¿Cuál es la complejidad de la búsqueda binaria?;O(n);O(1);O(n²);O(log n);D
+165;¿Cuál es la complejidad temporal en el peor caso de merge sort sobre n elementos?;O(n log n);O(n);O(log n);O(n²);A
+166;En búsqueda binaria sobre un arreglo ordenado de 1024 elementos, ¿cuántas comparaciones hace como máximo (base 2)?;8;10;1024;20;B
+167;¿Cuál es la complejidad de Fibonacci recursivo puro?;O(n);O(n²);O(2^n);O(log n);C
+168;¿Cuál es la complejidad de buscar en una lista no ordenada de n elementos?;O(log n);O(1);O(n²);O(n);D
+169;En geometría afín 3D, ¿qué conservan las transformaciones afines?;Paralelismo y alineación (puntos colineales siguen colineales);Siempre las distancias euclídeas;Únicamente los ángulos rectos;La orientación del volumen siempre se invierte;A
+170;En dibujo técnico 3D, ¿qué proyección usa habitualmente líneas de visión paralelas entre objeto y plano de imagen?;Perspectiva con un punto de fuga;Proyección ortográfica paralela;Solo coordenadas esféricas;Proyección estereográfica del globo;B
+171;¿Para qué se usan habitualmente los cuaterniones unitarios en orientación 3D?;Definir la intersección de dos planos;Calcular el área de una curva plana proyectada;Representar rotaciones espaciales evitando bloqueos tipo gimbal lock;Medir distancias en una proyección cilíndrica;C
+172;¿Qué es la intersección de dos planos no paralelos en el espacio afín 3D?;Un plano;Vacía;Un punto;Una recta;D
+173;En coordenadas homogéneas del plano proyectivo P², los puntos con tercera coordenada 0 representan:;Puntos en el infinito (direcciones de rectas paralelas);El origen del plano afín;Puntos con x=0 únicamente;Puntos impropios del plano euclídeo xOy;A
+174;¿Qué representa habitualmente una proyección cilíndrica en dibujo técnico industrial?;Eliminar siempre la perspectiva cónica;Conservar la forma circular en planos paralelos al eje y desarrollar la superficie curva;Igualar escalas en todos los planos sin distorsión angular;Proyectar solo con un punto de fuga;B
+175;¿Cuál es la distancia euclídea entre (0,0,0) y (1,2,2) en ℝ³?;7;25;3;5;C
+176;En un dibujo a escala 1:5, una medida de 8 cm en el plano representa en el objeto real:;8 cm;1,6 cm;5 cm;40 cm;D
+177;En el espacio afín 3D, ¿cuántos puntos distintos definen una recta única?;2;1;4;3;A
+178;En ℝ³, ¿cuál es el volumen del paralelepípedo definido por (1,0,0), (0,2,0) y (0,0,3) con un mismo vértice?;2;6;5;1;B
+179;El producto vectorial (1,0,0) × (0,1,0) en ℝ³ es:;(1,1,0);(0,1,1);(0,0,1);(1,0,1);C
+180;Si q=(w,x,y,z) es un cuaternión unitario de rotación, ¿qué valor tiene w²+x²+y²+z²?;0;2;π;1;D
+181;¿Cómo expresa la fórmula integral de Cauchy el valor de f en un punto interior a?;f(a)=(1/2πi)∮_Γ f(z)/(z-a) dz con Γ que encierra a;f(a)=∮_Γ f(z) dz sin factor (z-a);f(a) es siempre 0;f(a) coincide con el residuo en el origen siempre;A
+182;|a+bi| = ?;a+b;√(a²+b²);a²+b²;|a|+|b|;B
+183;En la serie de Fourier de una función periódica, ¿qué recoge el coeficiente a₀?;Solo armónicos impares;La derivada de f;El componente constante (promedio) de f;El desfase lineal;C
+184;¿Qué condición define que una función f sea holomorfa en un abierto del plano complejo?;Ser continua y acotada en todo el plano;Tener parte real identicamente nula;Ser polinomio de coeficientes enteros;Ser compleja derivable en cada punto del abierto (en sentido complejo);D
+185;Para la transformada de Fourier de f*g (convolución), ¿cuál es el resultado?;F(ω)G(ω);F(ω)+G(ω);F(ω)-G(ω);F(ω)/G(ω);A
+186;Si f(z)=u(x,y)+iv(x,y) es derivable en sentido complejo, ¿qué relaciones cumplen u y v (Cauchy-Riemann)?;u_x=u_y;u_x=v_y y u_y=-v_x;u_y=v_x;u=-v;B
+187;Si f(t) es periódica con período T=0,5 s, ¿cuál es la frecuencia fundamental f₀ en Hz?;0,5;π;2;0,25;C
+188;Si f es derivable en sentido complejo en un dominio simplemente conexo y Γ es un contorno cerrado en él, ¿cuánto vale ∫_Γ f(z)dz?;2πi siempre;1;Depende solo de |f|;0;D
+189;¿Cuál es el residuo de 1/z en z=0?;1;0;∞;-1;A
+190;Si z=1+i, ¿cuál es el argumento principal Arg(z)?;π/2;π/4;π;0;B
+191;En expansión de Laurent de f(z)=1/(z²(z-1)) alrededor de z=0, ¿coeficiente de 1/z?;0;1;-1;2;C
+192;e^(iπ) = ?;1;i;0;-1;D
+193;En el modelo lineal clásico y=β₀+β₁x+ε, ¿qué representa el término εᵢ?;El error aleatorio (variabilidad no explicada por x);El valor ajustado ŷᵢ;La pendiente β₁;Un elemento de la matriz de diseño;A
+194;¿Qué es la métrica F1?;Media aritmética;Media armónica de precisión y recall;Precisión;Recall;B
+195;En regresión por mínimos cuadrados (L2), ¿qué se minimiza?;La suma de valores absolutos de Y;El número de predictores;La suma de cuadrados de los residuos eᵢ=yᵢ−ŷᵢ;La correlación negativa;C
+196;En regresión lineal simple, si la correlación de Pearson es r=0,6, ¿cuál es R²?;0,6;0,84;-0,36;0,36;D
+197;En el modelo lineal clásico con errores normales, ¿qué supone la homocedasticidad?;Varianza constante de ε (p. ej. Var(εᵢ)=σ²);Media de ε dependiente de x;R² igual a 1;Los εᵢ son siempre positivos;A
+198;En regresión múltiple, ¿qué contrasta habitualmente el test F global del modelo?;Si todos los residuos son exactamente cero;Si al menos un coeficiente de regresión (salvo intercepto) es distinto de cero;Si la respuesta es siempre binaria;Si la correlación r es nula en todos los pares;B
+199;Con el modelo ŷ=80−3x (peso en kg, x horas de ejercicio/semana), ¿ŷ para x=3?;74;80;71;77;C
+200;Si el valor observado es 10 y el valor ajustado ŷ=7, ¿cuál es el residuo?;17;-3;70;3;D
+201;En el bootstrap, ¿qué se hace en cada remuestreo de tamaño n?;Se extrae una muestra de tamaño n con reemplazo de los datos observados;Se toma una muestra de tamaño n/2 sin reemplazo;Se permutan solo las etiquetas de Y;Se elimina la constante del modelo;A
+202;En regresión logística (GLM con respuesta binaria), ¿qué función enlaza E[Y] con los predictores?;Identidad;Función logit (logística);Raíz cuadrada;Recíproca obligatoria;B
+203;Con residuos 2, -2 y 0 en tres observaciones, ¿cuál es la suma de cuadrados SSE?;4;0;8;2;C
+204;Correlación de Pearson entre X y -X?;1;0;No definida;-1;D
+205;¿Para qué sirve el test de Turing en IA?;Evaluar si el comportamiento es indistinguible del humano en conversación;Medir la velocidad del procesador;Demostrar teoremas de primer orden;Calcular la complejidad espacial de BFS;A
+206;¿Qué es la búsqueda en anchura (BFS)?;Búsqueda en profundidad hasta el fondo;Explorar el grafo por capas/niveles desde la raíz;A*: expandir por f(n)=g+h;Solo ordenar aristas por peso;B
+207;¿Qué caracteriza la búsqueda no informada (p. ej. BFS o DFS)?;Siempre requiere h(n) admisible;Solo aplica a juegos con MIN y MAX;No usa heurística de dominio h(n) para estimar coste a la meta;Equivale a hill climbing;C
+208;En búsqueda local (p. ej. hill climbing), ¿qué vecino se elige habitualmente?;El que más empeora la función objetivo;El que minimiza la utilidad en un nodo MIN;El primero del grafo en orden alfabético siempre;Uno que mejora (o no empeora) la función objetivo;D
+209;En búsqueda informada, ¿qué significa que la heurística h sea admisible?;No sobreestima el coste real óptimo hasta la meta;Sobreestima siempre el coste hasta la meta;No usa estimación del coste restante;Solo aplica en búsqueda local;A
+210;En minimax para dos jugadores, ¿qué hace el nivel MAX?;Minimiza la utilidad asumiendo un oponente óptimo;Maximiza la utilidad propia asumiendo que el oponente (MIN) juega óptimo;Elige siempre la primera jugada alfabética;Aplica solo BFS por niveles;B
+211;En clasificación binaria, con TP=8 y FN=2, ¿cuál es el recall TP/(TP+FN)?;0,2;1;0,8;0,5;C
+212;¿Cuántas hojas tiene un árbol binario completo de profundidad 3?;3;6;16;8;D
+213;En clasificación, con 90 aciertos de 100 casos, ¿cuál es la accuracy?;0,9;0,1;9;0,09;A
+214;En minimax, un nodo MIN tiene hijos con utilidades 9, 4 y 7. ¿Qué valor propaga hacia arriba?;9;4;7;20;B
+215;En lógica proposicional, con P=0 y Q=1, ¿valor de P∧Q?;1;2;0;Indeterminado;C
+216;En clasificación binaria con una sola salida sigmoide, ¿cuántas probabilidades de clase se modelan explícitamente?;2 (una por clase);3;0;1 (la complementaria queda implícita);D
+217;¿Para qué se usa el método de Monte Carlo en integración numérica?;Estimar integrales mediante muestreo aleatorio;Resolver EDO rígidas de forma exacta;Calcular autovalores de matrices;Aplicar solo la regla del trapecio;A
+218;¿Qué es la varianza de una estimación Monte Carlo?;Sesgo;Medida de dispersión de las réplicas;Error absoluto;Convergencia;B
+219;¿Qué es la convergencia de una simulación?;Velocidad de ejecución del ordenador;Tamaño del modelo en memoria;Estabilización de estimaciones al aumentar réplicas;Número de variables de estado;C
+220;¿Qué orden local tiene el método de Euler explícito para resolver y'=f(t,y)?;Orden 4;Orden 2;Orden 0;Orden 1;D
+221;En el método de Taylor para EDO, ¿qué error se controla al truncar términos de orden superior?;Error de truncamiento del desarrollo en serie;Solo error de redondeo en coma flotante;Error de medición experimental;Error de discretización espacial;A
+222;¿Qué caracteriza un método multipaso lineal para EDO?;Solo evalúa f una vez por paso;Usa varios valores anteriores (y_n, y_{n-1}, …) para calcular y_{n+1};No requiere condiciones iniciales;Es siempre Euler de primer orden;B
+223;En Monte Carlo, ¿cómo escala típicamente el error estándar al duplicar N?;Se divide por 2;No cambia;Se divide por √2;Se multiplica por 2;C
+224;Si el error estándar escala como 1/√N y se pasa de N=100 a N=400, ¿por cuánto se divide el error?;4;1;√2;2;D
+225;Método de Euler: y'=y−t²+1, y(0)=0,5, h=0,5. ¿Aproximación de y(0,5)?;1,25;0,5;0,75;1;A
+226;Con muestras uniformes 0,2, 0,4, 0,6 y 0,8 en [0,1], ¿media muestral (estimador MC de ∫₀¹ x dx)?;0,2;0,5;1;0;B
+227;En el método RK4 clásico para EDO, ¿cuántas evaluaciones de f se hacen por paso h?;1;2;4;0;C
+228;Si el error típico es proporcional a 1/√N, ¿cuánto vale 1/√N para N=100?;1;0,01;10;0,1;D
+229;En el método de Newton para minimizar f(x), ¿qué información usa en cada iteración?;La primera y segunda derivada (f' y f'');Solo valores de f sin derivadas;Solo el signo de f;Solo restricciones lineales del dual;A
+230;¿Qué es el gradiente descendente?;Newton;Iterar en dirección opuesta al gradiente;Simplex;Branch and bound;B
+231;Si f es estrictamente convexa, ¿cuántos minimizadores globales puede tener?;Infinitos;Ninguno;Como máximo uno;Dos como mínimo;C
+232;En programación lineal, ¿qué método recorre vértices del politopo factible?;Eliminación gaussiana de series de Fourier;Quicksort;Backpropagation;Simplex;D
+233;En optimización no lineal sin restricciones, si el Hessiano en x* es semidefinido positivo pero no definido, x* puede ser:;Mínimo no estricto;Máximo estricto;Punto de silla;Ninguno;A
+234;En programación lineal, si el dual es no acotado, ¿qué ocurre con el primal?;No acotado;Infactible;Solución óptima;Degenerado;B
+235;Valor óptimo de min x² s.a. x≥0?;1;-1;0;∞;C
+236;Para f(x)=x²−4x+5, ¿cuál es su valor mínimo global?;0;4;No existe;1;D
+237;En programación lineal con 3 restricciones de tipo ≤ en forma estándar, ¿cuántas variables de holgura se añaden?;3;1;2;4;A
+238;¿Cuál es el hessiano de f(x,y)=x²+y²?;[[1,0],[0,1]];[[2,0],[0,2]];[[0,2],[2,0]];[[0,0],[0,0]];B
+239;Con 3 restricciones de desigualdad, ¿cuántas ecuaciones de complementariedad λᵢ·gᵢ(x)=0 aparecen en KKT?;0;1;3;2;C
+240;¿Cuántas variables en problema con 3 restricciones y 2 variables?;5;6;3;2;D
+241;¿Qué es un batch?;Subconjunto de datos en una iteración;Epoch;Dataset completo;Muestra;A
+242;¿Qué es el overfitting?;El modelo se ajusta demasiado al entrenamiento y generaliza mal;Falta siempre de datos de entrenamiento;Subajuste por modelo demasiado simple;Error exclusivo de redes profundas;A
+243;¿Qué es validación cruzada?;Train-test split;Holdout;Dividir datos en folds para evaluar robustez;Bootstrap;C
+244;¿Qué describe el compromiso bias-variance en aprendizaje automático?;Solo el sesgo determina el error de test;Aumentar siempre la varianza mejora la generalización;Compromiso entre sesgo y varianza del error de predicción;Eliminar la varianza añadiendo más features;C
+245;¿Cómo se define un modelo predictivo?;Modelo que predice salida a partir de entrada;Modelo discriminativo;Modelo descriptivo;Modelo generativo;A
+246;¿Qué es el early stopping?;Aumentar épocas aunque empeore validación;Parar entrenamiento cuando la métrica en validación deja de mejorar;Sustituir el conjunto de entrenamiento por el de test;Fijar el learning rate en cero desde el inicio;B
+247;En un paso de descenso por gradiente, con w=5, η=0,5 y ∂L/∂w=2, ¿cuál es el nuevo w (w←w−η∂L/∂w)?;4;6;5;3;A
+248;Si cada epoch usa 8 batches y se entrenan 2 epochs, ¿cuántas actualizaciones de parámetros (un paso por batch)?;8;10;16;32;C
+249;Con validación cruzada k=5 y 500 muestras (folds equilibrados), ¿cuántas muestras hay en cada fold de validación?;50;100;125;250;B
+250;En clasificación binaria, con TP=18 y FP=2, ¿cuál es la precisión TP/(TP+FP)?;0,9;0,2;0,8;18;A
+251;Con precisión=0,6 y recall=0,75, ¿cuál es la F1 (media armónica 2PR/(P+R))?;0,675;0,667;0,7;0,6;B
+252;Cross-entropy para p=[1,0] y q=[1,0]?;1;∞;0.5;0;D
+253;¿Para qué sirve principalmente OpenMP?;Paralelismo con memoria compartida en CPUs (directivas pragma);Paso de mensajes entre nodos de un clúster;Programar solo kernels en GPU NVIDIA;Sustituir el compilador del sistema operativo;A
+254;¿Qué es CUDA en computación de altas prestaciones?;API de NVIDIA para programar GPUs (kernels, hilos en dispositivo);Implementación de MPI para clústeres;Conjunto de directivas OpenACC;Protocolo de mensajería IoT;A
+255;¿Qué caracteriza OpenACC?;Directivas de alto nivel para offload a aceleradores (p. ej. GPU);Biblioteca exclusiva de paso de mensajes entre nodos;Sustituto obligatorio de OpenMP en CPUs;Estándar solo para bases de datos distribuidas;A
+256;¿Qué es Open MPI (OpenMPI)?;Implementación de MPI para comunicación entre procesos en clúster;Extensión de OpenMP para más de 64 threads en un solo núcleo;API CUDA para compilar en CPU sin GPU;Driver de red para contenedores Docker;A
+257;¿Qué pareja API–modelo de programación es habitual en HPC?;OpenMP en memoria compartida (nodo) y OpenMPI en memoria distribuida (clúster);CUDA solo en CPU y OpenACC solo como MPI entre racks;OpenMPI con memoria compartida UMA y OpenMP entre racks;OpenACC sin aceleradores y CUDA sin GPU;A
+258;La ley de Amdahl describe principalmente:;El tiempo de acceso a disco SSD;La cota superior del speedup al paralelizar limitada por la fracción secuencial;La eficiencia energética de GPUs;El ancho de banda de una red InfiniBand;B
+259;Si el tiempo en 1 procesador es 80 s y en 4 procesadores 20 s (mismo problema), ¿speedup S=T₁/Tₚ?;2;4;8;20;B
+260;Con speedup S=6 y p=8 procesadores, ¿eficiencia E=S/p?;75%;50%;6/8;100%;A
+261;En CUDA, un bloque tiene 128 threads. ¿Cuántos warps de 32 threads contiene?;2;4;8;128;B
+262;Con `mpirun -np 4`, ¿cuántos procesos MPI se lanzan habitualmente?;1;2;4;8;C
+263;Mismo problema: 1 nodo 64 s, 16 nodos 8 s. ¿Speedup S=T₁/T₁₆?;4;8;16;2;B
+264;Si la fracción serial del programa es s=0,1, ¿speedup máximo teórico (Amdahl, N→∞)?;9;100;0,1;10;D
+265;¿Cuál es la forma habitual de la ecuación de Burgers con viscosidad ν?;u_t + u·u_x = ν·u_xx;u_t = α·u_xx;u_xx + u_yy = 0;u_tt = c²·u_xx;A
+266;¿Qué es u_t en la ecuación del calor?;Derivada espacial;Derivada temporal de u;Laplaciano;Término fuente independiente de u;B
+267;El modelo lineal de tránsito u_t + c·u_x = 0 es una EDP de tipo:;Elíptica;Parabólica;Hiperbólica;Algebraica;C
+268;¿Qué es la condición CFL?;Condición de contorno;Condición inicial;Convergencia;Restricción de estabilidad en diferencias finitas;D
+269;¿Qué es una EDP elíptica?;Ej: Laplace, sin dependencia temporal;Onda;Calor;Transporte;A
+270;La ecuación u_tt = c² u_xx es el prototipo clásico de EDP de tipo:;Elíptico;Hiperbólico (ondas);Parabólico;Estático degenerado;B
+271;Malla 1D en [0,1] con 11 nodos equiespaciados (incluye x=0 y x=1). ¿Paso espacial Δx?;0,01;0,1;0,11;1;B
+272;La ecuación del calor u_t=α·u_xx (parabólica) en 1D requiere, además de contornos, ¿cuántas condiciones iniciales en t=0?;2;0;3;1;D
+273;En u_t + c·u_x = 0 (tránsito), un perfil u=f(x−ct) se desplaza con velocidad c. Si c=5, ¿desplazamiento en Δt=0,4?;0,4;1;2;5;C
+274;Ecuación de onda: número de Courant σ=c·Δt/Δx con c=1, Δt=0,1, Δx=0,2. ¿σ?;1;0,5;2;0,1;B
+275;EDP de 2º orden: si B²−4AC>0 en un punto, ¿tipo en ese punto?;Elíptica;Parabólica;Hiperbólica;Degenerada;C
+276;Calor 1D explícito: r=α·Δt/Δx². Con α=2, Δt=0,01, Δx=0,2, ¿r?;0,25;0,5;1;2;B
+277;En cinemática del MRU, ¿qué define la velocidad media?;Desplazamiento dividido entre el tiempo empleado;La fuerza neta dividida por la masa;El ángulo de reflexión respecto a la normal;La variación de energía interna por calor;A
+278;¿Qué enuncia la tercera ley de Newton (pares acción-reacción)?;A toda acción corresponde una reacción igual y opuesta;F = m·a en cualquier referencial acelerado;La luz se refleja con ángulo igual al de incidencia;El calor fluye espontáneamente del frío al caliente;A
+279;En dinámica, ¿qué expresa la segunda ley de Newton?;La fuerza neta sobre un cuerpo es F=m·a;La velocidad es siempre constante sin roce;V = I·R en todo conductor;v = λ·f para cualquier partícula;A
+280;En electricidad, ¿qué establece la ley de Ohm en un conductor óhmico?;V = I·R;E = m·c²;F = G·m₁·m₂/r²;P = σ·T⁴;A
+281;En campos, ¿cómo se define el campo eléctrico E en un punto?;Fuerza eléctrica por unidad de carga de prueba positiva;Trabajo por unidad de masa;Flujo magnético por unidad de volumen;Presión por unidad de temperatura;A
+282;En energía mecánica, si solo actúan fuerzas conservativas, ¿qué se conserva?;La suma de energía cinética y potencial mecánica;La corriente eléctrica en un circuito abierto;El índice de refracción del medio;La frecuencia de un fotón emitido;A
+283;Electricidad: V=I·R. Con R=10 Ω e I=2 A, ¿tensión V?;5 V;20 V;0,2 V;12 V;B
+284;Ondas: v=λ·f. Con λ=2 m y f=5 Hz, ¿velocidad v?;2,5 m/s;10 m/s;7 m/s;0,4 m/s;B
+285;Termodinámica: gas ideal p·V=n·R·T. Con n=1 mol, T=300 K, R≈8,31, ¿p·V aproximado (J)?;2493;300;8,31;831;B
+286;Energía cinética (1/2)m·v². Con m=2 kg y v=3 m/s, ¿E?;0 J;9 J;18 J;6 J;B
+287;Cinemática: un coche pasa de 10 m/s a 25 m/s en 5 s. ¿Aceleración media?;5 m/s²;7,5 m/s²;3 m/s²;15 m/s²;C
+288;Óptica: reflexión en espejo plano. Si el ángulo de incidencia es 35°, ¿ángulo de reflexión respecto a la normal?;70°;35°;55°;0°;B
+289;¿Qué expresa H(X) en teoría de la información?;Entropía de la variable aleatoria X;Error cuadrático medio;Capacidad de memoria caché;Tiempo de convergencia;A
+290;¿Qué objetivo tiene la codificación de fuente?;Añadir paridad para corregir errores de canal;Comprimir la salida usando menos bits (p. ej. Huffman);Cifrar con clave pública RSA;Medir la capacidad de un canal ruidoso;B
+291;¿Qué es la entropía condicional?;Entropía conjunta;Información mutua;Incertidumbre de X dado Y;Entropía de fuente;C
+292;¿Qué hace la codificación de canal frente a la de fuente?;Comprime símbolos según su probabilidad;Elimina la entropía de la fuente;Es equivalente a un archivo ZIP;Añade redundancia para detectar o corregir errores de transmisión;D
+293;En compresión sin pérdida, la longitud media por símbolo no puede ser menor que:;La entropía H(X) de la fuente;La capacidad del canal;El número de símbolos del alfabeto;La latencia de la red;A
+294;El primer teorema de Shannon (codificación sin ruido) afirma, en esencia, que:;La capacidad de un canal siempre es log₂ del alfabeto;La tasa mínima de bits por símbolo puede acercarse a la entropía de la fuente;La entropía crece siempre al aplicar XOR;Toda fuente i.i.d. tiene entropía nula;B
+295;Si H(X,Y)=3 bits y H(Y)=1 bit, ¿cuántos bits tiene H(X|Y)?;4 bits;1 bit;2 bits;3 bits;C
+296;Un mensaje ocupa 1000 bits y un 10% son redundancia de canal (paridad). ¿Bits de información útil aproximados?;1000;100;1100;900;D
+297;¿Cuándo alcanza máximo la entropía de una Bernoulli(p)?;p=0.5;p=0.1;p=0.9;p=1;A
+298;En codificación Huffman con probabilidades 0,5 / 0,25 / 0,25, ¿longitud media del código en bits?;1;1,5;2;3;B
+299;El segundo teorema de Shannon (canal con ruido) establece que:;La entropía de toda fuente es cero;La información mutua es siempre negativa;Por debajo de la capacidad C se puede transmitir con error arbitrariamente pequeño;Huffman elimina todo error de canal;C
+300;Con Huffman óptimo y probabilidades (1/2, 1/4, 1/4), ¿longitud media en bits/símbolo?;2;1;2,5;1,5;D
+301;¿Qué es MongoDB?;Base de datos documental (documentos JSON/BSON);Base de datos de grafos Neo4j;Sistema relacional SQL;Motor Redis solo clave-valor;A
+302;Para modelar relaciones explícitas (p. ej. una red social), ¿qué sistema encaja mejor?;MongoDB (documentos);Neo4j (grafos);Tabla SQL con muchos JOIN;CSV en disco;B
+303;¿Cómo se organizan los datos en MongoDB?;Tablas con esquema fijo obligatorio;Solo nodos sin relaciones;Colecciones de documentos JSON/BSON;Índices Cypher en aristas;C
+304;¿Qué lenguaje de consulta usa Neo4j?;SQL estándar;Pipeline MongoDB ($match, $group);Datalog en tablas;Cypher;D
+305;En Neo4j, ¿qué representan los nodos y las relaciones?;Entidades y conexiones tipadas entre ellas;Filas y columnas de una tabla;Documentos BSON anidados;Pares clave→valor;A
+306;¿Qué es un documento en MongoDB?;Una fila de una tabla SQL;Estructura JSON/BSON que representa un registro;Una arista dirigida en Neo4j;Un nodo sin propiedades;B
+307;¿Qué operador de agregación MongoDB filtra documentos como un WHERE?;$sort;$project;$match;$group;C
+308;Un grafo en Neo4j tiene 5 relaciones dirigidas. ¿Qué devuelve MATCH ()-[r]->() RETURN count(r)?;3;10;1;5;D
+309;¿Qué operador compara igualdad en consultas MongoDB?;$eq;==;igual;=;A
+310;¿Qué patrón Cypher lista vecinos directos salientes de un nodo n?;MATCH (n)-[*]-() sin límite;MATCH (n)-[r]->(m) RETURN n, r, m;db.collection.find({});$project { campo: 1 };B
+311;¿Qué formato usan típicamente los documentos en MongoDB?;XML;CSV;JSON/BSON;SQL estándar;C
+312;Colección MongoDB: 500 documentos de 2 KB cada uno. ¿Tamaño aproximado?;2 KB;500 KB;250 KB;1000 KB;D
+313;¿Qué hace la puerta Hadamard?;Crea superposición |0⟩→(|0⟩+|1⟩)/√2;NOT;CNOT;Fase;A
+314;La medida en base computacional de un qubit en superposición produce:;Un vector continuo;Un resultado clásico 0 o 1 según probabilidades;Siempre 0;Siempre 1;B
+315;¿Qué propiedad algebraica deben cumplir las matrices que representan puertas cuánticas en un qubit?;Ser simétricas definidas positivas;Tener determinante nulo;Ser unitarias (conservan la norma del estado);Ser triangulares inferiores;C
+316;¿Cómo se define la teleportación cuántica?;Teletransporte de materia;Clonación de estados;Comunicación superlumínica;Transferir estado usando entrelazamiento y comunicación clásica;D
+317;¿Cómo se define el entrelazamiento cuántico?;Correlaciones no clásicas entre qubits;Decoherencia;Superposición;Medición;A
+318;¿Qué número de grados de libertad tiene un qubit?;3;2 (amplitudes complejas, menos fase global);4;1;B
+319;¿Cuántos estados de Bell?;2;8;4;1;C
+320;¿Qué establece el teorema de no-clonación?;Cualquier estado cuántico puede copiarse perfectamente;Solo aplica a qubits en estado |0⟩;Equivale a la codificación Huffman;No existe procedimiento universal que clone un estado desconocido;D
+321;En un sistema de n qubits, ¿cuántas amplitudes complejas hay en la base computacional?;2^n;n;2n;n²;A
+322;Si |α|² = 0,25 en un qubit |ψ⟩ = α|0⟩ + β|1⟩, ¿cuánto vale |β|²?;0,25;0,75;0,5;1;B
+323;¿Cuál es la dimensión del espacio de Hilbert de n qubits?;n;2n;n²;2^n;C
+324;Tras aplicar la puerta H a |0⟩, ¿probabilidad de medir |1⟩?;0;1;1/4;1/2;D
+325;En anàlisi dimensional, ¿qué exige la homogeneidad de una ecuación física?;Que todos los términos tengan las mismas dimensiones (M,L,T);Que las constantes sean adimensionales siempre;Que no aparezca el tiempo;Que la solución sea única;A
+326;Con [F]=M·L·T⁻² en F=G·m₁·m₂/r², ¿dimensión de G?;M·L·T⁻²;M⁻¹·L³·T⁻²;M·L⁻³·T²;L³·T⁻²;B
+327;Para x_{n+1}=α x_n+β con α≠1, la solución cerrada es:;x_n=α^n x_0 solamente;x_n=x_0+nβ;x_n=α^n x_0+β(1-α^n)/(1-α);x_n=β/(1-α) para todo n;C
+328;En el sistema dinámico discreto x_{n+1}=f(x_n), un punto fijo x* cumple:;f(x*)=0;f'(x*)=0;f(x*)=1;f(x*)=x;D
+329;Estabilidad local (1D) del punto fijo x*: si |f'(x*)|<1, el punto es:;Estable;Inestable;Siempre repulsor;Independiente de f';A
+330;Mapa logístico x_{n+1}=μ x_n(1-x_n) con μ>1 en (0,1]. ¿Punto fijo interior distinto de 0?;μ;1-1/μ;1/μ;μ-1;B
+331;x_{n+1}=x_n/3+2^n con x_0=1. ¿Cuánto vale x_2?;2;22/9;12;3;C
+332;Teranyina clàssica p_n=(c-a)-p_{n-1} con c-a=2, p_0=2, p_1=0. ¿p_2?;0;1;4;2;D
+333;En una cadena de Markov, matriz P fila-estocástica significa:;Cada columna suma 1;Cada fila suma 1;P es simétrica;det(P)=0;A
+334;Vector fila π con π=πP y Σπ_i=1 describe:;Solo un autovector cualquiera;La distribución estacionaria de la cadena;La matriz de transición;El estado absorbente único;B
+335;Modelo de Leslie: el crecimiento asintótico de la población lo dicta principalmente:;El determinante de L;La traza de L;El radio espectral (autovalor de Perron);El número de filas;C
+336;Con x_{n+1}=0,5 x_n+3 y x_0=2, ¿cuánto vale x_3?;4;5;6;5,5;D
+337;¿Qué ventaja principal aporta la replicación en sistemas distribuidos?;Mayor disponibilidad y tolerancia a fallos;Elimina toda latencia de red;Evita la sincronización completamente;Reduce a cero el almacenamiento;A
+338;El modelo IaaS en cloud ofrece principalmente:;Solo aplicaciones SaaS listas para usar;Recursos virtualizados (compute, almacenamiento, red) configurables por el cliente;Solo bases de datos gestionadas sin VMs;Solo CDN de contenido estático;B
+339;En el teorema CAP, bajo partición de red se prioriza normalmente:;Siempre consistencia y disponibilidad simultáneas;Solo rendimiento gráfico;Consistencia o disponibilidad (no ambas fuertes a la vez);Solo latencia cero;C
+340;¿Qué describe la consistencia eventual?;Nunca hay discrepancias de réplicas;Lecturas siempre linealizables;No existe replicación;Las réplicas convergen si cesan escrituras;D
+341;¿Qué es el teorema CAP?;Solo 2 de 3: Consistencia, Disponibilidad, Tolerancia a particiones;Teorema de codificación;Solo rendimiento gráfico;Teorema de Shannon;A
+342;La tríada CIA en seguridad de sistemas distribuidos incluye:;CPU, I/O y almacenamiento;Confidencialidad, integridad y disponibilidad;Solo cifrado asimétrico;Coste, ingreso y beneficio;B
+343;¿Dónde se almacenan los objetos en Amazon S3?;En volúmenes EBS montados en una EC2;En tablas SQL de RDS;En buckets;En subnets de la VPC;C
+344;Disponibilidad A=MTBF/(MTBF+MTTR) con MTBF=500 h y MTTR=2 h. ¿A aproximada?;99,6%;50%;25%;100%;A
+345;En Redis, ¿cuál es más durable entre guardados habituales?;RDB solo por snapshots periódicos;AOF (log de escrituras);Redis no persiste nunca;RDB y AOF son idénticos;B
+346;4 instancias EC2 de 2 vCPU cada una. ¿vCPU totales?;2;8;4;16;B
+347;Despliegue multi-AZ en cloud busca principalmente:;una sola zona sin copia;eliminar backups;alta disponibilidad entre zonas distintas;desactivar toda replicación;C
+348;Un Application Load Balancer (ALB) en AWS enruta principalmente en:;Capa 1 (física);Capa 4 (transporte);Capa 3 (red);Capa 7 (aplicación);D
+349;¿Qué es batch normalization?;Normalizar activaciones por batch;Normalización de entrada;Regularización L2;Dropout;A
+350;¿Qué es el mecanismo de atención?;Convolución;Ponderar inputs por relevancia;Pooling;Batch norm;B
+351;¿Qué es una conexión residual (skip connection)?;Solo max-pooling;Desactiva neuronas al azar;Suma la entrada de la capa a su salida;Es un kernel de convolución;C
+352;¿Qué es self-attention?;Convolución;Pooling;RNN;Mecanismo donde posiciones se atienden entre sí;D
+353;¿Para qué se usa típicamente una LSTM?;Secuencias con memoria (series temporales, texto);Solo clustering k-means;Integración numérica de EDO;Consultas SQL JOIN;A
+354;¿Qué hace la capa de dropout?;Pooling;Desactiva neuronas aleatoriamente en entrenamiento;Convolución;Normalización;B
+355;¿Qué es el softmax?;ReLU;Sigmoid;Función que convierte logits en probabilidades;Tanh;C
+356;Max-pooling 2×2 con stride 2 sobre entrada 4×4, ¿tamaño de salida?;4×4;1×1;8×8;2×2;D
+357;¿Cuál es la salida de ReLU(0)?;0;1;-1;0.5;A
+358;Kernel 3×3 con 1 canal de entrada, ¿parámetros del filtro (sin sesgo)?;6;9;12;27;B
+359;Capa densa 10→5 con sesgo, ¿parámetros entrenables?;50;15;55;10;C
+360;¿Cuál es el softmax de [0,0]?;[0, 0];[1, 1];[0, 0.5];[0.5, 0.5];D
+361;¿Qué describe mejor la ingeniería financiera?;Aplicar modelos matemáticos y computacionales a mercados y productos financieros;Solo contabilidad de costes históricos;Diseño de hardware de bajo consumo;Teoría de grupos en álgebra pura;A
+362;¿Cuál es el payoff de una opción call europea al vencimiento (strike K, spot S)?;max(K−S, 0);max(S−K, 0);Siempre S−K;Siempre K−S;B
+363;El ratio de Sharpe mide:;Solo la rentabilidad nominal sin riesgo;El apalancamiento máximo permitido;Exceso de rentabilidad por unidad de volatilidad total;La liquidez intradía;C
+364;En gestión de carteras, la matriz de covarianzas de rendimientos sirve principalmente para:;Calcular solo la media histórica;Fijar el tipo de cambio oficial;Medir el desempleo nacional;Cuantificar cómo covarian los activos al combinar pesos;D
+365;¿Qué mide el coeficiente beta de un activo financiero?;Sensibilidad de la rentabilidad del activo respecto al mercado;Exceso de rentabilidad por unidad de volatilidad;Probabilidad de default anual;Dividendo por acción;A
+366;En el modelo de valoración de activos CAPM, ¿qué interpreta el coeficiente beta de un activo?;La volatilidad idiosincrática sin riesgo sistemático;La sensibilidad del exceso de rentabilidad del activo respecto al del mercado;La correlación con la tasa libre de riesgo únicamente;El alfa anualizado tras impuestos;B
+367;Interés simple 5% anual. ¿Interés en euros de 200€ en 1 año?;5;20;10;200;C
+368;Volatilidad anual 20% (0,20). ¿Varianza?;0,02;0,2;4;0,04;D
+369;Beta=1.5, mercado sube 10%. ¿Rentabilidad esperada del activo (aprox.)?;15%;10%;5%;1,5;A
+370;VaR al 99% con Monte Carlo: ¿qué percentil del P&L simulado se usa como umbral?;50%;1%;99% solo de ganancias;Media aritmética;B
+371;Tipo de interés 10% anual. ¿Valor presente de 110€ dentro de 1 año?;121;110;100;10;C
+372;¿Cuál es el payoff de una opción put europea al vencimiento (strike K, spot S)?;max(S−K, 0);S+K;min(S, K);max(K−S, 0);D
+373;¿Qué describe la autocorrelación en una serie temporal?;Dependencia entre observaciones separadas por un retardo;Correlación entre variables distintas en un mismo instante;Error de medición sistemático;Solo tendencia determinista;A
+374;¿Qué indica la presencia de raíz unitaria en una serie?;Estacionariedad fuerte garantizada;Comportamiento no estacionario (p. ej. necesidad de diferenciar);Periodicidad estacional fija;Media móvil óptima;B
+375;¿Qué es la ventana de predicción?;Tamaño del entrenamiento;Lag máximo;Horizonte temporal a predecir;Orden del modelo;C
+376;Un proceso AR(1) estacionario requiere típicamente:;Raíz característica fuera del círculo unitario (|φ|>1);φ = 2 siempre;φ debe ser número imaginario puro;|φ| < 1;D
+377;¿Qué indica un test de Dickey-Fuller en series temporales?;Ayuda a detectar raíz unitaria (no estacionariedad);Mide la media móvil óptima;Calcula el periodo estacional automáticamente;Estima el beta de un activo;A
+378;¿Qué es una media móvil?;Media aritmética;Promedio sobre ventana deslizante;Mediana;Moda;B
+379;Serie con 100 observaciones. Tras diferenciar una vez (d=1), ¿cuántas quedan?;100;101;99;1;C
+380;Media de serie [10,20,30]?;15;25;60;20;D
+381;Primera diferencia de [5,8,12]. ¿Segundo valor de la serie diferenciada?;4;3;5;12;A
+382;Tendencia lineal: pendiente 2, ordenada 1. Valor en t=3?;3;7;6;5;B
+383;¿Cuántos coeficientes autoregresivos tiene un modelo AR(2)?;0;1;2;3;C
+384;Para la serie 2 4 6 8 10 ¿media móvil de orden 2 en t=5?;10;6;8;9;D
+385;¿Qué es un diagrama de persistencia en TDA?;Gráfico birth-death de características topológicas por escala;Matriz de confusión de un clasificador;Árbol de expansión mínima;Histograma de luminosidad;A
+386;¿Qué captura de forma típica β1 en datos geométricos?;Número de componentes conexas;Número de ciclos/agujeros de dimensión 1;Número de tetraedros;Rango de una matriz;B
+387;En un diagrama de persistencia, ¿qué representa la coordenada de nacimiento (birth) de un punto?;La escala en la que desaparece;El número de vértices del complejo;La escala de filtración en la que aparece la característica;La dimensión del espacio ambiente;C
+388;En una filtración de Vietoris-Rips, si aumenta ε normalmente:;Disminuye el número de aristas siempre;Se eliminan todos los símplices;No cambia la complejidad;Aparecen más conexiones y pueden fusionarse componentes;D
+389;¿Cómo se define la homología persistente?;Método para extraer características topológicas a múltiples escalas;PCA;Regresión lineal;Clustering jerárquico;A
+390;En un diagrama de persistencia, ¿qué mide death−birth de una barra?;Solo la dimensión β;La persistencia (duración) de la característica;El número total de vértices;La tasa de inflación;B
+391;¿Cuántos vértices tiene un 2-símplice (triángulo)?;2;3;4;5;C
+392;¿Cuántos vértices tiene un 1-símplice (arista)?;1;2;3;4;D
+393;En homología persistente, si birth=1 y death=4, ¿cuál es la persistencia (death−birth)?;3;1;2;4;A
+394;En un complejo con 2 componentes conexas, ¿cuál es β₀?;3;2;1;0;B
+395;¿Qué es el complejo de Čech para radio r?;Grafo completo;Árbol de expansión;Complejo donde k+1 puntos forman k-símplice si las bolas de radio r se intersectan;Red neuronal;C
+396;¿Qué es un 2-símplice en un complejo simplicial?;Un vértice;Un segmento (arista);Un tetraedro;Un triángulo;D
+397;¿Qué es un gateway en IoT?;Dispositivo que conecta sensores con la nube;Sensor;Actuador;Base de datos;A
+398;¿Qué es la escalabilidad en IoT?;Velocidad;Capacidad de soportar muchos dispositivos;Seguridad;Conectividad;B
+399;¿Qué es MQTT?;HTTP;CoAP;Protocolo ligero pub/sub para IoT;TCP;C
+400;¿Qué es la conectividad en IoT?;Ancho de banda;Latencia;Throughput;Formas en que dispositivos se conectan a la red;D
+401;¿Por qué MQTT suele usarse en IoT frente a HTTP clásico para telemetría periódica?;Por su modelo ligero publish/subscribe y cabeceras reducidas frente a peticiones HTTP repetitivas;Porque MQTT obliga siempre a conexiones UDP sin cifrado;Porque HTTP no puede usar TLS;Porque elimina la necesidad de broker;A
+402;¿Qué es un actuador en IoT?;Sensor;Dispositivo que ejecuta acciones físicas en el entorno;Gateway;Broker MQTT;B
+403;¿Cuántos dispositivos en red con /24?;256;255;254;24;C
+404;¿Cuántos niveles QoS tiene MQTT?;2;1;4;3;D
+405;Un dispositivo IoT envía 2 mensajes por segundo durante 5 minutos sin pausa. ¿Cuántos mensajes envía en total?;600;300;120;60;A
+406;Un sensor envía 1 lectura por segundo durante 5 minutos. ¿Cuántas lecturas envía?;60;300;120;600;B
+407;Si cada mensaje IoT ocupa 200 bytes y se envían 50 mensajes por segundo, ¿qué caudal se genera?;5 KB/s;50 KB/s;10 KB/s;100 KB/s;C
+408;Latencia 10ms + procesamiento 5ms?;5ms;10ms;50ms;15ms;D
+409;¿Qué es el valor predictivo positivo (VPP)?;P(enfermo|test positivo);P(test positivo|sano);Sensibilidad;Prevalencia;A
+410;Sensibilidad=0.9, especificidad=0.7. Con prevalencia 0.1, ¿VPP aproximado?;Alto;Bajo;0.5;Depende del tamaño muestral;B
+411;¿Qué mide la heterogeneidad en un meta-análisis?;Tamaño del efecto;Sesgo de publicación;Variabilidad entre estudios más allá del azar;Calidad metodológica;C
+412;¿Qué es el análisis de mediación?;Mediana;Media;Moda;Estudiar si un efecto pasa por una variable intermedia;D
+413;¿Cómo se define la sensibilidad de una prueba diagnóstica?;Proporción de verdaderos positivos entre los enfermos;Prevalencia;Especificidad;Valor predictivo positivo;A
+414;¿Qué objetivo metodológico principal persigue la aleatorización en un ensayo clínico controlado?;Eliminar la necesidad de consentimiento informado;Reducir sesgos de selección y confundidores entre intervención y desenlace;Sustituir el análisis por intención de tratar;Obligar ciego doble en fase IV obligatoriamente;B
+415;¿Cuántos estudios en meta-análisis de 5 estudios?;1;10;5;0;C
+416;De 200 individuos sanos, 190 dan negativo y 10 falso positivo. ¿Especificidad?;0,90;0,85;0,05;0,95;D
+417;NNT=5 significa que hay que tratar a cuántos para un beneficio adicional?;5;10;1/5;n²;A
+418;¿Qué es el odds ratio (razón de momios) en epidemiología?;Igual al NNT siempre;Cociente de odds entre expuestos y no expuestos;La especificidad del test;El intervalo de confianza del 95% obligatoriamente;B
+419;Prevalencia 50%, sensibilidad 0,9, especificidad 0,9. ¿VPP (valor predictivo positivo) aproximado?;0,67;0,05;0,90;0,50;C
+420;Sensibilidad 0.9, 100 enfermos. ¿Verdaderos positivos?;9;100;10;90;D
+421;En astronomía gamma VHE, ¿qué umbral de energía se usa habitualmente?;E > 100 GeV;E > 1 keV;Solo rayos X blandos;E < 1 MeV siempre;A
+422;¿Para qué sirve principalmente una biblioteca como Gammapy?;Edición de vídeo;Análisis de datos de astronomía gamma de muy alta energía;Simulación de redes neuronales;Gestión de bases SQL;B
+423;En el método de fondo on/off (Li & Ma), ¿qué es α?;Número de fotones on;Significancia en σ;Ratio de exposición región on/off;Redshift de la fuente;C
+424;En astronomía gamma con fondo on/off, la fórmula de Li & Ma cuantifica principalmente:;Paralaje trigonométrico;Ajuste de H₀ con MCMC;Temperatura espectral de una estrella;Significancia estadística de un exceso;D
+425;En detección de ondas gravitacionales, el blanqueamiento del dato busca principalmente:;Igualar sensibilidad en frecuencia (normalizar el ruido);Medir redshift cosmológico;Corregir extinción interestelar;Calcular función de luminosidad;A
+426;Si la frecuencia de muestreo es fs, ¿cuál es la frecuencia de Nyquist?;fs;fs/2;2·fs;fs/4;B
+427;Poisson con λ=4. ¿P(X=0)? (P=e^{-λ}λ^k/k!);0,36;0,18;0,018 (aprox.);0,001;C
+428;Una región on y tres regiones off del mismo tamaño. ¿α en Li & Ma?;3;1;1/2;1/3;D
+429;ΛCDM plano: H(z)=H₀√(Ω_m(1+z)³+(1−Ω_m)). ¿H(z) en z=0?;H₀;0;H₀√Ω_m;H₀(1+Ω_m);A
+430;Si z=0,02 y c≈300000 km/s, ¿velocidad radial aproximada v≈zc?;300 km/s;6000 km/s;15000 km/s;30000 km/s;B
+431;Al comparar ASD a 100 Hz (antigua vs generación más sensible), si ASD_antigua/ASD_nueva ≈ 1,7, ¿valor del cociente?;0,5;1;1,7;10;C
+432;Poisson con λ=4. ¿P(X=2)?;0,018;0,036;0,073;0,15 (aprox.);D
+433;¿Qué mide la distancia de Hamming entre dos cadenas del mismo largo?;Número de posiciones en que difieren los símbolos;Coste mínimo de inserción y borrado;Suma de valores ASCII;Longitud de la subcadena común más larga;A
+434;¿Qué es un k-mer?;Gen;Subcadena contigua de longitud k;Proteína;Cromosoma;B
+435;¿Cuántas bases nitrogenadas hay en ADN?;20;2;4 (A,T,C,G);5;C
+436;¿Qué herramienta busca similitud local de secuencias en bases de datos?;UPGMA;Needleman-Wunsch global;Histograma de persistencia;BLAST;D
+437;En inferencia filogenética por distancias (p.ej. UPGMA), ¿qué supuesto fuerte se asume sobre la matriz de distancias?;Que las distancias sean ultramétricas (molecular clock implícito en UPGMA);Que las distancias sigan exactamente un árbol aditivo sin error;Que no haya homoplasia;Que la raíz esté siempre en el taxón externo conocido;A
+438;¿Qué es el alineamiento múltiple de secuencias?;Pareado;Alinear 3+ secuencias simultáneamente;BLAST;Búsqueda;B
+439;¿Cuántos codones posibles?;20;4;64;61;C
+440;Distancia Hamming entre ATCG y ATTG?;0;2;4;1;D
+441;¿Qué mide el porcentaje de identidad entre dos secuencias alineadas?;Fracción de posiciones coincidentes en el alineamiento;Número de intrones;Temperatura de hibridación únicamente;El genoma completo de la especie;A
+442;k-mer de longitud 3 en secuencia 10. ¿Cuántos?;3;8;10;7;B
+443;¿Cuántos aminoácidos estándar codifica el código genético?;64;61;20;4;C
+444;En secuencia de longitud 100, ¿cuántos 3-mers solapados (paso 1) hay?;97;99;100;98;D
+445;En el cifrado de Vigenère, cada letra del mensaje se combina con la clave mediante:;Suma módulo 26 (o tamaño del alfabeto) con la letra clave correspondiente;Un único desplazamiento fijo k para todo el texto;Multiplicación de matrices 4×4 en GF(2⁸) como en AES;Aplicación directa de SHA-256 letra a letra;A
+446;El cifrado de César (alfabeto n=26) transforma cada letra:;Multiplicando matrices 4×4;Sumando un desplazamiento k módulo 26 a la posición;Aplicando SHA-256;Generando bits con un LFSR;B
+447;En un filtro de Bloom, ¿qué efecto suele tener aumentar el número k de funciones hash?;Aumenta la probabilidad de falsos positivos;Elimina colisiones de hash;Reduce la probabilidad teórica de falsos positivos;Convierte el filtro en cifrado simétrico;C
+448;En una firma digital RSA estándar, ¿sobre qué se aplica típicamente la firma?;El mensaje en claro sin procesar;Solo la clave pública;La tabla S-box de AES;El resumen hash del mensaje;D
+449;¿Qué objetivo principal tiene la esteganografía?;Ocultar la existencia del mensaje dentro de otro fichero o medio;Garantizar que el algoritmo de cifrado sea secreto;Firmar legalmente con clave privada RSA;Sustituir el uso de funciones hash;A
+450;¿Cómo se define un hash criptográfico?;Cifrado reversible con clave simétrica;Función unidireccional que produce una huella de tamaño fijo;Firma digital con par de claves RSA;Certificado X.509 de una CA;B
+451;En aritmética modular, ¿cuánto es (7·8) mod 13?;7;1;4;0;C
+452;Espacio de claves uniforme de 8 bits. ¿Cuántas claves distintas hay?;8;16;64;256;D
+453;Al almacenar contraseñas con hash y salt, el salt sirve principalmente para:;Hacer distinto el hash de la misma contraseña entre usuarios;Cifrar la contraseña de forma reversible;Eliminar la necesidad de aplicar hash;Publicar la clave secreta en el servidor;A
+454;Si una contraseña tiene 8 caracteres y cada uno puede ser una de 26 letras minúsculas, ¿cuántas combinaciones hay?;8^26;26^8;2^8;26*8;B
+455;Tras un intercambio Diffie-Hellman (g^a mod p y g^b mod p), la clave compartida típica es:;(g+a+b) mod p;g^(a+b) mod p sin acuerdo de exponentes;g^(a·b) mod p;a+b enviado en claro;C
+456;¿Cuántos bits tiene típicamente la salida de SHA-256?;128;64;512;256;D
+457;¿Qué es una estrategia estrictamente dominante?;Mejor respuesta para el jugador sea cual sea la estrategia del rival;Perfil de equilibrio de Nash;Estrategia maximin;Asignación óptima en sentido de Pareto;A
+458;¿Qué define la estrategia maximin (criterio de Wald)?;Equilibrio de Nash;Maximizar el pago mínimo que puede obtener;Estrategia estrictamente dominante;Óptimo de Pareto;B
+459;¿Qué es un equilibrio correlacionado?;Solo estrategias mixtas del mismo jugador;Perfil donde cada uno maximiza en solitario;Distribución sobre perfiles coordinada por una señal pública;La misma definición que un Nash clásico;C
+460;¿Qué es un equilibrio de Nash?;Asignación que maximiza la suma de pagos;Estrategia dominante para todos;Resultado del criterio maximin;Ningún jugador mejora desviándose solo;D
+461;¿Qué describe un juego repetido con horizonte infinito (o muy largo)?;Rondas del stage-game con descuento δ y sin fecha final fija;Una sola jugada estática;Matriz 3×3 obligatoriamente;Juego sin pagos definidos;A
+462;En un juego repetido finito (horizonte T conocido), repetir el Nash del juego estático en cada periodo:;Siempre es un equilibrio perfecto en subjuegos (SPE);Puede ser SPE o no, según pagos y T;Impide cualquier equilibrio de Nash;Equivale siempre al óptimo de Pareto;B
+463;¿Cuántas estrategias puras tiene cada jugador en un juego 2×2?;4;1;2;3;C
+464;¿Cuál es el máximo de equilibrios de Nash en estrategias puras en un juego 2×2?;1;2;0;4;D
+465;En un juego 2×2, ¿cuántos perfiles de estrategia pura hay?;4;8;1;2;A
+466;En un juego de suma cero, si la fila gana 5, ¿pago de la columna (u+v=0)?;5;-5;0;10;B
+467;Jugador 1 con 3 estrategias y jugador 2 con 4. ¿Cuántos perfiles puros?;7;3;12;4;C
+468;La estrategia maximin del jugador fila elige:;El máximo entre los pagos máximos de cada fila;La suma de todos los pagos de la matriz;El producto de los mínimos por columna;El máximo entre los mínimos de cada fila;D
+469;En una CNN, ¿qué hace un kernel de convolución?;Extrae patrones locales aplicando un filtro en ventanas de la imagen;Ordena etiquetas de clases alfabéticamente;Sustituye la función de pérdida del modelo;Calcula la IoU entre dos bounding boxes;A
+470;¿Qué hace típicamente la activación ReLU en una capa de una CNN?;Suma todos los píxeles en un único escalar;Aplica max(0,·) elemento a elemento;Reduce resolución con ventana 2×2;Convierte obligatoriamente la imagen a escala de grises;B
+471;¿Qué efecto tiene el pooling (p. ej. max pooling) en mapas de características?;Aumenta la resolución espacial;Elimina la no linealidad de la red;Reduce dimensionalidad espacial y aporta invarianza local;Traduce la imagen RGB a texto;C
+472;La métrica IoU (Intersection over Union) se usa habitualmente para:;Medir la precisión en coma flotante de la GPU;Calcular la entropía de un canal de color;Ordenar clases por frecuencia en el dataset;Evaluar solapamiento entre predicción y verdad en detección/segmentación;D
+473;En una convolución 2D, el padding simétrico suele servir para:;Controlar el tamaño de salida y limitar pérdida de información en bordes;Eliminar canales de color de la imagen;Calcular el softmax de las clases;Duplicar siempre el número de filtros;A
+474;Un descriptor de características (p. ej. SIFT u ORB) en visión es:;Un filtro Gaussiano fijo de 3×3;Una representación (p. ej. vector) que resume una región o punto de interés;Solo la matriz de intrínsecos de la cámara;El tamaño del batch de entrenamiento;B
+475;¿Cuántos canales de color tiene una imagen RGB estándar?;1;2;3;4;C
+476;Imagen de 640×480 píxeles (ancho×alto). ¿Cuántos píxeles en total?;1120;640;480;307200;D
+477;Imagen 8×8, kernel 3×3, stride 1 y padding 0. ¿Tamaño de salida?;6×6;8×8;5×5;3×3;A
+478;Dos cajas de igual área 100 px² se solapan en 50 px². ¿IoU?;0,5;1/3 (≈0,33);0,75;1;B
+479;Convolución 3×3, stride 1 y padding 0 sobre entrada 32×32. ¿Tamaño de salida?;32×32;29×29;30×30;34×34;C
+480;Entrada 10×10, kernel 3×3, stride 2 y padding 0. ¿Tamaño de salida (fórmula habitual)?;10×10;8×8;5×5;4×4;D

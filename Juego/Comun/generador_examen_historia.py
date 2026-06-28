@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from Comun.reglas_partida import validar_total_preguntas
+from Comun.reglas import validar_total_preguntas
 from Comun.rutas import resolver_historico_qualificacions
 from Comun.semillas import RngPartida
 
@@ -491,6 +491,52 @@ def _construir_seleccion_plantillas_materia(
     return seleccion
 
 
+def _construir_seleccion_plana(
+    preguntas: list,
+    n: int,
+    rng: random.Random,
+    pregunta_key: Callable,
+) -> list:
+    """Muestra aleatoria sin balance por materia, tipo ni dificultad (CSV mínimo)."""
+    if n <= 0:
+        raise ValueError("n_preguntas debe ser positivo.")
+    unicas: dict[object, object] = {}
+    for p in preguntas:
+        clave = pregunta_key(p)
+        if clave not in unicas:
+            unicas[clave] = p
+    pool = list(unicas.values())
+    if len(pool) < n:
+        raise ValueError(
+            f"No hay suficientes preguntas en el banco ({len(pool)}/{n})."
+        )
+    return rng.sample(pool, n)
+
+
+def _ordenar_seleccion_examen(
+    seleccion: list,
+    orden_preguntas: str,
+    rng_partida: RngPartida,
+    *,
+    pool_materias: list[str] | None = None,
+) -> list:
+    if len(seleccion) <= 1:
+        return seleccion
+    if orden_preguntas == "plantilla":
+        return _ordenar_preguntas_por_plantilla(seleccion)
+    if orden_preguntas == "materia":
+        return _ordenar_preguntas_por_materia(seleccion, pool_materias or [])
+    if orden_preguntas == "variar":
+        rng_partida.shuffle(seleccion)
+        return seleccion
+    if orden_preguntas == "dificultad":
+        return _ordenar_preguntas_por_dificultad(seleccion)
+    if orden_preguntas == "aleatorio":
+        rng_partida.shuffle(seleccion)
+        return seleccion
+    raise ValueError(f"orden_preguntas desconocido: {orden_preguntas!r}")
+
+
 def generar_examen(
     preguntas: list,
     *,
@@ -513,6 +559,7 @@ def generar_examen(
     usar_plantillas_materia: bool = False,
     plantillas_materia: list[dict] | None = None,
     n_preguntas: int | None = None,
+    seleccion_plana: bool = False,
     semilla: int | None = None,
     semilla_contenido: int | None = None,
     pregunta_key: Callable | None = None,
@@ -542,6 +589,32 @@ def generar_examen(
         if semilla_seleccion == semilla_partida
         else RngPartida.desde_semilla(semilla_seleccion)
     )
+
+    if seleccion_plana:
+        if n_preguntas is None:
+            raise ValueError("seleccion_plana requiere n_preguntas.")
+        seleccion = _construir_seleccion_plana(
+            preguntas,
+            n_preguntas,
+            rng_seleccion,
+            pregunta_key,
+        )
+        seleccion = _ordenar_seleccion_examen(
+            seleccion,
+            orden_preguntas,
+            rng_partida,
+        )
+        validar_total_preguntas(len(seleccion))
+        tipos = tipos_permitidos if tipos_permitidos is not None else TIPOS_PREGUNTA_MIXTO
+        return PlanExamen(
+            perfil=perfil,
+            materias=[],
+            preguntas_por_materia=n_preguntas,
+            tipos_permitidos=tipos,
+            preguntas=seleccion,
+            semilla_partida=semilla_partida,
+            rng=rng_partida,
+        )
 
     candidatas = _filtrar_materias_candidatas(
         materias_orden,
@@ -675,20 +748,12 @@ def generar_examen(
                 f"({len(pool_materias)} materias × {preguntas_por_materia} preg/materia)."
             )
 
-    if len(seleccion) <= 1:
-        pass
-    elif orden_preguntas == "plantilla":
-        seleccion = _ordenar_preguntas_por_plantilla(seleccion)
-    elif orden_preguntas == "materia":
-        seleccion = _ordenar_preguntas_por_materia(seleccion, pool_materias)
-    elif orden_preguntas == "variar":
-        rng_partida.shuffle(seleccion)
-    elif orden_preguntas == "dificultad":
-        seleccion = _ordenar_preguntas_por_dificultad(seleccion)
-    elif orden_preguntas == "aleatorio":
-        rng_partida.shuffle(seleccion)
-    else:
-        raise ValueError(f"orden_preguntas desconocido: {orden_preguntas!r}")
+    seleccion = _ordenar_seleccion_examen(
+        seleccion,
+        orden_preguntas,
+        rng_partida,
+        pool_materias=pool_materias,
+    )
 
     if not seleccion:
         raise ValueError("No se pudo construir el examen con el banco y filtros dados.")

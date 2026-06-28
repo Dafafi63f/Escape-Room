@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from Comun.dificultad import max_complejidad_pool
+from Comun.reglas import max_complejidad_pool
 from Comun.modelos import BancoPreguntas, Pregunta
 from Comun.pool_libre import (
     cargar_pool_por_banco,

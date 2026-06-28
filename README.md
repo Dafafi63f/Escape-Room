@@ -35,11 +35,11 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
 | [`Docs/`](Docs/README.md) | Changelogs, `Entrega/` (memoria md/tex/docx), `Figuras/` |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias (**424** tests: 416 en `Tests/` + 8 en `Files/`) y CI |
-| [`Docs/utilidades_tfg.py`](Docs/utilidades_tfg.py) | Regeneración (memoria + .exe) + limpieza final + zip portable |
+| [`Tests/`](Tests/README.md) | Pruebas unitarias del juego (**468** tests) y CI |
+| [`Docs/utilidades_tfg.py`](Docs/utilidades_tfg.py) | Regeneración (memoria) + limpieza final + zips de distribución |
 | [`Juego/requirements.txt`](Juego/requirements.txt) | Solo jugar (pygame-ce) |
 | [`requirements.txt`](requirements.txt) | Desarrollo completo (incluye el del juego) |
-| [`Juego/COMO_JUGAR.md`](Juego/COMO_JUGAR.md) | Requisitos Python / `.exe` / zip portable |
+| [`Juego/COMO_JUGAR.md`](Juego/COMO_JUGAR.md) | Requisitos Python, zips y `Jugar.bat` |
 
 ## Memoria — exportar Word
 
@@ -47,17 +47,16 @@ El borrador editable está en [`Docs/Entrega/Memoria_TFG.md`](Docs/Entrega/Memor
 
 ```bash
 python Docs/generar_figuras_memoria.py
-python Docs/utilidades_tfg.py                 # memoria + .exe → limpieza final
-python Docs/utilidades_tfg.py --sin-exe       # memoria sin .exe (más rápido)
+python Docs/utilidades_tfg.py                 # memoria → limpieza final → zip
 ```
 
 Genera los `.docx` en `Docs/Entrega/` (Pandoc). El PDF de entrega lo exportas desde Word tras editar. Detalle en [`Docs/README.md`](Docs/README.md).
 
-Solo una fase: `--solo-memoria`, `--solo-exe` o `--solo-limpieza`.
+Solo una fase: `--solo-memoria`, `--solo-limpieza` o `--solo-zip`.
 
 ## Jugar
 
-Guía completa (Python, pip, `.exe`, PCs restringidos, zip portable): [`Juego/COMO_JUGAR.md`](Juego/COMO_JUGAR.md).
+Guía completa (Python, pip, zips, `Jugar.bat`): [`Juego/COMO_JUGAR.md`](Juego/COMO_JUGAR.md).
 
 ```bash
 pip install -r Juego/requirements.txt
@@ -78,38 +77,26 @@ powershell -ExecutionPolicy Bypass -File Juego\Scripts\instalar_entorno.ps1
 
 ### Zip portable (`Juego/Distribucion/MATCAD_juego_portable.zip`)
 
-No incluye Python, el `.exe` ni scripts `.ps1`. Tras descomprimir, lee `Juego/LEEME.txt` e instala Python manualmente.
+No incluye Python ni scripts `.ps1`. Tras descomprimir, lee `Juego/LEEME.txt`, instala Python y usa `Jugar.bat`.
 
 ```bash
 python Docs/utilidades_tfg.py --solo-zip
+python Juego/Scripts/crear_zip_minimal.py     # zip mínimo
 ```
-
-### Ejecutable Windows (alternativa sin Python)
-
-```powershell
-pip install -r requirements.txt   # desarrollo (PyInstaller, etc.)
-python Docs/utilidades_tfg.py --solo-exe
-```
-
-También: `.\Juego\Scripts\build_exe_onefile.ps1`. Salida: `Juego/Distribucion/juego_grafico.exe`. En PCs con `.exe` bloqueados, usa la vía Python. Detalle en [`Juego/README.md`](Juego/README.md) y [`Juego/COMO_JUGAR.md`](Juego/COMO_JUGAR.md).
 
 ### Datos
 
-Ver [`Data/README.md`](Data/README.md). Imprescindibles: `Data/Banco/Preguntas.csv`, `listado_materias.csv`. Modo historia: `Historic_qualificacions_MatCAD_completo.csv`, `Data/Juego/presets.json`. Modo resistencia: `Data/Juego/preguntas_resistencia.json`, rankings en `Data/Juego/`. Modo escape room: mismos presets y banco que resistencia (`presets.json`, pool cerrado). Modo con plantillas: `Data/Banco/plantillas.json`.
+Ver [`Data/README.md`](Data/README.md) y [`Data/Plantillas/README.md`](Data/Plantillas/README.md).
+
+- **Juego completo** (autor): `MATCAD_juego_portable.zip` o repo con `Data/` completo.
+- **Datos propios** (usuario): solo CSV mínimo — `MATCAD_juego_minimal.zip` o `--csv` (versión intermedia futura). 
 
 Configuración privada del creador (SMTP, GitHub, etc.): `Data/Banco/creador_privado.json` (local; plantilla en [`Juego/Comun/feedback.py`](Juego/Comun/feedback.py)).
 
 ## Pruebas
 
 ```bash
-python -m unittest discover -s Tests -v
-```
-
-Solo juego o solo scripts:
-
-```bash
-python -m unittest discover -s Tests -v
-python -m unittest discover -s Files -p "test_*.py" -v
+python -m unittest discover -s Tests -t . -v
 ```
 
 Ver [`Tests/README.md`](Tests/README.md).
@@ -138,7 +125,7 @@ mypy Juego/Comun Juego/Grafico Files
 | Fichero | Para quién |
 |---------|------------|
 | [`Juego/requirements.txt`](Juego/requirements.txt) | **Jugar** (solo pygame-ce) |
-| [`requirements.txt`](requirements.txt) | Desarrollo, tests, memoria y empaquetado |
+| [`requirements.txt`](requirements.txt) | Desarrollo, tests y memoria |
 
 Python **3.10+** y `pip`. Pandoc (binario externo) solo para exportar la memoria Word.
 
@@ -148,10 +135,7 @@ Por defecto **regenera la memoria** y **limpia al final**:
 
 ```bash
 python Docs/utilidades_tfg.py
-python Docs/utilidades_tfg.py --sin-exe             # sin juego_grafico.exe
 python Docs/utilidades_tfg.py --solo-memoria
-python Docs/utilidades_tfg.py --solo-memoria --con-exe
-python Docs/utilidades_tfg.py --solo-exe
 python Docs/utilidades_tfg.py --solo-limpieza
 python Docs/utilidades_tfg.py --dry-run            # listar limpieza sin borrar; luego exporta
 ```
@@ -165,6 +149,6 @@ python Docs/utilidades_tfg.py --solo-limpieza --solo-txt
 python Docs/utilidades_tfg.py --solo-limpieza --solo-entrega
 ```
 
-La limpieza final recorre el proyecto (`__pycache__`, runtime en `Data/Juego/`, intermedios de `Docs/Entrega/`, restos de PyInstaller en `Juego/`).
+La limpieza final recorre el proyecto (`__pycache__`, runtime en `Data/Juego/`, intermedios de `Docs/Entrega/`, restos de build en `Juego/`).
 
-Desde el juego: **borrar** `.txt`; **vaciar** preferencias y rankings (los `.json` se conservan). Presets y pool de resistencia no se tocan en ningún caso.
+Desde el juego: **borrar** `.txt`; **vaciar** preferencias y estadísticas. `Data/Juego/` solo guarda datos de partida.

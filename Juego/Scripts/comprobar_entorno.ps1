@@ -1,5 +1,5 @@
 # Comprueba si el PC puede ejecutar el juego con Python (no modifica el sistema).
-# Uso: powershell -ExecutionPolicy Bypass -File Juego\scripts\comprobar_entorno.ps1
+# Uso: powershell -ExecutionPolicy Bypass -File Juego\Scripts\comprobar_entorno.ps1
 
 $ErrorActionPreference = "Continue"
 $scriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -42,7 +42,7 @@ foreach ($candidato in @("py", "python", "python3")) {
 if (-not $pythonOk) {
     Write-Host "FALTA: Python 3.10+ no encontrado en PATH" -ForegroundColor Red
     Write-Host "    Instala desde https://www.python.org/downloads/ o ejecuta:" -ForegroundColor Gray
-    Write-Host "    powershell -ExecutionPolicy Bypass -File Juego\scripts\instalar_entorno.ps1`n" -ForegroundColor Gray
+    Write-Host "    powershell -ExecutionPolicy Bypass -File Juego\Scripts\instalar_entorno.ps1`n" -ForegroundColor Gray
 }
 
 $pipOk = $false
@@ -83,23 +83,22 @@ if ($dataOk) {
     Write-Host "FALTA: archivos en Data\Banco\" -ForegroundColor Red
 }
 
-$exeOk = Test-Path "Juego\Distribucion\juego_grafico.exe"
-if ($exeOk) {
-    Write-Host "OK: Juego\Distribucion\juego_grafico.exe (alternativa sin Python)" -ForegroundColor Green
+$batOk = Test-Path "Juego\Distribucion\Jugar.bat"
+if ($batOk) {
+    Write-Host "OK: Juego\Distribucion\Jugar.bat (doble clic para arrancar)" -ForegroundColor Green
 } else {
-    Write-Host "INFO: sin juego_grafico.exe (normal en zip portable)" -ForegroundColor DarkGray
+    Write-Host "AVISO: sin Jugar.bat en Juego\Distribucion\" -ForegroundColor Yellow
 }
 
 Write-Host "`n--- Politica de ejecucion ---" -ForegroundColor Cyan
-Write-Host "Si Python o los .exe estan bloqueados por el centro, ninguna opcion"
-Write-Host "funcionara sin intervencion del administrador."
+Write-Host "Si Python esta bloqueado por el centro, hace falta"
+Write-Host "intervencion del administrador o Python en modo usuario."
 
 if ($pythonOk -and $pygameOk -and $dataOk) {
     Write-Host "`nListo para: python Juego\juego_grafico.py" -ForegroundColor Green
-    exit 0
-}
-if ($exeOk -and $dataOk) {
-    Write-Host "`nListo para: Juego\Distribucion\juego_grafico.exe" -ForegroundColor Green
+    if ($batOk) {
+        Write-Host "         o doble clic en Juego\Distribucion\Jugar.bat" -ForegroundColor Green
+    }
     exit 0
 }
 Write-Host "`nEntorno incompleto. Ver Juego\LEEME.txt o Juego\COMO_JUGAR.md" -ForegroundColor Yellow

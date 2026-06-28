@@ -2,7 +2,7 @@
 
 Registro **vivo** del proyecto: snapshot de estado, feedback del tutor y changelog por sesiones. Las tareas abiertas están en [`CHECKLIST.md`](CHECKLIST.md).
 
-**Última actualización:** 2026-06-27
+**Última actualización:** 2026-06-28
 **Alumno:** Daniel Fageda Figueredo · **Tutor:** Víctor Navas Portella
 
 En [`Docs/`](README.md): changelogs, checklist y memoria borrador. El repositorio no versiona PDFs.
@@ -11,6 +11,7 @@ En [`Docs/`](README.md): changelogs, checklist y memoria borrador. El repositori
 |--------|-----|
 | [`CHANGELOG_JUEGO.md`](CHANGELOG_JUEGO.md) | Novedades visibles para el jugador |
 | [`CHECKLIST.md`](CHECKLIST.md) | Checklist de pendientes e ideas futuras |
+| [`persistencia.py`](../Juego/Comun/persistencia.py) | Esquemas JSON en `Data/Juego/` (`--esquemas-juego`) |
 | [`Memoria_TFG.md`](Entrega/Memoria_TFG.md) | Borrador Markdown (`Docs/Entrega/`) |
 | [`Entrega/`](Entrega/) | LaTeX y Word de la memoria (`Docs/Entrega/`) |
 | [`Figuras/`](Figuras/) | Imágenes de la memoria |
@@ -28,7 +29,7 @@ Regenerar figuras: `python Docs/generar_figuras_memoria.py` · Word: `python Doc
 | **Banco de preguntas** | Cerrado | 480/480 revisadas; `Preguntas.csv` protegido (`TFG_PERMITIR_CSV=1` para escribir) |
 | **Juego (pygame)** | Operativo | 5 modos: libre, historia, resistencia, escape room, feedback |
 | **Scripts mantenimiento** | Operativo | `Files/mantenimiento.py` (scripts en `Files/`) |
-| **CI / pruebas** | Operativo | GitHub Actions; **424 tests** (416 + 8) |
+| **CI / pruebas** | Operativo | GitHub Actions; **468** tests en `Tests/` |
 | **Interfaz gráfica / narrativa** | Parcial | Escape room jugable (mecánicas); narrativa gráfica completa pendiente |
 | **Piloto con usuarios** | No realizado | Ver [`CHECKLIST.md`](CHECKLIST.md) |
 
@@ -54,7 +55,7 @@ Regenerar figuras: `python Docs/generar_figuras_memoria.py` · Word: `python Doc
 | Lanzador gráfico | OK | `Juego/juego_grafico.py` + `Juego/Grafico/` |
 | Paquete `Comun/` | OK | Dominio: reglas, datos, informes, feedback, historia, resistencia, escape |
 | Paquete `Grafico/` | OK | UI pygame, cinco modos de juego |
-| Ejecutable Windows | Opcional | `Juego/Scripts/build_exe_onefile.ps1` → `Juego/Distribucion/juego_grafico.exe` |
+| Ejecutable Windows | Retirado | Arranque con Python + `Jugar.bat` |
 | Tests + CI | OK | `python -m unittest discover -s Tests -q` |
 
 ### 2.3 Datos y mantenimiento
@@ -62,7 +63,7 @@ Regenerar figuras: `python Docs/generar_figuras_memoria.py` · Word: `python Doc
 | Elemento | Estado | Notas |
 |----------|--------|-------|
 | `Data/Banco/` | Cerrado 480 ítems | CSV + JSON de banco y catálogos (`Preguntas.csv`, plantillas, presets…) |
-| `Data/Juego/` | OK | Estado local del jugador (informes, feedback, rankings, preferencias) |
+| `Data/Juego/` | OK | Estado local: preferencias, estadísticas, informes `.txt`; esquemas en `persistencia.py` |
 | `duplicados.py revisar` | OK | 0 pares similares (2026-06-15) |
 | `simulacion_evaluacion_azar.py` | OK | Validación motor ante respuestas al azar |
 
@@ -110,6 +111,19 @@ Leyenda: ✅ aplicado · 🔄 parcial · ⏳ pendiente
 
 Síntesis de **41 commits** en git (mayo–junio 2026) más el trabajo reciente en la rama gráfica. Las filas antiguas de la tabla resumen siguen abajo; el detalle por periodo es el referencia principal.
 
+### 2026-06-28 — Estadísticas locales, fusión de `Comun/` y limpieza de ranking
+
+| Ámbito | Cambio |
+|--------|--------|
+| Juego | `estadisticas_jugador.py`: panel «Mis estadísticas», registro al cerrar partida, récords agregados |
+| Juego | Eliminados `ranking_resistencia.py`, `preferencias_ranking.py` y `ranking_resistencia.json` |
+| Juego | Opciones: «Restablecer estadísticas»; init crea JSON de stats al arrancar (`juego_grafico.py`) |
+| Juego | Valores vacíos de datos locales en `persistencia.py` (fusiona `esquemas_datos_juego` + `datos_locales_juego`) |
+| Juego | Fusión de módulos en `Comun/`: `contenido.py`, `reglas.py`, `persistencia.py`, `util.py`; modos especiales en `presets_historia.py` |
+| Docs | `Juego/Comun/persistencia.py`; `utilidades_tfg.py --esquemas-juego` |
+| Tests | `Tests/test_estadisticas_jugador.py`; soporte en `Tests/Fixtures/`; sync esquemas en `test_grafico_ui` |
+| Repo | Eliminados `Files/test_*.py` (mantenimiento); validación del banco solo vía `mantenimiento.py validar` |
+
 ### 2026-06-27 — Plantillas, portable y documentación
 
 | Ámbito | Cambio |
@@ -134,10 +148,10 @@ Síntesis de **41 commits** en git (mayo–junio 2026) más el trabajo reciente 
 | Ámbito | Cambio |
 |--------|--------|
 | Gráfico | **Modo feedback** pygame: formulario (tipo, zona, mensaje, contacto); envío SMTP; pantalla de resultado |
-| Gráfico | **Info del juego** (ℹ️): ranking, contacto visible en panel, novedades del juego |
+| Gráfico | **Info del juego** (ℹ️): estadísticas, contacto visible en panel, novedades del juego *(ranking retirado en 2026-06-28)* |
 | Gráfico | Barra fija: pausa · diarios · info · feedback · opciones; emoji ℹ️ en lugar de 🏆 para info |
 | Gráfico | Popup apuesta: botones ✅/❌; power-up Saltar 🦘; ajustes UI feedback e info |
-| Juego | `contacto_creador.py`, `feedback_opciones.py`, `changelog_juego.py`, `datos_locales_juego.py` |
+| Juego | `feedback.py`, `Grafico/changelog_juego.py`, `persistencia.py` *(antes: contacto_creador, feedback_opciones, datos_locales_juego)* |
 | Docs | Todo en `Docs/`: memoria, changelogs, `Entrega/` y `Figuras/` |
 | Datos | Reorganización `Data/Banco/` + `Data/Juego/`; informes y feedback fuera de `Juego/Informes` |
 | Repo | `Docs/utilidades_tfg.py` (limpieza + Word); eliminados `borrar_temporales.py` y `exportar_memoria.py` de la raíz |
@@ -221,6 +235,7 @@ Síntesis de **41 commits** en git (mayo–junio 2026) más el trabajo reciente 
 
 | Fecha | Ámbito | Cambio |
 |-------|--------|--------|
+| 2026-06-28 | Stats | Estadísticas locales v1; eliminado ranking JSON; esquemas documentados |
 | 2026-06-27 | Semillas | `RngPartida`: un generador por sesión que avanza (sin sub-semillas); docs, simulaciones, figuras y Word regenerados |
 | 2026-06-27 | Escape | Semilla aleatoria por partida; tienda pospuesta sin saldo; pity tienda; emoji botín en cartas; limpieza alias obsoletos |
 | 2026-06-27 | Refactor | `objetos_partida` + `economia_partida`; fachada `tienda_escape`; eliminados `semilla_partida_diaria`, GuionEscapeRoom, wrappers `_tienda` |
@@ -228,8 +243,8 @@ Síntesis de **41 commits** en git (mayo–junio 2026) más el trabajo reciente 
 | 2026-06-26 | Escape | Modo escape room: tienda, botín, inventario, pity |
 | 2026-06-19 | Entrega | Prep. informe: figuras y Word regenerados, limpieza, merge en `main` |
 | 2026-06-19 | Migración | Solo pygame: eliminado `Juego/Consola/`, módulos a `Comun/`, 258 tests |
-| 2026-06-19 | Build | PyInstaller: empaqueta `utils_plantillas_core` (`--paths Files`, hidden-import) |
-| 2026-06-19 | Build | PyInstaller: `build_exe_onefile.ps1` → `juego_grafico.exe` |
+| 2026-06-19 | Build | PyInstaller: empaqueta `utils_plantillas_core` (`--paths Files`, hidden-import) *(retirado)* |
+| 2026-06-19 | Build | PyInstaller: `build_exe_onefile.ps1` → `juego_grafico.exe` *(retirado; distribución por zips)* |
 | 2026-06-19 | Gráfico | Feedback, info, barra superior, contacto solo correo, changelogs separados |
 | 2026-06-19 | Docs | Documentación alineada: `Docs/`, `Docs/utilidades_tfg.py`, 258 tests |
 | 2026-06-18 | Gráfico | Barra de estado: chips emoji; resistencia con #N y racha |
@@ -247,6 +262,7 @@ Síntesis de **41 commits** en git (mayo–junio 2026) más el trabajo reciente 
 
 ```bash
 python Docs/utilidades_tfg.py
+python Docs/utilidades_tfg.py --esquemas-juego
 python Docs/generar_figuras_memoria.py
 python Files/mantenimiento.py validar
 python Files/simulacion_evaluacion_azar.py

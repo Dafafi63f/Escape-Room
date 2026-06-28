@@ -6,13 +6,17 @@ Guía para **usuarios finales** (no para desarrollo del TFG). El mantenimiento d
 
 | Forma | Necesitas | Comando / acción |
 |-------|-----------|------------------|
-| **Repositorio o zip portable** | Python 3.10+ y pygame | `pip install -r Juego/requirements.txt` → `python Juego/juego_grafico.py` |
-| **Ejecutable Windows** | Poder lanzar `.exe` | `Juego/Distribucion/juego_grafico.exe` (+ carpeta `Data/` si no va embebida) |
-| **PC muy restringido** | — | Sin Python ni `.exe` permitidos → **no hay opción soportada** |
+| **Zip completo o mínimo** | Python 3.10+ y pygame | `pip install -r Juego/requirements.txt` → doble clic en `Jugar.bat` o `python Juego/juego_grafico.py` |
+| **Repositorio clonado** | Igual | `pip install -r Juego/requirements.txt` → `python Juego/juego_grafico.py` |
+
+Hay dos paquetes distintos (puedes tener ambos instalados en carpetas separadas):
+
+| Zip | Contenido |
+|-----|-----------|
+| `MATCAD_juego_portable.zip` | Juego **completo** (`Data/` + `Juego/`) |
+| `MATCAD_juego_minimal.zip` | Juego **mínimo** (CSV + motor reducido) |
 
 ## Requisitos de software
-
-### Opción Python (recomendada para el zip `Juego/Distribucion/MATCAD_juego_portable.zip`)
 
 | Requisito | Detalle |
 |-----------|---------|
@@ -22,21 +26,45 @@ Guía para **usuarios finales** (no para desarrollo del TFG). El mantenimiento d
 | **Sistema** | Windows 10/11; también Linux/macOS con los mismos comandos |
 | **Red** | Solo la primera vez (descarga de pygame). Después el juego es **offline** |
 
-El zip portable incluye `Data/` y `Juego/` (código, [`requirements.txt`](requirements.txt), [`LEEME.txt`](LEEME.txt), esta guía, y `Distribucion/` con [`Jugar.bat`](Distribucion/Jugar.bat)). **No incluye** el intérprete Python, el `.exe`, ni la carpeta `Scripts/` (empaquetado o diagnóstico).
+Los zips **no incluyen** Python ni scripts de empaquetado. Sí incluyen [`Jugar.bat`](Distribucion/Jugar.bat) para arrancar con doble clic en Windows.
 
-### Opción ejecutable (`juego_grafico.exe`)
+## Arrancar en Windows (recomendado)
 
-| Requisito | Detalle |
-|-----------|---------|
-| **Windows** | 64 bits, 10/11 |
-| **Permisos** | Ejecutar aplicaciones descargadas (SmartScreen puede avisar) |
-| **Datos** | Carpeta `Data/` al lado del `.exe` si PyInstaller no la embebió |
+1. Descomprime el zip en una carpeta propia.
+2. Instala Python si no lo tienes (marca «Add python.exe to PATH»).
+3. Abre CMD o PowerShell en la carpeta del paquete y ejecuta **una sola vez**:
+   ```bash
+   pip install -r Juego/requirements.txt
+   ```
+4. Arranca el juego:
+   - **Doble clic** en `Juego/Distribucion/Jugar.bat` (zip completo), o en `Jugar.bat` (zip mínimo).
+   - O desde terminal: `python Juego/juego_grafico.py`
 
-No hace falta instalar Python ni pip. El `.exe` está en `Juego/Distribucion/`.
+## Pasos detallados — zip completo
 
-## Scripts de ayuda (Windows, solo repositorio completo)
+1. Descomprime `Juego/Distribucion/MATCAD_juego_portable.zip`.
+2. Debes ver `Data/` y `Juego/` en la misma carpeta.
+3. Lee [`LEEME.txt`](LEEME.txt).
+4. Instala dependencias y arranca (ver arriba).
 
-En el **repositorio clonado** (no en el zip portable):
+## Pasos detallados — zip mínimo
+
+1. Descomprime `MATCAD_juego_minimal.zip` → carpeta `MATCAD_minimal/`.
+2. Instala dependencias: `pip install -r Juego/requirements.txt`.
+3. Doble clic en `Jugar.bat` o `python Juego/juego_grafico.py`.
+
+## Repositorio clonado
+
+```bash
+git clone https://github.com/Dafafi63f/Escape-Room.git
+cd Escape-Room
+pip install -r Juego/requirements.txt
+python Juego/juego_grafico.py
+```
+
+Para **desarrollo** (tests, memoria, mantenimiento): `pip install -r requirements.txt` en la raíz del repo.
+
+## Scripts de ayuda (Windows, solo repositorio)
 
 ```powershell
 # Diagnóstico (no modifica nada)
@@ -46,41 +74,15 @@ powershell -ExecutionPolicy Bypass -File Juego\Scripts\comprobar_entorno.ps1
 powershell -ExecutionPolicy Bypass -File Juego\Scripts\instalar_entorno.ps1
 ```
 
-Atajo: doble clic en [`Distribucion/Jugar.bat`](Distribucion/Jugar.bat) (sube a la raíz de `Juego/` y lanza `juego_grafico.py`).
-
-## Pasos detallados — zip portable
-
-1. Descomprime `Juego/Distribucion/MATCAD_juego_portable.zip` (o la copia que te hayan entregado).
-2. Lee [`LEEME.txt`](LEEME.txt) en la carpeta `Juego/`.
-3. Instala Python si no lo tienes (instalador oficial desde python.org).
-4. En la carpeta del paquete (donde está `Data/`):
-   ```bash
-   pip install -r Juego/requirements.txt
-   python Juego/juego_grafico.py
-   ```
-   O doble clic en `Juego/Distribucion/Jugar.bat`.
-
-## Pasos detallados — repositorio clonado
-
-```bash
-git clone https://github.com/Dafafi63f/Escape-Room.git
-cd Escape-Room
-pip install -r Juego/requirements.txt
-python Juego/juego_grafico.py
-```
-
-Para **desarrollo** (tests, memoria, mantenimiento): `pip install -r requirements.txt` en la raíz del repo (incluye `-r Juego/requirements.txt` más pandas, matplotlib, PyInstaller, etc.).
-
-## Limitaciones en PCs corporativos o del centro
+## Limitaciones en PCs corporativos
 
 | Bloqueo | Efecto |
 |---------|--------|
-| Sin Python instalado | La opción zip **no funciona** hasta instalar Python (puede requerir admin) |
+| Sin Python instalado | Hay que instalar Python (puede requerir permisos) |
 | `pip` bloqueado o sin internet | No se puede instalar pygame |
-| `.exe` no firmados bloqueados | `juego_grafico.exe` **no arranca** |
-| PowerShell / scripts bloqueados | Usa el instalador de Python manual y `Jugar.bat` |
+| PowerShell / scripts bloqueados | Usa el instalador manual de Python y `Jugar.bat` |
 
-En esos casos hace falta que informática permita Python usuario, un `.exe` firmado, o una excepción de política. El proyecto **no puede** saltarse AppLocker o políticas de grupo de forma automática.
+En esos casos hace falta que informática permita Python en modo usuario o una excepción de política.
 
 ### ¿Se puede instalar Python “solo con comandos”?
 
@@ -90,24 +92,17 @@ En esos casos hace falta que informática permita Python usuario, un `.exe` firm
 winget install --id Python.Python.3.12 -e --accept-source-agreements --accept-package-agreements
 ```
 
-`Juego/Scripts/instalar_entorno.ps1` hace eso si no detecta Python. Limitaciones:
+`Juego/Scripts/instalar_entorno.ps1` intenta eso si no detecta Python.
 
-- Puede pedir **elevación (UAC)** o estar deshabilitado en el centro.
-- Tras instalar, a veces hace falta **abrir una terminal nueva** para que el PATH se actualice.
-- No sustituye a un instalador manual si winget no está disponible.
-
-No hay forma fiable de instalar Python en **cualquier** PC aleatorio sin permisos de usuario o administrador.
-
-## Generar el zip portable (desarrollador)
+## Generar los zips (desarrollador)
 
 ```bash
-python Docs/utilidades_tfg.py --solo-zip
+python Docs/utilidades_tfg.py --solo-zip          # zips completo + mínimo
+python Juego/Scripts/crear_zip_minimal.py         # zip mínimo
 ```
-
-Crea `Juego/Distribucion/MATCAD_juego_portable.zip` con `Data/` y `Juego/` (sin `.exe`, `.ps1`, `Scripts/`, `build/`, `dist/`; incluye `requirements.txt`, `LEEME.txt`, `COMO_JUGAR.md`, y `Distribucion/Jugar.bat`).
 
 ## Más información
 
-- [`README.md`](README.md) — modos de juego y `.exe`
-- [`Data/README.md`](../Data/README.md) — archivos de datos necesarios
-- [`README.md`](../README.md) — visión general del TFG
+- [`README.md`](README.md) — estructura del juego
+- [`Data/README.md`](../Data/README.md) — archivos de datos
+- [`Data/Plantillas/README.md`](../Data/Plantillas/README.md) — plantilla CSV para datos propios

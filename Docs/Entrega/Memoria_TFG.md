@@ -7,11 +7,11 @@ lang: es
 
 **Resumen**
 
-Se presenta el diseño e implementación de un cuestionario educativo alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos (MatCAD). El entregable incluye un banco cerrado de **480 preguntas** con metadatos curriculares, un juego en **pygame** con cinco modos (libre, historia, resistencia, escape room y feedback), y herramientas de validación del dataset. El desarrollo siguió un enfoque incremental: primero un prototipo en terminal para validar el motor de evaluación y, después, una interfaz gráfica que concentra toda la experiencia de juego. Los resultados muestran un sistema funcional, documentado y extensible; la validación con usuarios y la narrativa gráfica quedan como trabajo futuro.
+Se presenta el diseño e implementación de un cuestionario educativo alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos (MatCAD). El entregable incluye un banco cerrado de **480 preguntas** con metadatos curriculares, un juego en **pygame-ce** con cinco modos (libre, historia, resistencia, escape room y feedback), herramientas de validación del dataset y **dos paquetes de distribución** (completo y mínimo con CSV reducido). El desarrollo siguió un enfoque incremental descrito en §4. Los resultados muestran un sistema funcional, documentado y extensible; la validación con usuarios y la narrativa gráfica quedan como trabajo futuro.
 
 **Palabras clave:** cuestionario educativo, gamificación, banco de preguntas, autoevaluación, MatCAD, serious games.
 
-> *Nota sobre el título:* el documento de proyecto inicial planteaba un escape room con interfaz gráfica inspirado en las aventuras point-and-click de [Inka Games](https://www.inkagames.com/) (véase §1.3). El **entregable de este TFG** es el cuestionario (banco + juego en **pygame** con cinco modos, incluido escape room con mecánicas jugables) descrito en esta memoria; la capa narrativa gráfica completa queda como evolución futura del mismo proyecto.
+> *Nota sobre el título:* el documento de proyecto inicial planteaba un escape room con interfaz gráfica inspirado en las aventuras point-and-click de [Inka Games](https://www.inkagames.com/) (véase §1.3). El **entregable de este TFG** es el cuestionario (banco + juego en **pygame-ce** con cinco modos, incluido escape room con mecánicas jugables) descrito en esta memoria; la capa narrativa gráfica completa queda como evolución futura del mismo proyecto.
 
 El detalle técnico del repositorio (esquema del banco, scripts, arquitectura del juego) se documenta en los [`README.md`](../../README.md) del proyecto y se cita en los apéndices al final de esta memoria.
 
@@ -39,15 +39,13 @@ La motivación principal es combinar programación, matemáticas y diseño inter
 
 ## Inspiración: Inka Games (inkagames.com)
 
-La idea original del TFG partió de los **juegos de aventura point-and-click** publicados en [inkagames.com](https://www.inkagames.com/), portal independiente peruano activo desde **2006** (fundado por Aldo Mujica y colaboradores). El sitio concentra cientos de títulos gratuitos en navegador —históricamente en Flash, hoy en HTML5— en los que el jugador **explora escenas**, recoge objetos, los combina y resuelve acertijos para **escapar** de situaciones peligrosas o completar una misión.
-
-Entre sus líneas más reconocibles están la saga **Saw Game** (secuestrado por el antagonista Pigsaw, el jugador supera pruebas encadenadas), las aventuras de **escape** (*Prison Escape*, *Zombie Prison Escape*, *Scooby Doo Haunted House*, etc.) y las series temáticas (*Obama in the Dark*, aventuras con personajes de ficción o creadores de contenido). El estilo visual es caricaturesco, la narrativa paródica y el ritmo de partida corto; el reto principal es la **lógica espacial y combinatoria** de los puzles, no un cuestionario académico.
+La idea original del TFG partió de los **juegos de aventura point-and-click** de [inkagames.com](https://www.inkagames.com/): el jugador explora escenas, recoge objetos y resuelve acertijos para escapar. El reto principal allí es la lógica combinatoria de los puzles, no un cuestionario académico.
 
 ![](../Figuras/inkagames_gameplay_referencia.png)
 
 *Figura 1. Escena de juego *Kim Dotcom Prison Break* (Inka Games): enfermería de la prisión con puerta, objetos en escena e inventario con iconos recogidos. Fotograma (~13:30) del [walkthrough en YouTube](https://www.youtube.com/watch?v=ib--6Tl5ZVc). © Inka Games — uso académico ilustrativo.*
 
-Este TFG **no reproduce** la estética ni las licencias de personajes de Inka Games. Toma de referencia la **estructura ludonarrativa**: progresión por escenas o salas, elección de caminos, objetos que modifican el estado de la partida y sensación de escape. En el entregable, esa estructura se **adapta al MatCAD**: cada puerta del modo escape room plantea una pregunta del banco; acertar permite avanzar, fallar cuesta vidas, y aparecen mecánicas propias (tienda, botín, inventario, pity) descritas en §5.8. La capa gráfica tipo novela interactiva —escenas ilustradas con hotspots clicables— queda como evolución futura; el núcleo evaluable (banco + motor) se desarrolló primero.
+Este TFG **no reproduce** la estética ni las licencias de Inka Games. Toma de referencia la **estructura ludonarrativa** (progresión por salas, elección de caminos, inventario) y la **adapta al MatCAD**: cada puerta del modo escape room plantea una pregunta del banco. La capa gráfica tipo novela interactiva queda como evolución futura; el núcleo evaluable (banco + motor) se desarrolló primero. El contraste detallado con el entregable figura en la tabla 1 y en §5.8 (gamificación acotada).
 
 | Aspecto | Inka Games (referencia) | TFG MATCAD (implementación) |
 |---------|-------------------------|-----------------------------|
@@ -66,7 +64,7 @@ Este TFG **no reproduce** la estética ni las licencias de personajes de Inka Ga
 
 ## Alcance del entregable
 
-El documento de proyecto inicial planteaba un juego interactivo tipo escape room con interfaz gráfica. Durante el desarrollo se priorizó la **calidad y estructura del banco de preguntas** y un **prototipo jugable** (primero en terminal, después en pygame), decisión metodológica coherente con un enfoque incremental: validar el contenido y la lógica de evaluación antes de la capa narrativa visual. En junio de 2026 el código se unificó en una **única interfaz gráfica** (`juego_grafico.py`).
+El documento de proyecto inicial planteaba un juego interactivo tipo escape room con interfaz gráfica. Durante el desarrollo se priorizó la **calidad y estructura del banco de preguntas** y un prototipo jugable con enfoque incremental (§4); en junio de 2026 toda la experiencia quedó unificada en **`juego_grafico.py`** (pygame-ce).
 
 ## Objetivos derivados del desarrollo
 
@@ -111,11 +109,11 @@ Diseñar e implementar un juego interactivo educativo en el que la progresión d
 
 | # | Objetivo | Indicador de logro |
 |---|----------|-------------------|
-| OE1 | Diseñar una narrativa interactiva como marco de los retos | Guion de escenas/salas vinculadas a materias del grado |
+| OE1 | Diseñar una narrativa interactiva como marco de los retos | Mecánicas de escape room (salas/puertas) jugables; guion gráfico completo pendiente |
 | OE2 | Crear distintos tipos de retos relacionados con las materias | Banco con preguntas de Teoría y Cálculo, tres niveles de dificultad, 40 materias |
 | OE3 | Implementar algoritmos que validen las respuestas del jugador | Motor de partida con corrección A–D, puntuación, vidas, informes |
-| OE4 | Desarrollar una interfaz gráfica sencilla e intuitiva | Interfaz gráfica de usuario (Pygame u otro motor) |
-| OE5 | Evaluar el funcionamiento y el valor formativo del sistema | Banco validado, pruebas unitarias, revisión manual, modo feedback |
+| OE4 | Desarrollar una interfaz gráfica sencilla e intuitiva | Interfaz en **pygame-ce** (`juego_grafico.py`), barra superior común |
+| OE5 | Evaluar el funcionamiento y el valor formativo del sistema | Banco validado, pruebas automatizadas + CI, revisión manual, modo feedback |
 
 El grado de cumplimiento de cada objetivo se discute en la sección 6.
 
@@ -140,7 +138,7 @@ A partir del marco teórico y del diseño del sistema, se formulan las siguiente
 El desarrollo siguió una **metodología incremental** en cuatro fases, alineada con el documento de proyecto:
 
 1. **Análisis y diseño:** definición de materias, esquema del banco, metadatos y modos de juego.
-2. **Implementación:** dataset, scripts de mantenimiento, motor de partida y juego en pygame.
+2. **Implementación:** dataset, scripts de mantenimiento, motor de partida y juego en pygame-ce.
 3. **Pruebas:** validación estructural, pruebas unitarias, revisión manual del contenido.
 4. **Evaluación:** análisis del resultado, identificación de limitaciones y líneas futuras.
 
@@ -174,15 +172,15 @@ Detalle técnico: [`Data/README.md`](../../Data/README.md).
 
 - Lenguaje: Python 3.10+; **pygame-ce** para la interfaz gráfica (`requirements.txt`).
 - Persistencia: CSV y JSON para datos; informes y feedback en `.txt` locales bajo `Data/Juego/`.
-- Empaquetado opcional: PyInstaller (`Juego/Scripts/build_exe_onefile.ps1` → `Juego/Distribucion/juego_grafico.exe`).
+- Distribución: zips portable y mínimo (`MATCAD_juego_*.zip` en `Juego/Distribucion/`), `Jugar.bat` y `python Juego/juego_grafico.py` (sin ejecutable PyInstaller).
 
 La arquitectura del software se organiza en capas desacopladas (tabla 2): el lanzador orquesta los modos de juego; cada modo delega en el motor de partida la corrección, la puntuación y los informes; la capa de datos abstrae el acceso al banco cerrado y a los metadatos curriculares. Los scripts de mantenimiento operan sobre los mismos ficheros sin formar parte del ejecutable del juego.
 
 | Orden | Capa | Módulos principales | Función |
 |-------|------|---------------------|---------|
-| 1 | Lanzador | `juego_grafico.py` | Arranque pygame (libre, historia, resistencia, escape room, feedback) |
-| 2 | Modos de juego | Presets en `Data/Juego/presets.json`, pantallas en `Grafico/` | Libre, historia, resistencia, escape room, feedback |
-| 3 | Motor de partida | `Juego/Comun/` (`motor_nucleo.py`, `reglas_partida.py`, …) | Reglas, vidas, puntuación, informes |
+| 1 | Lanzador | `juego_grafico.py` | Arranque pygame-ce; carga de contenido y `--csv` opcional |
+| 2 | Modos de juego | Presets en `presets.json`, pantallas en `Grafico/` | Libre, historia, resistencia, escape room, feedback |
+| 3 | Motor de partida | `Juego/Comun/` (`motor_nucleo.py`, `reglas.py`, `contenido.py`, …) | Reglas, vidas, puntuación, informes |
 | 4 | Capa de datos | `Preguntas.csv`, `listado_materias.csv`, `plantillas.json`, histórico | Banco cerrado y metadatos curriculares |
 | 5 | Mantenimiento | `Files/mantenimiento.py` y scripts asociados | Validación, auditoría, simulaciones (fuera del ejecutable) |
 
@@ -190,19 +188,20 @@ La arquitectura del software se organiza en capas desacopladas (tabla 2): el lan
 
 ![](../Figuras/tfg_menu_principal.png)
 
-*Figura 3. Menú principal de `juego_grafico.py` (captura pygame): acceso a los cinco modos operativos — **Modo libre** (autoevaluación con filtros curriculares), **Modo historia** (examen balanceado según histórico del grado), **Modos especiales** (escape room y resistencia), **Modo feedback** (canal de mejora) y **Salir**. Barra fija superior con pausa, modos diarios, información/ranking, feedback y opciones.*
+*Figura 3. Menú principal de `juego_grafico.py` (captura pygame): acceso a los cinco modos operativos — **Modo libre**, **Modo historia**, **Modos especiales** (escape room y resistencia), **Modo feedback** y **Salir**. Barra fija superior con pausa, modos diarios (examen del día), información/estadísticas, feedback y opciones.*
 
-**Evaluación del jugador (motor de partida):** el sistema corrige cada respuesta comparando la letra elegida (A–D) con el campo `Correcta` del ítem (`motor_nucleo.py`). Según el preset de reglas:
+**Evaluación del jugador (motor de partida):** el sistema corrige cada respuesta comparando la letra elegida (A–D) con el campo `Correcta` del ítem (`motor_nucleo.py`). Según el preset activo, aplica **corrección inmediata** (modos arcade/repaso, con vidas y puntuación opcional) o **corrección al final** (modos examen/historia, con informe y nota 0–10). Las vidas, el temporizador y la dificultad progresiva del modo libre son configurables por preset. El detalle de puntuación arcade (+10/+20/+30), penalizaciones y variantes NOTA/PORCENTAJE se documenta en el Apéndice B ([`Juego/Comun/README.md`](../../Juego/Comun/README.md)).
 
-| Mecanismo | Comportamiento |
-|-----------|----------------|
-| **Corrección inmediata** | En modo arcade/repaso: acierto → mensaje y, si aplica, suma de puntos; fallo → resta de vida y/o penalización de puntos, opcionalmente muestra la solución. |
-| **Corrección al final** | En modo examen (historia): no hay feedback durante el bloque; al cerrar se genera informe con nota y detalle pregunta a pregunta. |
-| **Puntuación arcade** | +10 / +20 / +30 por acierto (Fácil / Media / Difícil); penalización en fallo: al menos 5 puntos o la mitad del valor base. |
-| **Nota / porcentaje** | `nota = 10 × aciertos / total` o porcentaje equivalente cuando el preset usa sistema NOTA o PORCENTAJE. |
-| **Vidas** | Por defecto 3; cada error resta una vida; la partida termina al llegar a 0 (antes de completar el objetivo de preguntas). |
-| **Dificultad progresiva** | En modo libre arcade: la dificultad global del pool sube cada tres preguntas respondidas. |
-| **Tiempo** | Opcional por pregunta o total; si se agota, la respuesta cuenta como fallo. |
+## Despliegue y accesibilidad
+
+El juego se distribuye en dos zip generados desde el repositorio (`Docs/utilidades_tfg.py`):
+
+| Paquete | Contenido | Uso |
+|---------|-----------|-----|
+| **Completo** (`MATCAD_juego_portable.zip`) | `Data/` + `Juego/` (banco 480 ítems, histórico, presets) | Autor y despliegue con dataset cerrado |
+| **Mínimo** (`MATCAD_juego_minimal.zip`) | Motor + CSV de **7 columnas** (sin metadatos curriculares en el CSV) | Prueba rápida sin clonar todo `Data/` |
+
+El lanzador acepta `python Juego/juego_grafico.py --csv ruta/Preguntas.csv`. Al detectar CSV mínimo, el módulo `contenido.py` activa un **perfil de contenido restringido** (`PerfilContenido`): sin carrusel de historia, **examen fijo** de **24 preguntas** desde la barra superior (día / aleatorio / semilla), modo **resistencia** activo y **escape room** visible pero inactivo. Así se demuestra **H1** (autoevaluación con datos reducidos) sin el banco completo. Guía de usuario: [`Juego/COMO_JUGAR.md`](../../Juego/COMO_JUGAR.md).
 
 ## Validación y aseguramiento de la calidad
 
@@ -212,8 +211,8 @@ La arquitectura del software se organiza en capas desacopladas (tabla 2): el lan
 | Revisión manual del contenido | 480/480 ítems revisados; validación automatizada |
 | Auditoría de distractores | `mantenimiento.py auditar-distractores` (terminal; `--json` opcional) |
 | Duplicados semánticos | `duplicados.py revisar` (0 pares similares en CSV y plantillas intra-materia, 2026-06-15) |
-| Pruebas de regresión | `python -m unittest discover -s Tests -v` (**424** tests: 416 + 8 en `Files/`) |
-| Integración continua | GitHub Actions (`.github/workflows/tests.yml`) |
+| Pruebas de regresión | `python -m unittest discover -s Tests -v` (**468** tests) |
+| Integración continua | GitHub Actions: tests, mypy (`Comun/` + `Grafico/`), empaquetado zip Windows |
 | Revisión con profesorado | Identificación de solapamiento temático y prerrequisitos (véase §6.2) |
 | Simulación Monte Carlo | `Files/simulacion_evaluacion_azar.py` (véase §5.7) |
 | Análisis del sistema de pity | `Files/simulacion_pity.py` (véase §5.8) |
@@ -245,9 +244,9 @@ El banco distingue **modo seguro** (solo dataset revisado) y **modo beta** (pool
 
 ## Aplicación de juego
 
-**Estado del entregable:** cuestionario en **pygame** con cinco modos operativos (libre, historia, resistencia, escape room, feedback), banco de **480 preguntas** revisadas manualmente y herramientas de mantenimiento del dataset. El **modo escape room** implementa mecánicas de salas y puertas (tienda, botín, inventario); la narrativa gráfica completa tipo novela queda como evolución futura.
+**Estado del entregable:** cuestionario en **pygame-ce** con cinco modos operativos, banco de **480 preguntas** revisadas manualmente, paquetes portable y mínimo, y herramientas de mantenimiento del dataset. El **modo escape room** implementa salas y puertas (tienda, botín, inventario); la narrativa gráfica completa queda como evolución futura.
 
-El desarrollo siguió un enfoque incremental: un prototipo en terminal validó el motor de evaluación; la interfaz gráfica concentró después toda la experiencia de juego. En junio de 2026 se eliminó la capa de consola y se unificó el código en `juego_grafico.py` con dominio en `Juego/Comun/` e interfaz en `Juego/Grafico/`. Todas las pantallas comparten una **barra fija superior** (pausa, diarios, ranking, feedback, opciones); en partida se añade además la barra de estado con vidas, progreso y puntuación (véase figuras 2–3).
+El código se organiza en `Juego/Comun/` (dominio) e `Juego/Grafico/` (interfaz), con lanzador único `juego_grafico.py`. Todas las pantallas comparten una **barra fija superior** (pausa, diarios, estadísticas, feedback, opciones); en partida se añade la barra de estado con vidas, progreso y puntuación (figuras 2–3).
 
 | Componente | Resultado |
 |------------|-----------|
@@ -259,11 +258,13 @@ El desarrollo siguió un enfoque incremental: un prototipo en terminal validó e
 | Modo resistencia | Reto del día, apuestas, maldiciones, power-ups; semilla de partida por sesión |
 | Modo escape room | Salas y puertas, tienda, botín, inventario, pity; semilla de partida por sesión |
 | Modo feedback | Guardado local + envío SMTP opcional |
-| Pruebas | Suite en `Tests/` (juego) y `Files/test_*.py` (mantenimiento); CI en GitHub Actions |
+| Modos diarios | Examen del día (semilla UTC `DDMMYYYY`), aleatorio y semilla manual vía preset `examen_fijo` |
+| Estadísticas locales | `estadisticas_jugador.json` + pantalla «Mis estadísticas» (totales, récords, días activos) |
+| Pruebas | **468** tests + CI (mypy, zip Windows) |
 
-### Aleatoriedad y semillas
+### Modos diarios y semillas
 
-La **semilla diaria** (`DDMMYYYY`, UTC) fija el **contenido** del **Examen del día** (`examen_fijo` con origen diario): mismo banco de preguntas para todos los jugadores ese día. Al **iniciar cada partida** se asigna una **semilla de partida** —típicamente `semilla_partida_aleatoria()`— y se crea un único **`RngPartida`** (`Random` instanciado una sola vez en [`semillas.py`](../../Juego/Comun/semillas.py)). Cada operación aleatoria —barajar orden, opciones A–D, salas, eventos, etc.— **consume** ese generador y devuelve un valor distinto aunque la semilla no cambie; recrear `Random(semilla)` a mitad de partida reiniciaría la secuencia, por eso no se derivan sub-semillas. En el examen del día con orden variable, la semilla diaria sigue fijando el contenido y la semilla de partida baraja el orden. **En el resto de modos** la semilla de partida gobierna selección, orden y mecánicas aleatorias. El examen fijo con semilla numérica manual también usa una sola semilla de partida. Las simulaciones de §5.7 y §5.8 usan semilla 42 para reproducir las figuras.
+La **barra superior** expone atajos al preset **examen fijo**: **Examen del día** (misma selección de **24 preguntas** para todos los jugadores ese día), **Examen aleatorio** y **Semilla numérica**. La semilla diaria fija el **contenido**; al iniciar cada partida se asigna además una **semilla de sesión** que gobierna orden de ítems, barajado de opciones A–D y aleatoriedad intra-partida (único `RngPartida` por partida en `semillas.py`). En CSV mínimo, la selección es plana (24 preguntas al azar del banco cargado) sin balance por materia. Detalle de implementación: Apéndice B.
 
 ## Organización curricular modelada
 
@@ -301,7 +302,7 @@ Diagrama detallado (40 materias con posición curricular): [`Data/README.md`](..
 
 ## Herramientas de mantenimiento
 
-Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en `Juego/Comun/utils_plantillas_core.py` (reexportada desde `Files/` para los scripts de mantenimiento). Los datos del juego se organizan en `Data/Banco/` (banco y catálogos) y `Data/Juego/` (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de pruebas en `Tests/` (**424** tests) con CI en GitHub Actions. Catálogo de comandos: [`Files/README.md`](../../Files/README.md).
+Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en `Juego/Comun/utils_plantillas_core.py` (reexportada desde `Files/` para los scripts de mantenimiento). Los datos del juego se organizan en `Data/Banco/` (banco y catálogos) y `Data/Juego/` (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de **468** tests con CI en GitHub Actions. Catálogo de comandos: [`Files/README.md`](../../Files/README.md).
 
 ## Síntesis cuantitativa
 
@@ -311,7 +312,7 @@ Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado
 | Materias cubiertas | 40 |
 | Módulos Python del juego (`Comun/` + `Grafico/`) | ~35 |
 | Modos de juego operativos | 5 |
-| Pruebas automatizadas | 424 |
+| Pruebas automatizadas | 468 |
 | Grupos temáticos modelados | 10 |
 
 ## Validación del modo historia (H3)
@@ -386,75 +387,31 @@ En conjunto, el experimento muestra que el azar produce suspensión sistemática
 
 ## Análisis del sistema de pity
 
-En los modos *escape room* y *resistencia*, ciertos eventos beneficiosos (puertas de descanso, tienda, botín u ofertas sí/no) se generan de forma aleatoria. Para evitar rachas largas sin recompensas —análogo al *pity* de los *gacha games*— el motor combina **pity suave** (sube la probabilidad tras cada fallo) y **hard pity** (garantía en un umbral).
+En los modos *escape room* y *resistencia*, eventos beneficiosos (descanso, tienda, botín, power-ups) se sortean por sala o por pregunta. Para evitar **rachas largas sin recompensa** —análogo al *pity* de juegos con sorteos aleatorios— el motor combina probabilidad creciente tras cada fallo (*pity suave*) y **garantía en un umbral** (*hard pity*). El objetivo formativo es reducir la frustración en sesiones largas sin eliminar la incertidumbre ludificada.
 
-### Modelo de pity suave
+| Evento (escape room) | Prob. base | Hard pity (sala) |
+|----------------------|------------|------------------|
+| Descanso | 6 % | 5 |
+| Tienda | 3 % | 10 |
+| Botín | — | cada 3 salas sin botín |
 
-Sea $s$ el número de salas (o preguntas) consecutivas sin haber visto el evento. La probabilidad de que aparezca en el siguiente intento es
+*Tabla 8. Parámetros principales de pity en escape room (detalle en Apéndice B).*
 
-$$
-p_s = \min\bigl(p_{\max},\, p_0 + s\,\delta\bigr),
-$$
-
-con $p_0$ probabilidad base, $\delta$ incremento por unidad de racha y $p_{\max}$ techo (en escape room, $p_{\max}=0{,}48$). Tras un acierto, $s\leftarrow 0$; si no sale, $s\leftarrow s+1$.
-
-En el escape room, los parámetros de puertas especiales son independientes por tipo:
-
-| Evento | $p_0$ | $\delta$ | Hard pity (sala) |
-|--------|-------|----------|------------------|
-| Descanso | 0,06 | 0,04 | 5 |
-| Tienda | 0,03 | 0,05 | 10 |
-| Botín (puerta normal) | — | — | cada 3 salas sin botín |
-
-*Tabla 8. Parámetros de pity por tipo de evento en escape room.*
-
-El **hard pity** fuerza el evento si, al llegar a la sala $N$, aún no ha aparecido tras $N-1$ oportunidades (p. ej. descanso garantizado en la sala 5 si llevas cuatro salas sin verlo).
-
-### Eventos especiales en escape room
-
-Descanso, tienda y botín se materializan como puertas o recompensas dentro de la partida. La **tienda** exige saldo suficiente para comprar al menos el artículo más barato disponible en esa sala; si no hay puntos, no se inserta la puerta tienda y el pity de tienda **se pospone** (el contador no se resetea) hasta una sala futura con economía viable. La figura 6 muestra la pantalla de compra cuando el evento sí se activa.
-
-![](../Figuras/tfg_escape_tienda.png)
-
-*Figura 6. Pantalla de tienda del modo escape room: compra de powerups con puntos arcade. Captura pygame con semilla fija.*
-
-La figura 7 resume, para descanso y tienda, cómo crece $p_s$ con la racha $s$ hasta el techo $p_{\max}$ y el umbral de hard pity de cada evento.
-
-![](../Figuras/pity_curva_probabilidad.png)
-
-*Figura 7. Curva $p_s$ para descanso y tienda en escape room.*
-
-### Validación por simulación
-
-Para cuantificar el efecto del pity se contrasta un modelo simplificado (Bernoulli independiente por sala) con la implementación descanso + pity suave + hard pity en sala 5. Cada réplica recorre 30 salas; se ejecutan **10 000** réplicas con semilla 42 (`Files/simulacion_pity.py`).
-
-**Sin pity** ($\delta=0$, sin umbral), cada sala es un ensayo de Bernoulli con $p=p_0$. La probabilidad de no ver descanso en $n=30$ salas es $(1-p_0)^n \approx (0{,}94)^{30} \approx 15{,}6\,\%$. La racha máxima sin evento puede acercarse a $n$ (percentil 95 ≈ 29 salas).
-
-**Con pity**, la racha sin descanso queda acotada: $\mathrm{p}_{95} \leq 4$ salas y **ninguna** réplica termina sin descanso en 30 salas. La sala media del primer descanso es **4,13**, con un pico en la sala 5 por el hard pity. La figura 8 resume el contraste; la figura 9 detalla dónde aparece el primer descanso.
+Con **10 000** réplicas de 30 salas (semilla 42, `Files/simulacion_pity.py`), un modelo Bernoulli fijo **sin pity** deja **15,6 %** de partidas sin ningún descanso y rachas de hasta 29 salas (percentil 95). **Con pity** implementado, ninguna réplica termina sin descanso; la racha p95 queda en **4 salas** y la sala media del primer descanso es **4,13** (pico en sala 5 por hard pity). En resistencia el esquema es análogo sobre el índice de pregunta.
 
 ![](../Figuras/pity_comparacion_descanso.png)
 
-*Figura 8. Modelo simplificado (10 000 réplicas): probabilidad de no ver descanso y racha p95, con y sin pity.*
+*Figura 8. Contraste sin/con pity: probabilidad de no ver descanso y racha p95 (10 000 réplicas).*
 
-![](../Figuras/pity_distribucion_primer_descanso.png)
+| Escenario (descanso, 30 salas) | Sin pity | Con pity |
+|--------------------------------|----------|----------|
+| Partidas sin ningún descanso | **15,6 %** | **0 %** |
+| Racha p95 sin descanso | 29 salas | 4 salas |
+| Sala media del 1.er descanso | — | **4,13** |
 
-*Figura 9. Distribución de la sala del primer descanso (modelo simplificado con pity).*
+*Tabla 9. Contraste agregado del pity de descanso.*
 
-| Escenario (descanso, 30 salas) | Métrica | Sin pity | Con pity |
-|--------------------------------|---------|----------|----------|
-| Prob. base $p_0=6\,\%$ | Partidas sin ningún descanso | **15,6 %** | **0 %** |
-| | Racha p95 sin descanso | 29 salas | 4 salas |
-| | Sala media del 1.er descanso | — | **4,13** |
-
-*Tabla 9. Contraste sin/con pity para la puerta de descanso (30 salas, 10 000 réplicas).*
-
-### Pity en resistencia
-
-En el modo resistencia el mismo esquema se aplica a eventos aleatorios de pregunta (niebla, relámpago, doble puntos) y a ofertas sí/no: el contador $s$ sube cuando no hay evento y aumenta $p_s$ con límites distintos (incremento 0,03 por pregunta sin evento, constante `PITY_INC_EVENTO_SI_NO`; techo de refuerzo 0,28). La lógica es análoga a la del escape room, pero sobre el índice de pregunta en lugar del número de sala.
-
-### Reproducibilidad
-
-El script `Files/simulacion_pity.py` implementa el modelo simplificado (Bernoulli por sala) y, opcionalmente, partidas completas con `generar_puertas_sala`. Las figuras 6–9 se regeneran con `python Docs/generar_figuras_memoria.py` y `python Docs/capturar_pantallas_juego.py` (captura pygame de la tienda); la simulación numérica usa semilla 42 y 10 000 réplicas del modelo de descanso.
+Las figuras complementarias (curvas de probabilidad, distribución del primer descanso, captura de tienda) y la reproducibilidad numérica se documentan en el repositorio (`Docs/generar_figuras_memoria.py`, `Docs/capturar_pantallas_juego.py`).
 
 
 # Discusión
@@ -465,13 +422,13 @@ El **objetivo general** se cumple de forma parcial: existe un juego educativo in
 
 | # | Objetivo | Estado | Comentario |
 |---|----------|--------|------------|
-| OE1 | Narrativa interactiva | **Parcial** | Modo escape room jugable; guion visual completo pendiente |
+| OE1 | Narrativa interactiva | **Parcial** | Mecánicas de escape room (salas/puertas) cumplidas; guion gráfico completo pendiente |
 | OE2 | Retos por materias | **Cumplido** | Banco 480 ítems, Teoría/Cálculo, tres dificultades |
 | OE3 | Validación de respuestas | **Cumplido** | Motor A–D, puntuación, vidas, informes |
-| OE4 | Interfaz gráfica | **Cumplido** | `juego_grafico.py` con libre, historia, resistencia, escape room y feedback |
-| OE5 | Valor formativo | **Parcial** | Banco validado, 424 tests + CI; sin estudio con usuarios |
+| OE4 | Interfaz gráfica | **Cumplido** | `juego_grafico.py` (pygame-ce) con libre, historia, resistencia, escape room y feedback |
+| OE5 | Valor formativo | **Parcial** | Banco validado, 468 tests + CI + simulaciones; sin estudio con usuarios |
 
-Los **objetivos específicos** OE2, OE3 y OE4 están cumplidos en la versión pygame. OE1 y OE5 quedan parciales: OE1 por la narrativa gráfica completa (mecánicas del escape room como avance, guion visual pendiente) y OE5 por la ausencia de estudio con usuarios. El enfoque incremental —primero validar el núcleo evaluable, después la capa visual— permitió concentrar el esfuerzo en un único lanzador mantenible.
+Los **objetivos específicos** OE2, OE3 y OE4 están cumplidos. OE1 queda parcial en la **capa narrativa visual**, no en la progresión ludificada del escape room. OE5 queda parcial por la ausencia de piloto con estudiantes, aunque el valor formativo se apoya en revisión del banco, auditorías, Monte Carlo (§5.7) y paquete mínimo demostrable (§4.3).
 
 ## Validez del banco de preguntas
 
@@ -486,17 +443,17 @@ La **validez predictiva** (relación entre desempeño en el juego y rendimiento 
 Durante el seguimiento del trabajo, la revisión con el tutor y el profesorado señaló dos limitaciones del modelo de una sola etiqueta `Materia`:
 
 1. **Solapamiento temático:** ítems que encajan en varias asignaturas (p. ej. inferencia en Probabilidad y en Modelización e Inferencia).
-2. **Prerrequisitos:** ítems de cursos avanzados que asumen conceptos de materias previas (p. ej. optimización y cálculo multivariable).
+2. **Prerrequisitos:** ítems de cursos avanzados que asumen conceptos de materias previas (p. ej. un ítem de Optimización que requiere derivadas parciales de Càlcul en Diverses Variables).
 
-Estas observaciones motivan los campos `Materias_relacionadas` y `Prerequisitos` propuestos para futuras versiones del esquema (§6.6).
+En el esquema propuesto, `Materias_relacionadas` permitiría filtrar o etiquetar solapamientos; `Prerequisitos` advertiría al jugador o restringiría ítems hasta practicar las materias base. Ambos campos quedan para futuras versiones (§6.6).
 
 ## Utilidad formativa
 
-El sistema permite al estudiante practicar por **semestre o temática** acorde a su momento del grado, simular un **examen balanceado** mediante el modo historia y recibir un **informe detallado** al finalizar una partida en modo examen.
+El sistema permite al estudiante practicar por **semestre o temática** acorde a su momento del grado, simular un **examen balanceado** mediante el modo historia, usar el **examen del día** como rutina de repaso (24 preguntas compartidas) y recibir un **informe detallado** al finalizar una partida en modo examen. Las **estadísticas locales** (`estadisticas_jugador.json`) agregan actividad y récords sin depender de un servidor. El **paquete mínimo** (§4.3) permite probar el motor con datos reducidos en otro equipo.
 
 Para el profesorado, el banco estructurado y los scripts de auditoría facilitan revisión por materia y detección de ítems problemáticos. El modo feedback cierra un ciclo de mejora continua.
 
-La interfaz pygame facilita el despliegue para usuarios no familiarizados con terminal; requiere instalar **pygame-ce** (`requirements.txt`).
+La interfaz pygame-ce se distribuye en zip portable o mínimo; requiere Python 3.10+ y `pip install -r Juego/requirements.txt` ([`Juego/COMO_JUGAR.md`](../../Juego/COMO_JUGAR.md)).
 
 ## Relación con las hipótesis
 
@@ -508,7 +465,7 @@ El estudio no incluye **evaluación con usuarios**: no se recogieron datos de us
 
 ## Trabajo futuro
 
-Entre las líneas futuras inmediatas figuran la implementación de `Materias_relacionadas` y `Prerequisitos` en el CSV y en los filtros del juego, el desarrollo de la narrativa gráfica completa del escape room, y un piloto con usuarios (n ≈ 15–20, cuestionario SUS, tiempo de práctica) para contrastar si las mecánicas de juego aumentan la práctica respecto a un listado estático —línea no formulada como hipótesis contrastada en este TFG por ausencia de datos. La integración con plataformas institucionales (Moodle, AulaWeb) completaría el despliegue en el grado.
+Entre las líneas futuras inmediatas figuran la implementación de `Materias_relacionadas` y `Prerequisitos` en el CSV y en los filtros del juego, el desarrollo de la narrativa gráfica completa del escape room, y un **piloto con usuarios** para contrastar motivación y práctica frente a un listado estático. Diseño previsto del piloto: muestra de **n ≈ 15–20** estudiantes del grado, asignación a juego vs. listado PDF durante **2–3 semanas**, cuestionario **SUS** de usabilidad, registro de **tiempo de práctica** y **número de sesiones** (desde estadísticas locales o encuesta). La hipótesis sobre motivación no se contrastó en este TFG por ausencia de datos. La integración con plataformas institucionales (Moodle, AulaWeb) completaría el despliegue en el grado.
 
 
 # Conclusiones
@@ -516,7 +473,8 @@ Entre las líneas futuras inmediatas figuran la implementación de `Materias_rel
 Este Trabajo de Fin de Grado ha diseñado e implementado un **sistema de cuestionarios académicos** alineado con el plan de estudios del grado en Matemática Computacional y Análisis de Datos, integrando:
 
 - un **banco de 480 preguntas** estructurado, balanceado y revisado manualmente;
-- un **juego** en pygame con modos libre, historia, resistencia, escape room y feedback que gamifica la autoevaluación;
+- un **juego** en pygame-ce con modos libre, historia, resistencia, escape room y feedback que gamifica la autoevaluación;
+- **paquetes portable y mínimo** para despliegue sin clonar todo el repositorio;
 - un **conjunto de herramientas** de validación y mantenimiento del dataset;
 - y una **arquitectura extensible** preparada para narrativa gráfica y modelos pedagógicos más ricos.
 
@@ -526,7 +484,7 @@ En el plano personal, el proyecto ha consolidado competencias de programación e
 
 Las líneas futuras más inmediatas son la validación con usuarios reales (incluida la motivación frente a un listado estático), el enriquecimiento del modelo de datos con multiasignatura y prerrequisitos, y el desarrollo de la capa narrativa escape room prevista en el documento de proyecto.
 
-La simulación Monte Carlo (§5.7) aporta una primera validación cuantitativa del motor de evaluación: el azar no permite aprobar ni completar partidas largas con vidas limitadas. El análisis del pity (§5.8) cuantifica, en cambio, cómo se acotan las rachas sin recompensas en escape room y resistencia.
+La simulación Monte Carlo (§5.7) aporta una primera validación cuantitativa del motor de evaluación: el azar no permite aprobar ni completar partidas largas con vidas limitadas. El análisis del pity (§5.8) muestra, de forma resumida, cómo se acotan las rachas sin recompensas en modos prolongados.
 
 
 # Bibliografía

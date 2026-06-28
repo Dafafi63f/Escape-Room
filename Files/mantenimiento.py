@@ -13,8 +13,9 @@ CLI unificada de mantenimiento (banco cerrado: 480 CSV + pool juego 1000).
   python Docs/utilidades_tfg.py [--solo-limpieza] [--dry-run]   (raíz del TFG)
 
 Bancos cerrados (solo revisión manual; sin altas/bajas):
-  Preguntas.csv, plantillas.json (960 filas, sin variaciones), preguntas_resistencia.json (40).
-Overrides: TFG_PERMITIR_CSV=1 | TFG_PERMITIR_PLANTILLAS=1 | TFG_PERMITIR_RESISTENCIA=1.
+  Preguntas.csv, plantillas.json (960 filas, sin variaciones),
+  40 exclusivas resistencia en Juego/Comun/preguntas_resistencia_exclusivas_datos.py.
+Overrides: TFG_PERMITIR_CSV=1 | TFG_PERMITIR_PLANTILLAS=1.
 """
 
 from __future__ import annotations

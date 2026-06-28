@@ -87,7 +87,7 @@ def entradas_generacion_figuras() -> list[Path]:
         _SCRIPTS / "simulacion_pity.py",
         _JUEGO / "Comun" / "semillas.py",
         _JUEGO / "Comun" / "datos.py",
-        _JUEGO / "Comun" / "reglas_partida.py",
+        _JUEGO / "Comun" / "reglas.py",
         _JUEGO / "Comun" / "eventos_partida.py",
         _JUEGO / "Comun" / "escape_room.py",
         _JUEGO / "Grafico" / "app.py",
