@@ -10,6 +10,7 @@ Secciones:
 from __future__ import annotations
 
 import json
+import random
 import sys
 import tempfile
 import unittest
@@ -41,7 +42,6 @@ from Comun.motor_nucleo import (
     ResultadoRespuesta,
     evaluar_respuesta,
     presentacion_opciones_pantalla,
-    semilla_orden_opciones,
 )
 from Comun.reglas_partida import preset_historia_examen, preset_libre_arcade
 
@@ -204,9 +204,12 @@ class TestInformeExamen(unittest.TestCase):
 
     def test_orden_opciones_permutado_en_pantalla(self) -> None:
         p = _pregunta_simple()
-        pres_a = presentacion_opciones_pantalla(p, semilla=11)
-        pres_b = presentacion_opciones_pantalla(p, semilla=22)
-        pres_rep = presentacion_opciones_pantalla(p, semilla=11)
+        rng_a = random.Random(11)
+        rng_b = random.Random(22)
+        pres_a = presentacion_opciones_pantalla(p, rng=rng_a)
+        pres_b = presentacion_opciones_pantalla(p, rng=rng_b)
+        rng_rep = random.Random(11)
+        pres_rep = presentacion_opciones_pantalla(p, rng=rng_rep)
         self.assertEqual(pres_a.filas, pres_rep.filas)
         etiquetas_a = tuple(etiq for etiq, _, _ in pres_a.filas)
         self.assertEqual(etiquetas_a, ("A", "B", "C", "D"))
@@ -216,22 +219,9 @@ class TestInformeExamen(unittest.TestCase):
         )
         self.assertEqual(pres_a.letra_dataset("A"), origen_correcta)
         self.assertIsNotNone(pres_a.etiqueta_visual(p.correcta))
-        otra_vez = presentacion_opciones_pantalla(
-            p,
-            semilla=semilla_orden_opciones(
-                semilla_base=99,
-                numero_turno=0,
-                indice_pregunta=0,
-            ),
-        )
-        otra_vez_2 = presentacion_opciones_pantalla(
-            p,
-            semilla=semilla_orden_opciones(
-                semilla_base=99,
-                numero_turno=1,
-                indice_pregunta=0,
-            ),
-        )
+        rng_partida = random.Random(99)
+        otra_vez = presentacion_opciones_pantalla(p, rng=rng_partida)
+        otra_vez_2 = presentacion_opciones_pantalla(p, rng=rng_partida)
         self.assertNotEqual(otra_vez.filas, otra_vez_2.filas)
 
     def test_arcade_muestra_feedback_inmediato(self) -> None:

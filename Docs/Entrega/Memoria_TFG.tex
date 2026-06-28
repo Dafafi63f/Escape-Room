@@ -60,13 +60,13 @@
 \noindent\textbf{Palabras clave:} cuestionario educativo, gamificación, banco de preguntas, autoevaluación, MatCAD, serious games.
 \end{abstract}
 
-\noindent\textit{Nota sobre el título:} el documento de proyecto inicial planteaba un escape room con interfaz gráfica. El \textbf{entregable de este TFG} es el cuestionario (banco + juego en \textbf{pygame} con cinco modos, incluido escape room con mecánicas jugables) descrito en esta memoria; la capa narrativa gráfica completa queda como evolución futura del mismo proyecto.
+\noindent\textit{Nota sobre el título:} el documento de proyecto inicial planteaba un escape room con interfaz gráfica inspirado en las aventuras point-and-click de Inka Games (\url{https://www.inkagames.com/}; véase §1.3). El \textbf{entregable de este TFG} es el cuestionario (banco + juego en \textbf{pygame} con cinco modos, incluido escape room con mecánicas jugables) descrito en esta memoria; la capa narrativa gráfica completa queda como evolución futura del mismo proyecto.
 
 \smallskip
 \noindent El detalle técnico del repositorio (esquema del banco, scripts, arquitectura del juego) se documenta en los \texttt{README.md} del proyecto y se cita en los apéndices al final de esta memoria.
 
 \smallskip
-\noindent\textbf{Versión de entrega:} dos Word en \texttt{Docs/Entrega/} (\texttt{Memoria\_TFG\_markdown.docx}, \texttt{Memoria\_TFG\_latex.docx}); figuras en \texttt{Docs/Figuras/}. Regenerar figuras: \texttt{python Docs/generar\_figuras\_memoria.py}. Regenerar Word: \texttt{python utilidades\_tfg.py --solo-memoria}. El PDF de entrega lo exportas desde Word tras editar.
+\noindent\textbf{Versión de entrega:} dos Word en \texttt{Docs/Entrega/} (\texttt{Memoria\_TFG\_markdown.docx}, \texttt{Memoria\_TFG\_latex.docx}); \textbf{9 figuras} PNG en \texttt{Docs/Figuras/}. Regenerar figuras: \texttt{python Docs/generar\_figuras\_memoria.py}. Regenerar Word: \texttt{python utilidades\_tfg.py --solo-memoria}. El PDF de entrega lo exportas desde Word tras editar.
 
 \newpage
 \tableofcontents
@@ -87,6 +87,45 @@ Este Trabajo de Fin de Grado surge de la necesidad de disponer de una herramient
 En este contexto, \textbf{gamificación} designa el uso de elementos de diseño de juego (puntos, vidas, retos, progresión) en un contexto formativo no recreativo (Deterding et al., 2011); en este TFG se aplica al cuestionario interactivo con retroalimentación inmediata en pantalla. Un \textbf{banco de preguntas auditable} es un conjunto de ítems cuya calidad y estructura pueden revisarse de forma sistemática mediante \texttt{mantenimiento.py validar}, la revisión manual del banco de producción (480 ítems, cerrada) y scripts de auditoría. Los \textbf{distractores plausibles} son opciones incorrectas creíbles para quien no domina el concepto (Haladyna et al., 2002). La \textbf{narrativa} (capa pendiente) sería la secuencia ficcional de escenas que contextualiza los retos; el entregable actual funciona sin ella. Por \textbf{multiasignatura} y \textbf{prerrequisitos} se entiende el solapamiento entre materias y los conocimientos previos que un ítem da por asumidos.
 
 La motivación principal es combinar programación, matemáticas y diseño interactivo en una aplicación práctica que consolide conocimientos del grado y que pueda ser extendida por el propio autor o por el profesorado.
+
+\subsection{Inspiración: Inka Games (inkagames.com)}
+
+La idea original del TFG partió de los \textbf{juegos de aventura point-and-click} publicados en \url{https://www.inkagames.com/}, portal independiente peruano activo desde \textbf{2006} (fundado por Aldo Mujica y colaboradores). El sitio concentra cientos de títulos gratuitos en navegador ---históricamente en Flash, hoy en HTML5--- en los que el jugador \textbf{explora escenas}, recoge objetos, los combina y resuelve acertijos para \textbf{escapar} de situaciones peligrosas o completar una misión.
+
+Entre sus líneas más reconocibles están la saga \textbf{Saw Game} (secuestrado por el antagonista Pigsaw, el jugador supera pruebas encadenadas), las aventuras de \textbf{escape} (\textit{Prison Escape}, \textit{Zombie Prison Escape}, \textit{Scooby Doo Haunted House}, etc.) y las series temáticas (\textit{Obama in the Dark}, aventuras con personajes de ficción o creadores de contenido). El estilo visual es caricaturesco, la narrativa paródica y el ritmo de partida corto; el reto principal es la \textbf{lógica espacial y combinatoria} de los puzles, no un cuestionario académico.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\linewidth]{../Figuras/inkagames_gameplay_referencia.png}
+\caption{Escena de juego \textit{Kim Dotcom Prison Break} (Inka Games): enfermería de la prisión con puerta, objetos en escena e inventario con iconos recogidos. Fotograma (${\sim}$13:30) del walkthrough en YouTube (\url{https://www.youtube.com/watch?v=ib--6Tl5ZVc}). © Inka Games --- uso académico ilustrativo.}
+\label{fig:inkagames-gameplay}
+\end{figure}
+
+Este TFG \textbf{no reproduce} la estética ni las licencias de personajes de Inka Games. Toma de referencia la \textbf{estructura ludonarrativa}: progresión por escenas o salas, elección de caminos, objetos que modifican el estado de la partida y sensación de escape. En el entregable, esa estructura se \textbf{adapta al MatCAD}: cada puerta del modo escape room plantea una pregunta del banco; acertar permite avanzar, fallar cuesta vidas, y aparecen mecánicas propias (tienda, botín, inventario, pity) descritas en §5.8. La capa gráfica tipo novela interactiva ---escenas ilustradas con hotspots clicables--- queda como evolución futura; el núcleo evaluable (banco + motor) se desarrolló primero.
+
+\iniciotabla
+\begin{tabular}{@{}lp{4.2cm}p{4.2cm}@{}}
+\toprule
+\textbf{Aspecto} & \textbf{Inka Games (referencia)} & \textbf{TFG MATCAD (implementación)} \\
+\midrule
+Formato & Aventura point-and-click en web & Modo escape room en pygame \\
+Reto principal & Puzles lógicos y combinación de objetos & Preguntas A--D del banco curricular \\
+Progresión & Escenas enlazadas, inventario & Salas con 3 puertas, dificultad creciente \\
+Objetivo formativo & Entretenimiento general & Autoevaluación alineada al grado \\
+Contenido & Parodias y personajes mediáticos & 40 materias, metadatos, informes \\
+Estado actual & Catálogo maduro en inkagames.com & Mecánicas jugables; narrativa gráfica pendiente \\
+\bottomrule
+\end{tabular}
+\captionof{table}{Comparación entre el modelo de referencia (Inka Games) y el escape room educativo del entregable.}
+\label{tab:inka}
+\fintabla
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\linewidth]{../Figuras/tfg_escape_referencia.png}
+\caption{Modo escape room del entregable (capturas pygame con semilla fija): arriba, sala~1 con tres puertas; abajo, pregunta del banco con inventario de powerups. Paralelo funcional al inventario de Inka Games (figura~\ref{fig:inkagames-gameplay}), adaptado a la evaluación A--D.}
+\label{fig:tfg-escape-referencia}
+\end{figure}
 
 \subsection{Alcance del entregable}
 
@@ -118,7 +157,7 @@ Plataformas como Moodle integran cuestionarios con categorías; los sistemas ada
 
 \subsubsection{Posicionamiento}
 
-Pocas herramientas modelan el \textbf{plan completo de un grado} con metadatos curriculares explícitos y código mantenible. La contribución distintiva es triple: alineación curricular (40 materias, 4×2×5), trazabilidad de calidad del banco y arquitectura extensible.
+Pocas herramientas modelan el \textbf{plan completo de un grado} con metadatos curriculares explícitos y código mantenible. La contribución distintiva es triple: alineación curricular (40 materias, 4×2×5), trazabilidad de calidad del banco y arquitectura extensible. Frente a referentes lúdicos generalistas como Inka Games (§1.3), este proyecto \textbf{especializa} la progresión tipo escape room en evaluación formativa con datos del grado MatCAD.
 
 \subsubsection{Ítems, distractores fuertes y débiles}
 
@@ -211,41 +250,30 @@ Respuesta correcta & 120 por letra A, B, C y D \\
   \item Empaquetado opcional: PyInstaller (\texttt{Juego/build\_exe\_onefile.ps1} $\rightarrow$ \texttt{juego\_grafico.exe}).
 \end{itemize}
 
-La arquitectura del software se organiza en capas desacopladas (figura~\ref{fig:arquitectura}): el lanzador orquesta los modos de juego; cada modo delega en el motor de partida la corrección, la puntuación y los informes; la capa de datos abstrae el acceso al banco cerrado y a los metadatos curriculares. Los scripts de mantenimiento operan sobre los mismos ficheros sin formar parte del ejecutable del juego.
+La arquitectura del software se organiza en capas desacopladas (tabla~\ref{tab:arquitectura}): el lanzador orquesta los modos de juego; cada modo delega en el motor de partida la corrección, la puntuación y los informes; la capa de datos abstrae el acceso al banco cerrado y a los metadatos curriculares. Los scripts de mantenimiento operan sobre los mismos ficheros sin formar parte del ejecutable del juego.
+
+\iniciotabla
+\begin{tabularx}{\linewidth}{@{}c>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Orden} & \textbf{Capa} & \textbf{Módulos principales} & \textbf{Función} \\
+\midrule
+1 & Lanzador & \texttt{juego\_grafico.py} & Arranque pygame (libre, historia, resistencia, escape room, feedback) \\
+2 & Modos de juego & Presets en \texttt{Data/Juego/presets.json}, pantallas en \texttt{Grafico/} & Libre, historia, resistencia, escape room, feedback \\
+3 & Motor de partida & \texttt{Juego/Comun/} (\texttt{motor\_nucleo.py}, \texttt{reglas\_partida.py}, \ldots) & Reglas, vidas, puntuación, informes \\
+4 & Capa de datos & \texttt{Preguntas.csv}, \texttt{listado\_materias.csv}, \texttt{plantillas.json}, histórico & Banco cerrado y metadatos curriculares \\
+5 & Mantenimiento & \texttt{Files/mantenimiento.py} y scripts asociados & Validación, auditoría, simulaciones (fuera del ejecutable) \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{Arquitectura en capas del sistema (de arriba abajo: lanzador $\rightarrow$ datos).}
+\label{tab:arquitectura}
+\fintabla
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\linewidth]{arquitectura_sistema.png}
-\caption{Arquitectura en capas del cuestionario MATCAD (módulos principales y flujo de dependencias).}
-\label{fig:arquitectura}
+\includegraphics[width=0.98\linewidth]{../Figuras/tfg_menu_principal.png}
+\caption{Menú principal de \texttt{juego\_grafico.py} (captura pygame): acceso a los cinco modos operativos ---\textbf{Modo libre} (autoevaluación con filtros curriculares), \textbf{Modo historia} (examen balanceado según histórico del grado), \textbf{Modos especiales} (escape room y resistencia), \textbf{Modo feedback} (canal de mejora) y \textbf{Salir}. Barra fija superior con pausa, modos diarios, información/ranking, feedback y opciones.}
+\label{fig:tfg-menu-principal}
 \end{figure}
-
-\iniciotabla
-\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{2.1cm}>{\raggedright\arraybackslash}p{5.4cm}>{\raggedright\arraybackslash}X@{}}
-\toprule
-\textbf{Capa} & \textbf{Módulos} & \textbf{Función} \\
-\midrule
-Lanzador & \texttt{juego\_grafico.py} & Arranque pygame (libre, historia, resistencia, feedback) \\
-Dominio & \texttt{Juego/Comun/} (\texttt{motor\_nucleo.py}, \texttt{reglas\_partida.py}, \texttt{datos.py}, \texttt{informe\_examen.py}, \texttt{envio\_feedback.py}, resistencia, \ldots) & Reglas, puntuación, pool, informes, rutas \\
-Interfaz gráfica & \texttt{Juego/Grafico/} (\texttt{pantallas*.py}, \texttt{ui.py}, \texttt{tooltips\_ui.py}, \ldots) & Menús y partida con ratón (pygame) \\
-Historia & \texttt{Comun/generador\_examen\_historia.py} & Ponderación según histórico de calificaciones \\
-\bottomrule
-\end{tabularx}
-\fintabla
-
-\bloquetfg{\textbf{Modos implementados:}}
-\iniciotabla
-\begin{tabular}{@{}lp{9cm}@{}}
-\toprule
-\textbf{Modo} & \textbf{Función pedagógica} \\
-\midrule
-\textbf{Libre} & Autoevaluación abierta con filtros por curso, semestre, temática, grupo, nivel, materia y dificultad \\
-\textbf{Historia} & Simulación de examen balanceado según histórico de qualificacions del grado \\
-\textbf{Resistencia} & Partida infinita con eventos, objetos y ranking local de preguntas alcanzadas \\
-\textbf{Feedback} & Canal de mejora continua (bugs, sugerencias) hacia el creador \\
-\bottomrule
-\end{tabular}
-\fintabla
 
 \bloquetfg{\textbf{Evaluación del jugador (motor de partida):} el sistema corrige cada respuesta comparando la letra elegida (A--D) con el campo \texttt{Correcta} del ítem (\texttt{motor\_nucleo.py}). Según el preset de reglas:}
 \iniciotabla
@@ -314,22 +342,27 @@ El banco distingue \textbf{modo seguro} (solo dataset revisado) y \textbf{modo b
 
 \textbf{Estado del entregable:} cuestionario en \textbf{pygame} con cinco modos operativos (libre, historia, resistencia, escape room, feedback), banco de \textbf{480 preguntas} revisadas manualmente y herramientas de mantenimiento del dataset. El \textbf{modo escape room} implementa mecánicas de salas y puertas (tienda, botín, inventario); la narrativa gráfica completa queda como evolución futura.
 
-El desarrollo siguió un enfoque incremental: un prototipo en terminal validó el motor de evaluación; la interfaz gráfica concentró después toda la experiencia de juego. En junio de 2026 se eliminó la capa de consola y se unificó el código en \texttt{juego\_grafico.py} con dominio en \texttt{Juego/Comun/} e interfaz en \texttt{Juego/Grafico/}.
+El desarrollo siguió un enfoque incremental: un prototipo en terminal validó el motor de evaluación; la interfaz gráfica concentró después toda la experiencia de juego. En junio de 2026 se eliminó la capa de consola y se unificó el código en \texttt{juego\_grafico.py} con dominio en \texttt{Juego/Comun/} e interfaz en \texttt{Juego/Grafico/}. Todas las pantallas comparten una \textbf{barra fija superior} (pausa, diarios, ranking, feedback, opciones); en partida se añade además la barra de estado con vidas, progreso y puntuación (véase la figura~\ref{fig:tfg-menu-principal} y la captura compuesta del escape room en §1.3).
 
 \begin{tabular}{@{}lp{8cm}@{}}
 \toprule
 \textbf{Componente} & \textbf{Resultado} \\
 \midrule
 Lanzador & \texttt{Juego/juego\_grafico.py} \\
-Dominio & \texttt{Juego/Comun/} (motor, reglas, datos, informes, feedback, historia, resistencia) \\
+Dominio & \texttt{Juego/Comun/} (motor, reglas, datos, informes, feedback, historia, resistencia, escape room) \\
 Interfaz & \texttt{Juego/Grafico/} (menús, partida, tooltips, barra superior) \\
-Modo libre & Filtros multidimensionales, informes \texttt{.txt} \\
-Modo historia & Generador de examen según \texttt{Historic\_qualificacions\_MatCAD\_completo.csv} \\
-Modo resistencia & Reto del día, apuestas, maldiciones, power-ups \\
+Modo libre & Filtros multidimensionales, informes \texttt{.txt}; semilla de partida por sesión \\
+Modo historia & Generador de examen según \texttt{Historic\_qualificacions\_MatCAD\_completo.csv}; semilla de partida por sesión \\
+Modo resistencia & Reto del día, apuestas, maldiciones, power-ups; semilla de partida por sesión \\
+Modo escape room & Salas y puertas, tienda, botín, inventario, pity; semilla de partida por sesión \\
 Modo feedback & Guardado local + envío SMTP opcional \\
 Pruebas & Suite en \texttt{Tests/} (juego) y \texttt{Files/test\_*.py} (mantenimiento); CI en GitHub Actions \\
 \bottomrule
 \end{tabular}
+
+\subsubsection{Aleatoriedad y semillas}
+
+La \textbf{semilla diaria} (\texttt{DDMMYYYY}, UTC) fija el \textbf{contenido} del \textbf{Examen del día} (\texttt{examen\_fijo} con origen diario): mismo banco de preguntas para todos los jugadores ese día. Al \textbf{iniciar cada partida} se asigna una \textbf{semilla de partida} ---típicamente \texttt{semilla\_partida\_aleatoria()}--- y se crea un único \textbf{\texttt{RngPartida}} (\texttt{Random} instanciado una sola vez en \texttt{semillas.py}). Cada operación aleatoria ---barajar orden, opciones A--D, salas, eventos, etc.--- \textbf{consume} ese generador y devuelve un valor distinto aunque la semilla no cambie; recrear \texttt{Random(semilla)} a mitad de partida reiniciaría la secuencia, por eso no se derivan sub-semillas. En el examen del día con orden variable, la semilla diaria sigue fijando el contenido y la semilla de partida baraja el orden. \textbf{En el resto de modos} la semilla de partida gobierna selección, orden y mecánicas aleatorias. El examen fijo con semilla numérica manual también usa una sola semilla de partida. Las simulaciones de §5.7 y §5.8 usan semilla 42 para reproducir las figuras.
 
 \subsection{Organización curricular modelada}
 
@@ -400,16 +433,25 @@ Grupos temáticos modelados & 10 \\
 
 La hipótesis H3 se contrasta con el histórico institucional \texttt{Historic\_qualificacions\_MatCAD\_completo.csv} (\textbf{8818} registros de calificaciones), del que se derivan estadísticas agregadas por asignatura para las \textbf{40} materias del listado del grado.
 
-El procedimiento, implementado en \texttt{generador\_examen\_historia.py}, sigue el flujo de la figura~\ref{fig:flujo-historia}. En primer lugar, por cada materia se calculan la media numérica, la tasa de suspensos (nota $< 5$) y un \textbf{índice de dificultad} en el intervalo $[0,1]$ que combina ambos indicadores. A continuación, el generador asigna \textbf{pesos} a las materias según el perfil elegido ---por ejemplo, el perfil \textit{refuerzo} incrementa el peso de las materias con índice alto---. Finalmente, por cada materia seleccionada se rellenan los \textit{slots} canónicos Teoría/Cálculo $\times$ Fácil/Media/Difícil con preguntas del banco cerrado.
+El procedimiento, implementado en \texttt{generador\_examen\_historia.py}, sigue el pipeline de la tabla~\ref{tab:pipeline-historia}. En primer lugar, por cada materia se calculan la media numérica, la tasa de suspensos (nota $< 5$) y un \textbf{índice de dificultad} en el intervalo $[0,1]$ que combina ambos indicadores. A continuación, el generador asigna \textbf{pesos} a las materias según el perfil elegido ---por ejemplo, el perfil \textit{refuerzo} incrementa el peso de las materias con índice alto---. Finalmente, por cada materia seleccionada se rellenan los \textit{slots} canónicos Teoría/Cálculo $\times$ Fácil/Media/Difícil con preguntas del banco cerrado.
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.95\linewidth]{flujo_modo_historia.png}
-\caption{Pipeline del generador de examen balanceado (modo historia).}
-\label{fig:flujo-historia}
-\end{figure}
+\iniciotabla
+\begin{tabular}{@{}clp{7.8cm}@{}}
+\toprule
+\textbf{Paso} & \textbf{Etapa} & \textbf{Descripción} \\
+\midrule
+1 & Histórico de qualificacions & Lectura de \texttt{Historic\_qualificacions\_MatCAD\_completo.csv} (8818 registros) \\
+2 & Agregación por materia & Media numérica y tasa de suspensos por asignatura \\
+3 & Índice y pesos & Índice de dificultad $[0,1]$ y ponderación según perfil pedagógico \\
+4 & Slots canónicos & Teoría/Cálculo $\times$ Fácil/Media/Difícil por materia seleccionada \\
+5 & Examen balanceado & Lista de preguntas del banco cerrado lista para jugar \\
+\bottomrule
+\end{tabular}
+\captionof{table}{Pipeline del generador de examen balanceado (modo historia).}
+\label{tab:pipeline-historia}
+\fintabla
 
-La tabla siguiente recoge una muestra ilustrativa de materias con mayor índice de dificultad en el histórico agregado:
+La tabla~\ref{tab:dificultad-muestra} recoge una muestra ilustrativa de materias con mayor índice de dificultad en el histórico agregado:
 
 \iniciotabla
 \begin{tabular}{@{}lrrrr@{}}
@@ -422,6 +464,7 @@ Anàlisi Complexa i de Fourier & 0,008 & 5,55 & 16,3\,\% & 258 \\
 \bottomrule
 \end{tabular}
 \captionof{table}{Materias con mayor índice de dificultad en el histórico agregado (muestra ilustrativa).}
+\label{tab:dificultad-muestra}
 \fintabla
 
 Estos valores orientan la ponderación del modo historia; un piloto con estudiantes permitiría contrastar si los exámenes generados se perciben alineados con la exigencia real del grado.
@@ -470,6 +513,8 @@ Modo libre (arcade) & Preguntas respondidas de media & \textbf{4,0} / 20 \\
 Modo libre (arcade) & Puntos medios & \textbf{-10,0} \\
 \bottomrule
 \end{tabular}
+\captionof{table}{Resultados agregados de la simulación Monte Carlo (semilla 42).}
+\label{tab:mc-resultados}
 \fintabla
 
 En conjunto, el experimento muestra que el azar produce suspensión sistemática y que, con vidas limitadas, impide completar bloques largos sin conocimiento real. Las figuras se regeneran con \texttt{python Docs/generar\_figuras\_memoria.py}; la simulación numérica, con \texttt{python Files/simulacion\_evaluacion\_azar.py}.
@@ -478,7 +523,9 @@ En conjunto, el experimento muestra que el azar produce suspensión sistemática
 
 En los modos \emph{escape room} y \emph{resistencia}, ciertos eventos beneficiosos (puertas de descanso, tienda, botín u ofertas sí/no) se generan de forma aleatoria. Para evitar rachas largas sin recompensas ---análogo al \emph{pity} de los \emph{gacha games}--- el motor combina \textbf{pity suave} (sube la probabilidad tras cada fallo) y \textbf{hard pity} (garantía en un umbral).
 
-Sea $s$ el número de salas consecutivas sin haber visto el evento. La probabilidad en el siguiente intento es
+\subsubsection{Modelo de pity suave}
+
+Sea $s$ el número de salas (o preguntas) consecutivas sin haber visto el evento. La probabilidad en el siguiente intento es
 \[
 p_s = \min\bigl(p_{\max},\, p_0 + s\,\delta\bigr),
 \]
@@ -494,32 +541,73 @@ Tienda & 0,03 & 0,05 & 10 \\
 Botín (puerta normal) & --- & --- & cada 3 salas \\
 \bottomrule
 \end{tabular}
+\captionof{table}{Parámetros de pity por tipo de evento en escape room.}
+\label{tab:pity-params}
 \fintabla
 
-Sin pity ($\delta=0$), la probabilidad de no ver descanso en $n=30$ salas es $(1-p_0)^n \approx 15{,}6\,\%$; la racha p95 sin evento alcanza 29 salas (10\,000 réplicas). Con pity suave + hard pity en la sala 5, ninguna réplica termina sin descanso; la racha p95 queda en 4 salas y la sala media del primer descanso es \textbf{4,13} (figuras~\ref{fig:pity-curva}--\ref{fig:pity-dist}).
+El \textbf{hard pity} fuerza el evento si, al llegar a la sala $N$, aún no ha aparecido tras $N-1$ oportunidades (p.\ ej.\ descanso garantizado en la sala~5 si llevas cuatro salas sin verlo).
+
+\subsubsection{Eventos especiales en escape room}
+
+Descanso, tienda y botín se materializan como puertas o recompensas dentro de la partida. La \textbf{tienda} exige saldo suficiente para comprar al menos el artículo más barato disponible en esa sala; si no hay puntos, no se inserta la puerta tienda y el pity de tienda \textbf{se pospone} (el contador no se resetea) hasta una sala futura con economía viable. La figura~\ref{fig:tfg-escape-tienda} muestra la pantalla de compra cuando el evento sí se activa.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\linewidth]{pity_curva_probabilidad.png}
+\includegraphics[width=0.98\linewidth]{../Figuras/tfg_escape_tienda.png}
+\caption{Pantalla de tienda del modo escape room: compra de powerups con puntos arcade. Captura pygame con semilla fija.}
+\label{fig:tfg-escape-tienda}
+\end{figure}
+
+La figura~\ref{fig:pity-curva} resume, para descanso y tienda, cómo crece $p_s$ con la racha $s$ hasta el techo $p_{\max}$ y el umbral de hard pity de cada evento.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{../Figuras/pity_curva_probabilidad.png}
 \caption{Curva $p_s$ para descanso y tienda en escape room.}
 \label{fig:pity-curva}
 \end{figure}
 
+\subsubsection{Validación por simulación}
+
+Para cuantificar el efecto del pity se contrasta un modelo simplificado (Bernoulli independiente por sala) con la implementación descanso + pity suave + hard pity en sala~5. Cada réplica recorre 30 salas; se ejecutan \textbf{10\,000} réplicas con semilla 42 (\texttt{Files/simulacion\_pity.py}).
+
+\textbf{Sin pity} ($\delta=0$, sin umbral), la probabilidad de no ver descanso en $n=30$ salas es $(1-p_0)^n \approx 15{,}6\,\%$; la racha p95 sin evento alcanza 29 salas. \textbf{Con pity}, la racha p95 queda en 4 salas, ninguna réplica termina sin descanso y la sala media del primer descanso es \textbf{4,13}, con un pico en la sala~5 por el hard pity. La figura~\ref{fig:pity-comp} resume el contraste; la figura~\ref{fig:pity-dist} detalla dónde aparece el primer descanso.
+
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.88\linewidth]{pity_comparacion_descanso.png}
-\caption{Modelo simplificado (10\,000 réplicas): comparación con y sin pity.}
+\includegraphics[width=0.88\linewidth]{../Figuras/pity_comparacion_descanso.png}
+\caption{Modelo simplificado (10\,000 réplicas): probabilidad de no ver descanso y racha p95, con y sin pity.}
 \label{fig:pity-comp}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\linewidth]{pity_distribucion_primer_descanso.png}
-\caption{Distribución de la sala del primer descanso (modelo con pity).}
+\includegraphics[width=0.92\linewidth]{../Figuras/pity_distribucion_primer_descanso.png}
+\caption{Distribución de la sala del primer descanso (modelo simplificado con pity).}
 \label{fig:pity-dist}
 \end{figure}
 
-El script \texttt{Files/simulacion\_pity.py} reproduce el modelo; las figuras se generan con \texttt{python Docs/generar\_figuras\_memoria.py}.
+\iniciotabla
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Escenario (descanso, 30 salas)} & \textbf{Métrica} & \textbf{Sin pity} & \textbf{Con pity} \\
+\midrule
+Prob.\ base $p_0=6\,\%$ & Partidas sin ningún descanso & \textbf{15,6\,\%} & \textbf{0\,\%} \\
+ & Racha p95 sin descanso & 29 salas & 4 salas \\
+ & Sala media del 1.er descanso & --- & \textbf{4,13} \\
+\bottomrule
+\end{tabular}
+\captionof{table}{Contraste sin/con pity para la puerta de descanso (30 salas, 10\,000 réplicas).}
+\label{tab:pity-sim}
+\fintabla
+
+\subsubsection{Pity en resistencia}
+
+En el modo resistencia el mismo esquema se aplica a eventos aleatorios de pregunta (niebla, relámpago, doble puntos) y a ofertas sí/no: el contador $s$ sube cuando no hay evento y aumenta $p_s$ con límites distintos (incremento $0{,}03$ por pregunta sin evento, constante \texttt{PITY\_INC\_EVENTO\_SI\_NO}; techo de refuerzo $0{,}28$). La lógica es análoga a la del escape room, pero sobre el índice de pregunta en lugar del número de sala.
+
+\subsubsection{Reproducibilidad}
+
+El script \texttt{Files/simulacion\_pity.py} implementa el modelo simplificado (Bernoulli por sala) y, opcionalmente, partidas completas con \texttt{generar\_puertas\_sala}. Las figuras~\ref{fig:tfg-escape-tienda}--\ref{fig:pity-dist} se regeneran con \texttt{python Docs/generar\_figuras\_memoria.py} y \texttt{python Docs/capturar\_pantallas\_juego.py} (captura pygame de la tienda); la simulación numérica usa semilla 42 y 10\,000 réplicas del modelo de descanso.
 
 \section{Discusión}
 
@@ -532,16 +620,16 @@ El \textbf{objetivo general} se cumple de forma parcial: existe un juego educati
 \toprule
 \textbf{\#} & \textbf{Objetivo} & \textbf{Estado} & \textbf{Comentario} \\
 \midrule
-OE1 & Narrativa interactiva & Parcial & Modo escape room jugable; guion visual completo pendiente \\
+OE1 & Narrativa interactiva & \textbf{Parcial} & Modo escape room jugable; guion visual completo pendiente \\
 OE2 & Retos por materias & \textbf{Cumplido} & Banco 480 ítems, Teoría/Cálculo, tres dificultades \\
 OE3 & Validación de respuestas & \textbf{Cumplido} & Motor A--D, puntuación, vidas, informes \\
 OE4 & Interfaz gráfica & \textbf{Cumplido} & \texttt{juego\_grafico.py} con libre, historia, resistencia, escape room y feedback \\
-OE5 & Valor formativo & \textbf{Parcialmente cumplido} & Banco validado, 424 tests + CI; sin estudio con usuarios \\
+OE5 & Valor formativo & \textbf{Parcial} & Banco validado, 424 tests + CI; sin estudio con usuarios \\
 \bottomrule
 \end{tabular}
 \fintabla
 
-Los \textbf{objetivos específicos} OE2, OE3, OE4 y OE5 están cubiertos en la versión pygame. OE1 (narrativa gráfica completa) queda parcialmente cubierto por las mecánicas del escape room y como trabajo futuro en arte y guion. El enfoque incremental ---primero validar el núcleo evaluable, después la capa visual--- permitió concentrar el esfuerzo en un único lanzador mantenible.
+Los \textbf{objetivos específicos} OE2, OE3 y OE4 están cumplidos en la versión pygame. OE1 y OE5 quedan parciales: OE1 por la narrativa gráfica completa (mecánicas del escape room como avance, guion visual pendiente) y OE5 por la ausencia de estudio con usuarios. El enfoque incremental ---primero validar el núcleo evaluable, después la capa visual--- permitió concentrar el esfuerzo en un único lanzador mantenible.
 
 \subsection{Validez del banco de preguntas}
 
@@ -623,6 +711,8 @@ Nicol, D. J., y Macfarlane-Dick, D. (2006). Formative assessment and self-regula
 Prensky, M. (2003). Digital game-based learning. \textit{Computers in Entertainment}, \textit{1}(1), 21. \url{https://doi.org/10.1145/950566.950596}
 
 Veldkamp, A., van de Grint, L., Knippels, M. C. P. J., y van Joolingen, W. R. (2020). Escape education: A systematic review on escape rooms in education. \textit{Educational Research Review}, \textit{31}, 100364. \url{https://doi.org/10.1016/j.edurev.2020.100364}
+
+Inka Games. (s.\,f.). \textit{Inkagames.com --- juegos de aventura point-and-click}. \url{https://www.inkagames.com/} [Consulta: 27 junio 2026].
 
 \section{Apéndices}
 \renewcommand{\arraystretch}{1.08}

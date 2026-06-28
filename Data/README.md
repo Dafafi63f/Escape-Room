@@ -63,7 +63,7 @@ Modos activos en el carrusel de historia (`contexto_reglas`: `historia_*`):
 | `repaso_historico`, `repaso_integral`, `vuelta_grado`, `repaso_express` | Unificados en `repaso` |
 | `semana_examenes`, `simulacro_curso` | Unificados en `simulacro` |
 
-Semilla diaria compartida (`DDMMYYYY`, p. ej. `22062026`; en UI siempre 8 dígitos) **solo** para el **Examen del día** (`examen_fijo` con `origen_semilla: diario`). Escape room, resistencia y examen aleatorio usan semilla aleatoria en cada partida. No está previsto reto diario para escape ni resistencia. Ver [`semillas.py`](../Juego/Comun/semillas.py) y [`modos_diarios.py`](../Juego/Comun/modos_diarios.py).
+Semilla diaria compartida (`DDMMYYYY`, p. ej. `22062026`; en UI siempre 8 dígitos) **solo** fija el **contenido** del **Examen del día** (`examen_fijo` con `origen_semilla: diario`). Al iniciar cada partida se asigna una semilla de sesión (`semilla_partida_aleatoria()` si el orden varía); un único `RngPartida` ([`semillas.py`](../Juego/Comun/semillas.py), `resolver_semillas_partida`) consume todo el azar de la partida (orden, opciones A–D, salas, eventos, etc.): la semilla identifica la sesión y cada operación aleatoria avanza el generador, sin sub-semillas ni reinicios a mitad de juego.
 
 ## Esquema de `Preguntas.csv`
 

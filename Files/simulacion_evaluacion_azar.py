@@ -13,7 +13,6 @@ y que el sistema de vidas expulsa al jugador antes de completar bloques largos.
 from __future__ import annotations
 
 import argparse
-import random
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +22,7 @@ _JUEGO = _SCRIPTS.parent / "Juego"
 if str(_JUEGO) not in sys.path:
     sys.path.insert(0, str(_JUEGO))
 
+from Comun.semillas import RngPartida  # noqa: E402
 from Comun.datos import cargar_materias, cargar_preguntas  # noqa: E402
 from Comun.modelos import Pregunta  # noqa: E402
 from Comun.reglas_partida import calcular_puntos_arcade, nota_sobre_diez  # noqa: E402
@@ -42,14 +42,14 @@ class ResultadoSimulacion:
     agotado_vidas: bool
 
 
-def _respuesta_azar(rng: random.Random) -> str:
+def _respuesta_azar(rng: RngPartida) -> str:
     return rng.choice(_LETRAS)
 
 
 def simular_examen(
     preguntas: list[Pregunta],
     n_objetivo: int,
-    rng: random.Random,
+    rng: RngPartida,
 ) -> ResultadoSimulacion:
     """Modo examen (sin vidas): nota sobre 10."""
     muestra = rng.sample(preguntas, min(n_objetivo, len(preguntas)))
@@ -69,7 +69,7 @@ def simular_arcade_vidas(
     preguntas: list[Pregunta],
     n_objetivo: int,
     vidas_iniciales: int,
-    rng: random.Random,
+    rng: RngPartida,
 ) -> ResultadoSimulacion:
     """Preset arcade: 3 vidas, puntuación +/- según dificultad."""
     muestra = rng.sample(preguntas, min(n_objetivo, len(preguntas)))
@@ -109,7 +109,7 @@ def ejecutar_simulacion(
     n_preguntas: int,
     semilla: int,
 ) -> dict[str, object]:
-    rng = random.Random(semilla)
+    rng = RngPartida.desde_semilla(semilla)
     examenes = [simular_examen(preguntas, n_preguntas, rng) for _ in range(iteraciones)]
     arcades = [
         simular_arcade_vidas(preguntas, n_preguntas, 3, rng) for _ in range(iteraciones)

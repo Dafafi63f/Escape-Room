@@ -205,17 +205,19 @@ class TestResistenciaPartida(unittest.TestCase):
         )
 
     def test_relampago_aleatorio_solo_antes_de_tiempo_base(self) -> None:
+        rng = random.Random(11)
         relampagos = [
             e
             for n in range(PREGUNTA_MIN_EVENTOS_ALEATORIOS, 25)
-            for e in eventos_aleatorios_para_pregunta(n, semilla_partida=11)
+            for e in eventos_aleatorios_para_pregunta(n, rng=rng)
             if e.tiempo_pregunta is not None
         ]
         self.assertGreater(len(relampagos), 0)
+        rng_tardio = random.Random(11)
         tardios = [
             e
             for n in range(120, 200)
-            for e in eventos_aleatorios_para_pregunta(n, semilla_partida=11)
+            for e in eventos_aleatorios_para_pregunta(n, rng=rng_tardio)
             if e.tiempo_pregunta is not None
         ]
         self.assertEqual(tardios, [])
@@ -336,7 +338,7 @@ class TestResistenciaPartida(unittest.TestCase):
     def test_pity_resistencia_alto_favorece_tipo_ausente(self) -> None:
         from Comun.eventos_partida import elegir_malos_resistencia_exclusivos
         from Comun.resistencia_partida import PityEventosResistencia
-        import random
+        from Comun.semillas import RngPartida
 
         kinds = ("relampago", "opciones_ocultas")
         pity = PityEventosResistencia(
@@ -349,7 +351,7 @@ class TestResistenciaPartida(unittest.TestCase):
         pesos = {k: 1.0 + pity.preguntas_sin_por_kind.get(k, 0) * 0.22 for k in kinds}
         vistos: set[str] = set()
         for semilla in range(40):
-            rng = random.Random(semilla)
+            rng = RngPartida.desde_semilla(semilla)
             elegidos = elegir_malos_resistencia_exclusivos(
                 kinds, 1, rng, pesos=pesos
             )
@@ -360,7 +362,7 @@ class TestResistenciaPartida(unittest.TestCase):
         from Comun.resistencia_partida import PityEventosResistencia
 
         er = EstadoResistencia(semilla_partida=99)
-        escalada_para_pregunta(20, semilla_partida=99, pity=er.pity_eventos)
+        escalada_para_pregunta(20, er=er)
         avisos = avisos_pre_pregunta_resistencia(
             self.pool[0], 20, er=er
         )
@@ -721,7 +723,7 @@ class TestMecanicasResistencia(unittest.TestCase):
         er = EstadoResistencia(semilla_partida=42)
         vistos: set[str] = set()
         for n in range(8, 120):
-            rng = rng_partida(er, n * 53 + 4049)
+            rng = rng_partida(er)
             if rng.random() > 0.5:
                 continue
             ap = elegir_riesgo_pregunta(rng, n)
@@ -831,10 +833,12 @@ class TestMecanicasResistencia(unittest.TestCase):
         self.assertTrue(er.letras_niebla)
 
     def test_racha_extrema_un_tiempo_y_una_niebla_como_maximo(self) -> None:
+        from Comun.resistencia_motor import rng_partida
         from Comun.resistencia_partida import eventos_aleatorios_para_pregunta
 
+        er = EstadoResistencia(semilla_partida=3, racha=100)
         eventos = eventos_aleatorios_para_pregunta(
-            50, semilla_partida=3, racha=100
+            50, rng=rng_partida(er), racha=er.racha
         )
         n_tiempo = sum(1 for e in eventos if e.tiempo_pregunta is not None)
         n_niebla = sum(
@@ -905,10 +909,10 @@ class TestMecanicasResistencia(unittest.TestCase):
     def test_escalada_no_depende_de_racha_jugador(self) -> None:
         from Comun.resistencia_partida import escalada_para_pregunta
 
-        e = escalada_para_pregunta(30, semilla_partida=123)
+        e = escalada_para_pregunta(30, er=EstadoResistencia(semilla_partida=123))
         self.assertEqual(e.nivel, 2)
         self.assertIsNone(
-            escalada_para_pregunta(1, semilla_partida=123).tiempo_pregunta_seg
+            escalada_para_pregunta(1, er=EstadoResistencia(semilla_partida=123)).tiempo_pregunta_seg
         )
 
     def test_recompensas_tras_acierto_no_quitan_vida_directa(self) -> None:
@@ -937,7 +941,7 @@ class TestMecanicasResistencia(unittest.TestCase):
             for n in range(PREGUNTA_MIN_EVENTOS_ALEATORIOS, 45)
             if any(
                 e.multiplicador_puntos
-                for e in eventos_aleatorios_para_pregunta(n, semilla_partida=7)
+                for e in eventos_aleatorios_para_pregunta(n, rng=random.Random(7))
             )
         )
         self.assertLess(con_doble, 18)
@@ -1443,7 +1447,7 @@ class TestIconosResistencia(unittest.TestCase):
             correcta="B",
             opciones={"A": "3", "B": "4", "C": "5", "D": "6"},
         )
-        ocultas = {letras_ocultas_niebla(p, 1, semilla=n) for n in range(200)}
+        ocultas = {letras_ocultas_niebla(p, 1, rng=random.Random(n)) for n in range(200)}
         self.assertIn(frozenset({"B"}), ocultas)
         self.assertTrue(all(len(o) == 1 for o in ocultas))
         niebla = frozenset({"B"})

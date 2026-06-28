@@ -238,5 +238,32 @@ class TestNivelesComplejidadLibre(unittest.TestCase):
             6,
         )
 
+    def test_seleccion_reproducible_con_semilla(self) -> None:
+        import random
+
+        pool = self.pool
+        secuencia_a: list[int] = []
+        secuencia_b: list[int] = []
+        for rng in (random.Random(42), random.Random(42)):
+            estado = crear_estado_seleccion(len(pool))
+            turnos: list[int] = []
+            for respondidas in range(5):
+                idx = elegir_indice_siguiente(
+                    pool,
+                    estado,
+                    modo_infinito=True,
+                    dificultad_progresiva=False,
+                    niveles_complejidad=frozenset({1, 2, 3, 4, 6}),
+                    respondidas=respondidas,
+                    rng=rng,
+                )
+                self.assertIsNotNone(idx)
+                turnos.append(idx)  # type: ignore[arg-type]
+            if not secuencia_a:
+                secuencia_a = turnos
+            else:
+                secuencia_b = turnos
+        self.assertEqual(secuencia_a, secuencia_b)
+
 if __name__ == "__main__":
     unittest.main()

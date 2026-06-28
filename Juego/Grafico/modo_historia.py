@@ -17,11 +17,10 @@ from Comun.presets_historia import (
     cargar_presets_historia,
     cargar_presets_especiales,
     config_defecto,
-    contenido_examen_estable,
     resolver_orden_preguntas,
-    semilla_desde_preset,
 )
 from Comun.reglas_partida import ReglasPartida
+from Comun.semillas import resolver_semillas_partida
 from Grafico.arranque_partida import iniciar_pantalla_preset
 from Comun.rutas import PATH_MATERIAS, resolver_presets
 from Comun.generador_examen_historia import (
@@ -65,10 +64,7 @@ def preparar_partida_historia(
     config: ConfigPresetHistoria | None = None,
     *,
     semilla: int | None = None,
-    semilla_orden: int | None = None,
 ) -> tuple[PlanExamen, ReglasPartida]:
-    from Comun.modos_diarios import semilla_aleatoria_examen
-
     orden = cargar_orden_materias(PATH_MATERIAS)
     stats = cargar_estadisticas_historicas(materias_validas=set(datos.materias_meta))
     cfg = config or config_defecto(
@@ -91,23 +87,27 @@ def preparar_partida_historia(
         preset_id=preset.id,
         plantillas_materia=plantillas_materia,
     )
-    semilla_contenido = (
-        semilla if semilla is not None else semilla_desde_preset(preset, cfg)
+    orden_preguntas = resolver_orden_preguntas(preset, cfg)
+    semilla_partida = resolver_semillas_partida(
+        preset_id=preset.id,
+        cfg=cfg,
+        semilla_override=semilla,
+        orden_preguntas=orden_preguntas,
     )
-    orden = resolver_orden_preguntas(preset, cfg)
-    if (
-        semilla_orden is None
-        and orden == "variar"
-        and contenido_examen_estable(preset, cfg=cfg, semilla=semilla)
-    ):
-        semilla_orden = semilla_aleatoria_examen()
+    from Comun.modos_diarios import es_id_examen_fijo, origen_semilla_desde_config
+
+    semilla_contenido = None
+    if es_id_examen_fijo(preset.id) and origen_semilla_desde_config(cfg) == "diario":
+        from Comun.modos_diarios import semilla_contenido_examen_fijo
+
+        semilla_contenido = semilla_contenido_examen_fijo(cfg)
     plan = generar_examen(
         datos.preguntas,
         materias_orden=orden,
         materias_meta=datos.materias_meta,
         stats=stats,
-        semilla=semilla_contenido,
-        semilla_orden=semilla_orden,
+        semilla=semilla_partida,
+        semilla_contenido=semilla_contenido,
         **(_kwargs_generador_examen(datos, preset, cfg)),
     )
     reglas = aplicar_preset(preset, cfg)

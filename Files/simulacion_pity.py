@@ -25,6 +25,7 @@ if str(_JUEGO) not in sys.path:
     sys.path.insert(0, str(_JUEGO))
 
 from Comun.datos import cargar_materias, cargar_preguntas  # noqa: E402
+from Comun.semillas import RngPartida, semilla_estable_texto  # noqa: E402
 from Comun.escape_partida import construir_pool_escape, materias_del_pool  # noqa: E402
 from Comun.escape_room import (  # noqa: E402
     SALAS_DEFECTO,
@@ -84,7 +85,7 @@ def prob_soft(salas_sin_ver: int, *, prob_base: float, incremento: float, prob_m
 
 
 def simular_modelo_simplificado(
-    rng: random.Random,
+    rng: RngPartida,
     *,
     n_salas: int,
     prob_base: float,
@@ -145,6 +146,7 @@ def simular_partida_escape(
     pool_preguntas: list,
     semilla: int,
 ) -> ResultadoPartidaEscape:
+    rng = RngPartida.desde_semilla(semilla)
     pity = PityPuertasEspecialesEscape()
     primera_d = primera_t = primera_b = None
     max_sd = max_st = max_sb = 0
@@ -155,7 +157,7 @@ def simular_partida_escape(
             idx,
             materias_pool=materias_pool,
             pool_preguntas=pool_preguntas,
-            semilla=semilla + idx * 17_371,
+            rng=rng,
             n_salas=config.n_salas,
             pity=pity,
         )
@@ -240,8 +242,8 @@ def ejecutar_simulacion(
     n_salas: int,
     semilla: int,
 ) -> dict[str, object]:
-    rng_base = random.Random(semilla + 1)
-    rng_pity = random.Random(semilla + 2)
+    rng_base = RngPartida.desde_semilla(semilla_estable_texto(f"pity-base-{semilla}"))
+    rng_pity = RngPartida.desde_semilla(semilla_estable_texto(f"pity-model-{semilla}"))
     n_escape = iteraciones_escape if iteraciones_escape is not None else min(iteraciones, 200)
     if n_escape < 0:
         n_escape = 0
@@ -281,7 +283,7 @@ def ejecutar_simulacion(
             config=config,
             materias_pool=materias_pool,
             pool_preguntas=pool,
-            semilla=semilla + 1000 + i,
+            semilla=semilla_estable_texto(f"escape-run-{semilla}-{i}"),
         )
         for i in range(n_escape)
     ]

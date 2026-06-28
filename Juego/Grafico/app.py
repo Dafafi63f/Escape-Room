@@ -59,6 +59,120 @@ _ETIQUETA_ICONO_FIJO_SIN_EMOJI: dict[str, str] = {
     "opciones": "OP",
 }
 
+_ICONOS_FIJOS_CFG: tuple[tuple[str, str], ...] = (
+    ("pausa", TOOLTIP_PAUSA),
+    ("diarios", TOOLTIP_DIARIOS),
+    ("ranking", TOOLTIP_RANKING),
+    ("feedback", TOOLTIP_FEEDBACK),
+    ("opciones", TOOLTIP_OPCIONES),
+)
+
+
+def crear_botones_iconos_fijos(
+    fuentes: dict[str, pygame.font.Font],
+    handlers: dict[str, Callable[[], None]] | None = None,
+) -> list[tuple[Boton, str]]:
+    """Rectángulos e iconos de la barra fija superior (pausa, diarios, …)."""
+    fuente_ref = fuentes["menu"]
+    w = ancho_icono_fijo(fuente_ref)
+    h = alto_icono_fijo(fuente_ref)
+    resultado: list[tuple[Boton, str]] = []
+    x_actual = X_ICONOS_FIJOS
+    noop: Callable[[], None] = lambda: None
+    hdl = handlers or {}
+    for tipo_icono, tooltip in _ICONOS_FIJOS_CFG:
+        boton = Boton(
+            "",
+            pygame.Rect(x_actual, Y_ICONOS_FIJOS, w, h),
+            hdl.get(tipo_icono, noop),
+            mostrar_texto=False,
+            tooltip=tooltip,
+        )
+        resultado.append((boton, tipo_icono))
+        x_actual += w + GAP_ICONOS_FIJOS
+    return resultado
+
+
+def dibujar_icono_fijo_en(
+    superficie: pygame.Surface,
+    fuentes: dict[str, pygame.font.Font],
+    tipo: str,
+    rect: pygame.Rect,
+) -> None:
+    """Dibuja un icono de la barra fija sobre ``superficie``."""
+    color = (25, 25, 30)
+    chip = rect.inflate(-4, -4)
+    pygame.draw.rect(superficie, (248, 252, 255), chip, border_radius=6)
+    fuente = fuentes.get("icono_emoji") or fuentes["menu"]
+    texto = emoji_icono(tipo) or _ETIQUETA_ICONO_FIJO_SIN_EMOJI.get(tipo, "")
+    try:
+        surf = fuente.render(texto, True, color)
+        if surf.get_width() > 4:
+            superficie.blit(surf, surf.get_rect(center=rect.center))
+            return
+    except Exception:
+        pass
+    if tipo == "pausa":
+        bar_w = max(3, rect.width // 8)
+        bar_h = rect.height // 2
+        cx = rect.centerx
+        y = rect.centery - bar_h // 2
+        pygame.draw.rect(
+            superficie,
+            color,
+            pygame.Rect(cx - bar_w - 3, y, bar_w, bar_h),
+            border_radius=2,
+        )
+        pygame.draw.rect(
+            superficie,
+            color,
+            pygame.Rect(cx + 3, y, bar_w, bar_h),
+            border_radius=2,
+        )
+        return
+    if tipo == "opciones":
+        cx, cy = rect.center
+        r = max(6, min(rect.width, rect.height) // 4)
+        pygame.draw.circle(superficie, color, (cx, cy), r, width=2)
+        for i in range(8):
+            ang = i * math.pi / 4
+            x1 = cx + int((r + 2) * math.cos(ang))
+            y1 = cy + int((r + 2) * math.sin(ang))
+            pygame.draw.circle(superficie, color, (x1, y1), 2)
+        return
+    margin = max(4, rect.width // 10)
+    envelope = pygame.Rect(
+        rect.x + margin,
+        rect.y + margin,
+        rect.width - 2 * margin,
+        rect.height - 2 * margin,
+    )
+    pygame.draw.rect(superficie, color, envelope, width=2, border_radius=3)
+    pygame.draw.line(
+        superficie,
+        color,
+        (envelope.left + 2, envelope.top + 2),
+        (envelope.centerx, envelope.centery + 1),
+        2,
+    )
+    pygame.draw.line(
+        superficie,
+        color,
+        (envelope.right - 2, envelope.top + 2),
+        (envelope.centerx, envelope.centery + 1),
+        2,
+    )
+
+
+def dibujar_barra_iconos_fijos(
+    superficie: pygame.Surface,
+    fuentes: dict[str, pygame.font.Font],
+) -> None:
+    """Barra fija superior como en el bucle principal de la aplicación."""
+    for boton, tipo in crear_botones_iconos_fijos(fuentes):
+        boton.dibujar(superficie, fuentes["menu"])
+        dibujar_icono_fijo_en(superficie, fuentes, tipo, boton.rect)
+
 
 @dataclass
 class DatosJuego:
@@ -131,30 +245,16 @@ class AplicacionGrafica:
         )
 
     def _crear_botones_fijos(self) -> list[tuple[Boton, str]]:
-        botones_cfg: list[tuple[str, Callable[[], None], str, str]] = [
-            ("II", self._toggle_pausa, "pausa", TOOLTIP_PAUSA),
-            ("DI", self._abrir_diarios, "diarios", TOOLTIP_DIARIOS),
-            ("IN", self._abrir_info, "ranking", TOOLTIP_RANKING),
-            ("FB", self._abrir_feedback, "feedback", TOOLTIP_FEEDBACK),
-            ("OP", self._toggle_opciones, "opciones", TOOLTIP_OPCIONES),
-        ]
-
-        fuente_ref = self.fuentes["menu"]
-        w = ancho_icono_fijo(fuente_ref)
-        h = alto_icono_fijo(fuente_ref)
-        resultado: list[tuple[Boton, str]] = []
-        x_actual = X_ICONOS_FIJOS
-        for _etiqueta_ref, handler, tipo_icono, tooltip in botones_cfg:
-            boton = Boton(
-                "",
-                pygame.Rect(x_actual, Y_ICONOS_FIJOS, w, h),
-                handler,
-                mostrar_texto=False,
-                tooltip=tooltip,
-            )
-            resultado.append((boton, tipo_icono))
-            x_actual += w + GAP_ICONOS_FIJOS
-        return resultado
+        return crear_botones_iconos_fijos(
+            self.fuentes,
+            handlers={
+                "pausa": self._toggle_pausa,
+                "diarios": self._abrir_diarios,
+                "ranking": self._abrir_info,
+                "feedback": self._abrir_feedback,
+                "opciones": self._toggle_opciones,
+            },
+        )
 
     def _crear_botones_pausa(self) -> None:
         en_partida = self._en_partida()
@@ -433,7 +533,7 @@ class AplicacionGrafica:
 
             for b, tipo in self._botones_fijos:
                 b.dibujar(self.pantalla, self.fuentes["menu"])
-                self._dibujar_icono_fijo(tipo, b.rect)
+                dibujar_icono_fijo_en(self.pantalla, self.fuentes, tipo, b.rect)
 
             self._dibujar_overlays_y_tooltips()
 
@@ -441,70 +541,6 @@ class AplicacionGrafica:
             self.reloj.tick(FPS)
         finalizar_ranking_al_salir()
         pygame.quit()
-
-    def _dibujar_icono_fijo(self, tipo: str, rect: pygame.Rect) -> None:
-        color = (25, 25, 30)
-        chip = rect.inflate(-4, -4)
-        pygame.draw.rect(self.pantalla, (248, 252, 255), chip, border_radius=6)
-        fuente = self.fuentes.get("icono_emoji") or self.fuentes["menu"]
-        texto = emoji_icono(tipo) or _ETIQUETA_ICONO_FIJO_SIN_EMOJI.get(tipo, "")
-        try:
-            surf = fuente.render(texto, True, color)
-            if surf.get_width() > 4:
-                self.pantalla.blit(surf, surf.get_rect(center=rect.center))
-                return
-        except Exception:
-            pass
-        if tipo == "pausa":
-            bar_w = max(3, rect.width // 8)
-            bar_h = rect.height // 2
-            cx = rect.centerx
-            y = rect.centery - bar_h // 2
-            pygame.draw.rect(
-                self.pantalla,
-                color,
-                pygame.Rect(cx - bar_w - 3, y, bar_w, bar_h),
-                border_radius=2,
-            )
-            pygame.draw.rect(
-                self.pantalla,
-                color,
-                pygame.Rect(cx + 3, y, bar_w, bar_h),
-                border_radius=2,
-            )
-            return
-        if tipo == "opciones":
-            cx, cy = rect.center
-            r = max(6, min(rect.width, rect.height) // 4)
-            pygame.draw.circle(self.pantalla, color, (cx, cy), r, width=2)
-            for i in range(8):
-                ang = i * math.pi / 4
-                x1 = cx + int((r + 2) * math.cos(ang))
-                y1 = cy + int((r + 2) * math.sin(ang))
-                pygame.draw.circle(self.pantalla, color, (x1, y1), 2)
-            return
-        margin = max(4, rect.width // 10)
-        envelope = pygame.Rect(
-            rect.x + margin,
-            rect.y + margin,
-            rect.width - 2 * margin,
-            rect.height - 2 * margin,
-        )
-        pygame.draw.rect(self.pantalla, color, envelope, width=2, border_radius=3)
-        pygame.draw.line(
-            self.pantalla,
-            color,
-            (envelope.left + 2, envelope.top + 2),
-            (envelope.centerx, envelope.centery + 1),
-            2,
-        )
-        pygame.draw.line(
-            self.pantalla,
-            color,
-            (envelope.right - 2, envelope.top + 2),
-            (envelope.centerx, envelope.centery + 1),
-            2,
-        )
 
     def _dibujar_contenido_menu_pausa(self) -> None:
         panel = pygame.Rect(MARGEN + 40, 150, ANCHO - 2 * (MARGEN + 40), 380)

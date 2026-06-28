@@ -3,6 +3,7 @@
 """Modo escape room: salas con tres puertas (rasgos de puerta + evento de contenido).
 
 Generación procedural por semilla aleatoria en cada partida (``semilla_partida_escape``).
+Un ``RngPartida`` avanza todo el azar de la sesión (puertas, tienda, botín).
 Pity de descanso, tienda y botín; la tienda se pospone si no hay puntos para comprar.
 Economía e inventario: ``economia_partida`` + ``objetos_partida`` vía ``tienda_escape``.
 """
@@ -214,7 +215,7 @@ def generar_puertas_sala(
     *,
     materias_pool: tuple[str, ...],
     pool_preguntas: list[Pregunta],
-    semilla: int,
+    rng: random.Random,
     puertas_por_sala: int = PUERTAS_POR_SALA,
     n_salas: int = SALAS_DEFECTO,
     pity: PityPuertasEspecialesEscape | None = None,
@@ -232,7 +233,7 @@ def generar_puertas_sala(
             sala_idx,
             materias_pool=materias_pool,
             pool_preguntas=pool_preguntas,
-            semilla=semilla + intento * 1_000_003,
+            rng=rng,
             puertas_por_sala=puertas_por_sala,
             n_salas=n_salas,
             pity=estado_pity,
@@ -267,7 +268,6 @@ def _reconstruir_puerta_con_preguntas(
     n_preg: int,
     numero_sala: int,
     sala_idx: int,
-    semilla: int,
     materias_base: tuple[str, ...],
     materias_pool: tuple[str, ...],
     materias_puerta: tuple[str, ...],
@@ -282,7 +282,7 @@ def _reconstruir_puerta_con_preguntas(
 ) -> PuertaEscape:
     mods = generar_modificadores_puerta(
         numero_sala=numero_sala,
-        semilla=semilla + sala_idx * 1009,
+        rng=rng,
         indice_puerta=indice,
         pausas_usadas=frozenset(RASGOS_PUERTA_SIN_PREGUNTA_ESCAPE),
         pity=pity,
@@ -295,7 +295,7 @@ def _reconstruir_puerta_con_preguntas(
             evento_por_id("puerta_materia"),
             materias_pool=materias_base,
             grupos_pool=(),
-            semilla=semilla,
+            rng=rng,
             indice_puerta=sala_idx * 10 + indice,
             materia_preferida=materias_base[indice % len(materias_base)],
         )
@@ -321,7 +321,7 @@ def _reconstruir_puerta_con_preguntas(
             plantilla_usada,
             materias_pool=materias_base if not usa_grupo else materias_pool,
             grupos_pool=grupos_base if usa_grupo else grupos_pool,
-            semilla=semilla,
+            rng=rng,
             indice_puerta=sala_idx * 10 + indice,
             materia_preferida=None if usa_grupo else materia_pref,
             perfil_id=perfil_usado,
@@ -337,7 +337,6 @@ def _reconstruir_puerta_con_preguntas(
         puerta,
         numero_sala=numero_sala,
         n_salas=n_salas,
-        semilla=semilla + sala_idx * 1009,
         indice_puerta=indice,
         materias_pool=materias_base,
         grupos_pool=grupos_base,
@@ -348,7 +347,6 @@ def _normalizar_puertas_tienda_escape(
     puertas: list[PuertaEscape],
     *,
     numero_sala: int,
-    semilla: int,
     sala_idx: int,
     materias_base: tuple[str, ...],
     materias_pool: tuple[str, ...],
@@ -382,7 +380,6 @@ def _normalizar_puertas_tienda_escape(
             n_preg=tamanos[i],
             numero_sala=numero_sala,
             sala_idx=sala_idx,
-            semilla=semilla,
             materias_base=materias_base,
             materias_pool=materias_pool,
             materias_puerta=materias_puerta,
@@ -401,7 +398,7 @@ def _insertar_puerta_especial_escape(
     puertas: list[PuertaEscape],
     *,
     pausa_id: str,
-    semilla: int,
+    rng: random.Random,
     sala_idx: int,
     numero_sala: int,
     materias_base: tuple[str, ...],
@@ -416,14 +413,13 @@ def _insertar_puerta_especial_escape(
     ]
     if not candidatos:
         candidatos = list(range(len(puertas)))
-    rng = random.Random(semilla + sala_idx * 3001 + len(pausa_id) * 97)
     idx = rng.choice(candidatos)
     mods = combinar_modificadores_puerta((pausa,), numero_sala=numero_sala)
     evento = instanciar_evento_contenido(
         evento_por_id("puerta_materia"),
         materias_pool=materias_base,
         grupos_pool=(),
-        semilla=semilla,
+        rng=rng,
         indice_puerta=sala_idx * 10 + idx,
         materia_preferida=materias_base[idx % len(materias_base)],
     )
@@ -439,7 +435,7 @@ def _insertar_botin_en_puerta_escape(
     puertas: list[PuertaEscape],
     *,
     numero_sala: int,
-    semilla: int,
+    rng: random.Random,
     sala_idx: int,
 ) -> None:
     if any(
@@ -452,7 +448,6 @@ def _insertar_botin_en_puerta_escape(
     ]
     if not candidatos:
         return
-    rng = random.Random(semilla + sala_idx * 2903 + 13)
     idx = rng.choice(candidatos)
     puerta = puertas[idx]
     ev_ids = [
@@ -473,7 +468,7 @@ def _aplicar_hard_pity_puertas_especiales(
     *,
     pity: PityPuertasEspecialesEscape,
     numero_sala: int,
-    semilla: int,
+    rng: random.Random,
     sala_idx: int,
     materias_base: tuple[str, ...],
     estado=None,
@@ -484,7 +479,7 @@ def _aplicar_hard_pity_puertas_especiales(
         _insertar_puerta_especial_escape(
             puertas,
             pausa_id="descanso",
-            semilla=semilla,
+            rng=rng,
             sala_idx=sala_idx,
             numero_sala=numero_sala,
             materias_base=materias_base,
@@ -501,7 +496,7 @@ def _aplicar_hard_pity_puertas_especiales(
             _insertar_puerta_especial_escape(
                 puertas,
                 pausa_id="tienda",
-                semilla=semilla,
+                rng=rng,
                 sala_idx=sala_idx,
                 numero_sala=numero_sala,
                 materias_base=materias_base,
@@ -510,7 +505,7 @@ def _aplicar_hard_pity_puertas_especiales(
         _insertar_botin_en_puerta_escape(
             puertas,
             numero_sala=numero_sala,
-            semilla=semilla,
+            rng=rng,
             sala_idx=sala_idx,
         )
 
@@ -521,7 +516,7 @@ def _construir_puertas_sala(
     *,
     materias_pool: tuple[str, ...],
     pool_preguntas: list[Pregunta],
-    semilla: int,
+    rng: random.Random,
     puertas_por_sala: int,
     n_salas: int,
     pity: PityPuertasEspecialesEscape,
@@ -530,7 +525,6 @@ def _construir_puertas_sala(
 ) -> tuple[PuertaEscape, ...]:
     del sala
     numero_sala = sala_idx + 1
-    rng = random.Random(semilla + sala_idx * 7919)
     plantillas = elegir_plantillas_contenido_escape(puertas_por_sala, numero_sala, rng)
     materias_base = materias_viables_sala(
         pool_preguntas,
@@ -556,7 +550,7 @@ def _construir_puertas_sala(
     for i, (plantilla, perfil_id) in enumerate(plantillas):
         mods = generar_modificadores_puerta(
             numero_sala=numero_sala,
-            semilla=semilla + sala_idx * 1009,
+            rng=rng,
             indice_puerta=i,
             pausas_usadas=frozenset(pausas_usadas),
             pity=pity,
@@ -573,7 +567,7 @@ def _construir_puertas_sala(
                 evento_por_id("puerta_materia"),
                 materias_pool=materias_base,
                 grupos_pool=(),
-                semilla=semilla,
+                rng=rng,
                 indice_puerta=sala_idx * 10 + i,
                 materia_preferida=materias_base[i % len(materias_base)],
             )
@@ -595,7 +589,7 @@ def _construir_puertas_sala(
                 plantilla_usada,
                 materias_pool=materias_base if not usa_grupo else materias_pool,
                 grupos_pool=grupos_base if usa_grupo else grupos_pool,
-                semilla=semilla,
+                rng=rng,
                 indice_puerta=sala_idx * 10 + i,
                 materia_preferida=None if usa_grupo else materia_pref,
                 perfil_id=perfil_usado,
@@ -606,7 +600,6 @@ def _construir_puertas_sala(
             puerta,
             numero_sala=numero_sala,
             n_salas=n_salas,
-            semilla=semilla + sala_idx * 1009,
             indice_puerta=i,
             materias_pool=materias_base,
             grupos_pool=grupos_base,
@@ -616,7 +609,7 @@ def _construir_puertas_sala(
         puertas,
         pity=pity,
         numero_sala=numero_sala,
-        semilla=semilla,
+        rng=rng,
         sala_idx=sala_idx,
         materias_base=materias_base,
         estado=estado,
@@ -625,7 +618,6 @@ def _construir_puertas_sala(
     _normalizar_puertas_tienda_escape(
         puertas,
         numero_sala=numero_sala,
-        semilla=semilla,
         sala_idx=sala_idx,
         materias_base=materias_base,
         materias_pool=materias_pool,

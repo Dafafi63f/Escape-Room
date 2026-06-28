@@ -716,7 +716,6 @@ def asegurar_puerta_viable(
     *,
     numero_sala: int,
     n_salas: int,
-    semilla: int,
     indice_puerta: int,
     materias_pool: tuple[str, ...],
     grupos_pool: tuple[str, ...] = (),
@@ -806,7 +805,7 @@ def seleccionar_preguntas_desafio(
     *,
     numero_sala: int,
     n_salas: int,
-    semilla: int,
+    rng: random.Random,
     usadas: set[int] | None = None,
 ) -> list[Pregunta]:
     if puerta.modificadores.sin_pregunta or puerta.n_preguntas <= 0:
@@ -831,7 +830,6 @@ def seleccionar_preguntas_desafio(
             f"en sala {numero_sala}: hace falta {n_preguntas}, hay {len(candidatas)}."
         )
 
-    rng = random.Random(semilla)
     elegidos = _seleccionar_indices_diversificando_dificultad(
         pool, candidatas, n_preguntas, criterios, usadas, rng
     )
@@ -846,7 +844,7 @@ def reemplazar_pregunta_cambio_escape(
     indice_actual: int | None,
     numero_sala: int,
     n_salas: int,
-    semilla: int,
+    rng: random.Random,
     usadas: set[int],
 ) -> Pregunta | None:
     """Sustituye la pregunta actual por otra del mismo criterio (powerup cambio)."""
@@ -864,7 +862,6 @@ def reemplazar_pregunta_cambio_escape(
         ]
     if not candidatas:
         return None
-    rng = random.Random(semilla)
     elegido = rng.choice(candidatas)
     usadas.add(elegido)
     return pool[elegido]

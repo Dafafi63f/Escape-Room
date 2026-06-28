@@ -21,6 +21,7 @@ from typing import Callable
 
 from Comun.reglas_partida import validar_total_preguntas
 from Comun.rutas import resolver_historico_qualificacions
+from Comun.semillas import RngPartida
 
 # --- Perfiles pedagógicos ---
 
@@ -94,6 +95,8 @@ class PlanExamen:
     preguntas_por_materia: int
     tipos_permitidos: frozenset[str]
     preguntas: list  # list[Pregunta] en runtime
+    semilla_partida: int = 0
+    rng: RngPartida | None = None
 
 
 def normalizar_nombre_historico(nombre: str) -> str:
@@ -511,7 +514,7 @@ def generar_examen(
     plantillas_materia: list[dict] | None = None,
     n_preguntas: int | None = None,
     semilla: int | None = None,
-    semilla_orden: int | None = None,
+    semilla_contenido: int | None = None,
     pregunta_key: Callable | None = None,
 ) -> PlanExamen:
     """
@@ -527,7 +530,18 @@ def generar_examen(
     if stats is None:
         stats = cargar_estadisticas_historicas(materias_validas=set(materias_orden))
 
-    rng = random.Random(semilla)
+    from Comun.semillas import RngPartida, semilla_partida_aleatoria
+
+    semilla_partida = semilla if semilla is not None else semilla_partida_aleatoria()
+    semilla_seleccion = (
+        semilla_contenido if semilla_contenido is not None else semilla_partida
+    )
+    rng_partida = RngPartida.desde_semilla(semilla_partida)
+    rng_seleccion = (
+        rng_partida
+        if semilla_seleccion == semilla_partida
+        else RngPartida.desde_semilla(semilla_seleccion)
+    )
 
     candidatas = _filtrar_materias_candidatas(
         materias_orden,
@@ -559,7 +573,7 @@ def generar_examen(
             preguntas,
             tipos_permitidos,
             usadas,
-            rng,
+            rng_seleccion,
             pregunta_key,
             n_preguntas=n_preguntas,
         )
@@ -573,10 +587,7 @@ def generar_examen(
         elif orden_preguntas == "dificultad":
             seleccion = _ordenar_preguntas_por_dificultad(seleccion)
         elif orden_preguntas in ("aleatorio", "variar"):
-            if orden_preguntas == "variar" and semilla_orden is not None:
-                random.Random(semilla_orden).shuffle(seleccion)
-            else:
-                rng.shuffle(seleccion)
+            rng_partida.shuffle(seleccion)
         elif orden_preguntas != "materia":
             raise ValueError(f"orden_preguntas desconocido: {orden_preguntas!r}")
         validar_total_preguntas(len(seleccion))
@@ -586,6 +597,8 @@ def generar_examen(
             preguntas_por_materia=len(seleccion),
             tipos_permitidos=tipos_permitidos,
             preguntas=seleccion,
+            semilla_partida=semilla_partida,
+            rng=rng_partida,
         )
 
     todas_en_ambito = usar_todas_materias_ambito or perfil == PerfilPedagogico.SIMULACRO
@@ -617,7 +630,7 @@ def generar_examen(
     elif seleccion_determinista:
         pool_materias = candidatas[:n_efectivo]
     else:
-        pool_materias = elegir_materias_ponderadas(candidatas, pesos, n_efectivo, rng)
+        pool_materias = elegir_materias_ponderadas(candidatas, pesos, n_efectivo, rng_seleccion)
         pool_materias.sort(
             key=lambda m: materias_orden.index(m) if m in materias_orden else 999
         )
@@ -638,7 +651,7 @@ def generar_examen(
             tipos_permitidos,
             pool_idx,
             usadas,
-            rng,
+            rng_seleccion,
             pregunta_key,
             exigir_balance_completo=exigir_balance_completo,
         )
@@ -650,7 +663,7 @@ def generar_examen(
             pesos,
             pool_idx,
             usadas,
-            rng,
+            rng_seleccion,
             pregunta_key,
         )
 
@@ -668,14 +681,12 @@ def generar_examen(
         seleccion = _ordenar_preguntas_por_plantilla(seleccion)
     elif orden_preguntas == "materia":
         seleccion = _ordenar_preguntas_por_materia(seleccion, pool_materias)
-    elif orden_preguntas == "variar" and semilla_orden is not None:
-        random.Random(semilla_orden).shuffle(seleccion)
     elif orden_preguntas == "variar":
-        rng.shuffle(seleccion)
+        rng_partida.shuffle(seleccion)
     elif orden_preguntas == "dificultad":
         seleccion = _ordenar_preguntas_por_dificultad(seleccion)
     elif orden_preguntas == "aleatorio":
-        rng.shuffle(seleccion)
+        rng_partida.shuffle(seleccion)
     else:
         raise ValueError(f"orden_preguntas desconocido: {orden_preguntas!r}")
 
@@ -691,6 +702,8 @@ def generar_examen(
         preguntas_por_materia=preguntas_por_materia,
         tipos_permitidos=tipos_permitidos,
         preguntas=seleccion,
+        semilla_partida=semilla_partida,
+        rng=rng_partida,
     )
 
 

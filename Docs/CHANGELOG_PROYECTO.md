@@ -221,6 +221,7 @@ Síntesis de **41 commits** en git (mayo–junio 2026) más el trabajo reciente 
 
 | Fecha | Ámbito | Cambio |
 |-------|--------|--------|
+| 2026-06-27 | Semillas | `RngPartida`: un generador por sesión que avanza (sin sub-semillas); docs, simulaciones, figuras y Word regenerados |
 | 2026-06-27 | Escape | Semilla aleatoria por partida; tienda pospuesta sin saldo; pity tienda; emoji botín en cartas; limpieza alias obsoletos |
 | 2026-06-27 | Refactor | `objetos_partida` + `economia_partida`; fachada `tienda_escape`; eliminados `semilla_partida_diaria`, GuionEscapeRoom, wrappers `_tienda` |
 | 2026-06-27 | Tests | `Tests/test_semillas.py`; suite **416** tests en `Tests/` |

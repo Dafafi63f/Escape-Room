@@ -303,7 +303,7 @@ def _añadir_malos_aleatorios(
 def eventos_aleatorios_para_pregunta(
     numero_pregunta: int,
     *,
-    semilla_partida: int | None = None,
+    rng: random.Random | None = None,
     racha: int = 0,
     baseline: BaselineEscaladaResistencia | None = None,
     pity: PityEventosResistencia | None = None,
@@ -329,8 +329,8 @@ def eventos_aleatorios_para_pregunta(
         tiempo_baseline=baseline.tiempo_pregunta_seg,
         opciones_baseline=baseline.opciones_ocultas,
     )
-    base = semilla_partida or 0
-    rng = random.Random(numero_pregunta * 7919 + 17 + base * 10007)
+    if rng is None:
+        rng = random.Random()
     eventos: list[EventoAleatorioResistencia] = []
     familias_usadas: set[str] = set()
 
@@ -377,9 +377,6 @@ def eventos_aleatorios_para_pregunta(
 
     exceso = exceso_presion_racha(racha)
     if exceso > 0.0 and kinds:
-        rng_extra = random.Random(
-            numero_pregunta * 8311 + 29 + base * 10007 + racha * 17
-        )
         n_extra = min(8, 1 + int(exceso * 5))
         int_extra = min(1.0, intensidad + exceso * 0.2)
         _añadir_malos_aleatorios(
@@ -388,7 +385,7 @@ def eventos_aleatorios_para_pregunta(
             cantidad=n_extra,
             intensidad=int_extra,
             numero_pregunta=numero_pregunta,
-            rng=rng_extra,
+            rng=rng,
             familias_usadas=familias_usadas,
             pity=pity,
         )
@@ -507,11 +504,12 @@ def baseline_escalada_resistencia(numero_pregunta: int) -> BaselineEscaladaResis
 def escalada_para_pregunta(
     numero_pregunta: int,
     *,
-    semilla_partida: int | None = None,
-    racha: int = 0,
+    er=None,
     pity: PityEventosResistencia | None = None,
 ) -> EscaladaResistencia:
     """Calcula reglas vigentes según el número de pregunta (1 = inicio fácil, sin tiempo)."""
+    from Comun.resistencia_motor import rng_partida
+
     base = baseline_escalada_resistencia(numero_pregunta)
     tiempo = base.tiempo_pregunta_seg
     max_cx = base.max_complejidad
@@ -519,13 +517,16 @@ def escalada_para_pregunta(
     mult = 1
     opciones_ocultas = base.opciones_ocultas
     efectos = list(base.efectos)
+    rng = rng_partida(er) if er is not None else None
+    racha = er.racha if er is not None else 0
+    pity_eff = pity if pity is not None else (er.pity_eventos if er is not None else None)
 
     for evento in eventos_aleatorios_para_pregunta(
         numero_pregunta,
-        semilla_partida=semilla_partida,
+        rng=rng,
         racha=racha,
         baseline=base,
-        pity=pity,
+        pity=pity_eff,
     ):
         (
             tiempo,
@@ -640,14 +641,14 @@ def _elegir_entre_candidatas(
     normales = [i for i in candidatas if not pool[i].exclusiva_resistencia]
     if exclusivas and normales:
         prob = probabilidad_pregunta_exclusiva(numero_pregunta)
-        if er is not None and er.semilla_partida is not None:
-            roll = rng_partida(er, numero_pregunta * 11).random()
+        if er is not None:
+            roll = rng_partida(er).random()
         else:
             roll = random.random()
         grupo = exclusivas if roll < prob else normales
         candidatas = grupo
-    if er is not None and er.semilla_partida is not None:
-        return rng_partida(er, numero_pregunta * 13).choice(candidatas)
+    if er is not None:
+        return rng_partida(er).choice(candidatas)
     return random.choice(candidatas)
 
 
@@ -747,7 +748,7 @@ def elegir_indice_similar(
         ]
     if not similares:
         return None
-    rng = rng_partida(er, numero_pregunta * 19 + idx_actual) if er else random.Random()
+    rng = rng_partida(er) if er else random.Random()
     elegido = rng.choice(similares)
     estado.usadas.discard(idx_actual)
     estado.usadas.add(elegido)
@@ -770,6 +771,7 @@ def avisos_pre_pregunta_resistencia(
         emoji_aviso_exclusiva,
         formatear_aviso_evento,
         prefijar_emoji,
+        rng_partida,
     )
 
     avisos: list[str] = []
@@ -777,7 +779,7 @@ def avisos_pre_pregunta_resistencia(
         avisos.extend(avisos_extra)
     for evento in eventos_aleatorios_para_pregunta(
         numero_pregunta,
-        semilla_partida=er.semilla_partida if er else None,
+        rng=rng_partida(er) if er is not None else None,
         racha=er.racha if er is not None else 0,
         baseline=baseline_escalada_resistencia(numero_pregunta),
         pity=er.pity_eventos if er is not None else None,

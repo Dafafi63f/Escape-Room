@@ -61,9 +61,9 @@ def iniciar_pantalla_preset(
         from Comun.escape_room import (
             AjustesEscapeRoom,
             config_escape_room,
-            semilla_partida_escape,
             total_preguntas_escape,
         )
+        from Comun.semillas import semilla_partida_aleatoria
         from Grafico.pantallas_modos import PartidaEscapeRoom
 
         ajustes = ajustes_escape or AjustesEscapeRoom()
@@ -78,7 +78,7 @@ def iniciar_pantalla_preset(
         if not pool:
             raise ValueError("No hay preguntas disponibles para el escape room.")
         reglas = aplicar_preset(preset, None)
-        semilla = semilla_partida_escape()
+        semilla = semilla_partida_aleatoria()
         return PartidaEscapeRoom(
             nombre=nombre,
             preset=preset,
@@ -110,5 +110,7 @@ def iniciar_pantalla_preset(
         datos=datos,
         salir_app=salir_app,
         config_historia=config,
+        semilla_partida=plan.semilla_partida,
+        rng_partida=plan.rng,
         navegacion_fin=navegacion_fin,
     )

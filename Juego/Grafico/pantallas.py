@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import random
 import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING
@@ -28,7 +29,7 @@ from Comun.motor_nucleo import (
     presentacion_opciones_pantalla,
     texto_solucion,
 )
-from Comun.semillas import semilla_orden_opciones, semilla_partida_libre
+from Comun.semillas import crear_rng_partida, semilla_partida_aleatoria
 from Comun.informe_examen import CierreInformePartida
 from Comun.preferencias_grafico import es_nombre_anonimo
 from Comun.navegacion_fin_partida import NavegacionFinPartida
@@ -317,6 +318,8 @@ class PartidaModoLibre(Pantalla):
         self.botones_opcion: list[BotonOpcion] = []
         self._presentacion_opciones = None
         self.seleccion_pool = crear_estado_seleccion(len(self.pool))
+        self.semilla_partida = semilla_partida_aleatoria()
+        self._rng_partida = crear_rng_partida(self.semilla_partida)
         self.pregunta_idx: int | None = None
         self.inicio_pregunta = time.monotonic()
         self.inicio_feedback = 0.0
@@ -346,6 +349,7 @@ class PartidaModoLibre(Pantalla):
             dificultad_progresiva=self.estado.reglas.dificultad_progresiva,
             niveles_complejidad=self.niveles_complejidad,
             respondidas=self.estado.respondidas,
+            rng=self._rng_partida,
         )
         if idx is None:
             return False
@@ -454,12 +458,9 @@ class PartidaModoLibre(Pantalla):
 
     def _reconstruir_opciones(self) -> None:
         p = self._pregunta_actual()
-        semilla = semilla_orden_opciones(
-            semilla_base=semilla_partida_libre(nombre=self.nombre),
-            numero_turno=self.estado.respondidas,
-            indice_pregunta=self.pregunta_idx or 0,
+        self._presentacion_opciones = presentacion_opciones_pantalla(
+            p, rng=self._rng_partida
         )
-        self._presentacion_opciones = presentacion_opciones_pantalla(p, semilla=semilla)
         self.botones_opcion = []
         y = self._y_inicio_opciones()
         for etiqueta, texto, _ in self._presentacion_opciones.filas:

@@ -1111,10 +1111,10 @@ def _aplicar_niebla_a_modificadores(
 ) -> int:
     if ev.id not in RASGOS_NIEBLA:
         m = ev.modificadores
-        return max(opciones, m.opciones_ocultas)
+        return max(opciones, m.opciones_ocultas or 0)
     sala = numero_sala if numero_sala is not None else _SALA_REF_NIEBLA[ev.id]
     p = params_niebla_escape(ev.id, sala)
-    return max(opciones, p.opciones_ocultas)
+    return max(opciones, p.opciones_ocultas or 0)
 
 
 def combinar_modificadores_puerta(
@@ -1212,14 +1212,13 @@ def _elegir_desafios_puerta(
 def generar_modificadores_puerta(
     *,
     numero_sala: int,
-    semilla: int,
+    rng: random.Random,
     indice_puerta: int,
     pausas_usadas: frozenset[str] = frozenset(),
     pity: PityPuertasEspecialesEscape | None = None,
     estado=None,
     vidas_max: int | None = None,
 ) -> ModificadoresPuerta:
-    rng = random.Random(semilla + indice_puerta * 8831 + numero_sala * 97)
     pausa = _intentar_modificadores_pausa_especial(
         numero_sala=numero_sala,
         rng=rng,
@@ -1267,7 +1266,7 @@ def instanciar_evento_contenido(
     *,
     materias_pool: tuple[str, ...],
     grupos_pool: tuple[str, ...],
-    semilla: int,
+    rng: random.Random,
     indice_puerta: int,
     materia_preferida: str | None = None,
     perfil_id: str | None = None,
@@ -1275,7 +1274,6 @@ def instanciar_evento_contenido(
     if plantilla.rol_escape != RolEscape.CONTENIDO:
         raise ValueError(f"El evento {plantilla.id!r} no es de contenido escape.")
     opts = plantilla.contenido_escape or OpcionesContenidoEscape()
-    rng = random.Random(semilla + indice_puerta * 4177)
     materia: str | None = None
     grupo: str | None = None
 
@@ -1769,14 +1767,13 @@ _PRIORIDAD_RECORTE_ICONO: dict[CapaIconoEscape, int] = {
 def acotar_iconos_carta_puerta(
     iconos: list[IconoEfectoPuerta],
     *,
-    semilla: int = 0,
+    rng: random.Random,
     max_iconos: int = MAX_ICONOS_CARTA_PUERTA,
 ) -> tuple[IconoEfectoPuerta, ...]:
     """Recorta al límite quitando primero iconos opcionales de menor prioridad."""
     if len(iconos) <= max_iconos:
         return tuple(iconos)
 
-    rng = random.Random(semilla)
     opcionales = [
         (i, ic)
         for i, ic in enumerate(iconos)
@@ -1799,7 +1796,7 @@ def iconos_efecto_puerta(
     modificadores: ModificadoresPuerta,
     n_preguntas: int,
     delta_jefe: int = 0,
-    semilla: int = 0,
+    rng: random.Random,
 ) -> tuple[IconoEfectoPuerta, ...]:
     """Rasgos → jefe → contenido → botín; como máximo ``MAX_ICONOS_CARTA_PUERTA``."""
     iconos: list[IconoEfectoPuerta] = []
@@ -1825,7 +1822,7 @@ def iconos_efecto_puerta(
 
     iconos.extend(_iconos_botin_puerta(modificadores))
 
-    return acotar_iconos_carta_puerta(iconos, semilla=semilla)
+    return acotar_iconos_carta_puerta(iconos, rng=rng)
 
 
 # --- Eventos sí/no (resistencia) ---
@@ -2160,7 +2157,7 @@ def _evento_riesgo_pregunta(
     if er.maldicion is not None:
         return None
     motor = _motor_resistencia()
-    rng = motor.rng_partida(er, numero_pregunta * 53 + 4049)
+    rng = motor.rng_partida(er)
     riesgo = elegir_riesgo_pregunta(rng, numero_pregunta)
     recomp = texto_recompensa_riesgo_pregunta(riesgo.recompensa)
     coste = texto_coste_riesgo_pregunta(riesgo.coste)
@@ -2197,7 +2194,7 @@ def _candidatos_evento_si_no(
     estado: EstadoPartida,
 ) -> list[EventoSiNo]:
     motor = _motor_resistencia()
-    rng = motor.rng_partida(er, numero_pregunta * 53 + 4049)
+    rng = motor.rng_partida(er)
     candidatos: list[EventoSiNo] = []
 
     if er.apuesta_activa is None:
@@ -2285,7 +2282,7 @@ def elegir_evento_si_no(
         return None
 
     motor = _motor_resistencia()
-    rng = motor.rng_partida(er, numero_pregunta * 61 + 9127)
+    rng = motor.rng_partida(er)
     prob_base = (
         motor.probabilidad_buena_resistencia(numero_pregunta) * FACTOR_PROB_EVENTO_SI_NO
     )
@@ -2313,7 +2310,7 @@ def _aplicar_sorpresa_resistencia(
     economia = _economia()
     objetos = _objetos()
     motor = _motor_resistencia()
-    rng = motor.rng_partida(er, numero_pregunta * 19 + 7701)
+    rng = motor.rng_partida(er)
     bonifs = [
         bid
         for bid in objetos.IDS_BONIFICACION

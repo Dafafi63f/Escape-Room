@@ -30,7 +30,7 @@ from Comun.objetos_partida import (
     puede_usar_powerup_en_pregunta,
     revocar_powerup_usado,
 )
-from Comun.semillas import rng_desde_semilla, semilla_partida_aleatoria
+from Comun.semillas import RngPartida, crear_rng_partida, semilla_partida_aleatoria
 
 if TYPE_CHECKING:
     from Comun.eventos_partida import ApuestaRiesgo, EventoSiNo
@@ -292,6 +292,7 @@ class EstadoResistencia:
     bonus_proximo_acierto: int = 0
     ultimo_evento: str = ""
     semilla_partida: int | None = None
+    rng: RngPartida | None = field(default=None, repr=False)
     bloque_filtro: BloqueFiltroActivo | None = None
     evento_si_no: EventoSiNo | None = None
     apuesta_activa: ApuestaRiesgo | None = None
@@ -378,7 +379,7 @@ def _intentar_activar_desafio_bloque(
     prob = probabilidad_desafio_bloque_resistencia(numero_pregunta)
     if prob <= 0.0:
         return None
-    rng = rng_partida(er, numero_pregunta * 43 + 5107)
+    rng = rng_partida(er)
     if rng.random() > prob:
         return None
     aciertos, segundos = params_desafio_bloque_resistencia(numero_pregunta)
@@ -429,13 +430,12 @@ def letras_ocultas_niebla(
     p: Pregunta,
     cantidad: int = 1,
     *,
-    semilla: int,
+    rng: random.Random,
 ) -> frozenset[str]:
     """Oculta respuestas al azar (correcta o incorrecta); como máximo 1 en niebla."""
     if cantidad <= 0:
         return frozenset()
     letras = list(p.opciones.keys())
-    rng = random.Random(semilla * 31 + len(p.texto))
     rng.shuffle(letras)
     return frozenset(letras[: min(cantidad, len(letras), 1)])
 
@@ -508,7 +508,7 @@ def tirar_recompensas_tras_acierto(
     resultados: list[EventoRecompensaResistencia] = []
     for _ in range(MAX_TIRADAS_RECOMPENSA_ACIERTO):
         er.tiradas_recompensa += 1
-        rng = rng_partida(er, er.tiradas_recompensa * 9973 + 42)
+        rng = rng_partida(er)
         if rng.random() > prob_tirada:
             continue
         resultados.append(
@@ -663,10 +663,10 @@ def aplicar_presion_racha_modificadores(
         er.letras_niebla = er.letras_niebla | letras_ocultas_niebla(
             p,
             1,
-            semilla=numero_pregunta + 9001,
+            rng=rng_partida(er),
         )
     if base >= 0.75:
-        rng = rng_partida(er, numero_pregunta * 101 + int(base * 1000))
+        rng = rng_partida(er)
         if rng.random() < 0.35 + 0.4 * base:
             er.objetos_bloqueados = True
 
@@ -681,18 +681,24 @@ def aplicar_presion_racha_modificadores(
         er.letras_niebla = er.letras_niebla | letras_ocultas_niebla(
             p,
             1,
-            semilla=numero_pregunta + 17003 + er.racha,
+            rng=rng_partida(er),
         )
     er.objetos_bloqueados = True
 
-def rng_partida(er: EstadoResistencia, clave: int) -> random.Random:
-    return rng_desde_semilla(er.semilla_partida, clave)
+def rng_partida(er: EstadoResistencia) -> RngPartida:
+    if er.rng is None:
+        if er.semilla_partida is None:
+            er.semilla_partida = semilla_partida_aleatoria()
+        er.rng = crear_rng_partida(er.semilla_partida)
+    return er.rng
 
 
 def configurar_partida_resistencia(er: EstadoResistencia, *, preset_id: str) -> None:
     del preset_id
     if er.semilla_partida is None:
         er.semilla_partida = semilla_partida_aleatoria()
+    if er.rng is None:
+        er.rng = crear_rng_partida(er.semilla_partida)
 
 
 def texto_progreso_resistencia(er: EstadoResistencia, numero_pregunta: int) -> str:
@@ -802,7 +808,7 @@ def _generar_bloque_filtro(
         return None
     if numero_pregunta < PREGUNTA_MIN_EVENTOS_ALEATORIOS:
         return None
-    rng = rng_partida(er, numero_pregunta * 37 + 901)
+    rng = rng_partida(er)
 
     prob = probabilidad_buena_resistencia(numero_pregunta) * 0.42
     if rng.random() > prob:
@@ -909,7 +915,7 @@ def _activar_maldicion(er: EstadoResistencia, numero_pregunta: int) -> Maldicion
     fallos = sum(1 for ok in er.ventana_resultados if not ok)
     if len(er.ventana_resultados) < 3 or fallos < 2:
         return None
-    rng = rng_partida(er, numero_pregunta * 71 + 3001)
+    rng = rng_partida(er)
 
     if rng.random() > probabilidad_mala_resistencia(numero_pregunta):
         return None
@@ -938,7 +944,7 @@ def aplicar_efectos_maldicion(
         er.letras_niebla = er.letras_niebla | letras_ocultas_niebla(
             p,
             1,
-            semilla=numero_pregunta + 5501,
+            rng=rng_partida(er),
         )
     elif cid == "sin_objetos":
         er.objetos_bloqueados = True
@@ -1051,7 +1057,7 @@ def aplicar_modificadores_visuales_escalada(
         ocultas = letras_ocultas_niebla(
             p,
             min(escalada.opciones_ocultas, 1),
-            semilla=numero_pregunta,
+            rng=rng_partida(er),
         )
         er.letras_niebla = er.letras_niebla | ocultas
     aplicar_presion_racha_modificadores(er, p, numero_pregunta)
@@ -1186,7 +1192,7 @@ def _aplicar_recompensa_apuesta_exito(
         nom = etiqueta_powerup(recompensa.powerup_id)
         avisos.append(f"Apuesta: {nom}")
     elif recompensa.powerup_aleatorio:
-        rng = rng_partida(er, numero_pregunta * 19 + 7701)
+        rng = rng_partida(er)
         pid = rng.choice(POWERUPS_LOOT)
         er.agregar_powerup(pid, 1)
         avisos.append(f"Apuesta: {etiqueta_powerup(pid)}")
@@ -1223,7 +1229,7 @@ def _aplicar_penalizacion_apuesta(
         er.inventario.clear()
         avisos.append("Apuesta: pierdes todos los objetos")
     elif coste.pierde_powerup_aleatorio and er.inventario:
-        rng = rng_partida(er, numero_pregunta * 23 + 8803)
+        rng = rng_partida(er)
         candidatos = [pid for pid, n in er.inventario.items() if n > 0]
         if candidatos:
             pid = rng.choice(candidatos)

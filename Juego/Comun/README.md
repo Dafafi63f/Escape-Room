@@ -1,6 +1,6 @@
 # Comun — lógica compartida del juego
 
-Paquete **`Comun`** (`Juego/Comun/`). Dominio del juego: modelos, datos, reglas, motor de partida (sin E/S), pool del modo libre, historia, resistencia, informes, feedback y rutas a `Data/`.
+Paquete **`Comun`** (`Juego/Comun/`). Dominio del juego: modelos, datos, reglas, motor de partida (sin E/S), pool del modo libre, historia, resistencia, escape room, informes, feedback y rutas a `Data/`.
 
 Se importa con `Juego/` en el `sys.path` (véase [`juego_grafico.py`](../juego_grafico.py)).
 
@@ -17,7 +17,7 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_grafico.py`](../juego_g
 | `dificultad.py` | Complejidad y dificultad progresiva |
 | `pool_libre.py` | Pool, filtros, elección de siguiente pregunta |
 | `motor_nucleo.py` | `EstadoPartida`, evaluación de respuestas (sin E/S) |
-| `semillas.py` | Semilla diaria (solo examen del día), aleatoria de partida, derivadas y RNG estable |
+| `semillas.py` | Semilla diaria (examen del día), semilla de partida, `RngPartida` y `resolver_semillas_partida()` |
 | `preferencias_grafico.py` | Preferencias globales gráficas y nombre de jugador |
 | `textos_ui.py` | Etiquetas, emojis y textos compartidos (UI gráfica) |
 | `informe_examen.py` | Informes `.txt` y metadatos al cerrar partida |
@@ -52,11 +52,12 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_grafico.py`](../juego_g
 
 | Modo | Semilla de arranque |
 |------|---------------------|
-| **Examen del día** | `semilla_diaria()` — misma para todos el mismo día UTC (`DDMMYYYY`) |
-| **Examen aleatorio** | `semilla_partida_aleatoria()` — distinta en cada partida |
-| **Escape room** | `semilla_partida_escape()` → aleatoria cada partida |
-| **Resistencia** | `semilla_partida_aleatoria()` al iniciar |
-| **Modo libre** | Permutación de opciones: `semilla_partida_libre(nombre=…)` |
+| **Examen del día** | Contenido fijado por `semilla_diaria()` (fecha UTC); semilla de partida nueva al jugar (baraja el orden si aplica) |
+| **Resto de modos** | `semilla_partida_aleatoria()` al iniciar; un `RngPartida` avanza todo el azar de la sesión |
+
+La **semilla** identifica la partida; el **azar** sale de un único `RngPartida` creado al arrancar. Cada `.random()`, `.shuffle()`, `.choice()`, etc. consume el generador y devuelve un valor distinto aunque la semilla no cambie. Recrear `Random(semilla)` a mitad de partida reiniciaría la secuencia.
+
+La resolución central está en ``resolver_semillas_partida()`` ([`semillas.py`](semillas.py)). El examen fijo con semilla numérica manual también usa una sola semilla de partida. En el examen del día, `semilla_diaria()` fija el contenido y la semilla de partida baraja el orden cuando aplica.
 
 No está previsto reto diario con semilla fija para escape room ni resistencia (solo el Examen del día).
 

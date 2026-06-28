@@ -911,6 +911,7 @@ from Comun.eventos_partida import (
     linea_recompensa_pie_carta,
     lineas_botin_puerta,
 )
+from Comun.semillas import crear_rng_partida
 from Comun.escape_room import (
     ConfigEscapeRoom,
     PityPuertasEspecialesEscape,
@@ -1009,6 +1010,43 @@ from Grafico.ui import (
 if TYPE_CHECKING:
     from Grafico.app import DatosJuego
 
+_INV_GAP = 8
+_INV_ALTO_BOTON = 32
+_INV_FILA_ALTURA = 36
+_INV_PADDING_BANDA = 8
+_INV_ANCHO_MIN = 96
+_INV_ANCHO_MAX = 156
+_INV_PADDING_ETIQUETA = 28
+
+
+def empaquetar_filas_inventario(
+    anchos: list[int],
+    *,
+    ancho_disponible: int,
+    gap: int = _INV_GAP,
+) -> list[list[int]]:
+    """Distribuye anchos de botones en filas sin desbordar ``ancho_disponible``."""
+    if not anchos:
+        return []
+    filas: list[list[int]] = []
+    fila: list[int] = []
+    ancho_fila = 0
+    for ancho in anchos:
+        extra = gap if fila else 0
+        if fila and ancho_fila + extra + ancho > ancho_disponible:
+            filas.append(fila)
+            fila = []
+            ancho_fila = 0
+            extra = 0
+        if extra:
+            ancho_fila += extra
+        fila.append(ancho)
+        ancho_fila += ancho
+    if fila:
+        filas.append(fila)
+    return filas
+
+
 class PartidaEscapeRoom(Pantalla):
     """30 salas: elige 1 de 3 puertas; fallar avanza pero cuesta 1 vida."""
 
@@ -1050,6 +1088,7 @@ class PartidaEscapeRoom(Pantalla):
         self.pool = pool
         self.materias_pool = materias_pool
         self.semilla = semilla
+        self.rng = crear_rng_partida(semilla)
         self.total_previsto = total_previsto
         self.ir_a = ir_a
         self.datos = datos
@@ -1175,18 +1214,6 @@ class PartidaEscapeRoom(Pantalla):
         meta = self.fuentes["pequena"].render(texto, True, COLOR_ACENTO)
         superficie.blit(meta, (x, y))
 
-    def _semilla_sala(self, sala_idx: int) -> int:
-        return self.semilla + sala_idx * 1009 + sala_idx**2
-
-    def _semilla_desafio(self) -> int:
-        puerta = self.puerta_actual
-        if puerta is None:
-            return self._semilla_sala(self.sala_idx)
-        return self._semilla_sala(self.sala_idx) + puerta.indice * 9176
-
-    def _semilla_iconos_puerta(self, indice_puerta: int) -> int:
-        return self._semilla_sala(self.sala_idx) + indice_puerta * 5591 + 31
-
     def _preparar_puertas(self) -> None:
         sala = self._sala_actual()
         if sala is None:
@@ -1198,7 +1225,7 @@ class PartidaEscapeRoom(Pantalla):
             self.sala_idx,
             materias_pool=self.materias_pool,
             pool_preguntas=self.pool,
-            semilla=self.semilla,
+            rng=self.rng,
             puertas_por_sala=self.config.puertas_por_sala,
             n_salas=self.config.n_salas,
             pity=self._pity_puertas,
@@ -1230,7 +1257,7 @@ class PartidaEscapeRoom(Pantalla):
                     if puerta_es_jefe(p)
                     else 0
                 ),
-                semilla=self._semilla_iconos_puerta(p.indice),
+                rng=self.rng,
             )
             for p in self.puertas_actuales
         ]
@@ -1476,7 +1503,7 @@ class PartidaEscapeRoom(Pantalla):
                 self._articulos_comprados_visita = set()
                 self._articulos_tienda = seleccionar_articulos_tienda_visita(
                     self.sala_idx + 1,
-                    semilla=self.semilla + self.sala_idx * 5591,
+                    rng=self.rng,
                     estado=self.estado,
                     vidas_max=self.vidas_max,
                 )
@@ -1507,7 +1534,7 @@ class PartidaEscapeRoom(Pantalla):
             puerta,
             numero_sala=self.sala_idx + 1,
             n_salas=self.config.n_salas,
-            semilla=self._semilla_desafio(),
+            rng=self.rng,
             usadas=self._usadas_pool,
         )
         self.pregunta_idx = 0
@@ -1517,20 +1544,65 @@ class PartidaEscapeRoom(Pantalla):
         self._reconstruir_opciones()
         self._reconstruir_inventario_botones()
 
-    def _altura_banda_inventario(self) -> int:
-        n = sum(
-            1
-            for aid in self.inventario_escape.inventario.keys()
+    def _items_inventario_usables(self) -> list[tuple[str, int]]:
+        return [
+            (aid, self.inventario_escape.cantidad(aid))
+            for aid in sorted(self.inventario_escape.inventario.keys())
             if self.inventario_escape.cantidad(aid) > 0
             and puede_usar_powerup_en_pregunta(
                 aid, self.inventario_escape.powerups_usados_en_pregunta
             )
             is None
+        ]
+
+    def _etiqueta_y_ancho_boton_inventario(self, aid: str, cant: int) -> tuple[str, int]:
+        try:
+            art = articulo_tienda_por_id(aid)
+            emoji = art.emoji
+            nombre = art.nombre
+        except KeyError:
+            emoji = emoji_powerup(aid)
+            nombre = etiqueta_powerup(aid)
+        etiqueta_btn = prefijar_emoji(f"{nombre} ({cant})", emoji)
+        ancho = min(
+            _INV_ANCHO_MAX,
+            max(
+                _INV_ANCHO_MIN,
+                medir_etiqueta_boton(etiqueta_btn, self.fuentes["pequena"])[0]
+                + _INV_PADDING_ETIQUETA,
+            ),
         )
-        if n <= 0:
+        return etiqueta_btn, ancho
+
+    def _filas_layout_inventario(
+        self,
+    ) -> list[list[tuple[str, int, int, str]]]:
+        """Filas de (id, cantidad, ancho, etiqueta) sin desbordar el ancho útil."""
+        items = self._items_inventario_usables()
+        if not items:
+            return []
+        metas: list[tuple[str, int, int, str]] = []
+        for aid, cant in items:
+            etiqueta, ancho = self._etiqueta_y_ancho_boton_inventario(aid, cant)
+            metas.append((aid, cant, ancho, etiqueta))
+        filas_anchos = empaquetar_filas_inventario(
+            [m[2] for m in metas],
+            ancho_disponible=ANCHO - 2 * MARGEN,
+            gap=_INV_GAP,
+        )
+        filas: list[list[tuple[str, int, int, str]]] = []
+        cursor = 0
+        for fila_anchos in filas_anchos:
+            n = len(fila_anchos)
+            filas.append(metas[cursor : cursor + n])
+            cursor += n
+        return filas
+
+    def _altura_banda_inventario(self) -> int:
+        n_filas = len(self._filas_layout_inventario())
+        if n_filas <= 0:
             return 0
-        filas = 1 + (n - 1) // 4
-        return filas * 36 + 8
+        return n_filas * _INV_FILA_ALTURA + _INV_PADDING_BANDA
 
     def _y_banda_inventario(self) -> int:
         altura = self._altura_banda_inventario()
@@ -1542,45 +1614,24 @@ class PartidaEscapeRoom(Pantalla):
         self.botones_inventario = []
         if self.fase != "pregunta":
             return
-        items = [
-            (aid, self.inventario_escape.cantidad(aid))
-            for aid in sorted(self.inventario_escape.inventario.keys())
-            if self.inventario_escape.cantidad(aid) > 0
-            and puede_usar_powerup_en_pregunta(
-                aid, self.inventario_escape.powerups_usados_en_pregunta
-            )
-            is None
-        ]
-        if not items:
+        filas = self._filas_layout_inventario()
+        if not filas:
             return
-        x = MARGEN
         y = self._y_banda_inventario()
-        for aid, cant in items:
-            try:
-                art = articulo_tienda_por_id(aid)
-                emoji = art.emoji
-                nombre = art.nombre
-            except KeyError:
-                emoji = emoji_powerup(aid)
-                nombre = etiqueta_powerup(aid)
-            etiqueta_btn = prefijar_emoji(f"{nombre} ({cant})", emoji)
-            ancho = min(
-                156,
-                max(96, medir_etiqueta_boton(etiqueta_btn, self.fuentes["pequena"])[0] + 28),
-            )
-            rect = pygame.Rect(x, y, ancho, 32)
-            self.botones_inventario.append(
-                Boton(
-                    etiqueta_btn,
-                    rect,
-                    capturar(self._usar_objeto_escape, aid),
-                    tooltip=descripcion_articulo(aid),
+        for fila in filas:
+            x = MARGEN
+            for aid, _cant, ancho, etiqueta_btn in fila:
+                rect = pygame.Rect(x, y, ancho, _INV_ALTO_BOTON)
+                self.botones_inventario.append(
+                    Boton(
+                        etiqueta_btn,
+                        rect,
+                        capturar(self._usar_objeto_escape, aid),
+                        tooltip=descripcion_articulo(aid),
+                    )
                 )
-            )
-            x += ancho + 8
-            if x > ANCHO - MARGEN - 80:
-                x = MARGEN
-                y += 36
+                x += ancho + _INV_GAP
+            y += _INV_FILA_ALTURA
 
     def _reconstruir_tienda(self) -> None:
         self.botones_tienda = []
@@ -1784,7 +1835,7 @@ class PartidaEscapeRoom(Pantalla):
                 indice_actual=indice,
                 numero_sala=self.sala_idx + 1,
                 n_salas=self.config.n_salas,
-                semilla=self._semilla_desafio() + self.pregunta_idx + 77771,
+                rng=self.rng,
                 usadas=self._usadas_pool,
             )
             if reemplazo is None:
@@ -1856,13 +1907,12 @@ class PartidaEscapeRoom(Pantalla):
             ocultas_niebla = letras_ocultas_niebla(
                 p,
                 min(mods.opciones_ocultas, 1),
-                semilla=self._semilla_desafio() + self.pregunta_idx,
+                rng=self.rng,
             )
         self.letras_niebla = ocultas_niebla
         self.letras_ocultas = self.inventario_escape.letras_ocultas_powerup
-        semilla_opciones = self._semilla_desafio() + self.pregunta_idx
         self._presentacion_opciones = presentacion_opciones_pantalla(
-            p, semilla=semilla_opciones
+            p, rng=self.rng
         )
         self.botones_opcion = []
         y = self._y_inicio_opciones()

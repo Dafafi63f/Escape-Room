@@ -132,6 +132,7 @@ def elegir_indice_siguiente(
     dificultad_progresiva: bool = False,
     niveles_complejidad: frozenset[int] | set[int] | None = None,
     respondidas: int = 0,
+    rng: random.Random | None = None,
 ) -> int | None:
     if not pool:
         return None
@@ -178,7 +179,8 @@ def elegir_indice_siguiente(
             candidatas = [idx for idx in range(len(pool)) if idx not in estado.usadas]
             if not candidatas:
                 return None
-    idx = random.choice(candidatas)
+    elegidor = rng or random
+    idx = elegidor.choice(candidatas)
     estado.usadas.add(idx)
     estado.historial_reciente.append(idx)
     return idx

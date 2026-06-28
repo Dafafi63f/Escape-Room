@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import random
 import unittest
 
 from Tests.support import ensure_juego_path
@@ -78,7 +79,7 @@ class TestEventosPartida(unittest.TestCase):
             evento_por_id("pregunta_unica"),
             materias_pool=("Àlgebra Lineal",),
             grupos_pool=(),
-            semilla=0,
+            rng=random.Random(0),
             indice_puerta=0,
         )
         texto = texto_evento_contenido(ev)
@@ -131,6 +132,7 @@ class TestEventosPartida(unittest.TestCase):
             evento=puerta.evento,
             modificadores=puerta.modificadores,
             n_preguntas=puerta.n_preguntas,
+            rng=random.Random(0),
         )
         self.assertEqual(len(iconos), 1)
         self.assertEqual(iconos[0].emoji, EMOJI_DESCANSO)

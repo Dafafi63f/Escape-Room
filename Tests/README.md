@@ -46,7 +46,7 @@ GitHub Actions (`.github/workflows/tests.yml`):
 | `test_resistencia.py` | Modo resistencia: partida, ranking, motor, exclusivas e iconos |
 | `test_escape_room.py` | Escape room: puertas, tienda, botín, pity, inventario, semillas |
 | `test_eventos_partida.py` | Catálogo de eventos compartido (escape y resistencia) |
-| `test_semillas.py` | Semillas diaria, aleatoria, libre y derivadas |
+| `test_semillas.py` | Semillas diaria, aleatoria, resolución de partida y avance de `RngPartida` |
 | `helpers_navegacion_grafico.py` | Utilidades para tests gráficos (no es test) |
 | `adaptador_juego.py` | Adaptador de dominio para tests |
 | `support.py` | Bootstrap de `sys.path` |

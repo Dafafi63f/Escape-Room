@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Semillas del juego: diaria (examen del día), aleatoria de partida, derivadas y RNG estable.
+"""Semillas del juego: diaria (examen del día), aleatoria de partida y RNG único.
 
-Uso principal:
-- ``semilla_diaria`` / ``modos_diarios.semilla_examen_dia`` — único uso diario en partida (Examen del día).
-- ``semilla_partida_aleatoria`` — escape room, resistencia y examen aleatorio (partida distinta cada vez). No hay modos diarios previstos para escape ni resistencia.
-- ``semilla_partida_libre`` — permutación estable de opciones en modo libre por nombre de jugador.
-- ``semilla_derivada`` / ``rng_desde_semilla`` — claves locales reproducibles dentro de una partida.
+La **semilla** identifica la partida; el **azar** sale de un único ``RngPartida`` creado
+al inicio. Cada ``.random()``, ``.shuffle()``, etc. consume el generador y devuelve
+un valor distinto aunque la semilla no cambie. Recrear ``Random(semilla)`` a mitad de
+partida reiniciaría la secuencia: por eso solo se instancia ``RngPartida`` una vez.
 """
 
 from __future__ import annotations
@@ -14,21 +13,21 @@ from __future__ import annotations
 import hashlib
 import random
 import secrets
+from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
+from typing import Any
 
 _SEMILLA_MAX = 2**31 - 1
 
 __all__ = [
+    "RngPartida",
+    "crear_rng_partida",
     "formatear_semilla_diaria",
-    "normalizar_semilla_base",
-    "rng_desde_semilla",
+    "resolver_semillas_partida",
     "semilla_aleatoria",
-    "semilla_derivada",
     "semilla_diaria",
     "semilla_estable_texto",
-    "semilla_orden_opciones",
     "semilla_partida_aleatoria",
-    "semilla_partida_libre",
 ]
 
 
@@ -58,42 +57,73 @@ def semilla_estable_texto(texto: str) -> int:
 
 
 def semilla_partida_aleatoria() -> int:
-    """Semilla de arranque aleatoria (escape room, resistencia, examen aleatorio)."""
+    """Semilla de arranque aleatoria para una partida nueva."""
     return semilla_aleatoria()
 
 
-def semilla_partida_libre(*, nombre: str) -> int:
-    """Base estable por jugador para permutar opciones en modo libre."""
-    return semilla_estable_texto(f"{nombre.strip()}|libre")
+@dataclass
+class RngPartida:
+    """Generador de partida: una semilla, un ``Random`` que avanza hasta fin de sesión."""
+
+    semilla: int
+    _rng: random.Random = field(repr=False, compare=False)
+
+    @classmethod
+    def desde_semilla(cls, semilla: int) -> RngPartida:
+        """Crea el único generador de la partida a partir de su semilla."""
+        return cls(semilla=semilla, _rng=random.Random(semilla))
+
+    @classmethod
+    def continuar(cls, semilla: int, rng: random.Random) -> RngPartida:
+        """Reutiliza un ``Random`` ya consumido (p. ej. tras ``generar_examen``)."""
+        return cls(semilla=semilla, _rng=rng)
+
+    @property
+    def interno(self) -> random.Random:
+        """Acceso al ``Random`` subyacente (misma instancia siempre)."""
+        return self._rng
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._rng, name)
 
 
-def normalizar_semilla_base(semilla_base: int | None) -> int:
-    return semilla_base or 0
+def crear_rng_partida(semilla: int) -> RngPartida:
+    """Alias de ``RngPartida.desde_semilla``; usar solo al arrancar la partida."""
+    return RngPartida.desde_semilla(semilla)
 
 
-def semilla_derivada(semilla_base: int | None, *partes: int | str) -> int:
-    """Combina una semilla base con claves enteras o texto."""
-    acc = normalizar_semilla_base(semilla_base)
-    for parte in partes:
-        if isinstance(parte, str):
-            acc = (acc * 1_000_003 + semilla_estable_texto(parte)) % _SEMILLA_MAX
-        else:
-            acc = (acc + int(parte) * 1_009) % _SEMILLA_MAX
-    return acc or 1
-
-
-def semilla_orden_opciones(
+def resolver_semillas_partida(
     *,
-    semilla_base: int | None,
-    numero_turno: int,
-    indice_pregunta: int = 0,
+    preset_id: str,
+    cfg: object | None = None,
+    semilla_override: int | None = None,
+    orden_preguntas: str = "aleatorio",
 ) -> int:
-    """Semilla estable por turno para permutar opciones en pantalla."""
-    base = normalizar_semilla_base(semilla_base)
-    return base + numero_turno * 1_009 + indice_pregunta * 7_919
+    """Devuelve la semilla de partida (única fuente de azar de la sesión).
 
+    - Examen del día con orden fijo: semilla diaria.
+    - Examen del día con orden variable: semilla aleatoria nueva cada partida
+      (el contenido fijo del día se fija aparte con ``semilla_diaria``).
+    - Resto: semilla aleatoria o manual según configuración.
+    """
+    if semilla_override is not None:
+        return semilla_override
 
-def rng_desde_semilla(semilla_base: int | None, clave: int) -> random.Random:
-    """``Random`` reproducible a partir de la semilla de partida y una clave local."""
-    base = normalizar_semilla_base(semilla_base)
-    return random.Random(base * 1_000_003 + clave * 104_729)
+    from Comun.modos_diarios import (
+        es_id_examen_fijo,
+        origen_semilla_desde_config,
+        semilla_contenido_examen_fijo,
+        semilla_defecto_examen_fijo,
+    )
+
+    if cfg is not None and es_id_examen_fijo(preset_id):
+        origen = origen_semilla_desde_config(cfg)
+        if origen == "diario":
+            if orden_preguntas == "variar":
+                return semilla_partida_aleatoria()
+            return semilla_contenido_examen_fijo(cfg)
+        if origen == "semilla":
+            return cfg.get_int("semilla", semilla_defecto_examen_fijo())
+        return semilla_partida_aleatoria()
+
+    return semilla_partida_aleatoria()

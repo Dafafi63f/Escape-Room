@@ -204,7 +204,7 @@ def _elegir_slot_tienda(
 def seleccionar_articulos_tienda_visita(
     numero_sala: int,
     *,
-    semilla: int,
+    rng: random.Random,
     indice_visita: int = 0,
     estado: EstadoPartida | None = None,
     vidas_max: int | None = None,
@@ -214,7 +214,6 @@ def seleccionar_articulos_tienda_visita(
     n = ARTICULOS_POR_VISITA_TIENDA
     if not pool:
         return (None,) * n
-    rng = random.Random(semilla + numero_sala * 7907 + indice_visita * 101)
 
     pool_asequible: list[ArticuloTienda] = []
     if estado is not None:

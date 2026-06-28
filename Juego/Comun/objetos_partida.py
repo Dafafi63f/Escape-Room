@@ -247,11 +247,10 @@ def letras_ocultas_por_cantidad(
     p: Pregunta,
     cantidad: int,
     *,
-    semilla: int,
+    rng: random.Random,
 ) -> frozenset[str]:
     if cantidad <= 0:
         return frozenset()
-    rng = random.Random(semilla * 31 + len(p.texto))
     malas = _incorrectas(p)
     rng.shuffle(malas)
     return frozenset(malas[: min(cantidad, len(malas))])

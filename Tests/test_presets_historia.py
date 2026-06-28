@@ -1025,14 +1025,14 @@ class TestPresetsHistoria(unittest.TestCase):
         self.assertEqual(preset.preguntas_por_materia, 6)
         self.assertEqual(resolver_orden_preguntas(preset, cfg), "variar")
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        semilla = semilla_examen_dia(date(2026, 6, 18))
+        semilla_contenido = semilla_examen_dia(date(2026, 6, 18))
         plan_a = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
             stats=self.stats,
-            semilla=semilla,
-            semilla_orden=42,
+            semilla=42,
+            semilla_contenido=semilla_contenido,
             **kwargs,
         )
         plan_b = generar_examen(
@@ -1040,8 +1040,8 @@ class TestPresetsHistoria(unittest.TestCase):
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
             stats=self.stats,
-            semilla=semilla,
-            semilla_orden=42,
+            semilla=42,
+            semilla_contenido=semilla_contenido,
             **kwargs,
         )
         self.assertEqual(plan_a.materias, plan_b.materias)
@@ -1054,14 +1054,14 @@ class TestPresetsHistoria(unittest.TestCase):
     def test_examen_fijo_diario_orden_distinto_por_partida(self) -> None:
         preset, cfg = self._examen_fijo("diario")
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        semilla = semilla_examen_dia(date(2026, 6, 18))
+        semilla_contenido = semilla_examen_dia(date(2026, 6, 18))
         plan_a = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
             stats=self.stats,
-            semilla=semilla,
-            semilla_orden=1,
+            semilla=1,
+            semilla_contenido=semilla_contenido,
             **kwargs,
         )
         plan_b = generar_examen(
@@ -1069,8 +1069,8 @@ class TestPresetsHistoria(unittest.TestCase):
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
             stats=self.stats,
-            semilla=semilla,
-            semilla_orden=99,
+            semilla=99,
+            semilla_contenido=semilla_contenido,
             **kwargs,
         )
         self.assertEqual(
@@ -1212,11 +1212,7 @@ class TestPresetsHistoria(unittest.TestCase):
         self.assertEqual(cfg.get_str("origen_semilla"), "diario")
         self.assertEqual(resolver_orden_preguntas(preset, cfg), "variar")
         self.assertTrue(contenido_examen_estable(preset, cfg=cfg))
-        with patch(
-            "Comun.modos_diarios.semilla_examen_dia",
-            return_value=semilla_examen_dia(date(2026, 6, 18)),
-        ):
-            semilla = semilla_desde_preset(preset, cfg)
+        semilla_contenido = semilla_examen_dia(date(2026, 6, 18))
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
         self.assertEqual(kwargs["orden_preguntas"], "variar")
         plan_a = generar_examen(
@@ -1224,8 +1220,8 @@ class TestPresetsHistoria(unittest.TestCase):
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
             stats=self.stats,
-            semilla=semilla,
-            semilla_orden=7,
+            semilla=7,
+            semilla_contenido=semilla_contenido,
             **kwargs,
         )
         plan_b = generar_examen(
@@ -1233,8 +1229,8 @@ class TestPresetsHistoria(unittest.TestCase):
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
             stats=self.stats,
-            semilla=semilla,
-            semilla_orden=7,
+            semilla=7,
+            semilla_contenido=semilla_contenido,
             **kwargs,
         )
         self.assertEqual(len(plan_a.preguntas), 24)
@@ -1254,7 +1250,7 @@ class TestPresetsHistoria(unittest.TestCase):
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
         self.assertEqual(kwargs["orden_preguntas"], "dificultad")
         with patch(
-            "Comun.modos_diarios.semilla_aleatoria_examen",
+            "Comun.semillas.semilla_partida_aleatoria",
             side_effect=[111, 222],
         ):
             sem_a = semilla_desde_preset(preset, cfg)

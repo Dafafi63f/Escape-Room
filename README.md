@@ -4,7 +4,7 @@
 
 **Alumno:** Daniel Fageda Figueredo · **NIU:** 1601846 · **Tutor:** Víctor Navas Portella
 
-Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en **pygame** (modos libre, historia, resistencia, escape room y feedback), y herramientas de mantenimiento del dataset. El modo escape room incluye mecánicas jugables (salas, tienda, botín); la narrativa gráfica completa queda como evolución futura.
+Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en **pygame** (modos libre, historia, resistencia, escape room y feedback), y herramientas de mantenimiento del dataset. La idea original del escape room se inspira en las aventuras point-and-click de [Inka Games](https://www.inkagames.com/); el entregable las adapta al plan MatCAD (véase §1.3 de la memoria).
 
 - **Documentación y entrega del TFG:** [`Docs/`](Docs/README.md) (`Entrega/`, `Figuras/`, changelogs)
 - **Repositorio:** https://github.com/Dafafi63f/Escape-Room.git
@@ -95,7 +95,7 @@ También: `.\Juego\Scripts\build_exe_onefile.ps1`. Salida: `Juego/Distribucion/j
 
 ### Datos
 
-Ver [`Data/README.md`](Data/README.md). Imprescindibles: `Data/Banco/Preguntas.csv`, `listado_materias.csv`. Modo historia: `Historic_qualificacions_MatCAD_completo.csv`, `Data/Juego/presets.json`. Modo resistencia: `Data/Juego/preguntas_resistencia.json`, rankings en `Data/Juego/`. Modo con plantillas: `Data/Banco/plantillas.json`.
+Ver [`Data/README.md`](Data/README.md). Imprescindibles: `Data/Banco/Preguntas.csv`, `listado_materias.csv`. Modo historia: `Historic_qualificacions_MatCAD_completo.csv`, `Data/Juego/presets.json`. Modo resistencia: `Data/Juego/preguntas_resistencia.json`, rankings en `Data/Juego/`. Modo escape room: mismos presets y banco que resistencia (`presets.json`, pool cerrado). Modo con plantillas: `Data/Banco/plantillas.json`.
 
 Configuración privada del creador (SMTP, GitHub, etc.): `Data/Banco/creador_privado.json` (local; plantilla en [`Juego/Comun/feedback.py`](Juego/Comun/feedback.py)).
 

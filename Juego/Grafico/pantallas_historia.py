@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import random
 import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING
@@ -18,10 +19,10 @@ from Comun.motor_nucleo import (
     linea_estado,
     marcar_botones_opciones_tras_respuesta,
     presentacion_opciones_pantalla,
-    semilla_orden_opciones,
     texto_opcion_visible_pantalla,
     texto_solucion,
 )
+from Comun.semillas import RngPartida, crear_rng_partida
 from Comun.resistencia_motor import (
     aplicar_bonificaciones_puntos_resistencia,
     aplicar_modificadores_visuales_escalada,
@@ -1419,6 +1420,8 @@ class PartidaModoHistoria(Pantalla):
         salir_app: Callable[[], None],
         materias_examen: list[str] | None = None,
         config_historia: ConfigPresetHistoria | None = None,
+        semilla_partida: int = 0,
+        rng_partida: RngPartida | None = None,
         navegacion_fin=None,
     ) -> None:
         from Comun.navegacion_fin_partida import NavegacionFinPartida
@@ -1426,6 +1429,8 @@ class PartidaModoHistoria(Pantalla):
         self.nombre = nombre
         self.preset = preset
         self.config_historia = config_historia or ConfigPresetHistoria()
+        self.semilla_partida = semilla_partida
+        self._rng_partida = rng_partida or crear_rng_partida(semilla_partida)
         self.navegacion_fin: NavegacionFinPartida | None = navegacion_fin
         self.preguntas = preguntas
         self.materias_examen = materias_examen or []
@@ -1493,8 +1498,9 @@ class PartidaModoHistoria(Pantalla):
 
     def _reconstruir_opciones(self) -> None:
         p = self._pregunta_actual()
-        semilla = self._semilla_orden_opciones()
-        self._presentacion_opciones = presentacion_opciones_pantalla(p, semilla=semilla)
+        self._presentacion_opciones = presentacion_opciones_pantalla(
+            p, rng=self._rng_partida
+        )
         self.botones_opcion = []
         y = self._y_inicio_opciones()
         for etiqueta, texto, _ in self._presentacion_opciones.filas:
@@ -1507,18 +1513,6 @@ class PartidaModoHistoria(Pantalla):
             )
             self.botones_opcion.append(boton)
             y += ALTO_OPCION_PARTIDA + SEP_OPCIONES_PARTIDA
-
-    def _semilla_orden_opciones(self) -> int:
-        raw = self.config_historia.valores.get("semilla", 0)
-        try:
-            base = int(raw)
-        except (TypeError, ValueError):
-            base = hash(self.preset.id) & 0x7FFFFFFF
-        return semilla_orden_opciones(
-            semilla_base=base,
-            numero_turno=self.estado.respondidas,
-            indice_pregunta=self.indice,
-        )
 
     def _registrar_respuesta(self, p: Pregunta, resultado: ResultadoRespuesta) -> None:
         from Comun.informe_examen import RegistroRespuesta
@@ -1822,9 +1816,7 @@ class PartidaResistenciaHistoria(Pantalla):
         self.er = crear_estado_resistencia(vidas_iniciales_partida(reglas))
         self.er.banco_resistencia = banco
         configurar_partida_resistencia(self.er, preset_id=self.preset.id)
-        self.escalada = escalada_para_pregunta(
-            1, semilla_partida=self.er.semilla_partida, pity=self.er.pity_eventos
-        )
+        self.escalada = escalada_para_pregunta(1, er=self.er)
         vidas_ini = vidas_iniciales_partida(reglas)
         self.estado = EstadoPartida(
             nombre=nombre,
@@ -1987,12 +1979,7 @@ class PartidaResistenciaHistoria(Pantalla):
         return self.indice_global + 1
 
     def _aplicar_escalada(self, numero_pregunta: int) -> None:
-        self.escalada = escalada_para_pregunta(
-            numero_pregunta,
-            semilla_partida=self.er.semilla_partida,
-            racha=self.er.racha,
-            pity=self.er.pity_eventos,
-        )
+        self.escalada = escalada_para_pregunta(numero_pregunta, er=self.er)
         self.estado.reglas = aplicar_escalada_a_reglas(self.reglas_base, self.escalada)
         self.efecto_actual = texto_efectos_escalada(self.escalada)
 
@@ -2135,13 +2122,12 @@ class PartidaResistenciaHistoria(Pantalla):
                 y += 36
 
     def _reconstruir_opciones(self) -> None:
+        from Comun.resistencia_motor import rng_partida
+
         p = self._pregunta_actual()
-        semilla = semilla_orden_opciones(
-            semilla_base=self.er.semilla_partida,
-            numero_turno=self.indice_global,
-            indice_pregunta=self.pregunta_idx or 0,
+        self._presentacion_opciones = presentacion_opciones_pantalla(
+            p, rng=rng_partida(self.er)
         )
-        self._presentacion_opciones = presentacion_opciones_pantalla(p, semilla=semilla)
         self.botones_opcion = []
         y = self._y_inicio_opciones()
         for etiqueta, texto, letra_ds in self._presentacion_opciones.filas:

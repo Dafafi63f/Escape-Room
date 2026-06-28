@@ -57,8 +57,8 @@ python Juego/juego_grafico.py
 |------|---------|-------|
 | **Libre** | Implementado | Wizard dos pasos; filtros; tooltips |
 | **Historia** | Implementado | Carrusel de 5 presets (`Data/Juego/presets.json`) |
-| **Resistencia** | Implementado | Eventos, objetos, ranking local; semilla aleatoria por partida |
-| **Escape room** | Implementado | 30 salas, tienda, botín, inventario; semilla aleatoria por partida |
+| **Resistencia** | Implementado | Eventos, objetos, ranking local; `RngPartida` por sesión |
+| **Escape room** | Implementado | 30 salas, tienda, botín, inventario; `RngPartida` por sesión |
 | **Feedback** | Implementado | Icono 📣 en barra; envío SMTP si hay config en `Data/Banco/creador_privado.json` |
 | **Info** | Implementado | Icono ℹ️: ranking, contacto del creador, changelog del juego |
 

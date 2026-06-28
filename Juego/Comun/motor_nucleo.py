@@ -17,8 +17,6 @@ from Comun.reglas_partida import (
     porcentaje_aciertos,
     sumar_puntos_arcade,
 )
-from Comun.semillas import semilla_orden_opciones
-
 TEXTO_OPCION_NIEBLA = "???"
 
 
@@ -94,14 +92,13 @@ class PresentacionOpcionesPregunta:
     filas: tuple[tuple[str, str, str], ...]  # (etiqueta, texto, letra_dataset)
 
     @classmethod
-    def construir(cls, pregunta: Pregunta, *, semilla: int) -> PresentacionOpcionesPregunta:
+    def construir(cls, pregunta: Pregunta, *, rng: random.Random) -> PresentacionOpcionesPregunta:
         originales = [letra for letra in LETRAS_OPCION if pregunta.opciones.get(letra)]
         if len(originales) <= 1:
             filas = tuple(
                 (letra, pregunta.opciones.get(letra, ""), letra) for letra in originales
             )
             return cls(filas=filas)
-        rng = random.Random(semilla)
         permutadas = list(originales)
         rng.shuffle(permutadas)
         filas = tuple(
@@ -130,19 +127,19 @@ class PresentacionOpcionesPregunta:
 def presentacion_opciones_pantalla(
     pregunta: Pregunta,
     *,
-    semilla: int,
+    rng: random.Random,
 ) -> PresentacionOpcionesPregunta:
     """Permuta textos y muestra siempre A, B, C, D en orden vertical."""
-    return PresentacionOpcionesPregunta.construir(pregunta, semilla=semilla)
+    return PresentacionOpcionesPregunta.construir(pregunta, rng=rng)
 
 
 def orden_letras_opciones_pantalla(
     pregunta: Pregunta,
     *,
-    semilla: int,
+    rng: random.Random,
 ) -> tuple[str, ...]:
     """Etiquetas visuales en pantalla (A–D en orden)."""
-    return tuple(etiq for etiq, _, _ in presentacion_opciones_pantalla(pregunta, semilla=semilla).filas)
+    return tuple(etiq for etiq, _, _ in presentacion_opciones_pantalla(pregunta, rng=rng).filas)
 
 
 def marcar_botones_opciones_tras_respuesta(

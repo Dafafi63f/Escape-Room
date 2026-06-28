@@ -9,8 +9,8 @@ from datetime import date, datetime, timezone
 from Comun.config_historia import ConfigPresetHistoria
 from Comun.semillas import (
     formatear_semilla_diaria,
-    semilla_aleatoria,
     semilla_diaria,
+    semilla_partida_aleatoria,
 )
 
 __all__ = [
@@ -64,7 +64,7 @@ def etiqueta_fecha_examen_dia(d: date | None = None) -> str:
 
 
 def semilla_aleatoria_examen() -> int:
-    return semilla_aleatoria()
+    return semilla_partida_aleatoria()
 
 
 def prioridad_orden_preset(preset_id: str) -> int:

@@ -12,6 +12,7 @@ from Tests.support import ensure_juego_path
 ensure_juego_path()
 
 from Comun.datos import cargar_materias, cargar_preguntas  # noqa: E402
+from Comun.semillas import RngPartida  # noqa: E402
 from Comun.escape_partida import (  # noqa: E402
     BonificacionCompletarEscape,
     aplicar_bonificacion_completar,
@@ -68,6 +69,11 @@ from Comun.politica_reglas import ContextoPartida  # noqa: E402
 from Comun.rutas import PATH_PREGUNTAS, resolver_listado_materias  # noqa: E402
 
 
+def _rng(semilla: int) -> RngPartida:
+    """Generador reproducible alineado con ``RngPartida`` del juego."""
+    return RngPartida.desde_semilla(semilla)
+
+
 class TestEscapeRoom(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -105,7 +111,7 @@ class TestEscapeRoom(unittest.TestCase):
             0,
             materias_pool=self.materias_pool,
             pool_preguntas=self.pool,
-            semilla=42,
+            rng=_rng(42),
             n_salas=self.config.n_salas,
         )
         self.assertEqual(len(puertas), 3)
@@ -122,13 +128,14 @@ class TestEscapeRoom(unittest.TestCase):
 
     def test_salas_distintas_con_misma_semilla_base(self) -> None:
         firmas: set[tuple] = set()
+        rng = _rng(99)
         for idx in range(5):
             puertas, _ = generar_puertas_sala(
                 self.config.salas[idx],
                 idx,
                 materias_pool=self.materias_pool,
                 pool_preguntas=self.pool,
-                semilla=99,
+                rng=rng,
                 n_salas=self.config.n_salas,
             )
             firma = tuple(
@@ -148,7 +155,7 @@ class TestEscapeRoom(unittest.TestCase):
                     idx,
                     materias_pool=self.materias_pool,
                     pool_preguntas=self.pool,
-                    semilla=semilla,
+                    rng=_rng(semilla),
                     n_salas=self.config.n_salas,
                 )
                 firmas = [firma_puerta_escape(p) for p in puertas]
@@ -224,7 +231,7 @@ class TestEscapeRoom(unittest.TestCase):
                 for indice in range(3):
                     mods = generar_modificadores_puerta(
                         numero_sala=sala,
-                        semilla=semilla,
+                        rng=_rng(semilla),
                         indice_puerta=indice,
                     )
                     ids = set(mods.eventos_ids)
@@ -272,7 +279,7 @@ class TestEscapeRoom(unittest.TestCase):
             1
             for i in range(30)
             if generar_modificadores_puerta(
-                numero_sala=25, semilla=7, indice_puerta=i
+                numero_sala=25, rng=_rng(7), indice_puerta=i
             ).rasgos == ("Clásica",)
         )
         self.assertLess(clasicas, 20)
@@ -298,6 +305,7 @@ class TestEscapeRoom(unittest.TestCase):
             evento=evento,
             modificadores=mods,
             n_preguntas=4,
+            rng=_rng(0),
         )
         self.assertEqual(len(iconos), 4)
         self.assertEqual(iconos[0].emoji, "⏱️")
@@ -331,7 +339,7 @@ class TestEscapeRoom(unittest.TestCase):
             evento=evento,
             modificadores=mods,
             n_preguntas=4,
-            semilla=42,
+            rng=_rng(42),
         )
         self.assertLessEqual(len(iconos), 5)
         self.assertEqual(len(iconos), 5)
@@ -365,7 +373,7 @@ class TestEscapeRoom(unittest.TestCase):
                 evento=evento,
                 modificadores=mods,
                 n_preguntas=4,
-                semilla=semilla,
+                rng=_rng(semilla),
             )
             self.assertLessEqual(len(iconos), 5, msg=f"semilla={semilla}")
             for capa in (
@@ -399,7 +407,7 @@ class TestEscapeRoom(unittest.TestCase):
             evento=evento,
             modificadores=mods,
             n_preguntas=4,
-            semilla=1,
+            rng=_rng(1),
         )
         self.assertEqual(len(iconos), 5)
         self.assertNotIn(CapaIconoEscape.TIPO_PREGUNTA, {ic.capa for ic in iconos})
@@ -461,7 +469,7 @@ class TestEscapeRoom(unittest.TestCase):
         from Comun.eventos_partida import elegir_plantillas_contenido_escape
         import random
 
-        rng = random.Random(42)
+        rng = _rng(42)
         plantillas = elegir_plantillas_contenido_escape(3, numero_sala=20, rng=rng)
         grupos = [(p, pid) for p, pid in plantillas if p.id == "puerta_grupo"]
         self.assertTrue(grupos)
@@ -478,7 +486,7 @@ class TestEscapeRoom(unittest.TestCase):
             evento_por_id("pregunta_unica"),
             materias_pool=(materia,),
             grupos_pool=(),
-            semilla=1,
+            rng=_rng(1),
             indice_puerta=0,
         )
         puerta = PuertaEscape(
@@ -488,7 +496,7 @@ class TestEscapeRoom(unittest.TestCase):
             evento=evento,
         )
         lote = seleccionar_preguntas_desafio(
-            self.pool, puerta, numero_sala=1, n_salas=30, semilla=42
+            self.pool, puerta, numero_sala=1, n_salas=30, rng=_rng(42)
         )
         self.assertEqual(len(lote), 3)
         self.assertEqual(lote[0].materia, materia)
@@ -528,7 +536,7 @@ class TestEscapeRoom(unittest.TestCase):
         )
         for semilla in range(20):
             lote = seleccionar_preguntas_desafio(
-                pool, puerta, numero_sala=1, n_salas=30, semilla=semilla
+                pool, puerta, numero_sala=1, n_salas=30, rng=_rng(semilla)
             )
             self.assertEqual(len(lote), 3)
             self.assertEqual(
@@ -572,7 +580,7 @@ class TestEscapeRoom(unittest.TestCase):
         )
         for semilla in range(20):
             lote = seleccionar_preguntas_desafio(
-                pool, puerta, numero_sala=1, n_salas=30, semilla=semilla
+                pool, puerta, numero_sala=1, n_salas=30, rng=_rng(semilla)
             )
             self.assertEqual(len(lote), 3)
             self.assertEqual(
@@ -596,7 +604,7 @@ class TestEscapeRoom(unittest.TestCase):
             evento=evento,
         )
         lote = seleccionar_preguntas_desafio(
-            self.pool, puerta, numero_sala=15, n_salas=30, semilla=7
+            self.pool, puerta, numero_sala=15, n_salas=30, rng=_rng(7)
         )
         self.assertEqual(len(lote), 3)
         self.assertTrue(all(p.materia == materia for p in lote))
@@ -615,7 +623,7 @@ class TestEscapeRoom(unittest.TestCase):
             0,
             materias_pool=self.materias_pool,
             pool_preguntas=self.pool,
-            semilla=42,
+            rng=_rng(42),
             n_salas=self.config.n_salas,
         )
         for puerta in puertas:
@@ -626,7 +634,7 @@ class TestEscapeRoom(unittest.TestCase):
                 puerta,
                 numero_sala=1,
                 n_salas=self.config.n_salas,
-                semilla=99,
+                rng=_rng(99),
             )
             self.assertEqual(len(lote), puerta.n_preguntas)
 
@@ -650,7 +658,7 @@ class TestEscapeRoom(unittest.TestCase):
             evento=evento,
         )
         lote = seleccionar_preguntas_desafio(
-            self.pool, puerta, numero_sala=15, n_salas=30, semilla=11
+            self.pool, puerta, numero_sala=15, n_salas=30, rng=_rng(11)
         )
         self.assertEqual(len(lote), 5)
         mats_grupo = set(materias_del_grupo(self.pool, grupo))
@@ -901,6 +909,7 @@ class TestEscapeRoom(unittest.TestCase):
             evento=evento,
             modificadores=mods,
             n_preguntas=puerta.n_preguntas,
+            rng=_rng(0),
         )
         self.assertEqual(iconos[-1].emoji, "🎁")
         from Comun.emojis_escape import TOOLTIP_BOTIN
@@ -961,7 +970,7 @@ class TestEscapeRoom(unittest.TestCase):
                 for indice in range(3):
                     mods = generar_modificadores_puerta(
                         numero_sala=sala,
-                        semilla=semilla,
+                        rng=_rng(semilla),
                         indice_puerta=indice,
                     )
                     if not mods.sin_pregunta:
@@ -1004,6 +1013,7 @@ class TestEscapeRoom(unittest.TestCase):
             evento=puerta.evento,
             modificadores=puerta.modificadores,
             n_preguntas=0,
+            rng=_rng(0),
         )
         self.assertEqual(iconos[-1].tooltip, TOOLTIP_BOTIN_DESCANSO)
         lineas = lineas_botin_puerta(mods)
@@ -1126,11 +1136,11 @@ class TestEscapeRoom(unittest.TestCase):
             seleccionar_articulos_tienda_visita,
         )
 
-        arts = seleccionar_articulos_tienda_visita(10, semilla=42)
+        arts = seleccionar_articulos_tienda_visita(10, rng=_rng(42))
         self.assertEqual(len(arts), ARTICULOS_POR_VISITA_TIENDA)
         presentes = [a for a in arts if a is not None]
         self.assertEqual(len({a.id for a in presentes}), len(presentes))
-        otra = seleccionar_articulos_tienda_visita(10, semilla=99)
+        otra = seleccionar_articulos_tienda_visita(10, rng=_rng(99))
         self.assertNotEqual(
             [a.id if a else None for a in arts],
             [a.id if a else None for a in otra],
@@ -1150,7 +1160,7 @@ class TestEscapeRoom(unittest.TestCase):
         for semilla in range(80):
             arts = seleccionar_articulos_tienda_visita(
                 3,
-                semilla=semilla,
+                rng=_rng(semilla),
                 estado=estado,
                 vidas_max=3,
             )
@@ -1173,7 +1183,7 @@ class TestEscapeRoom(unittest.TestCase):
         )
         self.assertFalse(puede_visitar_tienda_escape(5, estado, vidas_max=3))
         arts = seleccionar_articulos_tienda_visita(
-            5, semilla=1, estado=estado, vidas_max=3
+            5, rng=_rng(1), estado=estado, vidas_max=3
         )
         self.assertEqual(arts, (None, None, None))
 
@@ -1203,7 +1213,7 @@ class TestEscapeRoom(unittest.TestCase):
                 9,
                 materias_pool=self.materias_pool,
                 pool_preguntas=self.pool,
-                semilla=semilla,
+                rng=_rng(semilla),
                 n_salas=self.config.n_salas,
                 pity=pity,
                 estado=estado,
@@ -1233,7 +1243,7 @@ class TestEscapeRoom(unittest.TestCase):
             9,
             materias_pool=self.materias_pool,
             pool_preguntas=self.pool,
-            semilla=4242,
+            rng=_rng(4242),
             n_salas=self.config.n_salas,
             pity=pity,
             estado=broke,
@@ -1254,7 +1264,7 @@ class TestEscapeRoom(unittest.TestCase):
                 9,
                 materias_pool=self.materias_pool,
                 pool_preguntas=self.pool,
-                semilla=8000 + intento,
+                rng=_rng(8000 + intento),
                 n_salas=self.config.n_salas,
                 pity=pity,
                 estado=rico,
@@ -1284,7 +1294,7 @@ class TestEscapeRoom(unittest.TestCase):
 
         contador: Counter[str] = Counter()
         for semilla in range(500):
-            for art in seleccionar_articulos_tienda_visita(10, semilla=semilla):
+            for art in seleccionar_articulos_tienda_visita(10, rng=_rng(semilla)):
                 if art is not None:
                     contador[art.id] += 1
         powerups = sum(contador[i] for i in IDS_POWERUP)
@@ -1407,7 +1417,7 @@ class TestEscapeRoom(unittest.TestCase):
         for semilla in range(200):
             arts = seleccionar_articulos_tienda_visita(
                 10,
-                semilla=semilla,
+                rng=_rng(semilla),
                 estado=lleno,
                 vidas_max=3,
             )
@@ -1457,7 +1467,7 @@ class TestEscapeRoom(unittest.TestCase):
         for semilla in range(800):
             mods = generar_modificadores_puerta(
                 numero_sala=10,
-                semilla=semilla,
+                rng=_rng(semilla),
                 indice_puerta=0,
             )
             if "tienda" not in mods.eventos_ids:
@@ -1508,7 +1518,7 @@ class TestEscapeRoom(unittest.TestCase):
         for semilla in range(80):
             mods = generar_modificadores_puerta(
                 numero_sala=10,
-                semilla=semilla,
+                rng=_rng(semilla),
                 indice_puerta=0,
                 pity=pity,
             )
@@ -1525,7 +1535,7 @@ class TestEscapeRoom(unittest.TestCase):
                 idx,
                 materias_pool=self.materias_pool,
                 pool_preguntas=self.pool,
-                semilla=777 + idx,
+                rng=_rng(777 + idx),
                 n_salas=self.config.n_salas,
                 pity=pity,
             )
@@ -1553,7 +1563,7 @@ class TestEscapeRoom(unittest.TestCase):
                 4,
                 materias_pool=self.materias_pool,
                 pool_preguntas=self.pool,
-                semilla=5000 + intento * 31,
+                rng=_rng(5000 + intento * 31),
                 n_salas=self.config.n_salas,
                 pity=pity,
             )
@@ -1570,7 +1580,7 @@ class TestEscapeRoom(unittest.TestCase):
                 9,
                 materias_pool=self.materias_pool,
                 pool_preguntas=self.pool,
-                semilla=9000 + intento * 31,
+                rng=_rng(9000 + intento * 31),
                 n_salas=self.config.n_salas,
                 pity=pity,
             )
@@ -1594,7 +1604,7 @@ class TestEscapeRoom(unittest.TestCase):
                 2,
                 materias_pool=self.materias_pool,
                 pool_preguntas=self.pool,
-                semilla=3000 + intento * 31,
+                rng=_rng(3000 + intento * 31),
                 n_salas=self.config.n_salas,
                 pity=pity,
             )
@@ -1626,7 +1636,7 @@ class TestEscapeRoom(unittest.TestCase):
     def test_elegir_botin_powerup_sala_baja(self) -> None:
         import random
 
-        rng = random.Random(42)
+        rng = _rng(42)
         botin = elegir_botin_para_sala(3, rng)
         self.assertIsNotNone(botin)
         assert botin is not None
@@ -1647,7 +1657,7 @@ class TestEscapeRoom(unittest.TestCase):
                 evento_por_id("puerta_materia"),
                 materias_pool=self.materias_pool,
                 grupos_pool=(),
-                semilla=1,
+                rng=_rng(1),
                 indice_puerta=0,
             ),
         )
@@ -1660,6 +1670,7 @@ class TestEscapeRoom(unittest.TestCase):
             evento=puerta.evento,
             modificadores=mods,
             n_preguntas=3,
+            rng=_rng(0),
         )
         self.assertTrue(any(ic.capa == CapaIconoEscape.BOTIN for ic in iconos))
 
@@ -1670,7 +1681,7 @@ class TestEscapeRoom(unittest.TestCase):
         for semilla in range(500):
             mods = generar_modificadores_puerta(
                 numero_sala=10,
-                semilla=semilla,
+                rng=_rng(semilla),
                 indice_puerta=0,
             )
             if "tienda" in mods.eventos_ids:
@@ -1726,6 +1737,63 @@ class TestEscapeRoom(unittest.TestCase):
         self.assertIsNone(usar_objeto("bomba", inv, p))
         self.assertIsNone(usar_objeto("tiempo_extra", inv, p))
         self.assertEqual(inv.tiempo_extra_seg, 20)
+
+
+class TestLayoutInventarioEscape(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.materias_meta = cargar_materias(resolver_listado_materias())
+        cls.pool = construir_pool_escape(
+            cargar_preguntas(PATH_PREGUNTAS, cls.materias_meta)
+        )
+        cls.materias_pool = materias_del_pool(cls.pool)
+
+    def test_empaquetar_seis_botones_anchos_en_dos_filas(self) -> None:
+        from Grafico.pantallas_modos import empaquetar_filas_inventario
+        from Grafico.tema import ANCHO, MARGEN
+
+        ancho_disp = ANCHO - 2 * MARGEN
+        filas = empaquetar_filas_inventario(
+            [156] * 6,
+            ancho_disponible=ancho_disp,
+        )
+        self.assertGreaterEqual(len(filas), 2)
+        for fila in filas:
+            ancho_fila = sum(fila) + max(0, len(fila) - 1) * 8
+            self.assertLessEqual(ancho_fila, ancho_disp)
+
+    def test_botones_inventario_no_salen_de_pantalla(self) -> None:
+        from Comun.objetos_partida import POWERUPS
+        from Comun.presets_historia import aplicar_preset, buscar_preset
+        from Grafico.pantallas_modos import PartidaEscapeRoom
+        from Grafico.tema import ANCHO, MARGEN
+        from Tests.helpers_navegacion_grafico import configurar_pygame_tests
+
+        configurar_pygame_tests()
+        preset = buscar_preset("escape_room")
+        config = config_escape_room()
+        partida = PartidaEscapeRoom(
+            nombre="Test",
+            preset=preset,
+            config=config,
+            pool=self.pool,
+            materias_pool=self.materias_pool,
+            reglas=aplicar_preset(preset, None),
+            semilla=42,
+            total_previsto=total_preguntas_escape(config),
+            ir_a=lambda _p: None,
+            datos=None,
+            salir_app=lambda: None,
+        )
+        partida._elegir_puerta(1)
+        for pid in POWERUPS:
+            partida.inventario_escape.agregar(pid)
+        partida._reconstruir_inventario_botones()
+        self.assertGreaterEqual(len(partida.botones_inventario), 6)
+        for boton in partida.botones_inventario:
+            self.assertGreaterEqual(boton.rect.x, MARGEN)
+            self.assertLessEqual(boton.rect.right, ANCHO - MARGEN)
+            self.assertLessEqual(boton.rect.bottom, 720)
 
 
 if __name__ == "__main__":

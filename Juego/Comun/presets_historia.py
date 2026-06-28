@@ -401,10 +401,16 @@ def semilla_desde_preset(
     preset: PresetHistoria,
     cfg: ConfigPresetHistoria | None = None,
 ) -> int | None:
-    from Comun.modos_diarios import es_id_examen_fijo, semilla_contenido_examen_fijo
+    from Comun.modos_diarios import es_id_examen_fijo
+    from Comun.semillas import resolver_semillas_partida
 
     if cfg is not None and es_id_examen_fijo(preset.id):
-        return semilla_contenido_examen_fijo(cfg)
+        semilla = resolver_semillas_partida(
+            preset_id=preset.id,
+            cfg=cfg,
+            orden_preguntas=resolver_orden_preguntas(preset, cfg),
+        )
+        return semilla
     return None
 
 
