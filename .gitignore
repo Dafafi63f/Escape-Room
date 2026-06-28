@@ -1,8 +1,11 @@
 ﻿# --- Generado al jugar / privado local (no versionar; borrar con borrar_temporales.py) ---
 Data/Banco/creador_privado.json
 Data/Juego/preferencias_*.json
+Data/Juego/estadisticas_jugador.json
 Data/Juego/ranking_*.json
 Data/Juego/*.txt
+!Data/Juego/defaults/
+!Data/Juego/defaults/**
 # --- Temporales (limpiar con borrar_temporales.py) ---
 __pycache__/
 .mypy_cache/

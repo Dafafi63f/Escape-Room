@@ -10,8 +10,9 @@ Política de limpieza
 +===========================+==================+==================+
 | ``*.txt``                 | borrar           | borrar           |
 | ``preferencias_grafico.json`` | vaciar contenido | borrar fichero   |
-| ``ranking_*.json``            | vaciar contenido | borrar fichero   |
+| ``estadisticas_jugador.json`` | vaciar contenido | borrar fichero   |
 | presets, pool resistencia | no tocar         | no tocar         |
+| ``defaults/*.json``       | no tocar         | no tocar         |
 +---------------------------+------------------+------------------+
 
 Desde fuera: ``python Docs/utilidades_tfg.py --solo-limpieza`` (``Files/borrar_temporales.py``).
@@ -22,13 +23,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from Comun.estadisticas_jugador import (
+    resolver_path_estadisticas_jugador,
+    vaciar_estadisticas_jugador,
+)
 from Comun.preferencias_grafico import (
     PreferenciasGrafico,
     guardar_preferencias_grafico,
     resolver_path_preferencias_grafico,
 )
-from Comun.ranking_resistencia import vaciar_ranking_variante
-from Comun.rutas import resolver_dir_informes, resolver_ranking_resistencia
+from Comun.rutas import resolver_dir_informes
 
 __all__ = [
     "ResumenBorradoTxt",
@@ -37,7 +41,7 @@ __all__ = [
     "listar_txt_informes_feedback",
     "vaciar_contenido_json_locales",
     "vaciar_preferencias_locales",
-    "vaciar_rankings_locales",
+    "vaciar_estadisticas_locales",
 ]
 
 
@@ -49,7 +53,8 @@ class ResumenBorradoTxt:
 
 def inicializar_datos_locales_juego() -> None:
     """Crea los JSON de runtime en ``Data/Juego/`` si aún no existen."""
-    resolver_ranking_resistencia()
+    if not resolver_path_estadisticas_jugador().is_file():
+        vaciar_estadisticas_jugador()
     if not resolver_path_preferencias_grafico().is_file():
         guardar_preferencias_grafico(PreferenciasGrafico())
 
@@ -82,12 +87,12 @@ def vaciar_preferencias_locales() -> None:
     guardar_preferencias_grafico(PreferenciasGrafico())
 
 
-def vaciar_rankings_locales() -> None:
-    """Vacía el historial del ranking local (conserva el fichero JSON)."""
-    vaciar_ranking_variante("resistencia")
+def vaciar_estadisticas_locales() -> None:
+    """Restablece las estadísticas agregadas del jugador."""
+    vaciar_estadisticas_jugador()
 
 
 def vaciar_contenido_json_locales() -> None:
-    """Restablece preferencias y vacía rankings (sin eliminar ningún ``.json``)."""
+    """Restablece preferencias y estadísticas (sin eliminar ``.json``)."""
     vaciar_preferencias_locales()
-    vaciar_rankings_locales()
+    vaciar_estadisticas_locales()

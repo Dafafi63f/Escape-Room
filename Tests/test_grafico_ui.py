@@ -215,7 +215,7 @@ class TestPreferenciasGrafico(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "preferencias_grafico.json"
             path.write_text(
-                json.dumps({"version": 1, "nombre_jugador": "Anonimo"}),
+                json.dumps({"nombre_jugador": "Anonimo"}),
                 encoding="utf-8",
             )
             with patch(
@@ -224,7 +224,7 @@ class TestPreferenciasGrafico(unittest.TestCase):
             ):
                 self.assertEqual(nombre_inicial_grafico(), "")
                 path.write_text(
-                    json.dumps({"version": 1, "nombre_jugador": "Daniel"}),
+                    json.dumps({"nombre_jugador": "Daniel"}),
                     encoding="utf-8",
                 )
                 self.assertEqual(nombre_inicial_grafico(), "Daniel")
@@ -282,9 +282,9 @@ from Comun.datos_locales_juego import (  # noqa: E402
     borrar_txt_informes_feedback,
     inicializar_datos_locales_juego,
     listar_txt_informes_feedback,
+    vaciar_estadisticas_locales,
     vaciar_preferencias_locales,
 )
-from Comun.ranking_resistencia import top_records, vaciar_ranking_variante  # noqa: E402
 
 # --- test_borrar_temporales_externo.py ---
 
@@ -305,13 +305,12 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             juego = raiz / "Data" / "Juego"
             juego.mkdir(parents=True)
             (juego / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
-            (juego / "preferencias_ranking.json").write_text("{}", encoding="utf-8")
             (juego / "presets.json").write_text("{}", encoding="utf-8")
 
             with patch("borrar_temporales.raiz_proyecto", return_value=raiz):
-                self.assertEqual(len(listar_ficheros_runtime_juego()[0]), 2)
+                self.assertEqual(len(listar_ficheros_runtime_juego()[0]), 1)
                 resumen = borrar_temporales(raiz, incluir_pycache=False)
-                self.assertEqual(resumen.json_preferencias_borrados, 2)
+                self.assertEqual(resumen.json_preferencias_borrados, 1)
                 self.assertTrue((juego / "presets.json").is_file())
                 self.assertEqual(listar_ficheros_runtime_juego()[0], [])
 
@@ -506,6 +505,42 @@ class TestRutasDataEscritura(unittest.TestCase):
 
 
 class TestDatosLocalesJuego(unittest.TestCase):
+    def test_plantillas_defaults_coinciden_con_codigo(self) -> None:
+        from Tests.support import ROOT
+        from Comun.estadisticas_jugador import vaciar_estadisticas_jugador
+        from Comun.preferencias_grafico import PreferenciasGrafico, guardar_preferencias_grafico
+
+        defaults = ROOT / "Data" / "Juego" / "defaults"
+        prefs_plantilla = defaults / "preferencias_grafico.json"
+        stats_plantilla = defaults / "estadisticas_jugador.json"
+        self.assertTrue(prefs_plantilla.is_file())
+        self.assertTrue(stats_plantilla.is_file())
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path_prefs = Path(tmp) / "preferencias_grafico.json"
+            with patch(
+                "Comun.preferencias_grafico.resolver_path_preferencias_grafico",
+                return_value=path_prefs,
+            ):
+                guardar_preferencias_grafico(PreferenciasGrafico())
+                esperado_prefs = json.loads(path_prefs.read_text(encoding="utf-8"))
+            self.assertEqual(
+                json.loads(prefs_plantilla.read_text(encoding="utf-8")),
+                esperado_prefs,
+            )
+
+            path_stats = Path(tmp) / "estadisticas_jugador.json"
+            with patch(
+                "Comun.estadisticas_jugador.resolver_path_estadisticas_jugador",
+                return_value=path_stats,
+            ):
+                vaciar_estadisticas_jugador()
+                esperado_stats = json.loads(path_stats.read_text(encoding="utf-8"))
+            self.assertEqual(
+                json.loads(stats_plantilla.read_text(encoding="utf-8")),
+                esperado_stats,
+            )
+
     def test_borrar_txt_informes_y_feedback(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             juego = Path(tmp) / "Juego"
@@ -524,12 +559,17 @@ class TestDatosLocalesJuego(unittest.TestCase):
             juego = Path(tmp) / "Juego"
             juego.mkdir()
             path_graf = juego / "preferencias_grafico.json"
-            path_inf = juego / "ranking_resistencia.json"
+            path_stats = juego / "estadisticas_jugador.json"
 
-            def _crear_inf() -> Path:
-                if not path_inf.is_file():
-                    path_inf.write_text('{"version": 1, "records": []}', encoding="utf-8")
-                return path_inf
+            def _crear_stats() -> Path:
+                if not path_stats.is_file():
+                    path_stats.write_text(
+                        '{"totales": {"partidas": 0, "preguntas": 0, '
+                        '"aciertos": 0, "fallos": 0}, "por_modo": {}, "por_materia": {}, '
+                        '"por_tipo": {}, "records": {}, "sesiones": [], "dias_activos": []}',
+                        encoding="utf-8",
+                    )
+                return path_stats
 
             with (
                 patch(
@@ -541,13 +581,17 @@ class TestDatosLocalesJuego(unittest.TestCase):
                     return_value=path_graf,
                 ),
                 patch(
-                    "Comun.datos_locales_juego.resolver_ranking_resistencia",
-                    side_effect=_crear_inf,
+                    "Comun.datos_locales_juego.resolver_path_estadisticas_jugador",
+                    side_effect=_crear_stats,
+                ),
+                patch(
+                    "Comun.estadisticas_jugador.resolver_path_estadisticas_jugador",
+                    side_effect=_crear_stats,
                 ),
             ):
                 inicializar_datos_locales_juego()
                 self.assertTrue(path_graf.is_file())
-                self.assertTrue(path_inf.is_file())
+                self.assertTrue(path_stats.is_file())
 
     def test_listar_txt_no_incluye_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -572,38 +616,24 @@ class TestDatosLocalesJuego(unittest.TestCase):
                 self.assertTrue(path_graf.is_file())
                 self.assertIn('"nombre_jugador": ""', path_graf.read_text(encoding="utf-8"))
 
-    def test_vaciar_ranking_conserva_fichero(self) -> None:
+    def test_vaciar_estadisticas_conserva_fichero(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             juego = Path(tmp) / "Juego"
             juego.mkdir()
-            path = juego / "ranking_resistencia.json"
-            path.write_text(
-                '{"version": 1, "records": [{"id": "x"}]}',
+            path_stats = juego / "estadisticas_jugador.json"
+            path_stats.write_text(
+                '{"totales": {"partidas": 3, "preguntas": 10, '
+                '"aciertos": 8, "fallos": 2}, "por_modo": {}, "por_materia": {}, '
+                '"por_tipo": {}, "records": {}, "sesiones": [], "dias_activos": []}',
                 encoding="utf-8",
             )
             with patch(
-                "Comun.ranking_resistencia.path_ranking_para_variante",
-                return_value=path,
+                "Comun.estadisticas_jugador.resolver_path_estadisticas_jugador",
+                return_value=path_stats,
             ):
-                vaciar_ranking_variante("resistencia")
-                self.assertTrue(path.is_file())
-                self.assertIn('"records": []', path.read_text(encoding="utf-8"))
-
-    def test_vaciar_ranking_variante(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "ranking.json"
-            path.write_text(
-                '{"version": 1, "records": [{"id": "x", "nombre": "A", "racha": 1, '
-                '"puntos": 10, "respondidas": 5, "preset_id": "ranking_resistencia", '
-                '"fecha_iso": "2026-01-01T00:00:00+00:00"}]}',
-                encoding="utf-8",
-            )
-            with patch(
-                "Comun.ranking_resistencia.path_ranking_para_variante",
-                return_value=path,
-            ):
-                vaciar_ranking_variante("resistencia")
-                self.assertEqual(top_records(path), [])
+                vaciar_estadisticas_locales()
+                self.assertTrue(path_stats.is_file())
+                self.assertIn('"partidas": 0', path_stats.read_text(encoding="utf-8"))
 
 
 # --- test_tooltips_ui.py ---
