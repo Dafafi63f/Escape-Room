@@ -42,7 +42,8 @@ _CARACTERES_MATEMATICOS = frozenset(c for c, _ in _SUSTITUCIONES_ASCII)
 
 def _es_emoji(cp: int) -> bool:
     return (
-        0x1F300 <= cp <= 0x1FAFF
+        0x1F000 <= cp <= 0x1F0FF
+        or 0x1F300 <= cp <= 0x1FAFF
         or 0x1F600 <= cp <= 0x1F64F
         or 0x2600 <= cp <= 0x26FF
         or 0x2700 <= cp <= 0x27BF

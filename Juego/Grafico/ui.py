@@ -68,7 +68,14 @@ def colores_boton(
 
 PADDING_BOTON_X = 14
 PADDING_BOTON_Y = 8
+PADDING_BOTON_COMPACTO_X = 16
+SLACK_ANCHO_ETIQUETA_EMOJI = 6
 MARGEN_INFERIOR_BOTONES = 20
+GAP_BOTONES_COMPACTOS = 8
+ALTO_BOTON_COMPACTO = 32
+FILA_ALTURA_BOTONES_COMPACTOS = 36
+PADDING_BANDA_BOTONES_COMPACTOS = 8
+ANCHO_MIN_BOTON_COMPACTO = 96
 
 
 def alto_pila_botones(num_botones: int, alto_boton: int, gap: int) -> int:
@@ -232,6 +239,36 @@ def medir_etiqueta_boton(
     if texto_requiere_fuentes_mixtas(texto):
         return medir_texto_mixto(texto, tamano)
     return fuente.size(texto)
+
+
+def ancho_boton_etiqueta(
+    etiqueta: str,
+    fuente: pygame.font.Font,
+    *,
+    padding_x: int = PADDING_BOTON_X,
+    ancho_min: int = ANCHO_MIN_BOTON_COMPACTO,
+    slack_emoji: int = SLACK_ANCHO_ETIQUETA_EMOJI,
+) -> int:
+    """Ancho del botón según la etiqueta medida (sin tope artificial)."""
+    texto = preparar_texto_ui(etiqueta)
+    ancho_texto, _ = medir_etiqueta_boton(etiqueta, fuente)
+    extra = slack_emoji if texto_requiere_fuentes_mixtas(texto) else 0
+    return max(ancho_min, ancho_texto + 2 * padding_x + extra)
+
+
+def empaquetar_anchos_en_filas(
+    anchos: list[int],
+    *,
+    ancho_disponible: int,
+    gap: int = GAP_BOTONES_COMPACTOS,
+) -> list[list[int]]:
+    """Distribuye anchos de botones en filas sin desbordar ``ancho_disponible``."""
+    filas_idx = empaquetar_indices_en_filas(
+        anchos,
+        ancho_disponible=ancho_disponible,
+        gap=gap,
+    )
+    return [[anchos[i] for i in fila] for fila in filas_idx]
 
 
 def tamano_grupo_botones(
@@ -622,6 +659,8 @@ class Boton:
         familia_etiqueta: FamiliaFuente = "texto",
         mostrar_texto: bool = True,
         tooltip: str | None = None,
+        padding_etiqueta_x: int | None = None,
+        alinear_etiqueta: str = "centro",
     ) -> None:
         self.etiqueta = etiqueta
         self.rect = rect
@@ -632,6 +671,10 @@ class Boton:
         self.familia_etiqueta = familia_etiqueta
         self.mostrar_texto = mostrar_texto
         self.tooltip = tooltip
+        self.padding_etiqueta_x = (
+            PADDING_BOTON_X if padding_etiqueta_x is None else padding_etiqueta_x
+        )
+        self.alinear_etiqueta = alinear_etiqueta
         self.hover = False
         self.activo = True
 
@@ -659,31 +702,47 @@ class Boton:
         fuente: pygame.font.Font,
         texto_color: tuple[int, int, int],
     ) -> None:
-        padding = 16
+        padding = self.padding_etiqueta_x
         ancho_texto = max(8, self.rect.width - 2 * padding)
         etiqueta = preparar_texto_ui(self.etiqueta)
-        if (
-            self.familia_etiqueta != "texto"
-            or not texto_requiere_fuentes_mixtas(etiqueta)
-        ):
-            fuente_etiqueta = crear_fuente(
-                fuente.get_height(),
-                familia=self.familia_etiqueta,
-            )
-            fuente_etiqueta = _fuente_ajustada(
-                etiqueta,
-                fuente_etiqueta,
-                ancho_texto,
-                familia=self.familia_etiqueta,
-            )
-            superficie = fuente_etiqueta.render(etiqueta, True, texto_color)
-            pantalla.blit(superficie, superficie.get_rect(center=self.rect.center))
-            return
-        tamano = fuente.get_height()
-        ancho, alto = medir_texto_mixto(etiqueta, tamano)
-        x = self.rect.centerx - ancho // 2
-        y = self.rect.centery - alto // 2
-        renderizar_texto_mixto(pantalla, etiqueta, (x, y), texto_color, tamano)
+        area_texto = self.rect.inflate(-4, -4)
+        clip_anterior = pantalla.get_clip()
+        pantalla.set_clip(area_texto)
+        try:
+            if (
+                self.familia_etiqueta != "texto"
+                or not texto_requiere_fuentes_mixtas(etiqueta)
+            ):
+                fuente_etiqueta = crear_fuente(
+                    fuente.get_height(),
+                    familia=self.familia_etiqueta,
+                )
+                fuente_etiqueta = _fuente_ajustada(
+                    etiqueta,
+                    fuente_etiqueta,
+                    ancho_texto,
+                    familia=self.familia_etiqueta,
+                )
+                superficie = fuente_etiqueta.render(etiqueta, True, texto_color)
+                if self.alinear_etiqueta == "izquierda":
+                    destino = superficie.get_rect(
+                        midleft=(self.rect.x + padding, self.rect.centery),
+                    )
+                else:
+                    destino = superficie.get_rect(center=self.rect.center)
+                pantalla.blit(superficie, destino)
+                return
+            etiqueta_visible = truncar_texto_fuente(fuente, etiqueta, ancho_texto)
+            tamano = fuente.get_height()
+            ancho, alto = medir_texto_mixto(etiqueta_visible, tamano)
+            if self.alinear_etiqueta == "izquierda":
+                x = self.rect.x + padding
+            else:
+                x = self.rect.centerx - ancho // 2
+            y = self.rect.centery - alto // 2
+            renderizar_texto_mixto(pantalla, etiqueta_visible, (x, y), texto_color, tamano)
+        finally:
+            pantalla.set_clip(clip_anterior)
 
     def dibujar(self, pantalla: pygame.Surface, fuente: pygame.font.Font) -> None:
         fondo, texto_color, borde = self._colores_dibujo()

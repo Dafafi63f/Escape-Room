@@ -177,19 +177,26 @@ from Grafico.tooltips_ui import (
     tooltip_opcion_ciclo_libre,
 )
 from Grafico.ui import (
+    ALTO_BOTON_COMPACTO,
+    ANCHO_MIN_BOTON_COMPACTO,
     Boton,
     BotonOpcion,
     COLOR_BOTON,
     COLOR_BOTON_HOVER,
     COLOR_BOTON_INACTIVO,
     COLOR_BOTON_INACTIVO_TEXTO,
+    FILA_ALTURA_BOTONES_COMPACTOS,
+    GAP_BOTONES_COMPACTOS,
+    PADDING_BANDA_BOTONES_COMPACTOS,
+    PADDING_BOTON_COMPACTO_X,
+    ancho_boton_etiqueta,
     capturar,
     dibujar_caja_valor_ciclo,
     dibujar_panel,
     dibujar_texto_multilinea,
     dibujar_tooltip,
     dibujar_tooltips_botones,
-    medir_etiqueta_boton,
+    empaquetar_anchos_en_filas,
     posicionar_botones_fila,
     posicionar_pila_inferior,
     rect_boton_etiqueta,
@@ -582,13 +589,11 @@ class ConfigAjustesEscapeRoom(Pantalla):
         return "Escape room"
 
 
-_INV_GAP = 8
-_INV_ALTO_BOTON = 32
-_INV_FILA_ALTURA = 36
-_INV_PADDING_BANDA = 8
-_INV_ANCHO_MIN = 96
-_INV_ANCHO_MAX = 156
-_INV_PADDING_ETIQUETA = 28
+_INV_GAP = GAP_BOTONES_COMPACTOS
+_INV_ALTO_BOTON = ALTO_BOTON_COMPACTO
+_INV_FILA_ALTURA = FILA_ALTURA_BOTONES_COMPACTOS
+_INV_PADDING_BANDA = PADDING_BANDA_BOTONES_COMPACTOS
+_INV_ANCHO_MIN = ANCHO_MIN_BOTON_COMPACTO
 
 
 def empaquetar_filas_inventario(
@@ -598,25 +603,11 @@ def empaquetar_filas_inventario(
     gap: int = _INV_GAP,
 ) -> list[list[int]]:
     """Distribuye anchos de botones en filas sin desbordar ``ancho_disponible``."""
-    if not anchos:
-        return []
-    filas: list[list[int]] = []
-    fila: list[int] = []
-    ancho_fila = 0
-    for ancho in anchos:
-        extra = gap if fila else 0
-        if fila and ancho_fila + extra + ancho > ancho_disponible:
-            filas.append(fila)
-            fila = []
-            ancho_fila = 0
-            extra = 0
-        if extra:
-            ancho_fila += extra
-        fila.append(ancho)
-        ancho_fila += ancho
-    if fila:
-        filas.append(fila)
-    return filas
+    return empaquetar_anchos_en_filas(
+        anchos,
+        ancho_disponible=ancho_disponible,
+        gap=gap,
+    )
 
 
 class PartidaEscapeRoom(Pantalla):
@@ -1212,13 +1203,11 @@ class PartidaEscapeRoom(Pantalla):
             emoji = emoji_powerup(aid)
             nombre = etiqueta_powerup(aid)
         etiqueta_btn = prefijar_emoji(f"{nombre} ({cant})", emoji)
-        ancho = min(
-            _INV_ANCHO_MAX,
-            max(
-                _INV_ANCHO_MIN,
-                medir_etiqueta_boton(etiqueta_btn, self.fuentes["pequena"])[0]
-                + _INV_PADDING_ETIQUETA,
-            ),
+        ancho = ancho_boton_etiqueta(
+            etiqueta_btn,
+            self.fuentes["pequena"],
+            ancho_min=_INV_ANCHO_MIN,
+            padding_x=PADDING_BOTON_COMPACTO_X,
         )
         return etiqueta_btn, ancho
 
@@ -1275,6 +1264,8 @@ class PartidaEscapeRoom(Pantalla):
                     rect,
                     capturar(self._usar_objeto_escape, aid),
                     tooltip=self._tooltip_inventario(aid),
+                    padding_etiqueta_x=PADDING_BOTON_COMPACTO_X,
+                    alinear_etiqueta="izquierda",
                 )
                 boton.activo = self._puede_usar_inventario(aid)
                 self.botones_inventario.append(boton)

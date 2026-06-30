@@ -8,8 +8,9 @@ Flujo por defecto (**regenerar todo → limpiar → zips de distribución**):
 
 1. Regenera figuras PNG en ``Docs/Figuras/``, **solo si cambió** el script, datos o simulaciones.
 2. Exporta la memoria a Word (Markdown y LaTeX → .docx), **solo si cambió** el origen.
-3. Limpia temporales (__pycache__, runtime del juego, intermedios de Entrega/).
-4. Crea ``MATCAD_juego_portable.zip`` y ``MATCAD_juego_minimal.zip``, **solo si cambió** el contenido empaquetado.
+3. Genera ``Presentacion_TFG.pptx`` en ``Docs/Entrega/``, **solo si cambió** el script o las figuras usadas.
+4. Limpia temporales (__pycache__, runtime del juego, intermedios de Entrega/).
+5. Crea ``MATCAD_juego_portable.zip`` y ``MATCAD_juego_minimal.zip``, **solo si cambió** el contenido empaquetado.
 
 También puedes ejecutar solo figuras:
 
@@ -18,8 +19,9 @@ También puedes ejecutar solo figuras:
 
 **Regeneración incremental:** cada artefacto compara fechas de modificación con sus entradas.
 Si el resultado ya existe y está al día, se reutiliza (segunda ejecución mucho más rápida).
-Forzar reconstrucción: ``--forzar-figuras``, ``--forzar-memoria``, ``--forzar-zip``.
+Forzar reconstrucción: ``--forzar-figuras``, ``--forzar-memoria``, ``--forzar-presentacion``, ``--forzar-zip``.
 Omitir figuras en el flujo completo: ``--sin-figuras``.
+Omitir presentación en el flujo completo: ``--sin-presentacion``.
 
 Los artefactos regenerados (zips de distribución, ``.docx`` de memoria) se versionan en el repositorio.
 
@@ -27,6 +29,7 @@ Solo una fase:
 
   python Docs/utilidades_tfg.py --solo-memoria
   python Docs/utilidades_tfg.py --solo-figuras
+  python Docs/utilidades_tfg.py --solo-presentacion
   python Docs/utilidades_tfg.py --solo-limpieza
   python Docs/utilidades_tfg.py --esquemas-juego
   python Docs/utilidades_tfg.py --solo-zip
@@ -34,9 +37,11 @@ Solo una fase:
 Atajos:
 
   python Docs/utilidades_tfg.py --sin-figuras       # no regenerar PNG (usa los existentes)
+  python Docs/utilidades_tfg.py --sin-presentacion  # no regenerar Presentacion_TFG.pptx
   python Docs/utilidades_tfg.py --sin-zip           # no generar zips de distribución
   python Docs/utilidades_tfg.py --forzar-figuras    # reconstruir PNG aunque no haya cambios
   python Docs/utilidades_tfg.py --forzar-memoria    # reconstruir .docx aunque no haya cambios
+  python Docs/utilidades_tfg.py --forzar-presentacion  # reconstruir .pptx aunque no haya cambios
   python Docs/utilidades_tfg.py --forzar-zip        # reconstruir ambos zips aunque no haya cambios
   python Docs/utilidades_tfg.py --solo-memoria --solo-markdown
 
@@ -79,6 +84,8 @@ FILES = _ROOT / "Files"
 DATA = _ROOT / "Data"
 CHANGELOG_JUEGO = DOCS / "CHANGELOG_JUEGO.md"
 GENERAR_FIGURAS = DOCS / "generar_figuras_memoria.py"
+GENERAR_PRESENTACION = DOCS / "generar_presentacion_tfg.py"
+PRESENTACION_PPTX = ENTREGA / "Presentacion_TFG.pptx"
 REQUIREMENTS_JUEGO = JUEGO / "requirements.txt"
 ZIP_PORTABLE = DISTRIBUCION / "MATCAD_juego_portable.zip"
 ZIP_MINIMAL = DISTRIBUCION / "MATCAD_juego_minimal.zip"
@@ -343,6 +350,47 @@ def _cargar_generador_figuras():
     finally:
         sys.dont_write_bytecode = prev_bytecode
     return mod
+
+
+def _cargar_generador_presentacion():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "generar_presentacion_tfg",
+        GENERAR_PRESENTACION,
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"No se pudo cargar {GENERAR_PRESENTACION}")
+    mod = importlib.util.module_from_spec(spec)
+    prev_bytecode = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        spec.loader.exec_module(mod)
+    finally:
+        sys.dont_write_bytecode = prev_bytecode
+    return mod
+
+
+_FIGURAS_PRESENTACION = (
+    "inkagames_gameplay_referencia.png",
+    "tfg_escape_sala_puertas.png",
+    "tfg_escape_pregunta.png",
+    "monte_carlo_histograma_notas.png",
+    "tfg_menu_principal.png",
+    "monte_carlo_convergencia.png",
+    "tfg_escape_tienda.png",
+    "pity_comparacion_descanso.png",
+    "pity_curva_probabilidad.png",
+)
+
+
+def _entradas_presentacion() -> list[Path]:
+    entradas = [GENERAR_PRESENTACION]
+    for nombre in _FIGURAS_PRESENTACION:
+        ruta = FIGURAS / nombre
+        if ruta.is_file():
+            entradas.append(ruta)
+    return entradas
 
 
 def _entradas_png_memoria() -> list[Path]:
@@ -629,6 +677,45 @@ def ejecutar_exportacion(
     return 1 if errores else 0
 
 
+def ejecutar_presentacion(*, force: bool = False) -> int:
+    print("=== Presentación TFG ===\n")
+    print(f"  Origen: {_rel(GENERAR_PRESENTACION)}")
+    print(f"  Salida: {_rel(PRESENTACION_PPTX)}")
+    try:
+        mod = _cargar_generador_presentacion()
+    except RuntimeError as exc:
+        print(f"  Error:  {exc}", file=sys.stderr)
+        return 1
+
+    entradas = _entradas_presentacion()
+    motivo = ""
+    if not force:
+        necesita, motivo = _docx_necesita_regeneracion(PRESENTACION_PPTX, entradas)
+        if not necesita:
+            n_slides = len(mod._slides_data())
+            print(
+                f"  Sin cambios relevantes; se reutiliza {_rel(PRESENTACION_PPTX)} "
+                f"({n_slides} diapositivas)"
+            )
+            print("  (usa --forzar-presentacion para reconstruir desde cero)")
+            return 0
+
+    if force:
+        print("  Modo: reconstrucción forzada")
+    elif motivo:
+        print(f"  Motivo: {motivo}")
+
+    try:
+        salida = mod.generar_presentacion(PRESENTACION_PPTX)
+    except (FileNotFoundError, RuntimeError, OSError) as exc:
+        print(f"  Error:  {exc}", file=sys.stderr)
+        return 1
+
+    n_slides = len(mod._slides_data())
+    print(f"  PPTX:   {_rel(salida)} ({n_slides} diapositivas)")
+    return 0
+
+
 def _argv_limpieza(args: argparse.Namespace) -> list[str]:
     argv: list[str] = []
     if args.dry_run:
@@ -678,22 +765,25 @@ def ejecutar_esquemas_juego() -> int:
 
 def _planificar_tareas(
     args: argparse.Namespace,
-) -> tuple[bool, bool, bool, bool]:
-    """memoria, figuras, limpieza, zip."""
+) -> tuple[bool, bool, bool, bool, bool]:
+    """memoria, figuras, presentacion, limpieza, zip."""
     filtros_limpieza = (
         args.solo_pycache or args.solo_juego or args.solo_txt or args.solo_entrega
     )
     solo_limpieza = args.solo_limpieza or filtros_limpieza
 
+    if args.solo_presentacion:
+        return False, False, True, False, False
     if args.solo_figuras:
-        return False, True, False, False
+        return False, True, False, False, False
     if args.solo_zip:
-        return False, False, False, True
+        return False, False, False, False, True
     if solo_limpieza:
-        return False, False, True, not args.sin_zip
+        return False, False, False, True, not args.sin_zip
     if args.solo_memoria:
-        return True, not args.sin_figuras, True, not args.sin_zip
-    return True, not args.sin_figuras, True, not args.sin_zip
+        return True, not args.sin_figuras, False, True, not args.sin_zip
+    presentacion = not args.sin_presentacion
+    return True, not args.sin_figuras, presentacion, True, not args.sin_zip
 
 
 def _excluir_del_zip_portable(ruta: Path, base: Path) -> bool:
@@ -827,7 +917,7 @@ def ejecutar_zips(*, force: bool = False) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Regenera artefactos del TFG (memoria), "
+            "Regenera artefactos del TFG (memoria, presentación), "
             "limpia temporales y crea los zips de distribución al final."
         )
     )
@@ -848,6 +938,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Solo regenerar PNG en Docs/Figuras/ (incremental)",
     )
     modo.add_argument(
+        "--solo-presentacion",
+        action="store_true",
+        help="Solo regenerar Presentacion_TFG.pptx en Docs/Entrega/ (incremental)",
+    )
+    modo.add_argument(
         "--esquemas-juego",
         action="store_true",
         help="Muestra esquemas de Data/Juego/ (preferencias, estadísticas, …)",
@@ -864,6 +959,11 @@ def main(argv: list[str] | None = None) -> int:
         help="No regenerar Docs/Figuras/*.png (reutilizar las existentes)",
     )
     parser.add_argument(
+        "--sin-presentacion",
+        action="store_true",
+        help="No regenerar Docs/Entrega/Presentacion_TFG.pptx",
+    )
+    parser.add_argument(
         "--sin-zip",
         action="store_true",
         help="No crear los zips en Juego/Distribucion/ al final",
@@ -877,6 +977,11 @@ def main(argv: list[str] | None = None) -> int:
         "--forzar-memoria",
         action="store_true",
         help="Reconstruir los .docx aunque no hayan cambiado Memoria_TFG.md/.tex ni figuras",
+    )
+    parser.add_argument(
+        "--forzar-presentacion",
+        action="store_true",
+        help="Reconstruir Presentacion_TFG.pptx aunque no haya cambiado el script ni las figuras",
     )
     parser.add_argument(
         "--forzar-zip",
@@ -906,7 +1011,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.esquemas_juego:
         return ejecutar_esquemas_juego()
 
-    regenerar_memoria, regenerar_figuras, hacer_limpieza, crear_zip = _planificar_tareas(args)
+    regenerar_memoria, regenerar_figuras, regenerar_presentacion, hacer_limpieza, crear_zip = (
+        _planificar_tareas(args)
+    )
 
     codigo = 0
 
@@ -926,13 +1033,18 @@ def main(argv: list[str] | None = None) -> int:
             ),
         )
 
-    if hacer_limpieza:
+    if regenerar_presentacion:
         if regenerar_memoria or regenerar_figuras:
+            print()
+        codigo = max(codigo, ejecutar_presentacion(force=args.forzar_presentacion))
+
+    if hacer_limpieza:
+        if regenerar_memoria or regenerar_figuras or regenerar_presentacion:
             print()
         codigo = max(codigo, ejecutar_limpieza_final(args))
 
     if crear_zip:
-        if regenerar_memoria or regenerar_figuras or hacer_limpieza:
+        if regenerar_memoria or regenerar_figuras or regenerar_presentacion or hacer_limpieza:
             print()
         codigo = max(codigo, ejecutar_zips(force=args.forzar_zip))
 

@@ -172,16 +172,22 @@ from Grafico.tema import (
     x_min_centro_barra_partida,
 )
 from Grafico.ui import (
+    ALTO_BOTON_COMPACTO,
+    FILA_ALTURA_BOTONES_COMPACTOS,
+    GAP_BOTONES_COMPACTOS,
+    PADDING_BANDA_BOTONES_COMPACTOS,
+    PADDING_BOTON_COMPACTO_X,
     Boton,
     BotonOpcion,
     CampoEntero,
     _fuente_ajustada,
+    ancho_boton_etiqueta,
     capturar,
     dibujar_caja_valor_ciclo,
     dibujar_panel,
     dibujar_texto_multilinea,
     dibujar_tooltips_botones,
-    medir_etiqueta_boton,
+    empaquetar_anchos_en_filas,
     posicionar_botones_fila,
     posicionar_pila_inferior,
     rect_boton_etiqueta,
@@ -493,12 +499,45 @@ class PartidaResistencia(Pantalla):
             raise IndexError("Sin pregunta cargada.")
         return self.pool[self.pregunta_idx]
 
+    def _filas_layout_powerups(
+        self,
+    ) -> list[list[tuple[str, int, int, str]]]:
+        """Filas de (id, cantidad, ancho, etiqueta) sin desbordar el ancho útil."""
+        items = [
+            (pid, self.er.cantidad(pid))
+            for pid in sorted(self.er.inventario.keys())
+            if self.er.cantidad(pid) > 0
+        ]
+        if not items:
+            return []
+        metas: list[tuple[str, int, int, str]] = []
+        for pid, cant in items:
+            nombre = etiqueta_powerup(pid)
+            etiqueta_btn = prefijar_emoji(f"{nombre} ({cant})", emoji_powerup(pid))
+            ancho = ancho_boton_etiqueta(
+                etiqueta_btn,
+                self.fuentes["pequena"],
+                padding_x=PADDING_BOTON_COMPACTO_X,
+            )
+            metas.append((pid, cant, ancho, etiqueta_btn))
+        filas_anchos = empaquetar_anchos_en_filas(
+            [m[2] for m in metas],
+            ancho_disponible=ANCHO - 2 * MARGEN,
+            gap=GAP_BOTONES_COMPACTOS,
+        )
+        filas: list[list[tuple[str, int, int, str]]] = []
+        cursor = 0
+        for fila_anchos in filas_anchos:
+            n = len(fila_anchos)
+            filas.append(metas[cursor : cursor + n])
+            cursor += n
+        return filas
+
     def _altura_banda_powerups(self) -> int:
-        n = sum(1 for pid in self.er.inventario if self.er.cantidad(pid) > 0)
-        if n <= 0:
+        n_filas = len(self._filas_layout_powerups())
+        if n_filas <= 0:
             return 0
-        filas = 1 + (n - 1) // 4
-        return filas * 36 + 8
+        return n_filas * FILA_ALTURA_BOTONES_COMPACTOS + PADDING_BANDA_BOTONES_COMPACTOS
 
     def _y_banda_powerups(self) -> int:
         altura = self._altura_banda_powerups()
@@ -606,37 +645,31 @@ class PartidaResistencia(Pantalla):
         if self.fase != "pregunta":
             return
         objetos_bloqueados = objetos_bloqueados_efectivo_resistencia(self.er)
-        items = [
-            (pid, self.er.cantidad(pid))
-            for pid in sorted(self.er.inventario.keys())
-            if self.er.cantidad(pid) > 0
-        ]
-        if not items:
+        filas = self._filas_layout_powerups()
+        if not filas:
             return
-        x = MARGEN
         y = self._y_banda_powerups()
-        for pid, cant in items:
-            nombre = etiqueta_powerup(pid)
-            etiqueta_btn = prefijar_emoji(f"{nombre} ({cant})", emoji_powerup(pid))
-            ancho = min(156, max(96, medir_etiqueta_boton(etiqueta_btn, self.fuentes["pequena"])[0] + 28))
-            rect = pygame.Rect(x, y, ancho, 32)
-            boton = Boton(
-                etiqueta_btn,
-                rect,
-                capturar(self._usar_powerup, pid),
-                tooltip=descripcion_powerup(pid),
-            )
-            boton.activo = not objetos_bloqueados and (
-                puede_usar_powerup_en_pregunta(pid, self.er.powerups_usados_en_pregunta)
-                is None
-            )
-            if objetos_bloqueados:
-                boton.tooltip = "Maldición activa: no puedes usar objetos."
-            self.botones_powerup.append(boton)
-            x += ancho + 8
-            if x > ANCHO - MARGEN - 80:
-                x = MARGEN
-                y += 36
+        for fila in filas:
+            x = MARGEN
+            for pid, _cant, ancho, etiqueta_btn in fila:
+                rect = pygame.Rect(x, y, ancho, ALTO_BOTON_COMPACTO)
+                boton = Boton(
+                    etiqueta_btn,
+                    rect,
+                    capturar(self._usar_powerup, pid),
+                    tooltip=descripcion_powerup(pid),
+                    padding_etiqueta_x=PADDING_BOTON_COMPACTO_X,
+                    alinear_etiqueta="izquierda",
+                )
+                boton.activo = not objetos_bloqueados and (
+                    puede_usar_powerup_en_pregunta(pid, self.er.powerups_usados_en_pregunta)
+                    is None
+                )
+                if objetos_bloqueados:
+                    boton.tooltip = "Maldición activa: no puedes usar objetos."
+                self.botones_powerup.append(boton)
+                x += ancho + GAP_BOTONES_COMPACTOS
+            y += FILA_ALTURA_BOTONES_COMPACTOS
 
     def _reconstruir_opciones(self) -> None:
         from Comun.resistencia_motor import rng_partida

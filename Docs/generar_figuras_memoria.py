@@ -80,9 +80,12 @@ def _mtime(ruta: Path) -> float:
 
 def entradas_generacion_figuras() -> list[Path]:
     """Ficheros que invalidan las figuras si cambian tras la última generación."""
+    if str(DOCS) not in sys.path:
+        sys.path.insert(0, str(DOCS))
+    from capturar_pantallas_juego import entradas_regeneracion_capturas
+
     entradas: list[Path] = [
         Path(__file__).resolve(),
-        DOCS / "capturar_pantallas_juego.py",
         _SCRIPTS / "simulacion_evaluacion_azar.py",
         _SCRIPTS / "simulacion_pity.py",
         _JUEGO / "Comun" / "semillas.py",
@@ -90,10 +93,8 @@ def entradas_generacion_figuras() -> list[Path]:
         _JUEGO / "Comun" / "reglas.py",
         _JUEGO / "Comun" / "eventos_partida.py",
         _JUEGO / "Comun" / "escape_room.py",
-        _JUEGO / "Grafico" / "app.py",
-        _JUEGO / "Grafico" / "pantallas_modos.py",
-        _JUEGO / "Grafico" / "pantallas.py",
     ]
+    entradas.extend(entradas_regeneracion_capturas())
     for resolver in (resolver_dataset, resolver_listado_materias):
         try:
             ruta = resolver()

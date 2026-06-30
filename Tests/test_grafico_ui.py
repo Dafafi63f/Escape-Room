@@ -825,6 +825,16 @@ class TestTextoGrafico(unittest.TestCase):
         self.assertIn("emoji", familias)
         self.assertNotIn("simbolos", familias)
 
+    def test_icono_comodin_naip_usa_fuente_emoji(self) -> None:
+        from Comun.objetos_partida import emoji_powerup
+        from Grafico.texto import familia_caracter, segmentar_por_familia
+
+        icono = emoji_powerup("comodin")
+        self.assertEqual(icono, "🃏")
+        self.assertEqual(familia_caracter(icono), "emoji")
+        familias = {fam for _, fam in segmentar_por_familia(icono)}
+        self.assertEqual(familias, {"emoji"})
+
     def test_dibujar_texto_centro_con_ancho_max_multilinea(self) -> None:
         import pygame
 

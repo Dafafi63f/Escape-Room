@@ -38,6 +38,8 @@ ESCAPE_REF_COLOR_SEPARADOR = (200, 210, 225)
 CAPTURAS_SALIDA = (
     "tfg_menu_principal.png",
     "tfg_escape_referencia.png",
+    "tfg_escape_sala_puertas.png",
+    "tfg_escape_pregunta.png",
     "tfg_escape_tienda.png",
 )
 
@@ -46,6 +48,22 @@ CAPTURAS_OBSOLETAS = (
     "tfg_escape_puertas.png",
     "tfg_escape_pregunta_inventario.png",
 )
+
+_ENTRADAS_CODIGO_CAPTURAS = (
+    Path(__file__).resolve(),
+    _JUEGO / "Grafico" / "app.py",
+    _JUEGO / "Grafico" / "ui.py",
+    _JUEGO / "Grafico" / "pantallas_modos.py",
+    _JUEGO / "Grafico" / "pantallas.py",
+    _JUEGO / "Grafico" / "pantallas_escape.py",
+    _JUEGO / "Grafico" / "pantallas_resistencia_partida.py",
+    _JUEGO / "Grafico" / "tema.py",
+)
+
+
+def entradas_regeneracion_capturas() -> list[Path]:
+    """Ficheros cuyo cambio invalida las capturas pygame en ``Docs/Figuras/``."""
+    return [p for p in _ENTRADAS_CODIGO_CAPTURAS if p.is_file()]
 
 
 def _init_pygame() -> None:
@@ -257,6 +275,18 @@ def generar_capturas_juego(
         superficie_pregunta = _superficie_pantalla_como_app(partida_pregunta)
 
         rutas.append(
+            _guardar_pantalla_como_app(
+                partida_puertas,
+                destino_dir / "tfg_escape_sala_puertas.png",
+            )
+        )
+        rutas.append(
+            _guardar_pantalla_como_app(
+                partida_pregunta,
+                destino_dir / "tfg_escape_pregunta.png",
+            )
+        )
+        rutas.append(
             _componer_escape_referencia(
                 superficie_puertas,
                 superficie_pregunta,
@@ -295,16 +325,13 @@ def capturas_necesitan_regeneracion() -> tuple[bool, str]:
     if any((FIGURAS / nombre).is_file() for nombre in CAPTURAS_OBSOLETAS):
         return True, "quedan capturas obsoletas"
     mas_reciente_salida = max(_mtime(p) for p in salidas)
-    entradas = [
-        Path(__file__).resolve(),
-        _JUEGO / "Grafico" / "app.py",
-        _JUEGO / "Grafico" / "pantallas_modos.py",
-        _JUEGO / "Grafico" / "pantallas.py",
-        _JUEGO / "Grafico" / "tema.py",
-    ]
-    for ruta in entradas:
-        if ruta.is_file() and _mtime(ruta) > mas_reciente_salida + 1e-6:
-            return True, f"cambió {ruta.name}"
+    for ruta in entradas_regeneracion_capturas():
+        if _mtime(ruta) > mas_reciente_salida + 1e-6:
+            try:
+                motivo = str(ruta.relative_to(ROOT))
+            except ValueError:
+                motivo = str(ruta.name)
+            return True, f"cambió {motivo}"
     return False, ""
 
 
