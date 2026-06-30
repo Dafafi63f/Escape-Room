@@ -94,6 +94,7 @@ class PlanExamen:
     tipos_permitidos: frozenset[str]
     preguntas: list  # list[Pregunta] en runtime
     semilla_partida: int = 0
+    semilla_contenido: int = 0
     rng: RngPartida | None = None
 
 
@@ -281,9 +282,12 @@ def _clave_orden_dificultad_pregunta(pregunta: object) -> tuple[int, int, str]:
     )
 
 
-def _ordenar_preguntas_por_dificultad(preguntas: list) -> list:
+def ordenar_preguntas_por_dificultad(preguntas: list) -> list:
     """Orden estable: Fácil → Media → Difícil; Teoría antes que Cálculo."""
     return sorted(preguntas, key=_clave_orden_dificultad_pregunta)
+
+
+_ordenar_preguntas_por_dificultad = ordenar_preguntas_por_dificultad
 
 
 def _clave_orden_plantilla(pregunta: object) -> tuple[int, int, str]:
@@ -575,6 +579,124 @@ def _construir_seleccion_plana(
     return rng.sample(pool, n)
 
 
+def peso_pregunta_para_seleccion(
+    pregunta: object,
+    stats: dict[str, EstadisticaMateria],
+    perfil: PerfilPedagogico,
+) -> float:
+    return _pesos_preguntas_desde_stats(
+        [pregunta], stats, perfil, usar_ponderacion=True
+    )[0]
+
+
+def _pesos_preguntas_desde_stats(
+    pool: list,
+    stats: dict[str, EstadisticaMateria],
+    perfil: PerfilPedagogico,
+    *,
+    usar_ponderacion: bool,
+) -> list[float]:
+    if not stats or not usar_ponderacion:
+        return [1.0] * len(pool)
+    from Comun.cadena_examen_dirigido import tokens_enunciado
+
+    pesos_clave = calcular_pesos_materia(
+        list(stats.keys()),
+        stats,
+        perfil,
+        usar_analisis_historico=True,
+    )
+    pesos: list[float] = []
+    for pregunta in pool:
+        tokens = tokens_enunciado(pregunta)
+        candidatos = set(tokens)
+        materia = (getattr(pregunta, "materia", "") or "").strip()
+        if materia:
+            candidatos.add(materia)
+        ws = [pesos_clave[k] for k in candidatos if k in pesos_clave]
+        pesos.append(max(ws) if ws else 0.15)
+    return pesos
+
+
+def _construir_seleccion_plana_ponderada(
+    preguntas: list,
+    n: int,
+    rng: random.Random,
+    pregunta_key: Callable,
+    stats: dict[str, EstadisticaMateria],
+    perfil: PerfilPedagogico,
+    *,
+    usar_ponderacion: bool,
+) -> list:
+    if n <= 0:
+        raise ValueError("n_preguntas debe ser positivo.")
+    unicas: dict[object, object] = {}
+    for p in preguntas:
+        clave = pregunta_key(p)
+        if clave not in unicas:
+            unicas[clave] = p
+    pool = list(unicas.values())
+    if len(pool) < n:
+        raise ValueError(
+            f"No hay suficientes preguntas en el banco ({len(pool)}/{n})."
+        )
+    if not stats or not usar_ponderacion:
+        return rng.sample(pool, n)
+    from Comun.cadena_examen_dirigido import _muestra_ponderada_sin_reemplazo
+
+    pesos = _pesos_preguntas_desde_stats(
+        pool, stats, perfil, usar_ponderacion=usar_ponderacion
+    )
+    return _muestra_ponderada_sin_reemplazo(pool, pesos, n, rng)
+
+
+def resolver_stats_para_generador(
+    *,
+    preset,
+    cfg,
+    perfil,
+    path_historico=None,
+    materias_meta: dict | None = None,
+) -> dict[str, EstadisticaMateria]:
+    """Histórico MatCAD, práctica local o mezcla según preset, perfil y configuración."""
+    from Comun.config_historia import (
+        usar_analisis_historico_desde_config,
+        usar_analisis_local_desde_config,
+        usar_ponderacion_desde_config,
+    )
+    from Comun.estadisticas_jugador import (
+        cargar_estadisticas_locales,
+        combinar_stats_examen,
+    )
+
+    historico: dict[str, EstadisticaMateria] = {}
+    local: dict[str, EstadisticaMateria] = {}
+
+    usar_hist = usar_analisis_historico_desde_config(preset, cfg, perfil=perfil)
+    usar_local = usar_analisis_local_desde_config(preset, cfg, perfil=perfil)
+
+    if (
+        usar_hist
+        and perfil is not None
+        and perfil.analisis_historico_disponible
+        and path_historico is not None
+    ):
+        try:
+            historico = cargar_estadisticas_historicas(
+                path_historico,
+                materias_validas=set(materias_meta) if materias_meta else None,
+            )
+        except FileNotFoundError:
+            historico = {}
+
+    if usar_local and perfil is not None:
+        local = cargar_estadisticas_locales(perfil, materias_meta)
+
+    if historico and local:
+        return combinar_stats_examen(historico, local)
+    return historico or local
+
+
 def _ordenar_seleccion_examen(
     seleccion: list,
     orden_preguntas: str,
@@ -660,7 +782,10 @@ def generar_examen(
         pregunta_key = lambda p: (p.materia, p.texto)
 
     if stats is None:
-        stats = cargar_estadisticas_historicas(materias_validas=set(materias_orden))
+        if not seleccion_plana:
+            stats = cargar_estadisticas_historicas(materias_validas=set(materias_orden))
+        else:
+            stats = {}
 
     from Comun.semillas import RngPartida, semilla_partida_aleatoria
 
@@ -678,12 +803,27 @@ def generar_examen(
     if seleccion_plana:
         if n_preguntas is None:
             raise ValueError("seleccion_plana requiere n_preguntas.")
-        seleccion = _construir_seleccion_plana(
-            preguntas,
-            n_preguntas,
-            rng_seleccion,
-            pregunta_key,
-        )
+        if registros_dirigido is not None:
+            from Comun.cadena_examen_dirigido import construir_seleccion_plana_dirigida
+
+            seleccion = construir_seleccion_plana_dirigida(
+                preguntas,
+                n_preguntas,
+                rng_seleccion,
+                pregunta_key,
+                registros_dirigido,
+                preguntas_excluir,
+            )
+        else:
+            seleccion = _construir_seleccion_plana_ponderada(
+                preguntas,
+                n_preguntas,
+                rng_seleccion,
+                pregunta_key,
+                stats,
+                perfil,
+                usar_ponderacion=usar_analisis_historico,
+            )
         seleccion = _ordenar_seleccion_examen(
             seleccion,
             orden_preguntas,
@@ -698,6 +838,7 @@ def generar_examen(
             tipos_permitidos=tipos,
             preguntas=seleccion,
             semilla_partida=semilla_partida,
+            semilla_contenido=semilla_seleccion,
             rng=rng_partida,
         )
 
@@ -740,6 +881,23 @@ def generar_examen(
                 f"No se pudo construir el examen de {materia_fija!r} "
                 f"con las plantillas y el banco disponibles."
             )
+        if (
+            n_preguntas is not None
+            and len(seleccion) > n_preguntas
+            and usar_analisis_historico
+            and stats
+        ):
+            seleccion = _construir_seleccion_plana_ponderada(
+                seleccion,
+                n_preguntas,
+                rng_seleccion,
+                pregunta_key,
+                stats,
+                perfil,
+                usar_ponderacion=True,
+            )
+        elif n_preguntas is not None and len(seleccion) > n_preguntas:
+            seleccion = rng_seleccion.sample(seleccion, n_preguntas)
         if orden_preguntas == "plantilla":
             seleccion = _ordenar_preguntas_por_plantilla(seleccion)
         elif orden_preguntas == "dificultad":
@@ -756,6 +914,7 @@ def generar_examen(
             tipos_permitidos=tipos_permitidos,
             preguntas=seleccion,
             semilla_partida=semilla_partida,
+            semilla_contenido=semilla_seleccion,
             rng=rng_partida,
         )
 
@@ -932,6 +1091,7 @@ def generar_examen(
         tipos_permitidos=tipos_permitidos,
         preguntas=seleccion,
         semilla_partida=semilla_partida,
+        semilla_contenido=semilla_seleccion,
         rng=rng_partida,
     )
 

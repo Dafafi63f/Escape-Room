@@ -5,8 +5,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
 
 import pygame
+
+from Comun.metadatos_inferidos import exportar_dataset_intermedio
+from Comun.modelos import Pregunta
 
 from Comun.preferencias_grafico import es_nombre_anonimo, nombre_jugador_efectivo
 from Comun.persistencia import (
@@ -32,6 +37,7 @@ from Grafico.tema import (
 from Grafico.texto import dibujar_texto_centro
 from Grafico.textos_grafico import (
     BTN_BORRAR_TXT_INFORMES,
+    BTN_EXPORTAR_DATASET_INTERMEDIO,
     BTN_VACIAR_ESTADISTICAS,
     BTN_VACIAR_PREFERENCIAS,
     etiqueta,
@@ -48,6 +54,12 @@ from Grafico.ui import (
 
 
 _COLOR_ETIQUETA_PANEL = (70, 80, 95)
+
+
+@dataclass(frozen=True)
+class ExportDatasetOpciones:
+    preguntas: tuple[Pregunta, ...]
+    carpeta: Path
 
 
 class OverlayOpcionesGrafico:
@@ -79,8 +91,19 @@ class OverlayOpcionesGrafico:
     _MARGEN_VENTANA_INFERIOR = 44
     _Y_PANEL = 58
 
-    def __init__(self, *, on_cerrar: Callable[[], None]) -> None:
+    _GAP_SECCION_DATASET = 14
+    _GAP_DATASET_HINT = 6
+    _ALTO_MENSAJE_EXPORT = 40
+
+    def __init__(
+        self,
+        *,
+        on_cerrar: Callable[[], None],
+        export_dataset: ExportDatasetOpciones | None = None,
+    ) -> None:
         self.on_cerrar = on_cerrar
+        self.export_dataset = export_dataset
+        self.mensaje_export = ""
         self.fuentes = crear_fuentes()
         self.panel = pygame.Rect(
             MARGEN + 24,
@@ -111,6 +134,7 @@ class OverlayOpcionesGrafico:
         }
         self._crear_ciclos()
         self._crear_botones_borrado()
+        self._crear_boton_export_dataset()
         self._reposicionar_campo_y_restablecer()
         self.boton_listo = Boton(
             "Listo",
@@ -196,6 +220,28 @@ class OverlayOpcionesGrafico:
                 "(el fichero estadisticas_jugador.json se conserva)."
             ),
         )
+        self.boton_export_dataset: Boton | None = None
+
+    def _crear_boton_export_dataset(self) -> None:
+        if self.export_dataset is None:
+            return
+        fuente_peq = self.fuentes["pequena"]
+        etiq = etiqueta(*BTN_EXPORTAR_DATASET_INTERMEDIO)
+        self.boton_export_dataset = Boton(
+            etiq,
+            rect_boton_etiqueta(
+                etiq,
+                fuente_peq,
+                x_centro=ANCHO // 2,
+                y=0,
+                alto_min=36,
+            ),
+            self._exportar_dataset_intermedio,
+            tooltip=(
+                "Crea Preguntas_intermedio.csv y listado_materias_intermedio.csv "
+                "a partir de metadatos_inferidos.json (usable en el juego completo)."
+            ),
+        )
 
     def _reposicionar_campo_y_restablecer(self) -> None:
         """Nombre a la izquierda y «Restablecer preferencias» a la derecha, misma fila."""
@@ -215,6 +261,35 @@ class OverlayOpcionesGrafico:
         self.campo_nombre.rect.centery = y + alto_fila // 2
         self.boton_vaciar_preferencias.rect.centery = y + alto_fila // 2
 
+    def _y_dataset_seccion(self) -> int | None:
+        if self.export_dataset is None:
+            return None
+        return self.panel.y + self._Y_INFORMES_FILA + self.ALTO_CTRL + self._GAP_SECCION_DATASET
+
+    def _alto_bloque_export(self) -> int:
+        if self.export_dataset is None:
+            return 0
+        fuente_peq = self.fuentes["pequena"]
+        lbl = fuente_peq.render("Exportar para juego completo:", True, _COLOR_ETIQUETA_PANEL)
+        hint = fuente_peq.render(
+            "Usa estadísticas locales y materias inferidas (sin curso ni semestre).",
+            True,
+            _COLOR_ETIQUETA_PANEL,
+        )
+        alto_btn = self.boton_export_dataset.rect.height if self.boton_export_dataset else 36
+        alto = lbl.get_height() + self._GAP_DATASET_HINT + alto_btn + self._GAP_DATASET_HINT
+        alto += hint.get_height()
+        if self.mensaje_export:
+            alto += self._GAP_DATASET_HINT + self._ALTO_MENSAJE_EXPORT
+        return alto
+
+    def _y_borrado_lbl(self) -> int:
+        y = self.panel.y + self._Y_BORRADO_LBL
+        y_dataset = self._y_dataset_seccion()
+        if y_dataset is not None:
+            y = y_dataset + self._alto_bloque_export() + self._GAP_SECCION_DATASET
+        return y
+
     def _y_inferior_hint_borrado(self) -> int:
         fuente_peq = self.fuentes["pequena"]
         hint = fuente_peq.render(
@@ -222,7 +297,7 @@ class OverlayOpcionesGrafico:
             True,
             _COLOR_ETIQUETA_PANEL,
         )
-        return self.panel.y + self._Y_BORRADO_LBL + self._GAP_HINT_BORRADO + hint.get_height()
+        return self._y_borrado_lbl() + self._GAP_HINT_BORRADO + hint.get_height()
 
     def _alto_bloque_borrado(self) -> int:
         return self.boton_borrar_txt.rect.height + self._GAP_BORRADO_FILAS + (
@@ -245,6 +320,19 @@ class OverlayOpcionesGrafico:
 
     def _reposicionar_inferior(self) -> None:
         """Ancla «Listo» abajo y centra los botones de borrado entre el hint y «Listo»."""
+        if self.boton_export_dataset is not None:
+            y_dataset = self._y_dataset_seccion()
+            if y_dataset is not None:
+                fuente_peq = self.fuentes["pequena"]
+                lbl = fuente_peq.render(
+                    "Exportar para juego completo:",
+                    True,
+                    _COLOR_ETIQUETA_PANEL,
+                )
+                self.boton_export_dataset.rect.midtop = (
+                    ANCHO // 2,
+                    y_dataset + lbl.get_height() + self._GAP_DATASET_HINT,
+                )
         self.boton_listo.rect.midbottom = (
             ANCHO // 2,
             ALTO - self._MARGEN_VENTANA_INFERIOR - self._MARGEN_PANEL_INFERIOR,
@@ -266,6 +354,26 @@ class OverlayOpcionesGrafico:
             self.mostrar_emojis = ciclar_emojis(self.mostrar_emojis)
         elif clave == "informes":
             self.guardar_informes_txt = ciclar_guardar_informes(self.guardar_informes_txt)
+
+    def _exportar_dataset_intermedio(self) -> None:
+        if self.export_dataset is None:
+            return
+        try:
+            resultado = exportar_dataset_intermedio(
+                list(self.export_dataset.preguntas),
+                carpeta=self.export_dataset.carpeta,
+            )
+            self.mensaje_export = (
+                f"Generados {resultado.n_preguntas} preguntas y "
+                f"{resultado.n_materias} materias en {resultado.csv.parent.name}/"
+            )
+            if resultado.con_dificultad < resultado.total:
+                self.mensaje_export += (
+                    f" ({resultado.con_dificultad} con dificultad inferida por estadísticas)"
+                )
+        except OSError as exc:
+            self.mensaje_export = f"No se pudo guardar: {exc}"
+        self._reposicionar_inferior()
 
     def _solicitar_borrado(self, accion: str) -> None:
         if accion == "txt":
@@ -314,6 +422,8 @@ class OverlayOpcionesGrafico:
             self.boton_vaciar_preferencias,
             self.boton_vaciar_estadisticas,
         ]
+        if self.boton_export_dataset is not None:
+            out.append(self.boton_export_dataset)
         for par in self._botones_ciclo.values():
             out.extend(par)
         return out
@@ -374,6 +484,49 @@ class OverlayOpcionesGrafico:
             menos.dibujar(superficie, self.fuentes["menu"])
             mas.dibujar(superficie, self.fuentes["menu"])
 
+        if self.export_dataset is not None and self.boton_export_dataset is not None:
+            y_dataset = self._y_dataset_seccion()
+            assert y_dataset is not None
+            lbl_dataset = fuente_peq.render(
+                "Exportar para juego completo:",
+                True,
+                _COLOR_ETIQUETA_PANEL,
+            )
+            superficie.blit(
+                lbl_dataset,
+                lbl_dataset.get_rect(midtop=(ANCHO // 2, y_dataset)),
+            )
+            self.boton_export_dataset.rect.midtop = (
+                ANCHO // 2,
+                y_dataset + lbl_dataset.get_height() + self._GAP_DATASET_HINT,
+            )
+            hint_dataset = fuente_peq.render(
+                "Usa estadísticas locales y materias inferidas (sin curso ni semestre).",
+                True,
+                _COLOR_ETIQUETA_PANEL,
+            )
+            superficie.blit(
+                hint_dataset,
+                hint_dataset.get_rect(
+                    midtop=(
+                        ANCHO // 2,
+                        self.boton_export_dataset.rect.bottom + self._GAP_DATASET_HINT,
+                    ),
+                ),
+            )
+            if self.mensaje_export:
+                msg = fuente_peq.render(self.mensaje_export, True, (40, 110, 60))
+                superficie.blit(
+                    msg,
+                    msg.get_rect(
+                        midtop=(
+                            ANCHO // 2,
+                            hint_dataset.get_rect().bottom + self._GAP_DATASET_HINT,
+                        ),
+                    ),
+                )
+            self.boton_export_dataset.dibujar(superficie, fuente_peq)
+
         lbl_borrado = fuente_peq.render("Limpiar datos locales:", True, _COLOR_ETIQUETA_PANEL)
         hint_borrado = fuente_peq.render(
             "Borrar: .txt | Vaciar: estadísticas (los .json se conservan).",
@@ -382,12 +535,12 @@ class OverlayOpcionesGrafico:
         )
         superficie.blit(
             lbl_borrado,
-            lbl_borrado.get_rect(midtop=(ANCHO // 2, self.panel.y + self._Y_BORRADO_LBL)),
+            lbl_borrado.get_rect(midtop=(ANCHO // 2, self._y_borrado_lbl())),
         )
         superficie.blit(
             hint_borrado,
             hint_borrado.get_rect(
-                midtop=(ANCHO // 2, self.panel.y + self._Y_BORRADO_LBL + self._GAP_HINT_BORRADO),
+                midtop=(ANCHO // 2, self._y_borrado_lbl() + self._GAP_HINT_BORRADO),
             ),
         )
 

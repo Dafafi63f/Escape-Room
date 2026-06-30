@@ -44,7 +44,7 @@ from Comun.emojis_escape import (
     EMOJI_MIX_MATERIA,
     EMOJI_NIEBLA_OPCIONES,
     EMOJI_PUERTA_CURSO,
-    EMOJI_PUERTA_GRUPO,
+    EMOJI_BLOQUE_SUBTIPO_GRUPO,
     EMOJI_PUERTA_MATERIA,
     EMOJI_PUERTA_MALDITA,
     EMOJI_PUERTA_PERIODO,
@@ -57,14 +57,12 @@ from Comun.emojis_escape import (
     TOOLTIP_DIF_FACIL,
     TOOLTIP_DIF_MEDIA,
     TOOLTIP_MIX_MATERIA,
+    TOOLTIP_PUERTA_BLOQUE,
     TOOLTIP_PUERTA_CURSO,
     TOOLTIP_PUERTA_GRUPO,
-    TOOLTIP_PUERTA_MATERIA,
     TOOLTIP_PUERTA_MALDITA,
     TOOLTIP_PUERTA_PERIODO,
     TOOLTIP_PUERTA_SEMESTRE,
-    TOOLTIP_TIPO_CALCULO_GLOBAL,
-    TOOLTIP_TIPO_TEORIA_GLOBAL,
     TOOLTIP_BOTIN,
     TOOLTIP_BOTIN_DESCANSO,
     TOOLTIP_TIENDA,
@@ -72,6 +70,7 @@ from Comun.emojis_escape import (
     TOOLTIP_TIPO_TEORIA,
     _IDS_PERFIL_MIX_MATERIA,
     capa_evento_escape,
+    emoji_subtipo_puerta_bloque_por_id,
 )
 
 if TYPE_CHECKING:
@@ -401,7 +400,7 @@ def _def_botin_objeto_escape(
 
 
 _CATALOGO: tuple[DefinicionEvento, ...] = (
-    # --- Contenido escape: tres tipos principales (materia, grupo; descanso es rasgo PUERTA) ---
+    # --- Contenido escape: materia (perfiles) y puerta bloque (4 subtipos) ---
     _c(
         "puerta_materia",
         "Puerta de materia",
@@ -414,9 +413,9 @@ _CATALOGO: tuple[DefinicionEvento, ...] = (
     ),
     _c(
         "puerta_grupo",
-        "Puerta de grupo",
-        "Preguntas de varias materias de un mismo bloque temático del plan.",
-        EMOJI_PUERTA_GRUPO,
+        "Puerta bloque",
+        "Grupo temático del plan: varias materias del mismo bloque G1–G10.",
+        EMOJI_BLOQUE_SUBTIPO_GRUPO,
         AlcanceEvento.ESCAPE,
         ModificadoresDesafio(),
         rol_escape=RolEscape.CONTENIDO,
@@ -424,41 +423,9 @@ _CATALOGO: tuple[DefinicionEvento, ...] = (
         contenido_escape=OpcionesContenidoEscape(usa_grupo=True, usa_materia=False, ambito="grupo"),
     ),
     _c(
-        "puerta_tipo_teoria",
-        "Puerta teórica",
-        "Preguntas teóricas de cualquier materia del ámbito.",
-        EMOJI_TIPO_TEORIA,
-        AlcanceEvento.ESCAPE,
-        ModificadoresDesafio(),
-        rol_escape=RolEscape.CONTENIDO,
-        nivel_min_sala_escape=8,
-        contenido_escape=OpcionesContenidoEscape(
-            usa_materia=False,
-            usa_grupo=False,
-            ambito="tipo_teoria",
-            tipos_permitidos=frozenset({"Teoria"}),
-        ),
-    ),
-    _c(
-        "puerta_tipo_calculo",
-        "Puerta de cálculo",
-        "Preguntas de cálculo de cualquier materia del ámbito.",
-        EMOJI_TIPO_CALCULO,
-        AlcanceEvento.ESCAPE,
-        ModificadoresDesafio(),
-        rol_escape=RolEscape.CONTENIDO,
-        nivel_min_sala_escape=8,
-        contenido_escape=OpcionesContenidoEscape(
-            usa_materia=False,
-            usa_grupo=False,
-            ambito="tipo_calculo",
-            tipos_permitidos=frozenset({"Calculo"}),
-        ),
-    ),
-    _c(
         "puerta_curso",
-        "Puerta de curso",
-        "Preguntas de todas las materias de un curso del plan.",
+        "Puerta bloque",
+        "Curso del plan: todas las materias de un curso.",
         EMOJI_PUERTA_CURSO,
         AlcanceEvento.ESCAPE,
         ModificadoresDesafio(),
@@ -472,8 +439,8 @@ _CATALOGO: tuple[DefinicionEvento, ...] = (
     ),
     _c(
         "puerta_semestre",
-        "Puerta de semestre",
-        "Preguntas del semestre indicado del plan (cualquier curso).",
+        "Puerta bloque",
+        "Semestre del plan: preguntas del semestre indicado (cualquier curso).",
         EMOJI_PUERTA_SEMESTRE,
         AlcanceEvento.ESCAPE,
         ModificadoresDesafio(),
@@ -487,8 +454,8 @@ _CATALOGO: tuple[DefinicionEvento, ...] = (
     ),
     _c(
         "puerta_periodo",
-        "Puerta de periodo",
-        "Preguntas de un semestre académico concreto (curso-semestre).",
+        "Puerta bloque",
+        "Periodo académico: semestre concreto (curso-semestre).",
         EMOJI_PUERTA_PERIODO,
         AlcanceEvento.ESCAPE,
         ModificadoresDesafio(),
@@ -503,7 +470,7 @@ _CATALOGO: tuple[DefinicionEvento, ...] = (
     # --- Puerta escape (rasgos de juego combinables) ---
     _c(
         "descanso",
-        "Descanso",
+        "Reposo",
         "Sin preguntas; avanzas sin bloque de preguntas.",
         EMOJI_DESCANSO,
         AlcanceEvento.ESCAPE,
@@ -744,21 +711,35 @@ _PROB_PUERTA_ESPECIAL_MAX = 0.48
 SALAS_HARD_PITY_DESCANSO_ESCAPE = 5
 SALAS_HARD_PITY_TIENDA_ESCAPE = 10
 _PROB_BOTIN_BASE = 0.14
-RASGOS_BOTIN_VIDAS_ESCAPE = frozenset({"botin", "botin_corazon_max"})
-_IDS_BOTIN_POWERUP_ESCAPE = (
-    "botin_bomba",
-    "botin_fifty_fifty",
-    "botin_tiempo_extra",
-    "botin_cambio",
-    "botin_skip",
-    "botin_escudo",
-    "botin_refuerzo",
-    "botin_amuleto",
-    "botin_reroll_puertas",
-    "botin_limpieza_maldiciones",
-    "botin_salto_sala",
+
+
+def _evento_es_botin_escape(ev: DefinicionEvento) -> bool:
+    """Recompensa de puerta (vida u objeto) identificada como botín en el catálogo."""
+    if ev.rol_escape != RolEscape.PUERTA or ev.exclusivo_puerta_escape:
+        return False
+    m = ev.modificadores
+    es_recompensa = (
+        m.delta_vidas_al_completar > 0
+        or m.delta_vidas_max_al_completar > 0
+        or bool(m.powerup_al_completar)
+    )
+    return es_recompensa and (ev.id == "botin" or ev.id.startswith("botin_"))
+
+
+RASGOS_BOTIN_VIDAS_ESCAPE = frozenset(
+    e.id
+    for e in _CATALOGO
+    if _evento_es_botin_escape(e)
+    and (
+        e.modificadores.delta_vidas_al_completar > 0
+        or e.modificadores.delta_vidas_max_al_completar > 0
+    )
 )
-RASGOS_BOTIN_POWERUP_ESCAPE = frozenset(_IDS_BOTIN_POWERUP_ESCAPE)
+RASGOS_BOTIN_POWERUP_ESCAPE = frozenset(
+    e.id
+    for e in _CATALOGO
+    if _evento_es_botin_escape(e) and e.modificadores.powerup_al_completar
+)
 RASGOS_BOTIN_ESCAPE = RASGOS_BOTIN_VIDAS_ESCAPE | RASGOS_BOTIN_POWERUP_ESCAPE
 RASGOS_RECOMPENSA_VIDAS_ESCAPE = RASGOS_BOTIN_VIDAS_ESCAPE
 SALAS_HARD_PITY_BOTIN_ESCAPE = 3
@@ -1137,30 +1118,33 @@ def definicion_materia_con_perfil(perfil: PerfilContenidoMateria) -> DefinicionE
 
 
 def definicion_grupo_con_perfil(perfil: PerfilContenidoMateria) -> DefinicionEvento:
-    base = _POR_ID["puerta_grupo"]
-    opts_base = base.contenido_escape or OpcionesContenidoEscape(
-        usa_grupo=True, usa_materia=False, ambito="grupo"
+    """Puerta bloque (grupo): sin perfil de dificultad/tipo de materia."""
+    del perfil
+    return _POR_ID["puerta_grupo"]
+
+
+def plantilla_lleva_perfil_materia(plantilla: DefinicionEvento) -> bool:
+    """Solo la familia materia admite perfiles de dificultad/tipo en la barra de iconos."""
+    from Comun.filtros_bloque import (
+        TipoPuertaPrincipalEscape,
+        clasificar_filtro_evento_escape,
+        familia_puerta_contenido_escape,
     )
-    if perfil.opts:
-        opts = replace(
-            opts_base,
-            tipos_permitidos=perfil.opts.tipos_permitidos,
-        )
-    else:
-        opts = opts_base
-    desc = f"{base.descripcion} {perfil.descripcion_filtro}".strip()
-    return replace(
-        base,
-        descripcion=desc,
-        modificadores=perfil.mod,
-        contenido_escape=opts,
+
+    if plantilla.rol_escape != RolEscape.CONTENIDO:
+        return False
+    opts = plantilla.contenido_escape or OpcionesContenidoEscape()
+    tipo = clasificar_filtro_evento_escape(
+        definicion_id=plantilla.id,
+        usa_grupo=opts.usa_grupo,
+        ambito=opts.ambito_efectivo,
+        tipos_permitidos=opts.tipos_permitidos,
     )
+    return familia_puerta_contenido_escape(tipo) == TipoPuertaPrincipalEscape.MATERIA
 
 
 _AMBITOS_FILTRO_AMPLIO: tuple[tuple[str, int, str], ...] = (
     ("grupo", 6, "puerta_grupo"),
-    ("tipo_teoria", 8, "puerta_tipo_teoria"),
-    ("tipo_calculo", 8, "puerta_tipo_calculo"),
     ("curso", 10, "puerta_curso"),
     ("semestre", 12, "puerta_semestre"),
     ("periodo", 14, "puerta_periodo"),
@@ -1179,11 +1163,7 @@ def _plantilla_filtro_amplio(
     rng: random.Random,
 ) -> tuple[DefinicionEvento, str | None]:
     if ambito == "grupo":
-        if perfiles:
-            perfil = perfiles.pop(0)
-        else:
-            perfil = rng.choice(perfiles_materia_escape_para_sala(numero_sala))
-        return definicion_grupo_con_perfil(perfil), perfil.id
+        return evento_por_id("puerta_grupo"), None
     for nombre, _, plantilla_id in _AMBITOS_FILTRO_AMPLIO:
         if nombre == ambito:
             return evento_por_id(plantilla_id), None
@@ -1228,6 +1208,77 @@ def elegir_plantillas_contenido_escape(
         elegidas.append((definicion_materia_con_perfil(perfil), perfil.id))
     rng.shuffle(elegidas)
     return tuple(elegidas[:cantidad])
+
+
+def ajustar_plantillas_milestone_escape(
+    plantillas: tuple[tuple[DefinicionEvento, str | None], ...],
+    numero_sala: int,
+    rng: random.Random,
+    *,
+    pool: list[Pregunta] | None = None,
+    n_salas: int = 30,
+    ambitos_permitidos: tuple[str, ...] | None = None,
+) -> tuple[tuple[DefinicionEvento, str | None], ...]:
+    """Sustituye materia por bloque viable hasta tener suficientes puertas para bloques de 10."""
+    from Comun.jefe_partida import PREGUNTAS_POR_JEFE, n_puertas_jefe_en_sala
+
+    n_diez = n_puertas_jefe_en_sala(numero_sala)
+    if n_diez <= 0 or not plantillas:
+        return plantillas
+    resultado = list(plantillas)
+    pools_bloque = pools_bloque_del_pool(pool) if pool is not None else None
+
+    def _bloque_admite_jefe(plantilla: DefinicionEvento) -> bool:
+        if plantilla_lleva_perfil_materia(plantilla):
+            return False
+        if pool is None or pools_bloque is None:
+            return not plantilla_lleva_perfil_materia(plantilla)
+        from Comun.escape_partida import plantilla_bloque_admite_jefe
+
+        return plantilla_bloque_admite_jefe(
+            pool,
+            plantilla,
+            numero_sala=numero_sala,
+            n_salas=n_salas,
+            min_preguntas=PREGUNTAS_POR_JEFE,
+            **pools_bloque,
+        )
+
+    n_bloques = sum(1 for p, _ in resultado if _bloque_admite_jefe(p))
+    faltan = n_diez - n_bloques
+    if ambitos_permitidos is not None and not ambitos_permitidos:
+        return tuple(resultado)
+    if ambitos_permitidos is not None:
+        ambitos = list(ambitos_permitidos)
+    else:
+        ambitos = _ambitos_amplio_disponibles(numero_sala) or ["grupo"]
+    perfiles = list(perfiles_materia_escape_para_sala(numero_sala))
+    if faltan > 0 and ambitos:
+        materias_idx = [
+            i for i, (p, _) in enumerate(resultado) if plantilla_lleva_perfil_materia(p)
+        ]
+        rng.shuffle(materias_idx)
+        for idx in materias_idx[:faltan]:
+            ambito = rng.choice(ambitos)
+            resultado[idx] = _plantilla_filtro_amplio(
+                ambito,
+                perfiles=perfiles,
+                numero_sala=numero_sala,
+                rng=rng,
+            )
+    if pool is not None and ambitos:
+        for i, (plantilla, _) in enumerate(resultado):
+            if plantilla_lleva_perfil_materia(plantilla):
+                continue
+            if _bloque_admite_jefe(plantilla):
+                continue
+            resultado[i] = _plantilla_filtro_amplio(
+                rng.choice(ambitos),
+                perfiles=perfiles,
+                numero_sala=numero_sala,
+                rng=rng,
+            )
+    return tuple(resultado)
 
 
 def elegir_eventos_contenido_escape(
@@ -1602,6 +1653,16 @@ def periodos_del_pool(pool: list[Pregunta]) -> tuple[tuple[str, str], ...]:
     return tuple(sorted({(p.curso, p.semestre) for p in pool if p.curso and p.semestre}))
 
 
+def pools_bloque_del_pool(pool: list[Pregunta]) -> dict[str, tuple]:
+    """Pools de foco para plantillas de bloque (grupo, curso, semestre, periodo)."""
+    return {
+        "grupos_pool": grupos_del_pool(pool),
+        "cursos_pool": cursos_del_pool(pool),
+        "semestres_pool": semestres_del_pool(pool),
+        "periodos_pool": periodos_del_pool(pool),
+    }
+
+
 def tipo_filtro_evento(evento: EventoContenidoInstanciado):
     from Comun.filtros_bloque import TipoFiltroBloque, clasificar_filtro_evento_escape
 
@@ -1653,6 +1714,9 @@ def instanciar_evento_contenido(
         semestre = rng.choice(semestres_pool)
     elif ambito == "periodo" and periodos_pool:
         curso, semestre = rng.choice(periodos_pool)
+
+    if not plantilla_lleva_perfil_materia(plantilla):
+        perfil_id = None
 
     return EventoContenidoInstanciado(
         definicion=plantilla,
@@ -1750,48 +1814,32 @@ def lineas_botin_puerta(
 
 
 def _iconos_botin_puerta(modificadores: ModificadoresPuerta) -> tuple[IconoEfectoPuerta, ...]:
+    """Un solo icono de botín; el pie de la carta detalla cada premio."""
+    tiene_botin = any(eid in RASGOS_BOTIN_ESCAPE for eid in modificadores.eventos_ids)
+    if not tiene_botin:
+        return ()
     tooltip = (
         TOOLTIP_BOTIN_DESCANSO
         if modificadores.sin_pregunta
         else TOOLTIP_BOTIN
     )
-    iconos: list[IconoEfectoPuerta] = []
-    for eid in modificadores.eventos_ids:
-        if eid not in RASGOS_BOTIN_ESCAPE:
-            continue
-        ev = evento_por_id(eid)
-        m = ev.modificadores
-        if m.powerup_al_completar:
-            iconos.append(
-                IconoEfectoPuerta(
-                    emoji=EMOJI_BOTIN_ESCAPE,
-                    tooltip=ev.descripcion,
-                    capa=CapaIconoEscape.BOTIN,
-                )
-            )
-            continue
-        if m.delta_vidas_al_completar <= 0 and m.delta_vidas_max_al_completar <= 0:
-            continue
-        iconos.append(
-            IconoEfectoPuerta(
-                emoji=EMOJI_BOTIN_ESCAPE,
-                tooltip=tooltip,
-                capa=CapaIconoEscape.BOTIN,
-            )
-        )
-    return tuple(iconos)
+    return (
+        IconoEfectoPuerta(
+            emoji=EMOJI_BOTIN_ESCAPE,
+            tooltip=tooltip,
+            capa=CapaIconoEscape.BOTIN,
+        ),
+    )
 
 
-def _icono_jefe_puerta(delta_jefe: int) -> IconoEfectoPuerta | None:
-    if delta_jefe <= 0:
+def _icono_bloque_diez_puerta(n_preguntas: int) -> IconoEfectoPuerta | None:
+    from Comun.jefe_partida import PREGUNTAS_POR_JEFE
+
+    if n_preguntas != PREGUNTAS_POR_JEFE:
         return None
-    txt = "1 vida" if delta_jefe == 1 else f"{delta_jefe} vidas"
     return IconoEfectoPuerta(
         emoji=EMOJI_JEFE,
-        tooltip=(
-            "Puerta jefe: bloque largo solo con preguntas difíciles. "
-            f"Al superarla sin fallar: +{txt} (tope actual de vidas)."
-        ),
+        tooltip=linea_bloque_preguntas_puerta(n_preguntas),
         capa=CapaIconoEscape.JEFE,
     )
 
@@ -1846,28 +1894,26 @@ def texto_modificadores_puerta(
 
 
 def texto_evento_contenido(evento: EventoContenidoInstanciado) -> str:
-    from Comun.config_historia import etiqueta_grupo_tematico
-
     lineas = [f"{evento.emoji} {evento.nombre}", evento.descripcion]
-    if evento.materia:
-        lineas.append(f"Materia: {evento.materia}")
-    if evento.grupo:
-        lineas.append(etiqueta_grupo_tematico(evento.grupo))
+    foco = linea_foco_contenido_puerta(evento)
+    if foco:
+        lineas.append(foco)
     return "\n".join(lineas)
 
 
 def emoji_tipo_puerta_escape(evento: EventoContenidoInstanciado) -> str:
-    """Icono de la capa «tipo de puerta» (materia o grupo)."""
-    opts = evento.contenido_escape
-    if opts and opts.usa_grupo:
-        return EMOJI_PUERTA_GRUPO
-    return EMOJI_PUERTA_MATERIA
+    """Subtipos de contenido en la barra (perfiles materia o subtipo bloque; sin 📕/🗃️)."""
+    return "".join(ic.emoji for ic in iconos_contenido_puerta(evento))
 
 
 def _icono_capa_dificultad_contenido(
     evento: EventoContenidoInstanciado,
 ) -> IconoEfectoPuerta | None:
-    """Capa dificultad: un icono si el perfil filtra dificultad (materia o grupo)."""
+    """Capa dificultad: solo en puertas de materia con perfil que filtra."""
+    from Comun.filtros_bloque import TipoFiltroBloque
+
+    if tipo_filtro_evento(evento) != TipoFiltroBloque.MATERIA:
+        return None
     capa = CapaIconoEscape.DIFICULTAD
     perfil = evento.perfil_id
     if perfil in _IDS_PERFIL_MIX_MATERIA:
@@ -1893,7 +1939,11 @@ def _icono_capa_dificultad_contenido(
 def _icono_capa_tipo_pregunta(
     evento: EventoContenidoInstanciado,
 ) -> IconoEfectoPuerta | None:
-    """Capa tipo de pregunta (🔤 teoría, 🔢 cálculo); solo si el perfil filtra tipo."""
+    """Capa tipo de pregunta (🔤/🔢); solo puertas de materia con perfil que filtra tipo."""
+    from Comun.filtros_bloque import TipoFiltroBloque
+
+    if tipo_filtro_evento(evento) != TipoFiltroBloque.MATERIA:
+        return None
     capa = CapaIconoEscape.TIPO_PREGUNTA
     perfil = evento.perfil_id
     if perfil == "teoria":
@@ -1908,94 +1958,69 @@ def _icono_capa_tipo_pregunta(
     return None
 
 
+def _tooltip_subtipo_puerta_bloque(tipo: "TipoFiltroBloque") -> str:
+    if tipo.value == "grupo":
+        return TOOLTIP_PUERTA_GRUPO
+    if tipo.value == "curso":
+        return TOOLTIP_PUERTA_CURSO
+    if tipo.value == "semestre":
+        return TOOLTIP_PUERTA_SEMESTRE
+    if tipo.value == "periodo":
+        return TOOLTIP_PUERTA_PERIODO
+    return TOOLTIP_PUERTA_BLOQUE
+
+
+def linea_foco_contenido_puerta(evento: EventoContenidoInstanciado) -> str | None:
+    """Ámbito concreto de la puerta (pie de carta / texto); no va en tooltip del icono."""
+    from Comun.config_historia import (
+        etiqueta_curso_academico,
+        etiqueta_grupo_tematico,
+        etiqueta_periodo_academico,
+    )
+
+    if evento.materia:
+        return evento.materia
+    if evento.grupo:
+        return etiqueta_grupo_tematico(evento.grupo)
+    if evento.curso and evento.semestre:
+        return etiqueta_periodo_academico(evento.curso, evento.semestre)
+    if evento.curso:
+        return etiqueta_curso_academico(evento.curso)
+    if evento.semestre:
+        return f"Semestre {evento.semestre}"
+    return None
+
+
+def _icono_subtipo_puerta_bloque(
+    evento: EventoContenidoInstanciado,
+    tipo: "TipoFiltroBloque",
+) -> IconoEfectoPuerta:
+    emoji_sub = emoji_subtipo_puerta_bloque_por_id(evento.id)
+    if emoji_sub is None:
+        emoji_sub = EMOJI_BLOQUE_SUBTIPO_GRUPO
+    return IconoEfectoPuerta(
+        emoji_sub,
+        _tooltip_subtipo_puerta_bloque(tipo),
+        CapaIconoEscape.TIPO_PUERTA,
+    )
+
+
 def iconos_contenido_puerta(evento: EventoContenidoInstanciado) -> tuple[IconoEfectoPuerta, ...]:
-    """Capas de contenido según el filtro (materia, grupo, curso, tipo…)."""
-    from Comun.config_historia import etiqueta_curso_academico, etiqueta_periodo_academico
-    from Comun.filtros_bloque import TipoFiltroBloque
+    """Subtipos en la barra: perfiles de materia o emoji de bloque (grupo/curso/…)."""
+    from Comun.filtros_bloque import TipoFiltroBloque, es_filtro_subtipo_bloque
 
     tipo = tipo_filtro_evento(evento)
     iconos: list[IconoEfectoPuerta] = []
 
     if tipo == TipoFiltroBloque.MATERIA:
-        iconos.append(
-            IconoEfectoPuerta(
-                EMOJI_PUERTA_MATERIA,
-                TOOLTIP_PUERTA_MATERIA,
-                CapaIconoEscape.TIPO_PUERTA,
-            )
-        )
         dif = _icono_capa_dificultad_contenido(evento)
         if dif is not None:
             iconos.append(dif)
         tipo_ic = _icono_capa_tipo_pregunta(evento)
         if tipo_ic is not None:
             iconos.append(tipo_ic)
-    elif tipo == TipoFiltroBloque.GRUPO:
-        iconos.append(
-            IconoEfectoPuerta(
-                EMOJI_PUERTA_GRUPO,
-                TOOLTIP_PUERTA_GRUPO,
-                CapaIconoEscape.TIPO_PUERTA,
-            )
-        )
-        dif = _icono_capa_dificultad_contenido(evento)
-        if dif is not None:
-            iconos.append(dif)
-        tipo_ic = _icono_capa_tipo_pregunta(evento)
-        if tipo_ic is not None:
-            iconos.append(tipo_ic)
-    elif tipo == TipoFiltroBloque.CURSO:
-        tooltip = TOOLTIP_PUERTA_CURSO
-        if evento.curso:
-            tooltip = f"{TOOLTIP_PUERTA_CURSO} ({etiqueta_curso_academico(evento.curso)})."
-        iconos.append(
-            IconoEfectoPuerta(
-                EMOJI_PUERTA_CURSO,
-                tooltip,
-                CapaIconoEscape.TIPO_PUERTA,
-            )
-        )
-    elif tipo == TipoFiltroBloque.SEMESTRE:
-        tooltip = TOOLTIP_PUERTA_SEMESTRE
-        if evento.semestre:
-            tooltip = f"{TOOLTIP_PUERTA_SEMESTRE} (semestre {evento.semestre})."
-        iconos.append(
-            IconoEfectoPuerta(
-                EMOJI_PUERTA_SEMESTRE,
-                tooltip,
-                CapaIconoEscape.TIPO_PUERTA,
-            )
-        )
-    elif tipo == TipoFiltroBloque.PERIODO:
-        tooltip = TOOLTIP_PUERTA_PERIODO
-        if evento.curso and evento.semestre:
-            tooltip = (
-                f"{TOOLTIP_PUERTA_PERIODO} "
-                f"({etiqueta_periodo_academico(evento.curso, evento.semestre)})."
-            )
-        iconos.append(
-            IconoEfectoPuerta(
-                EMOJI_PUERTA_PERIODO,
-                tooltip,
-                CapaIconoEscape.TIPO_PUERTA,
-            )
-        )
-    elif tipo == TipoFiltroBloque.TIPO_TEORIA:
-        iconos.append(
-            IconoEfectoPuerta(
-                EMOJI_TIPO_TEORIA,
-                TOOLTIP_TIPO_TEORIA_GLOBAL,
-                CapaIconoEscape.TIPO_PUERTA,
-            )
-        )
-    elif tipo == TipoFiltroBloque.TIPO_CALCULO:
-        iconos.append(
-            IconoEfectoPuerta(
-                EMOJI_TIPO_CALCULO,
-                TOOLTIP_TIPO_CALCULO_GLOBAL,
-                CapaIconoEscape.TIPO_PUERTA,
-            )
-        )
+    elif es_filtro_subtipo_bloque(tipo):
+        iconos.append(_icono_subtipo_puerta_bloque(evento, tipo))
     return tuple(iconos)
 
 
@@ -2058,7 +2083,7 @@ def tooltip_recompensa_completar(
         n = bonus.delta_vidas
         txt = "1 vida" if n == 1 else f"{n} vidas"
         return (
-            "Puerta jefe: bloque largo solo con preguntas difíciles. "
+            "Puerta jefe: bloque largo de 10 preguntas. "
             f"Al superarla sin fallar: +{txt} (tope actual de vidas)."
         )
     n = bonus.delta_vidas
@@ -2219,6 +2244,21 @@ _PRIORIDAD_RECORTE_ICONO: dict[CapaIconoEscape, int] = {
 }
 
 
+def _ordenar_iconos_carta_botin_al_final(
+    iconos: tuple[IconoEfectoPuerta, ...] | list[IconoEfectoPuerta],
+) -> tuple[IconoEfectoPuerta, ...]:
+    """Un solo icono de botín, siempre al final de la fila de la carta."""
+    canonicos = [ic for ic in iconos if ic.capa == CapaIconoEscape.BOTIN]
+    sin_botin = [
+        ic
+        for ic in iconos
+        if ic.capa != CapaIconoEscape.BOTIN and ic.emoji != EMOJI_BOTIN_ESCAPE
+    ]
+    if canonicos:
+        return tuple(sin_botin + [canonicos[0]])
+    return tuple(sin_botin)
+
+
 def acotar_iconos_carta_puerta(
     iconos: list[IconoEfectoPuerta],
     *,
@@ -2227,7 +2267,7 @@ def acotar_iconos_carta_puerta(
 ) -> tuple[IconoEfectoPuerta, ...]:
     """Recorta al límite quitando primero iconos opcionales de menor prioridad."""
     if len(iconos) <= max_iconos:
-        return tuple(iconos)
+        return _ordenar_iconos_carta_botin_al_final(iconos)
 
     opcionales = [
         (i, ic)
@@ -2242,7 +2282,9 @@ def acotar_iconos_carta_puerta(
         )
     )
     eliminar = {i for i, _ in opcionales[: min(quitar_n, len(opcionales))]}
-    return tuple(ic for i, ic in enumerate(iconos) if i not in eliminar)
+    return _ordenar_iconos_carta_botin_al_final(
+        tuple(ic for i, ic in enumerate(iconos) if i not in eliminar)
+    )
 
 
 def iconos_efecto_puerta(
@@ -2250,10 +2292,9 @@ def iconos_efecto_puerta(
     evento: EventoContenidoInstanciado,
     modificadores: ModificadoresPuerta,
     n_preguntas: int,
-    delta_jefe: int = 0,
     rng: random.Random,
 ) -> tuple[IconoEfectoPuerta, ...]:
-    """Rasgos → jefe → contenido → botín; como máximo ``MAX_ICONOS_CARTA_PUERTA``."""
+    """Rasgos → bloque 10 (👑) → contenido → botín; como máximo ``MAX_ICONOS_CARTA_PUERTA``."""
     iconos: list[IconoEfectoPuerta] = []
 
     for eid in modificadores.eventos_ids:
@@ -2268,9 +2309,9 @@ def iconos_efecto_puerta(
             )
         )
 
-    jefe = _icono_jefe_puerta(delta_jefe)
-    if jefe is not None:
-        iconos.append(jefe)
+    bloque_diez = _icono_bloque_diez_puerta(n_preguntas)
+    if bloque_diez is not None:
+        iconos.append(bloque_diez)
 
     bloque = _icono_bloque_puerta(evento, n_preguntas)
     if bloque is not None:

@@ -365,9 +365,18 @@ class PartidaModoLibre(Pantalla):
         niveles_complejidad: frozenset[int] | set[int] | None = None,
         meta_informe: dict | None = None,
         navegacion_fin: NavegacionFinPartida | None = None,
+        estrategia_practica: str = "sin_historico",
     ) -> None:
         self.nombre = nombre
         self.pool = list(pool)
+        self.estrategia_practica = estrategia_practica
+        from Comun.pool_libre import peso_pregunta_libre_desde_estrategia
+
+        self._peso_pregunta = peso_pregunta_libre_desde_estrategia(
+            datos.perfil,
+            datos.materias_meta,
+            estrategia_practica,
+        )
         self.infinito = infinito
         self.total = None if infinito else (total_previsto or len(self.pool))
         if niveles_complejidad is not None:
@@ -434,6 +443,7 @@ class PartidaModoLibre(Pantalla):
             niveles_complejidad=self.niveles_complejidad,
             respondidas=self.estado.respondidas,
             rng=self._rng_partida,
+            peso_pregunta=self._peso_pregunta,
         )
         if idx is None:
             return False
@@ -810,6 +820,7 @@ class ResumenPartida(Pantalla):
         cierre_informe: CierreInformePartida | None = None,
         titulo: str = "FIN DE PARTIDA",
         subtitulo: str | None = None,
+        lineas_tras_jugador: tuple[str, ...] = (),
         navegacion_fin: NavegacionFinPartida | None = None,
     ) -> None:
         self.estado = estado
@@ -821,6 +832,7 @@ class ResumenPartida(Pantalla):
         self.navegacion_fin = navegacion_fin
         self.titulo_pantalla = titulo
         self.subtitulo = subtitulo
+        self.lineas_tras_jugador = lineas_tras_jugador
         self.fuentes = crear_fuentes()
         self.lineas = self._construir_lineas()
         self.mensaje_pie = ""
@@ -953,14 +965,15 @@ class ResumenPartida(Pantalla):
             bold=True,
             ancho_max=ANCHO - 2 * MARGEN,
         )
-        y_nombre = rect_titulo.bottom + 16
-        nombre = self.fuentes["menu"].render(
-            f"Jugador: {self.estado.nombre}",
-            True,
-            COLOR_TEXTO,
-        )
-        superficie.blit(nombre, nombre.get_rect(center=(ANCHO // 2, y_nombre)))
-        y = y_nombre + 52
+        y_nombre = rect_titulo.bottom + 28
+        paso_linea = 42
+        for linea in (f"Jugador: {self.estado.nombre}", *self.lineas_tras_jugador):
+            txt = self.fuentes["menu"].render(
+                preparar_texto_ui(linea), True, COLOR_TEXTO
+            )
+            superficie.blit(txt, txt.get_rect(center=(ANCHO // 2, y_nombre)))
+            y_nombre += paso_linea
+        y = y_nombre
         for i, linea in enumerate(self.lineas):
             if linea.startswith(("Cada partida", "Los informes")):
                 fuente = self.fuentes["pequena"]
@@ -970,7 +983,7 @@ class ResumenPartida(Pantalla):
                 fuente = self.fuentes["cuerpo"]
             txt = fuente.render(preparar_texto_ui(linea), True, COLOR_TEXTO)
             superficie.blit(txt, txt.get_rect(center=(ANCHO // 2, y)))
-            y += 34 if fuente == self.fuentes["pequena"] else 42
+            y += 34 if fuente == self.fuentes["pequena"] else paso_linea
         if self.mensaje_pie:
             aviso = self.fuentes["menu"].render(self.mensaje_pie, True, COLOR_AVISO)
             y_aviso = self._botones_accion[0].rect.y - 40

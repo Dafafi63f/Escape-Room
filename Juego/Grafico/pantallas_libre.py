@@ -142,6 +142,7 @@ ETIQUETAS_FILA_PASO1: dict[str, str] = {
     "tiempo_pregunta": "Segundos por pregunta",
     "tiempo_total": "Tiempo total (min)",
     "sistema": "Puntuación",
+    "estrategia_practica": "Prioridad según tu práctica",
 }
 
 
@@ -158,6 +159,7 @@ class EstadoConfigLibrePaso1:
     tiempo_total: int
     sistema_elegido: SistemaPuntuacion
     reglas: ReglasPartida
+    estrategia_practica: str = "sin_historico"
 
 
 @dataclass(frozen=True)
@@ -171,6 +173,7 @@ class SnapshotConfigFiltrosLibre:
     tipos_sel: frozenset[str]
     niveles_sel: frozenset[int]
     dificultad_progresiva: bool = False
+    estrategia_practica: str = "sin_historico"
 
 
 def _dibujar_cabecera_libre(
@@ -271,6 +274,7 @@ class ConfigOpcionesLibre(Pantalla):
         tiempo_pregunta_inicial: int = 90,
         tiempo_total_inicial: int = 600,
         sistema_inicial: SistemaPuntuacion = SistemaPuntuacion.ARCADE,
+        estrategia_practica_inicial: str = "sin_historico",
     ) -> None:
         self.datos = datos
         self.ir_a = ir_a
@@ -291,6 +295,7 @@ class ConfigOpcionesLibre(Pantalla):
         self.tiempo_pregunta = tiempo_pregunta_inicial
         self.tiempo_total = tiempo_total_inicial
         self.sistema_elegido = sistema_inicial
+        self.estrategia_practica = estrategia_practica_inicial
         self.scroll_filas = 0
 
         self._y_panel_top = 0
@@ -427,6 +432,7 @@ class ConfigOpcionesLibre(Pantalla):
             if self.modo_tiempo == TIEMPO_TOTAL and alc.permitir_tiempo_total:
                 filas.append("tiempo_total")
         filas.append("sistema")
+        filas.append("estrategia_practica")
         return filas
 
     def _max_filas_visibles(self) -> int:
@@ -484,7 +490,9 @@ class ConfigOpcionesLibre(Pantalla):
             _, rect_val, _ = self._rects_control_fila(op_id)
             if not rect_val.collidepoint(pos):
                 continue
-            if tooltip_opcion_ciclo_libre(op_id, self._clave_actual(op_id)):
+            if tooltip_opcion_ciclo_libre(
+                op_id, self._clave_actual(op_id), perfil=self.datos.perfil
+            ):
                 self._hover_opcion_valor = op_id
             return
 
@@ -492,7 +500,9 @@ class ConfigOpcionesLibre(Pantalla):
         if not self._hover_opcion_valor:
             return
         op_id = self._hover_opcion_valor
-        tip = tooltip_opcion_ciclo_libre(op_id, self._clave_actual(op_id))
+        tip = tooltip_opcion_ciclo_libre(
+            op_id, self._clave_actual(op_id), perfil=self.datos.perfil
+        )
         if not tip:
             return
         _, rect_val, _ = self._rects_control_fila(op_id)
@@ -581,6 +591,7 @@ class ConfigOpcionesLibre(Pantalla):
                 niveles_complejidad=niveles,
                 meta_informe=meta,
                 navegacion_fin=nav,
+                estrategia_practica=self.estrategia_practica,
             )
 
         nav = NavegacionFinPartida(repetir=repetir, configurar=configurar)
@@ -622,6 +633,11 @@ class ConfigOpcionesLibre(Pantalla):
             for s in self._opciones_compat().sistemas
         ]
 
+    def _items_opcion_estrategia_practica(self) -> list[tuple[str, str]]:
+        from Comun.config_historia import valores_estrategia_practica
+
+        return list(valores_estrategia_practica())
+
     def _items_opcion(self, op_id: str) -> list[tuple[str, str]]:
         builders: dict[str, Callable[[], list[tuple[str, str]]]] = {
             "banco": self._items_opcion_banco,
@@ -634,6 +650,7 @@ class ConfigOpcionesLibre(Pantalla):
                 for s in PRESETS_TIEMPO_TOTAL
             ],
             "sistema": self._items_opcion_sistema,
+            "estrategia_practica": self._items_opcion_estrategia_practica,
         }
         builder = builders.get(op_id)
         return builder() if builder else []
@@ -653,6 +670,8 @@ class ConfigOpcionesLibre(Pantalla):
             return str(self.tiempo_total)
         if op_id == "sistema":
             return self.sistema_elegido.value
+        if op_id == "estrategia_practica":
+            return self.estrategia_practica
         return ""
 
     def _asignar_clave(self, op_id: str, clave: str) -> None:
@@ -678,6 +697,8 @@ class ConfigOpcionesLibre(Pantalla):
             self.tiempo_total = int(clave)
         elif op_id == "sistema":
             self.sistema_elegido = SistemaPuntuacion(clave)
+        elif op_id == "estrategia_practica":
+            self.estrategia_practica = clave
 
     def _texto_valor(self, op_id: str) -> str:
         for k, etq in self._items_opcion(op_id):
@@ -732,6 +753,7 @@ class ConfigOpcionesLibre(Pantalla):
             tiempo_total=self.tiempo_total,
             sistema_elegido=self.sistema_elegido,
             reglas=reglas,
+            estrategia_practica=self.estrategia_practica,
         )
         self.ir_a(ConfigFiltrosLibre(self.datos, self.ir_a, self.salir_app, estado))
 
@@ -1280,6 +1302,7 @@ class ConfigFiltrosLibre(Pantalla):
                 tiempo_pregunta_inicial=e.tiempo_pregunta,
                 tiempo_total_inicial=e.tiempo_total,
                 sistema_inicial=e.sistema_elegido,
+                estrategia_practica_inicial=e.estrategia_practica,
             )
         )
 
@@ -1292,6 +1315,7 @@ class ConfigFiltrosLibre(Pantalla):
             tipos_sel=frozenset(self.tipos_sel),
             niveles_sel=frozenset(self.niveles_sel),
             dificultad_progresiva=self.dificultad_progresiva,
+            estrategia_practica=self.estado.estrategia_practica,
         )
 
     @classmethod
@@ -1309,6 +1333,7 @@ class ConfigFiltrosLibre(Pantalla):
         pantalla.tipos_sel = set(snap.tipos_sel)
         pantalla.niveles_sel = set(snap.niveles_sel)
         pantalla.dificultad_progresiva = snap.dificultad_progresiva
+        pantalla.estado.estrategia_practica = snap.estrategia_practica
         pantalla._reconstruir_subfiltros()
         pantalla._actualizar_toggle_dificultad()
         pantalla._reconstruir_niveles_ui()
@@ -1336,6 +1361,7 @@ class ConfigFiltrosLibre(Pantalla):
             niveles_complejidad=niveles,
             meta_informe=self._meta_informe(pool),
             navegacion_fin=navegacion_fin,
+            estrategia_practica=self.estado.estrategia_practica,
         )
 
     def _construir_navegacion_fin(

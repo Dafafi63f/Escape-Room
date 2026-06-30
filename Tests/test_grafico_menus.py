@@ -1014,6 +1014,7 @@ class TestHoverTooltipsGrafico(unittest.TestCase):
 
         op_id = "estrategia_materias"
         self.assertIn(op_id, config.botones_ciclo)
+        self.assertIn("estrategia_practica", config.botones_ciclo)
         izq, der = config.botones_ciclo[op_id]
         self.assertIsNone(izq.tooltip)
         self.assertIsNone(der.tooltip)

@@ -33,6 +33,7 @@ __all__ = [
     "BTN_BORRAR_TXT_INFORMES",
     "BTN_VACIAR_PREFERENCIAS",
     "BTN_VACIAR_ESTADISTICAS",
+    "BTN_EXPORTAR_DATASET_INTERMEDIO",
     "BTN_VOLVER",
     "BTN_VOLVER_MENU",
     "con_emoji",
@@ -150,6 +151,7 @@ _EMOJI_ETIQUETA: dict[str, EmojiPar] = {
     "ayuda_pausa": _p("🖱️"),
     "placeholder_nombre": _p("✍️", "✏️"),
     "estrategia_materias": _p("📊"),
+    "estrategia_practica": _p("📈"),
     "sin_registros": _p("📭"),
     "jugador": _p("👤"),
     "racha": _p("🔥"),
@@ -167,6 +169,8 @@ _EMOJI_PASO: dict[str, EmojiPar] = {
     "Dificultad inicial": _p("📈"),
     "Opciones del tipo": _p("⚙️"),
     "Prioridad histórica": _p("📊"),
+    "Prioridad histórica (MatCAD)": _p("📊"),
+    "Prioridad según tu práctica": _p("📈"),
     "Categoría": _p("🏷️"),
     "Área": _p("🎯"),
     "Mensaje": _p("✍️", "✏️"),
@@ -387,6 +391,7 @@ BTN_APUESTA_NO = ("❌", "")
 BTN_BORRAR_TXT_INFORMES = ("Borrar informes y feedback", _p("🗑️"))
 BTN_VACIAR_PREFERENCIAS = ("Restablecer preferencias", _p("↺"))
 BTN_VACIAR_ESTADISTICAS = ("Restablecer estadísticas", _p("↺"))
+BTN_EXPORTAR_DATASET_INTERMEDIO = ("Generar dataset intermedio", _p("📤"))
 BTN_GUARDAR_INFORME = ("Guardar informe y volver", _p("💾"))
 BTN_REPETIR_PARTIDA = ("Repetir partida", _p("🔁"))
 BTN_CAMBIAR_OPCIONES = ("Cambiar opciones", _p("⚙️"))

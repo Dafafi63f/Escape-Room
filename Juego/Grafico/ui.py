@@ -745,6 +745,18 @@ class Boton:
             pantalla.set_clip(clip_anterior)
 
     def dibujar(self, pantalla: pygame.Surface, fuente: pygame.font.Font) -> None:
+        if self.mostrar_texto and self.etiqueta in ("◀", "▶"):
+            dibujar_flecha_ciclo(
+                pantalla,
+                self.rect,
+                "izq" if self.etiqueta == "◀" else "der",
+                activo=self.activo,
+                hover=self.hover,
+                seleccionado=self.seleccionado,
+                fondo=self.fondo,
+                fondo_hover=self.fondo_hover,
+            )
+            return
         fondo, texto_color, borde = self._colores_dibujo()
         pygame.draw.rect(pantalla, fondo, self.rect, border_radius=8)
         pygame.draw.rect(pantalla, borde, self.rect, width=2, border_radius=8)
@@ -1164,6 +1176,37 @@ def dibujar_overlay_atenuacion(
     overlay = pygame.Surface(superficie.get_size(), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, alpha))
     superficie.blit(overlay, (0, 0))
+
+
+def dibujar_flecha_ciclo(
+    superficie: pygame.Surface,
+    rect: pygame.Rect,
+    direccion: str,
+    *,
+    activo: bool = True,
+    hover: bool = False,
+    seleccionado: bool = False,
+    fondo: tuple[int, int, int] | None = None,
+    fondo_hover: tuple[int, int, int] | None = None,
+    border_radius: int = 8,
+) -> None:
+    """Botón ◀ / ▶ con triángulo vectorial (la fuente del juego no dibuja esos glifos)."""
+    fondo_btn, color, borde = colores_boton(
+        activo=activo,
+        hover=hover,
+        seleccionado=seleccionado,
+        fondo=fondo,
+        fondo_hover=fondo_hover,
+    )
+    pygame.draw.rect(superficie, fondo_btn, rect, border_radius=border_radius)
+    pygame.draw.rect(superficie, borde, rect, width=2, border_radius=border_radius)
+    cx, cy = rect.center
+    tam = max(8, min(12, rect.height // 3, rect.width // 3))
+    if direccion == "izq":
+        puntos = [(cx + tam // 3, cy - tam), (cx - tam // 2, cy), (cx + tam // 3, cy + tam)]
+    else:
+        puntos = [(cx - tam // 3, cy - tam), (cx + tam // 2, cy), (cx - tam // 3, cy + tam)]
+    pygame.draw.polygon(superficie, color, puntos)
 
 
 def dibujar_caja_valor_ciclo(

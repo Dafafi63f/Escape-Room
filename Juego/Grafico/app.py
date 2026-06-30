@@ -409,7 +409,20 @@ class AplicacionGrafica:
         if self._menu_pausa_abierto:
             return
         self._menu_opciones_abierto = True
-        self._overlay_opciones = OverlayOpcionesGrafico(on_cerrar=self._cerrar_menu_opciones)
+        export_dataset = None
+        perfil = self.datos.perfil
+        if perfil.modo_minimo and perfil.csv_minimal:
+            from Comun.rutas import path_preguntas
+            from Grafico.menu_opciones import ExportDatasetOpciones
+
+            export_dataset = ExportDatasetOpciones(
+                preguntas=tuple(self.datos.preguntas),
+                carpeta=path_preguntas().parent,
+            )
+        self._overlay_opciones = OverlayOpcionesGrafico(
+            on_cerrar=self._cerrar_menu_opciones,
+            export_dataset=export_dataset,
+        )
         self._actualizar_estado_barra_fija()
 
     def _cerrar_menu_opciones(self) -> None:

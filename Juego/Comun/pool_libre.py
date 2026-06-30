@@ -9,6 +9,7 @@ from collections import deque
 from collections.abc import MutableSequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
 from Comun.datos import cargar_banco_todo
 from Comun.reglas import (
@@ -31,6 +32,7 @@ __all__ = [
     "opciones_curso_semestre",
     "opciones_tematica",
     "opciones_tipo",
+    "peso_pregunta_libre_desde_estrategia",
 ]
 
 
@@ -126,6 +128,27 @@ def crear_estado_seleccion(tam_pool: int) -> EstadoSeleccionPool:
     return EstadoSeleccionPool(historial_reciente=deque(maxlen=ventana))
 
 
+def peso_pregunta_libre_desde_estrategia(
+    perfil_contenido,
+    materias_meta: dict | None,
+    estrategia: str | None,
+) -> Callable[[Pregunta], float] | None:
+    from Comun.config_historia import (
+        estrategia_activa_ponderacion,
+        perfil_pedagogico_estrategia,
+    )
+    from Comun.estadisticas_jugador import cargar_estadisticas_locales
+    from Comun.generador_examen_historia import peso_pregunta_para_seleccion
+
+    if not estrategia_activa_ponderacion(estrategia):
+        return None
+    stats = cargar_estadisticas_locales(perfil_contenido, materias_meta)
+    if not stats:
+        return None
+    perfil_ped = perfil_pedagogico_estrategia(estrategia or "")
+    return lambda p: peso_pregunta_para_seleccion(p, stats, perfil_ped)
+
+
 def elegir_indice_siguiente(
     pool: list[Pregunta],
     estado: EstadoSeleccionPool,
@@ -135,6 +158,7 @@ def elegir_indice_siguiente(
     niveles_complejidad: frozenset[int] | set[int] | None = None,
     respondidas: int = 0,
     rng: random.Random | None = None,
+    peso_pregunta: Callable[[Pregunta], float] | None = None,
 ) -> int | None:
     if not pool:
         return None
@@ -182,7 +206,11 @@ def elegir_indice_siguiente(
             if not candidatas:
                 return None
     elegidor = rng or random
-    idx = elegidor.choice(candidatas)
+    if peso_pregunta is not None:
+        pesos = [max(0.05, peso_pregunta(pool[i])) for i in candidatas]
+        idx = elegidor.choices(candidatas, weights=pesos, k=1)[0]
+    else:
+        idx = elegidor.choice(candidatas)
     estado.usadas.add(idx)
     estado.historial_reciente.append(idx)
     return idx

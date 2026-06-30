@@ -31,14 +31,22 @@ class TestJefePartida(unittest.TestCase):
         self.assertFalse(tamano_coherente_bloque_o_jefe(5, es_jefe=True))
 
     def test_sala_milestone_y_conteo_puertas(self) -> None:
-        from Comun.jefe_partida import n_puertas_jefe_en_sala, sala_es_milestone_jefe
+        from Comun.jefe_partida import (
+            es_puerta_diez_preguntas,
+            n_puertas_jefe_en_sala,
+            sala_es_milestone_jefe,
+        )
 
         self.assertFalse(sala_es_milestone_jefe(9))
         self.assertTrue(sala_es_milestone_jefe(10))
         self.assertEqual(n_puertas_jefe_en_sala(10), 1)
         self.assertEqual(n_puertas_jefe_en_sala(20), 2)
         self.assertEqual(n_puertas_jefe_en_sala(30), 3)
+        self.assertEqual(n_puertas_jefe_en_sala(40), 3)
+        self.assertEqual(n_puertas_jefe_en_sala(50), 3)
         self.assertEqual(n_puertas_jefe_en_sala(15), 0)
+        self.assertTrue(es_puerta_diez_preguntas(10))
+        self.assertFalse(es_puerta_diez_preguntas(5))
 
     def test_clasificar_dificultad_jefe(self) -> None:
         from Comun.jefe_partida import clasificar_dificultad_jefe
@@ -55,6 +63,202 @@ class TestJefePartida(unittest.TestCase):
             clasificar_dificultad_jefe(["Facil", "Media", "Dificil", "Media"]),
             "equilibrado",
         )
+
+    def test_tamanos_milestone_diez_solo_en_bloque(self) -> None:
+        from Comun.escape_room import asignar_tamanos_milestone_por_plantilla
+        from Comun.eventos_partida import (
+            definicion_materia_con_perfil,
+            evento_por_id,
+            perfiles_materia_escape_para_sala,
+        )
+        from Comun.jefe_partida import PREGUNTAS_POR_JEFE
+        from Comun.modelos import Pregunta
+
+        perfiles = perfiles_materia_escape_para_sala(20)
+        plantillas = (
+            (definicion_materia_con_perfil(perfiles[0]), perfiles[0].id),
+            (evento_por_id("puerta_grupo"), None),
+            (definicion_materia_con_perfil(perfiles[1]), perfiles[1].id),
+        )
+        pool_pequeno = [
+            Pregunta(
+                texto=f"p{i}",
+                materia="M1" if i < 4 else "M2",
+                tematica="",
+                dificultad="Dificil",
+                tipo="test",
+                grupo="2",
+                nivel="1",
+                curso="1",
+                semestre="1",
+                opciones={"A": "1", "B": "2", "C": "3", "D": "4"},
+                correcta="A",
+            )
+            for i in range(8)
+        ]
+        rng = random.Random(7)
+        tamanos = asignar_tamanos_milestone_por_plantilla(
+            plantillas,
+            19,
+            pool=pool_pequeno,
+            n_salas=30,
+            puertas_por_sala=3,
+            rng=rng,
+        )
+        self.assertEqual(len(tamanos), 3)
+        self.assertEqual(sum(1 for t in tamanos if t == PREGUNTAS_POR_JEFE), 0)
+        for tam in tamanos:
+            self.assertIn(tam, (3, 5))
+
+    def test_jefe_itera_foco_hasta_pool_viable(self) -> None:
+        from Comun.escape_partida import asegurar_puerta_viable, contar_candidatas_puerta
+        from Comun.eventos_partida import (
+            EventoContenidoInstanciado,
+            ModificadoresPuerta,
+            evento_por_id,
+        )
+        from Comun.escape_room import PuertaEscape
+        from Comun.jefe_partida import PREGUNTAS_POR_JEFE
+        from Comun.modelos import Pregunta
+
+        pool = [
+            Pregunta(
+                texto=f"c{i}",
+                materia="M1",
+                tematica="",
+                dificultad="Facil",
+                tipo="test",
+                grupo="1",
+                nivel="1",
+                curso="1",
+                semestre="1",
+                opciones={"A": "1", "B": "2", "C": "3", "D": "4"},
+                correcta="A",
+            )
+            for i in range(12)
+        ]
+        plantilla = evento_por_id("puerta_curso")
+        evento_malo = EventoContenidoInstanciado(definicion=plantilla, curso="9")
+        puerta = PuertaEscape(
+            indice=0,
+            n_preguntas=PREGUNTAS_POR_JEFE,
+            modificadores=ModificadoresPuerta(rasgos=("Clásica",)),
+            evento=evento_malo,
+            es_jefe=True,
+        )
+        self.assertLess(
+            contar_candidatas_puerta(pool, puerta, numero_sala=10, n_salas=30),
+            PREGUNTAS_POR_JEFE,
+        )
+        ajustada = asegurar_puerta_viable(
+            pool,
+            puerta,
+            numero_sala=10,
+            n_salas=30,
+            indice_puerta=0,
+            materias_pool=(),
+            rng=random.Random(3),
+            pools_bloque={"grupos_pool": (), "cursos_pool": ("1",), "semestres_pool": ("1",), "periodos_pool": (("1", "1"),)},
+        )
+        self.assertTrue(ajustada.es_jefe)
+        self.assertEqual(ajustada.n_preguntas, PREGUNTAS_POR_JEFE)
+        self.assertEqual(ajustada.evento.curso, "1")
+        self.assertGreaterEqual(
+            contar_candidatas_puerta(pool, ajustada, numero_sala=10, n_salas=30),
+            PREGUNTAS_POR_JEFE,
+        )
+
+    def test_grupo_pequeno_no_admite_jefe_en_milestone(self) -> None:
+        from Comun.escape_partida import (
+            contar_candidatas_puerta,
+            grupos_viables_sala,
+            plantilla_bloque_admite_jefe,
+        )
+        from Comun.eventos_partida import (
+            EventoContenidoInstanciado,
+            ModificadoresPuerta,
+            evento_por_id,
+        )
+        from Comun.escape_room import PuertaEscape
+        from Comun.jefe_partida import PREGUNTAS_POR_JEFE
+        from Comun.modelos import Pregunta
+
+        pool = [
+            Pregunta(
+                texto=f"p{i}",
+                materia="M1" if i < 4 else "M2",
+                tematica="",
+                dificultad="Dificil",
+                tipo="test",
+                grupo="2",
+                nivel="1",
+                curso="1",
+                semestre="1",
+                opciones={"A": "1", "B": "2", "C": "3", "D": "4"},
+                correcta="A",
+            )
+            for i in range(8)
+        ]
+        self.assertEqual(
+            grupos_viables_sala(
+                pool, ("2",), numero_sala=10, n_salas=30, min_preguntas=10
+            ),
+            (),
+        )
+        plantilla = evento_por_id("puerta_grupo")
+        self.assertFalse(
+            plantilla_bloque_admite_jefe(
+                pool,
+                plantilla,
+                numero_sala=10,
+                n_salas=30,
+                min_preguntas=PREGUNTAS_POR_JEFE,
+                grupos_pool=("2",),
+            )
+        )
+        evento = EventoContenidoInstanciado(definicion=plantilla, grupo="2")
+        puerta = PuertaEscape(
+            indice=0,
+            n_preguntas=PREGUNTAS_POR_JEFE,
+            modificadores=ModificadoresPuerta(),
+            evento=evento,
+        )
+        self.assertLess(
+            contar_candidatas_puerta(pool, puerta, numero_sala=10, n_salas=30),
+            PREGUNTAS_POR_JEFE,
+        )
+
+    def test_milestone_diez_solo_en_puertas_bloque(self) -> None:
+        from Comun.datos import cargar_materias, cargar_preguntas
+        from Comun.escape_partida import construir_pool_escape, materias_del_pool, puerta_es_jefe
+        from Comun.escape_room import config_escape_room, generar_puertas_sala
+        from Comun.eventos_partida import PityPuertasEspecialesEscape, plantilla_lleva_perfil_materia
+        from Comun.rutas import PATH_PREGUNTAS, resolver_listado_materias
+        from Comun.semillas import RngPartida
+
+        materias_meta = cargar_materias(resolver_listado_materias())
+        pool = construir_pool_escape(cargar_preguntas(PATH_PREGUNTAS, materias_meta))
+        materias_pool = materias_del_pool(pool)
+        config = config_escape_room(n_salas=30)
+        for semilla in range(200):
+            for sala_idx in (9, 19, 29):
+                puertas, _ = generar_puertas_sala(
+                    config.salas[sala_idx],
+                    sala_idx,
+                    materias_pool=materias_pool,
+                    pool_preguntas=pool,
+                    rng=RngPartida.desde_semilla(semilla * 10 + sala_idx),
+                    n_salas=30,
+                    pity=PityPuertasEspecialesEscape(),
+                )
+                for p in puertas:
+                    if p.n_preguntas == 10 or puerta_es_jefe(p):
+                        self.assertFalse(
+                            plantilla_lleva_perfil_materia(p.evento.definicion),
+                            msg=f"semilla={semilla} sala={sala_idx + 1}",
+                        )
+                    if plantilla_lleva_perfil_materia(p.evento.definicion):
+                        self.assertIn(p.n_preguntas, (3, 5))
 
     def test_sala_10_tiene_jefe_sin_descanso(self) -> None:
         from Comun.datos import cargar_materias, cargar_preguntas
@@ -132,6 +336,71 @@ class TestJefePartida(unittest.TestCase):
             self.assertEqual(len(puertas), PUERTAS_POR_SALA)
             normales = [p for p in puertas if not puerta_es_jefe(p)]
             self.assertTrue(all(p.n_preguntas in (3, 5) for p in normales))
+            for j in jefes:
+                from Comun.eventos_partida import plantilla_lleva_perfil_materia
+
+                self.assertFalse(plantilla_lleva_perfil_materia(j.evento.definicion))
+
+    def test_milestone_icono_corona_por_diez_preguntas(self) -> None:
+        from Comun.datos import cargar_materias, cargar_preguntas
+        from Comun.emojis_escape import EMOJI_JEFE
+        from Comun.escape_partida import construir_pool_escape, materias_del_pool
+        from Comun.escape_room import config_escape_room, generar_puertas_sala
+        from Comun.eventos_partida import PityPuertasEspecialesEscape, iconos_efecto_puerta
+        from Comun.jefe_partida import n_puertas_jefe_en_sala
+        from Comun.rutas import PATH_PREGUNTAS, resolver_listado_materias
+        from Comun.semillas import RngPartida
+
+        materias_meta = cargar_materias(resolver_listado_materias())
+        pool = construir_pool_escape(cargar_preguntas(PATH_PREGUNTAS, materias_meta))
+        materias_pool = materias_del_pool(pool)
+        config = config_escape_room(n_salas=50)
+        pity = PityPuertasEspecialesEscape(salas_sin_descanso=99, salas_sin_tienda=99)
+
+        for sala_idx in (9, 19, 29, 39):
+            numero_sala = sala_idx + 1
+            puertas, _ = generar_puertas_sala(
+                config.salas[sala_idx],
+                sala_idx,
+                materias_pool=materias_pool,
+                pool_preguntas=pool,
+                rng=RngPartida.desde_semilla(200 + sala_idx),
+                n_salas=50,
+                pity=pity,
+            )
+            coronas = sum(
+                1
+                for p in puertas
+                if EMOJI_JEFE
+                in [
+                    ic.emoji
+                    for ic in iconos_efecto_puerta(
+                        evento=p.evento,
+                        modificadores=p.modificadores,
+                        n_preguntas=p.n_preguntas,
+                        rng=RngPartida.desde_semilla(0),
+                    )
+                ]
+            )
+            self.assertEqual(coronas, n_puertas_jefe_en_sala(numero_sala), msg=f"sala {numero_sala}")
+
+        puertas_5, _ = generar_puertas_sala(
+            config.salas[4],
+            4,
+            materias_pool=materias_pool,
+            pool_preguntas=pool,
+            rng=RngPartida.desde_semilla(99),
+            n_salas=50,
+            pity=pity,
+        )
+        for p in puertas_5:
+            iconos = iconos_efecto_puerta(
+                evento=p.evento,
+                modificadores=p.modificadores,
+                n_preguntas=p.n_preguntas,
+                rng=RngPartida.desde_semilla(0),
+            )
+            self.assertNotIn(EMOJI_JEFE, [ic.emoji for ic in iconos])
 
     def test_resistencia_recompensa_jefe_garantizada(self) -> None:
         from Comun.motor_nucleo import EstadoPartida

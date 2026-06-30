@@ -163,6 +163,31 @@ class TestEstadisticasJugador(unittest.TestCase):
         self.assertIn("max preguntas: 3", texto)
         self.assertIn("max puntos: 500", texto)
 
+    def test_panel_escape_muestra_salas_superadas(self) -> None:
+        from Comun.informe_examen import meta_cierre_historia
+
+        cierre = CierreInformePartida(
+            registros=_cierre_libre().registros,
+            titulo="DERROTA — Escape",
+            total_previsto=90,
+            prefijo="escape",
+            meta={
+                **meta_cierre_historia(
+                    preset_id="escape_room",
+                    preset_nombre="Escape room",
+                    perfil="balanceado",
+                    materias=[],
+                    n_preguntas=90,
+                ),
+                "salas_superadas": 12,
+                "n_salas": 30,
+            },
+        )
+        registrar_cierre_partida(_estado(), cierre)
+        texto = formatear_panel_estadisticas()
+        self.assertIn("Salas superadas (escape): 12", texto)
+        self.assertIn("Escape room: 1 partidas, 12 salas superadas", texto)
+
     def test_panel_minimo_sin_escape_ni_analisis_contenido(self) -> None:
         from Comun.perfil_contenido import PerfilContenido
 
@@ -178,6 +203,48 @@ class TestEstadisticasJugador(unittest.TestCase):
         self.assertNotIn("--- ANALISIS POR CONTENIDO ---", texto)
         self.assertNotIn("Teoria vs calculo", texto)
         self.assertNotIn("Materias a reforzar", texto)
+
+    def test_panel_minimo_muestra_conceptos_del_dataset(self) -> None:
+        from Comun.perfil_contenido import PerfilContenido
+
+        def _pregunta_csv(texto: str) -> Pregunta:
+            return Pregunta(
+                texto=texto,
+                materia="",
+                tematica="",
+                dificultad="",
+                tipo="",
+                grupo="",
+                nivel="",
+                curso="",
+                semestre="",
+                opciones={"A": "a", "B": "b", "C": "c", "D": "d"},
+                correcta="A",
+            )
+
+        registros = [
+            RegistroRespuesta(i + 1, _pregunta_csv("Derivada de polinomio grado tres"), "B", False)
+            for i in range(4)
+        ] + [
+            RegistroRespuesta(5, _pregunta_csv("Matriz invertible cuadrada"), "A", True),
+            RegistroRespuesta(6, _pregunta_csv("Rango de matriz rectangular"), "A", True),
+            RegistroRespuesta(7, _pregunta_csv("Determinante matriz tres por tres"), "A", True),
+        ]
+        cierre = CierreInformePartida(
+            registros=registros,
+            titulo="FIN",
+            total_previsto=7,
+            prefijo="examen",
+            meta={"modo": "historia"},
+        )
+        registrar_cierre_partida(_estado(), cierre)
+        perfil = PerfilContenido(modo_minimo=True, csv_minimal=True, tiene_presets=True)
+        texto = formatear_panel_estadisticas(perfil)
+        self.assertIn("--- ANALISIS POR CONCEPTOS ---", texto)
+        self.assertIn("Conceptos a reforzar:", texto)
+        self.assertIn("derivada", texto.lower())
+        self.assertIn("polinomio", texto.lower())
+        self.assertRegex(texto, r"Refuerza «[^»]+»")
 
     def test_panel_minimo_examen_fijo_en_por_modo(self) -> None:
         from Comun.informe_examen import meta_cierre_historia

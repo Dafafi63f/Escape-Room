@@ -140,11 +140,11 @@ TOOLTIP_VER_RANKING = TOOLTIP_RANKING
 # Valores de opciones «eleccion» en presets historia (clave op → valor → texto).
 _TOOLTIP_ELECCION_HISTORIA: dict[str, dict[str, str]] = {
     "estrategia_materias": {
-        "debilidades": "Prioriza materias con peores resultados históricos dentro del ámbito elegido.",
-        "fortalezas": "Prioriza materias con mejores medias históricas dentro del ámbito elegido.",
-        "equilibrado": "Reparto suave según el histórico, sin priorizar debilidades ni fortalezas.",
+        "debilidades": "Prioriza materias o conceptos con peor acierto (histórico MatCAD o tu práctica).",
+        "fortalezas": "Prioriza materias o conceptos con mejor acierto (histórico MatCAD o tu práctica).",
+        "equilibrado": "Ponderación suave según histórico o tu práctica.",
         "curricular": "Sigue el orden del plan de estudios, sin ponderar el histórico.",
-        "sin_historico": "Ignora el histórico MatCAD: mismo número de preguntas por asignatura.",
+        "sin_historico": "Reparto uniforme sin ponderar por histórico ni por tu práctica.",
     },
     "origen_semilla": {
         "diario": "Mismo contenido que el examen del día de hoy; el orden varía en cada partida.",
@@ -164,7 +164,8 @@ _TOOLTIP_OPCION_HISTORIA_ID: dict[str, str] = {
     "periodo": "Semestre académico concreto del plan (p. ej. Semestre 3-2). Vacío: filtra por curso y semestre por separado.",
     "grupo": "Elige un bloque G1–G10: entran todas sus asignaturas (sin mezclar con curso ni semestre).",
     "materia": "Concentra el reto en una sola asignatura.",
-    "estrategia_materias": "Cómo repartir preguntas entre asignaturas según el histórico MatCAD.",
+    "estrategia_materias": "Ponderación según el histórico de qualificacions MatCAD.",
+    "estrategia_practica": "Ponderación según tus aciertos y fallos en este banco.",
     "n_materias": "Cuántas materias entran en el examen (mínimo 2 para alcanzar 5 preguntas).",
     "n_preguntas": "Cuántas preguntas incluir (mínimo 5; máximo según plantillas de la materia y el tipo de preguntas).",
     "enfoque": "Filtra si entran preguntas de teoría, de cálculo o ambas.",
@@ -232,7 +233,21 @@ def _tooltip_historia_eleccion(
     op_id: str,
     clave: str,
     etiqueta_opcion: str,
+    *,
+    perfil=None,
 ) -> str | None:
+    if op_id == "estrategia_materias" and perfil is not None:
+        from Comun.config_historia import tooltip_valor_estrategia_historica
+
+        tip = tooltip_valor_estrategia_historica(clave)
+        if tip:
+            return tip
+    if op_id == "estrategia_practica" and perfil is not None:
+        from Comun.config_historia import tooltip_valor_estrategia_practica
+
+        tip = tooltip_valor_estrategia_practica(clave)
+        if tip:
+            return tip
     por_op = _TOOLTIP_ELECCION_HISTORIA.get(op_id, {})
     if clave in por_op:
         return por_op[clave]
@@ -259,12 +274,27 @@ def tooltip_opcion_ciclo_historia(
     *,
     etiqueta_opcion: str = "",
     curso_actual: str | None = None,
+    perfil=None,
 ) -> str | None:
     """Ayuda en la caja central ◀ valor ▶ del configurador de preset historia."""
-    from Comun.config_historia import etiqueta_periodo_academico, etiqueta_periodo_desde_clave
+    from Comun.config_historia import (
+        descripcion_campo_estrategia_materias,
+        descripcion_campo_estrategia_practica,
+        etiqueta_periodo_academico,
+        etiqueta_periodo_desde_clave,
+    )
+
+    if op_id == "estrategia_materias" and tipo == "eleccion" and perfil is not None:
+        if not clave:
+            return descripcion_campo_estrategia_materias(perfil)
+    if op_id == "estrategia_practica" and tipo == "eleccion" and perfil is not None:
+        if not clave:
+            return descripcion_campo_estrategia_practica()
 
     if tipo == "eleccion":
-        return _tooltip_historia_eleccion(op_id, clave, etiqueta_opcion)
+        return _tooltip_historia_eleccion(
+            op_id, clave, etiqueta_opcion, perfil=perfil
+        )
     if tipo == "curso":
         if not clave:
             return "Sin filtro de curso: el preset puede abarcar todo el grado."
@@ -288,7 +318,12 @@ def tooltip_opcion_ciclo_historia(
     return _TOOLTIP_OPCION_HISTORIA_ID.get(op_id) or (etiqueta_opcion or None)
 
 
-def tooltip_opcion_ciclo_libre(op_id: str, clave: str) -> str | None:
+def tooltip_opcion_ciclo_libre(
+    op_id: str,
+    clave: str,
+    *,
+    perfil=None,
+) -> str | None:
     """Ayuda en la caja central ◀ valor ▶ del paso 1 libre; None si es autoexplicativo."""
     if op_id in _OPCIONES_CICLO_SIN_TOOLTIP:
         return None
@@ -305,4 +340,8 @@ def tooltip_opcion_ciclo_libre(op_id: str, clave: str) -> str | None:
         return TOOLTIP_TIEMPO_MODO.get(clave)
     if op_id == "sistema":
         return TOOLTIP_SISTEMA.get(clave)
+    if op_id == "estrategia_practica":
+        from Comun.config_historia import tooltip_valor_estrategia_practica
+
+        return tooltip_valor_estrategia_practica(clave)
     return None

@@ -270,24 +270,41 @@ def _lineas_resumen(
     total: int,
     total_previsto: int,
     incompleto: bool,
+    meta: dict | None = None,
 ) -> list[str]:
+    meta = meta or {}
     resultado = formatear_resultado_puntuacion(
         estado.reglas,
         aciertos=estado.aciertos,
         total=total,
         puntos_arcade=estado.puntos_arcade,
     )
-    prev = f"{total}/{total_previsto}"
-    if incompleto:
-        prev += " (incompleto)"
+    salas = meta.get("salas_superadas")
+    n_salas = meta.get("n_salas")
+    if salas is not None and n_salas is not None:
+        progreso = f"Salas superadas: {salas}/{n_salas}"
+        if incompleto:
+            progreso += " (incompleto)"
+        detalle = (
+            f"Aciertos: {estado.aciertos}/{total}  "
+            f"Preguntas respondidas: {total}"
+        )
+    else:
+        prev = f"{total}/{total_previsto}"
+        if incompleto:
+            prev += " (incompleto)"
+        progreso = f"Preguntas: {prev}  Aciertos: {estado.aciertos}/{total}"
+        detalle = None
     lineas = [
         "",
         "RESUMEN",
         "-" * 40,
         resultado,
-        f"Preguntas: {prev}  Aciertos: {estado.aciertos}/{total}",
-        f"Duración: {formatear_duracion_seg(estado.duracion_partida_seg())}",
+        progreso,
     ]
+    if detalle is not None:
+        lineas.append(detalle)
+    lineas.append(f"Duración: {formatear_duracion_seg(estado.duracion_partida_seg())}")
     limite = estado.reglas.tiempo_total_seg
     if limite:
         lineas.append(f"Tiempo global configurado: {formatear_duracion_seg(limite)}")
@@ -326,7 +343,13 @@ def formatear_informe_examen(
     ahora = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     lineas = _lineas_cabecera_informe(estado, meta, generado=ahora)
-    lineas.extend(_lineas_resumen(estado, total=total, total_previsto=total_previsto, incompleto=incompleto))
+    lineas.extend(_lineas_resumen(
+        estado,
+        total=total,
+        total_previsto=total_previsto,
+        incompleto=incompleto,
+        meta=meta,
+    ))
     lineas.extend(_estadisticas_por_materia(registros))
     lineas.extend(["", "CORRECCIÓN DETALLADA (pregunta a pregunta)", "=" * 60])
 

@@ -44,6 +44,7 @@ CAMPOS_ESTADISTICAS = {
     "totales": "partidas, preguntas, aciertos, fallos, segundos_jugados (enteros >= 0)",
     "por_modo": "dict modo -> {partidas, preguntas, aciertos, segundos_jugados}",
     "por_materia": "dict materia -> {intentos, aciertos}",
+    "por_concepto": "dict token enunciado -> {intentos, aciertos, fallos}",
     "por_tipo": "dict Teoria|Calculo -> {intentos, aciertos}",
     "records": (
         "resistencia_racha, resistencia_puntos, resistencia_preguntas, "
@@ -84,9 +85,11 @@ def estadisticas_jugador_vacio() -> dict[str, Any]:
             "aciertos": 0,
             "fallos": 0,
             "segundos_jugados": 0,
+            "salas_escape": 0,
         },
         "por_modo": {},
         "por_materia": {},
+        "por_concepto": {},
         "por_tipo": {},
         "records": {
             "resistencia_racha": 0,
@@ -111,6 +114,8 @@ def es_fichero_runtime_juego(nombre: str) -> bool:
     if bajo.endswith(".txt"):
         return True
     if bajo == "estadisticas_jugador.json":
+        return True
+    if bajo == "metadatos_inferidos.json":
         return True
     if bajo.startswith("preferencias_") and bajo.endswith(".json"):
         return True

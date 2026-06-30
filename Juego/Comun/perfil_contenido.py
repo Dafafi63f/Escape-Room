@@ -30,6 +30,12 @@ class PerfilContenido:
     tiene_grupos_tematicos: bool = True
     tiene_tipos_pregunta: bool = True
     analisis_historico_disponible: bool = True
+    dataset_intermedio: bool = False
+
+    @property
+    def mostrar_metadatos_pregunta(self) -> bool:
+        """Materia, tipo y dificultad bajo el enunciado (CSV real o inferidos)."""
+        return not self.csv_minimal or self.dataset_intermedio
 
     @property
     def paquete_completo(self) -> bool:
@@ -42,16 +48,13 @@ class PerfilContenido:
 
     @property
     def filtros_libre_disponibles(self) -> bool:
+        if self.dataset_intermedio and self.tiene_tipos_pregunta:
+            return True
         return (
             not self.modo_minimo
             and self.tiene_listado_materias
             and not self.csv_minimal
         )
-
-    @property
-    def mostrar_metadatos_pregunta(self) -> bool:
-        """Materia, tipo y dificultad bajo el enunciado (CSV con metadatos reales)."""
-        return not self.csv_minimal
 
     @property
     def historia_restringida(self) -> bool:

@@ -82,16 +82,17 @@ class TestCargaContenidoPortable(unittest.TestCase):
         self.assertTrue(all(p.texto for p in datos.preguntas))
         self.assertTrue(all(p.opciones.values() for p in datos.preguntas))
 
-    def test_csv_minimal_sin_placeholders_metadatos(self) -> None:
+    def test_csv_minimal_sin_placeholders_curriculares(self) -> None:
         contenido = cargar_contenido_juego(path_csv=_FIXTURE)
         muestra = contenido.preguntas[:20]
         self.assertTrue(muestra)
         for p in muestra:
             self.assertEqual(p.materia, "")
-            self.assertEqual(p.dificultad, "")
-            self.assertEqual(p.tipo, "")
             self.assertEqual(p.grupo, "")
             self.assertEqual(p.curso, "")
+            # Tipo/temática pueden salir de heurística; dificultad solo tras estadísticas.
+            if p.dificultad:
+                self.assertIn(p.dificultad, {"Facil", "Media", "Dificil"})
 
     def test_menu_principal_modos_minimo(self) -> None:
         datos = construir_datos_juego(cargar_contenido_juego(path_csv=_FIXTURE))
@@ -249,11 +250,48 @@ class TestCargaContenidoPortable(unittest.TestCase):
         self.assertIsInstance(pantalla, ConfigOpcionesHistoria)
         self.assertEqual(pantalla.preset.id, "examen_fijo")
         opciones = {op.id for op in pantalla._opciones_ui()}
-        self.assertEqual(opciones, {"origen_semilla", "semilla"})
+        self.assertEqual(opciones, {"origen_semilla", "semilla", "estrategia_practica"})
         self.assertTrue(pantalla._filtro_ambito_bloqueado("semilla"))
         pantalla.config.valores["origen_semilla"] = "semilla"
         pantalla._sync_campo_semilla_desde_config()
         self.assertFalse(pantalla._filtro_ambito_bloqueado("semilla"))
+
+    def test_examen_dirigido_csv_minimal_genera_otro_test(self) -> None:
+        from Comun.informe_examen import RegistroRespuesta
+        from Comun.presets_historia import argumentos_generador, buscar_preset, config_defecto
+        from Grafico.modo_historia import (
+            orden_materias_juego,
+            preparar_examen_dirigido_sesion,
+            preparar_partida_historia,
+        )
+
+        datos = construir_datos_juego(cargar_contenido_juego(path_csv=_FIXTURE))
+        preset = buscar_preset("examen_fijo")
+        cfg = config_defecto(
+            preset,
+            materias_meta=datos.materias_meta,
+            materias_orden=orden_materias_juego(datos),
+            perfil=datos.perfil,
+        )
+        kwargs = argumentos_generador(
+            preset, cfg, materias_meta=datos.materias_meta, perfil_datos=datos.perfil
+        )
+        self.assertTrue(kwargs["seleccion_plana"])
+
+        plan_inicial, _ = preparar_partida_historia(datos, preset, cfg)
+        registros = [
+            RegistroRespuesta(i + 1, p, "B", False)
+            for i, p in enumerate(plan_inicial.preguntas[:8])
+        ]
+        plan_dirigido, _reglas, cadena = preparar_examen_dirigido_sesion(
+            datos, preset, cfg, registros
+        )
+        self.assertEqual(len(plan_dirigido.preguntas), 24)
+        self.assertEqual(cadena.n_sesiones, 1)
+        self.assertNotEqual(
+            tuple(p.texto for p in plan_inicial.preguntas),
+            tuple(p.texto for p in plan_dirigido.preguntas),
+        )
 
     def test_csv_curricular_rechazado_con_flag(self) -> None:
         from Comun.rutas import PATH_PREGUNTAS

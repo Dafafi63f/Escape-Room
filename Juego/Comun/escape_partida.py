@@ -47,6 +47,11 @@ __all__ = [
     "filtro_pool_escalada",
     "grupos_del_pool",
     "grupos_viables_sala",
+    "cursos_viables_sala",
+    "semestres_viables_sala",
+    "periodos_viables_sala",
+    "plantilla_bloque_admite_jefe",
+    "ambitos_jefe_viables_milestone",
     "materias_del_grupo",
     "materias_del_pool",
     "materias_viables_sala",
@@ -176,7 +181,7 @@ class BonificacionCompletarEscape:
 
 
 def puerta_es_jefe(puerta: PuertaEscape) -> bool:
-    """Bloque de jefe: 10 preguntas de un grupo temático."""
+    """Bloque de jefe escape: 10 preguntas en puerta de bloque (grupo/curso/…)."""
     return puerta.es_jefe
 
 
@@ -213,6 +218,8 @@ def procesar_fallo_puerta_maldita(
         consumir_proteccion=False,
         mensaje_extra=" Puerta maldita: fin de partida.",
     )
+
+
 def puerta_tiene_bloque_preguntas(puerta: PuertaEscape | None) -> bool:
     if puerta is None:
         return False
@@ -277,7 +284,7 @@ def sufijo_mensaje_fallo_puerta(puerta: PuertaEscape) -> str:
 
 def mensaje_feedback_puerta_sin_pregunta(puerta: PuertaEscape) -> str:
     """Texto al elegir una puerta sin bloque de preguntas."""
-    from Comun.eventos_partida import evento_por_id, evento_sin_pregunta_escape, lineas_botin_puerta
+    from Comun.eventos_partida import evento_por_id, evento_sin_pregunta_escape
     from Comun.tienda_escape import puerta_es_tienda
 
     if puerta_es_tienda(puerta):
@@ -285,13 +292,8 @@ def mensaje_feedback_puerta_sin_pregunta(puerta: PuertaEscape) -> str:
         return f"{ev.nombre}: {ev.descripcion}"
     ev = evento_sin_pregunta_escape(puerta.modificadores)
     if ev is None:
-        base = "💤 Avanzas sin preguntas."
-    else:
-        base = f"{ev.emoji} {ev.nombre}: avanzas sin preguntas."
-    botines = lineas_botin_puerta(puerta.modificadores)
-    if botines:
-        base += " " + " ".join(botines)
-    return base
+        return "💤 Avanzas sin preguntas."
+    return f"{ev.emoji} {ev.nombre}: avanzas sin preguntas."
 
 
 def bonificacion_completar_escape(puerta: PuertaEscape) -> BonificacionCompletarEscape:
@@ -728,6 +730,39 @@ def contar_candidatas_puerta(
     return len(_indices_candidatas(pool, criterios, usadas or set()))
 
 
+def _devolver_viables_o_pool(
+    viables: list,
+    pool_completo: tuple,
+    min_preguntas: int,
+) -> tuple:
+    if viables:
+        return tuple(viables)
+    if min_preguntas <= 3:
+        return pool_completo
+    return ()
+
+
+def _contar_candidatas_foco_bloque(
+    pool: list[Pregunta],
+    evento: EventoContenidoInstanciado,
+    *,
+    numero_sala: int,
+    n_salas: int,
+    min_preguntas: int,
+) -> int:
+    from Comun.escape_room import PuertaEscape
+
+    puerta = PuertaEscape(
+        indice=0,
+        n_preguntas=min_preguntas,
+        modificadores=ModificadoresPuerta(),
+        evento=evento,
+    )
+    return contar_candidatas_puerta(
+        pool, puerta, numero_sala=numero_sala, n_salas=n_salas
+    )
+
+
 def materias_viables_sala(
     pool: list[Pregunta],
     materias_pool: tuple[str, ...],
@@ -755,7 +790,7 @@ def materias_viables_sala(
             pool, puerta, numero_sala=numero_sala, n_salas=n_salas
         ) >= min_preguntas:
             viables.append(materia)
-    return tuple(viables) if viables else materias_pool
+    return _devolver_viables_o_pool(viables, materias_pool, min_preguntas)
 
 
 def grupos_viables_sala(
@@ -767,25 +802,191 @@ def grupos_viables_sala(
     min_preguntas: int = 3,
 ) -> tuple[str, ...]:
     """Grupos con al menos ``min_preguntas`` candidatas en la escalada de la sala."""
-    from Comun.escape_room import PuertaEscape
-
     viables: list[str] = []
+    plantilla = evento_por_id("puerta_grupo")
     for grupo in grupos_pool:
-        evento = EventoContenidoInstanciado(
-            definicion=evento_por_id("puerta_grupo"),
-            grupo=grupo,
-        )
-        puerta = PuertaEscape(
-            indice=0,
-            n_preguntas=min_preguntas,
-            modificadores=ModificadoresPuerta(),
-            evento=evento,
-        )
-        if contar_candidatas_puerta(
-            pool, puerta, numero_sala=numero_sala, n_salas=n_salas
+        evento = EventoContenidoInstanciado(definicion=plantilla, grupo=grupo)
+        if _contar_candidatas_foco_bloque(
+            pool,
+            evento,
+            numero_sala=numero_sala,
+            n_salas=n_salas,
+            min_preguntas=min_preguntas,
         ) >= min_preguntas:
             viables.append(grupo)
-    return tuple(viables) if viables else grupos_pool
+    return _devolver_viables_o_pool(viables, grupos_pool, min_preguntas)
+
+
+def cursos_viables_sala(
+    pool: list[Pregunta],
+    cursos_pool: tuple[str, ...],
+    *,
+    numero_sala: int,
+    n_salas: int,
+    min_preguntas: int = 3,
+) -> tuple[str, ...]:
+    """Cursos con al menos ``min_preguntas`` candidatas en la escalada de la sala."""
+    viables: list[str] = []
+    plantilla = evento_por_id("puerta_curso")
+    for curso in cursos_pool:
+        evento = EventoContenidoInstanciado(definicion=plantilla, curso=curso)
+        if _contar_candidatas_foco_bloque(
+            pool,
+            evento,
+            numero_sala=numero_sala,
+            n_salas=n_salas,
+            min_preguntas=min_preguntas,
+        ) >= min_preguntas:
+            viables.append(curso)
+    return _devolver_viables_o_pool(viables, cursos_pool, min_preguntas)
+
+
+def semestres_viables_sala(
+    pool: list[Pregunta],
+    semestres_pool: tuple[str, ...],
+    *,
+    numero_sala: int,
+    n_salas: int,
+    min_preguntas: int = 3,
+) -> tuple[str, ...]:
+    """Semestres con al menos ``min_preguntas`` candidatas en la escalada de la sala."""
+    viables: list[str] = []
+    plantilla = evento_por_id("puerta_semestre")
+    for semestre in semestres_pool:
+        evento = EventoContenidoInstanciado(definicion=plantilla, semestre=semestre)
+        if _contar_candidatas_foco_bloque(
+            pool,
+            evento,
+            numero_sala=numero_sala,
+            n_salas=n_salas,
+            min_preguntas=min_preguntas,
+        ) >= min_preguntas:
+            viables.append(semestre)
+    return _devolver_viables_o_pool(viables, semestres_pool, min_preguntas)
+
+
+def periodos_viables_sala(
+    pool: list[Pregunta],
+    periodos_pool: tuple[tuple[str, str], ...],
+    *,
+    numero_sala: int,
+    n_salas: int,
+    min_preguntas: int = 3,
+) -> tuple[tuple[str, str], ...]:
+    """Periodos con al menos ``min_preguntas`` candidatas en la escalada de la sala."""
+    viables: list[tuple[str, str]] = []
+    plantilla = evento_por_id("puerta_periodo")
+    for curso, semestre in periodos_pool:
+        evento = EventoContenidoInstanciado(
+            definicion=plantilla, curso=curso, semestre=semestre
+        )
+        if _contar_candidatas_foco_bloque(
+            pool,
+            evento,
+            numero_sala=numero_sala,
+            n_salas=n_salas,
+            min_preguntas=min_preguntas,
+        ) >= min_preguntas:
+            viables.append((curso, semestre))
+    return _devolver_viables_o_pool(viables, periodos_pool, min_preguntas)
+
+
+def plantilla_bloque_admite_jefe(
+    pool: list[Pregunta],
+    plantilla,
+    *,
+    numero_sala: int,
+    n_salas: int,
+    min_preguntas: int,
+    grupos_pool: tuple[str, ...] = (),
+    cursos_pool: tuple[str, ...] = (),
+    semestres_pool: tuple[str, ...] = (),
+    periodos_pool: tuple[tuple[str, str], ...] = (),
+) -> bool:
+    """True si algún foco de la plantilla bloque tiene al menos ``min_preguntas`` candidatas."""
+    from Comun.eventos_partida import OpcionesContenidoEscape, plantilla_lleva_perfil_materia
+
+    if plantilla_lleva_perfil_materia(plantilla):
+        return False
+    opts = plantilla.contenido_escape or OpcionesContenidoEscape()
+    ambito = opts.ambito_efectivo
+    if ambito == "grupo":
+        return bool(
+            grupos_viables_sala(
+                pool,
+                grupos_pool,
+                numero_sala=numero_sala,
+                n_salas=n_salas,
+                min_preguntas=min_preguntas,
+            )
+        )
+    if ambito == "curso":
+        return bool(
+            cursos_viables_sala(
+                pool,
+                cursos_pool,
+                numero_sala=numero_sala,
+                n_salas=n_salas,
+                min_preguntas=min_preguntas,
+            )
+        )
+    if ambito == "semestre":
+        return bool(
+            semestres_viables_sala(
+                pool,
+                semestres_pool,
+                numero_sala=numero_sala,
+                n_salas=n_salas,
+                min_preguntas=min_preguntas,
+            )
+        )
+    if ambito == "periodo":
+        return bool(
+            periodos_viables_sala(
+                pool,
+                periodos_pool,
+                numero_sala=numero_sala,
+                n_salas=n_salas,
+                min_preguntas=min_preguntas,
+            )
+        )
+    return False
+
+
+def ambitos_jefe_viables_milestone(
+    pool: list[Pregunta],
+    *,
+    numero_sala: int,
+    n_salas: int,
+    min_preguntas: int,
+) -> tuple[str, ...]:
+    """Ámbitos de filtro amplio con al menos un bloque viable para jefe (10 preguntas)."""
+    from Comun.eventos_partida import (
+        _AMBITOS_FILTRO_AMPLIO,
+        _ambitos_amplio_disponibles,
+        evento_por_id,
+        pools_bloque_del_pool,
+    )
+    from Comun.jefe_partida import PREGUNTAS_POR_JEFE
+
+    min_j = min_preguntas if min_preguntas > 0 else PREGUNTAS_POR_JEFE
+    pools = pools_bloque_del_pool(pool)
+    disponibles = set(_ambitos_amplio_disponibles(numero_sala) or ["grupo"])
+    viables: list[str] = []
+    for ambito, _, plantilla_id in _AMBITOS_FILTRO_AMPLIO:
+        if ambito not in disponibles:
+            continue
+        plantilla = evento_por_id(plantilla_id)
+        if plantilla_bloque_admite_jefe(
+            pool,
+            plantilla,
+            numero_sala=numero_sala,
+            n_salas=n_salas,
+            min_preguntas=min_j,
+            **pools,
+        ):
+            viables.append(ambito)
+    return tuple(viables)
 
 
 def _evento_es_grupo(evento: EventoContenidoInstanciado) -> bool:
@@ -804,7 +1005,6 @@ def _evento_es_materia(evento: EventoContenidoInstanciado) -> bool:
 
 def _evento_balanceado_desde(evento: EventoContenidoInstanciado) -> EventoContenidoInstanciado:
     from Comun.eventos_partida import (
-        definicion_grupo_con_perfil,
         perfil_materia_por_id,
         tipo_filtro_evento,
     )
@@ -816,9 +1016,9 @@ def _evento_balanceado_desde(evento: EventoContenidoInstanciado) -> EventoConten
     balanceado = perfil_materia_por_id("balanceado")
     if tipo_filtro_evento(evento) == TipoFiltroBloque.GRUPO:
         return EventoContenidoInstanciado(
-            definicion=definicion_grupo_con_perfil(balanceado),
+            definicion=evento_por_id("puerta_grupo"),
             grupo=evento.grupo,
-            perfil_id="balanceado",
+            perfil_id=None,
         )
     if evento.materia:
         return EventoContenidoInstanciado(
@@ -845,6 +1045,255 @@ def _puerta_cumple(puerta: PuertaEscape, pool: list[Pregunta], *, numero_sala: i
     ) >= puerta.n_preguntas
 
 
+_MAX_INTENTOS_PUERTA_JEFE = 64
+
+
+def _ids_rasgos_desafio_opcionales(mods: ModificadoresPuerta) -> list[str]:
+    from Comun.eventos_partida import RASGOS_BOTIN_ESCAPE, RASGOS_PUERTA_SIN_PREGUNTA_ESCAPE
+
+    return [
+        eid
+        for eid in mods.eventos_ids
+        if eid not in RASGOS_BOTIN_ESCAPE and eid not in RASGOS_PUERTA_SIN_PREGUNTA_ESCAPE
+    ]
+
+
+def _modificadores_jefe_escape(
+    mods_base: ModificadoresPuerta,
+    *,
+    numero_sala: int,
+    rng: random.Random,
+) -> ModificadoresPuerta:
+    from Comun.eventos_partida import (
+        RASGO_PUERTA_MALDITA,
+        RASGOS_BOTIN_ESCAPE,
+        combinar_modificadores_puerta,
+        elegir_botines_jefe_escape,
+        evento_por_id,
+    )
+
+    rasgos = [
+        evento_por_id(eid)
+        for eid in mods_base.eventos_ids
+        if eid not in RASGOS_BOTIN_ESCAPE
+    ]
+    rasgos.extend(elegir_botines_jefe_escape(numero_sala, rng))
+    mods = combinar_modificadores_puerta(tuple(rasgos), numero_sala=numero_sala)
+    if mods.fin_partida_si_fallo:
+        rasgos_limpios = [
+            evento_por_id(eid) for eid in mods.eventos_ids if eid != RASGO_PUERTA_MALDITA
+        ]
+        mods = combinar_modificadores_puerta(tuple(rasgos_limpios), numero_sala=numero_sala)
+    return mods
+
+
+def _eventos_foco_bloque(
+    evento: EventoContenidoInstanciado,
+    pools_bloque: dict[str, tuple],
+) -> tuple[EventoContenidoInstanciado, ...]:
+    from Comun.eventos_partida import OpcionesContenidoEscape
+
+    plantilla = evento.definicion
+    opts = plantilla.contenido_escape or OpcionesContenidoEscape()
+    ambito = opts.ambito_efectivo
+    focos: list[EventoContenidoInstanciado] = []
+    if ambito == "grupo":
+        for grupo in pools_bloque.get("grupos_pool", ()):
+            focos.append(EventoContenidoInstanciado(definicion=plantilla, grupo=grupo))
+    elif ambito == "curso":
+        for curso in pools_bloque.get("cursos_pool", ()):
+            focos.append(EventoContenidoInstanciado(definicion=plantilla, curso=curso))
+    elif ambito == "semestre":
+        for semestre in pools_bloque.get("semestres_pool", ()):
+            focos.append(EventoContenidoInstanciado(definicion=plantilla, semestre=semestre))
+    elif ambito == "periodo":
+        for curso, semestre in pools_bloque.get("periodos_pool", ()):
+            focos.append(
+                EventoContenidoInstanciado(
+                    definicion=plantilla, curso=curso, semestre=semestre
+                )
+            )
+    if not focos:
+        return (evento,)
+    vistos: set[tuple] = set()
+    unicos: list[EventoContenidoInstanciado] = []
+    for ev in focos:
+        clave = (ev.grupo, ev.curso, ev.semestre, ev.materia)
+        if clave in vistos:
+            continue
+        vistos.add(clave)
+        unicos.append(ev)
+    return tuple(unicos)
+
+
+def _jefe_quitar_rasgo_desafio(
+    puerta: PuertaEscape,
+    *,
+    numero_sala: int,
+    rng: random.Random,
+) -> PuertaEscape:
+    from Comun.eventos_partida import combinar_modificadores_puerta, evento_por_id
+
+    opcionales = _ids_rasgos_desafio_opcionales(puerta.modificadores)
+    if not opcionales:
+        return puerta
+    quitar = rng.choice(opcionales)
+    rasgos = [
+        evento_por_id(eid) for eid in puerta.modificadores.eventos_ids if eid != quitar
+    ]
+    mods = combinar_modificadores_puerta(tuple(rasgos), numero_sala=numero_sala)
+    return replace(puerta, modificadores=mods)
+
+
+def _jefe_cambiar_rasgo_desafio(
+    puerta: PuertaEscape,
+    *,
+    numero_sala: int,
+    rng: random.Random,
+    desafios_disp: list,
+) -> PuertaEscape:
+    from Comun.eventos_partida import (
+        _compatible_con_rasgos_puerta,
+        combinar_modificadores_puerta,
+        evento_por_id,
+    )
+
+    opcionales = _ids_rasgos_desafio_opcionales(puerta.modificadores)
+    if not opcionales or not desafios_disp:
+        return puerta
+    quitar = rng.choice(opcionales)
+    actuales = tuple(
+        evento_por_id(eid) for eid in puerta.modificadores.eventos_ids if eid != quitar
+    )
+    compatibles = [
+        ev for ev in desafios_disp if _compatible_con_rasgos_puerta(ev, actuales)
+    ]
+    if not compatibles:
+        return puerta
+    rasgos = list(actuales) + [rng.choice(compatibles)]
+    mods = combinar_modificadores_puerta(tuple(rasgos), numero_sala=numero_sala)
+    return replace(puerta, modificadores=mods)
+
+
+def _jefe_regenerar_modificadores(
+    puerta: PuertaEscape,
+    *,
+    numero_sala: int,
+    rng: random.Random,
+) -> PuertaEscape:
+    from Comun.eventos_partida import generar_modificadores_puerta
+
+    mods = generar_modificadores_puerta(
+        numero_sala=numero_sala,
+        rng=rng,
+        indice_puerta=puerta.indice,
+        pausas_usadas=frozenset(),
+        pity=None,
+        permitir_pausas=False,
+    )
+    if mods.sin_pregunta:
+        return puerta
+    mods_jefe = _modificadores_jefe_escape(mods, numero_sala=numero_sala, rng=rng)
+    return replace(puerta, modificadores=mods_jefe)
+
+
+def _asegurar_puerta_jefe_viable(
+    pool: list[Pregunta],
+    puerta: PuertaEscape,
+    *,
+    numero_sala: int,
+    n_salas: int,
+    rng: random.Random,
+    pools_bloque: dict[str, tuple],
+) -> PuertaEscape:
+    """Itera rasgos y foco hasta tener >=10 candidatas; mantiene bloque de jefe."""
+    from Comun.eventos_partida import (
+        RASGOS_BOTIN_ESCAPE,
+        eventos_puerta_escape_para_sala,
+        pools_bloque_del_pool,
+    )
+    from Comun.jefe_partida import PREGUNTAS_POR_JEFE
+
+    candidata = replace(
+        puerta,
+        n_preguntas=PREGUNTAS_POR_JEFE,
+        es_jefe=True,
+    )
+    if _puerta_cumple(candidata, pool, numero_sala=numero_sala, n_salas=n_salas):
+        return candidata
+
+    pools = pools_bloque or pools_bloque_del_pool(pool)
+    focos = list(_eventos_foco_bloque(candidata.evento, pools))
+    rng.shuffle(focos)
+    desafios_disp = [
+        ev
+        for ev in eventos_puerta_escape_para_sala(numero_sala)
+        if not ev.exclusivo_puerta_escape and ev.id not in RASGOS_BOTIN_ESCAPE
+    ]
+
+    for intento in range(_MAX_INTENTOS_PUERTA_JEFE):
+        if _puerta_cumple(candidata, pool, numero_sala=numero_sala, n_salas=n_salas):
+            return candidata
+        accion = intento % 5
+        if accion == 0:
+            candidata = _jefe_quitar_rasgo_desafio(
+                candidata, numero_sala=numero_sala, rng=rng
+            )
+        elif accion == 1:
+            candidata = _jefe_cambiar_rasgo_desafio(
+                candidata,
+                numero_sala=numero_sala,
+                rng=rng,
+                desafios_disp=desafios_disp,
+            )
+        elif accion == 2 and focos:
+            candidata = replace(candidata, evento=focos[intento % len(focos)])
+        elif accion == 3:
+            candidata = _jefe_regenerar_modificadores(
+                candidata, numero_sala=numero_sala, rng=rng
+            )
+        elif accion == 4:
+            candidata = replace(
+                candidata, evento=_evento_balanceado_desde(candidata.evento)
+            )
+
+    mejor: PuertaEscape | None = None
+    mejor_n = 0
+    for evento in focos:
+        prueba = replace(
+            candidata,
+            n_preguntas=PREGUNTAS_POR_JEFE,
+            es_jefe=True,
+            evento=evento,
+        )
+        disp = contar_candidatas_puerta(
+            pool, prueba, numero_sala=numero_sala, n_salas=n_salas
+        )
+        if disp >= PREGUNTAS_POR_JEFE and disp > mejor_n:
+            mejor = prueba
+            mejor_n = disp
+    if mejor is not None:
+        return mejor
+
+    mods_min = _modificadores_jefe_escape(
+        ModificadoresPuerta(rasgos=("Clásica",)),
+        numero_sala=numero_sala,
+        rng=rng,
+    )
+    for evento in focos:
+        prueba = replace(
+            candidata,
+            n_preguntas=PREGUNTAS_POR_JEFE,
+            es_jefe=True,
+            evento=evento,
+            modificadores=mods_min,
+        )
+        if _puerta_cumple(prueba, pool, numero_sala=numero_sala, n_salas=n_salas):
+            return prueba
+
+    return candidata
+
+
 def asegurar_puerta_viable(
     pool: list[Pregunta],
     puerta: PuertaEscape,
@@ -854,14 +1303,26 @@ def asegurar_puerta_viable(
     indice_puerta: int,
     materias_pool: tuple[str, ...],
     grupos_pool: tuple[str, ...] = (),
+    rng: random.Random | None = None,
+    pools_bloque: dict[str, tuple] | None = None,
 ) -> PuertaEscape:
     """Ajusta tamaño, contenido o rasgos si no hay preguntas suficientes."""
-    if puerta.es_jefe:
-        return puerta
     if _puerta_cumple(puerta, pool, numero_sala=numero_sala, n_salas=n_salas):
         return puerta
     if puerta.modificadores.sin_pregunta:
         return puerta
+
+    if puerta.es_jefe:
+        if rng is None:
+            raise ValueError("Puerta jefe: hace falta rng para el ajuste iterativo.")
+        return _asegurar_puerta_jefe_viable(
+            pool,
+            puerta,
+            numero_sala=numero_sala,
+            n_salas=n_salas,
+            rng=rng,
+            pools_bloque=pools_bloque or {},
+        )
 
     candidata = puerta
 
@@ -878,7 +1339,7 @@ def asegurar_puerta_viable(
         if _puerta_cumple(prueba, pool, numero_sala=numero_sala, n_salas=n_salas):
             return prueba
 
-    if _evento_es_grupo(candidata.evento) and grupos_pool:
+    if grupos_pool and _evento_es_grupo(candidata.evento):
         from Comun.escape_room import PuertaEscape
 
         mejor: PuertaEscape | None = None
@@ -907,7 +1368,7 @@ def asegurar_puerta_viable(
     if materias_pool:
         from Comun.escape_room import PuertaEscape
 
-        mejor: PuertaEscape | None = None
+        mejor = None
         mejor_n = 0
         for materia in materias_pool:
             evento = EventoContenidoInstanciado(
@@ -971,7 +1432,12 @@ def seleccionar_preguntas_desafio(
         pool, candidatas, n_preguntas, criterios, usadas, rng
     )
     usadas.update(elegidos)
-    return [pool[i] for i in elegidos]
+    resultado = [pool[i] for i in elegidos]
+    if len(criterios.dificultades_permitidas) > 1 and len(resultado) > 1:
+        from Comun.generador_examen_historia import ordenar_preguntas_por_dificultad
+
+        resultado = ordenar_preguntas_por_dificultad(resultado)
+    return resultado
 
 
 def reemplazar_pregunta_cambio_escape(

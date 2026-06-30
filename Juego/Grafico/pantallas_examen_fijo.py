@@ -202,6 +202,7 @@ Y_PASO_HISTORIA = Y_TITULO_HISTORIA + 32
 GAP_SUBTITULO_CONTENIDO = 20
 GAP_LBL_CAMPO = 12
 GAP_CAMPO_SECCION = 28
+GAP_PANEL_BTNS = 24
 ALTO_ETIQUETA_MENU = 24
 
 
@@ -285,6 +286,8 @@ class ConfigOpcionesHistoria(Pantalla):
         self.botones_ciclo: dict[str, tuple[Boton, Boton]] = {}
         self.campos_entero: dict[str, CampoEntero] = {}
         self._y_opcion: dict[str, int] = {}
+        self._filas_orden: list[str] = []
+        self.scroll_filas = 0
         self._y_fin_opciones = self.Y_OPCIONES
         self._hover_opcion_valor: str | None = None
         self._reconstruir_layout()
@@ -351,6 +354,7 @@ class ConfigOpcionesHistoria(Pantalla):
                 self._clave_opcion(op_id),
                 etiqueta_opcion=op.etiqueta,
                 curso_actual=self.config.valores.get("curso"),
+                perfil=self.datos.perfil,
             ):
                 self._hover_opcion_valor = op_id
             return
@@ -368,6 +372,7 @@ class ConfigOpcionesHistoria(Pantalla):
             self._clave_opcion(op_id),
             etiqueta_opcion=op.etiqueta,
             curso_actual=self.config.valores.get("curso"),
+            perfil=self.datos.perfil,
         )
         if not tip:
             return
@@ -440,6 +445,12 @@ class ConfigOpcionesHistoria(Pantalla):
             self.campos_entero["semilla"].rect = rect
         self._sync_campo_semilla_desde_config()
 
+    def _filas_orden_opciones(self) -> list[str]:
+        return [op.id for op in self._opciones_ui()]
+
+    def _max_filas_visibles(self) -> int:
+        return 6
+
     def _volver(self) -> None:
         try:
             self._aplicar_campos_teclado_a_config()
@@ -448,7 +459,10 @@ class ConfigOpcionesHistoria(Pantalla):
         self.volver(self.config)
 
     def _y_preferida_botones_navegacion(self) -> int:
-        return max(560, self._y_fin_opciones + 48)
+        y0 = self._rect_panel_opciones().bottom + GAP_PANEL_BTNS
+        if len(self._filas_orden) > self._max_filas_visibles():
+            y0 += 28
+        return y0
 
     def _reposicionar_botones_navegacion(self) -> None:
         if not hasattr(self, "boton_empezar"):
@@ -461,7 +475,8 @@ class ConfigOpcionesHistoria(Pantalla):
         )
 
     def _rect_panel_opciones(self) -> pygame.Rect:
-        alto = max(120, self._y_fin_opciones - self.Y_OPCIONES + 24)
+        n_vis = min(len(self._filas_orden), self._max_filas_visibles())
+        alto = n_vis * (self.ALTO_FILA + self.GAP_FILA) + 24
         return pygame.Rect(
             MARGEN + 16,
             self.Y_OPCIONES - 16,
@@ -489,23 +504,33 @@ class ConfigOpcionesHistoria(Pantalla):
         return rect_izq, rect_val, rect_der
 
     def _reconstruir_layout(self) -> None:
+        self._filas_orden = self._filas_orden_opciones()
+        max_scroll = max(0, len(self._filas_orden) - self._max_filas_visibles())
+        self.scroll_filas = min(self.scroll_filas, max_scroll)
+        visibles = self._filas_orden[
+            self.scroll_filas : self.scroll_filas + self._max_filas_visibles()
+        ]
         self._y_opcion.clear()
         y = self.Y_OPCIONES
-        for op in self._opciones_ui():
-            self._y_opcion[op.id] = y
+        for op_id in visibles:
+            self._y_opcion[op_id] = y
             y += self.ALTO_FILA + self.GAP_FILA
         self._y_fin_opciones = y
 
         self.botones_ciclo.clear()
-        for op in self._opciones_ui():
-            if self._opcion_campo_teclado(op):
+        for op_id in visibles:
+            op = self._opcion_preset(op_id)
+            if op is None or self._opcion_campo_teclado(op):
                 continue
-            rect_izq, _, rect_der = self._rects_control_fila(op.id)
-            self.botones_ciclo[op.id] = (
-                Boton("◀", rect_izq, capturar(self._ciclar_opcion, op.id, -1)),
-                Boton("▶", rect_der, capturar(self._ciclar_opcion, op.id, 1)),
+            rect_izq, _, rect_der = self._rects_control_fila(op_id)
+            self.botones_ciclo[op_id] = (
+                Boton("◀", rect_izq, capturar(self._ciclar_opcion, op_id, -1)),
+                Boton("▶", rect_der, capturar(self._ciclar_opcion, op_id, 1)),
             )
-        self._asegurar_campo_semilla()
+        if "semilla" in visibles:
+            self._asegurar_campo_semilla()
+        elif "semilla" in self.campos_entero:
+            self.campos_entero["semilla"].activo = False
         self._reposicionar_botones_navegacion()
 
     def _filtro_ambito_bloqueado(self, op_id: str) -> bool:
@@ -867,6 +892,17 @@ class ConfigOpcionesHistoria(Pantalla):
         return botones
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
+        if (
+            evento.type == pygame.MOUSEWHEEL
+            and len(self._filas_orden) > self._max_filas_visibles()
+        ):
+            max_scroll = max(0, len(self._filas_orden) - self._max_filas_visibles())
+            self.scroll_filas = max(
+                0,
+                min(max_scroll, self.scroll_filas - int(evento.y)),
+            )
+            self._reconstruir_layout()
+            return None
         for campo in self.campos_entero.values():
             if campo.manejar_evento(evento):
                 return None
@@ -923,9 +959,21 @@ class ConfigOpcionesHistoria(Pantalla):
 
         dibujar_panel(superficie, self._rect_panel_opciones(), color=(255, 255, 255))
 
-        for op in self._opciones_ui():
-            y = self._y_opcion.get(op.id, self.Y_OPCIONES)
-            self._dibujar_fila_opcion(superficie, op, y)
+        for op_id, y in self._y_opcion.items():
+            op = self._opcion_preset(op_id)
+            if op is not None:
+                self._dibujar_fila_opcion(superficie, op, y)
+
+        if len(self._filas_orden) > self._max_filas_visibles():
+            hint = self.fuentes["pequena"].render(
+                "Rueda del ratón para ver más opciones",
+                True,
+                COLOR_TEXTO,
+            )
+            superficie.blit(
+                hint,
+                hint.get_rect(center=(ANCHO // 2, self._rect_panel_opciones().bottom + 18)),
+            )
 
         if self.mensaje:
             aviso = self.fuentes["menu"].render(self.mensaje, True, COLOR_AVISO)
@@ -974,6 +1022,7 @@ class PartidaModoHistoria(Pantalla):
         materias_examen: list[str] | None = None,
         config_historia: ConfigPresetHistoria | None = None,
         semilla_partida: int = 0,
+        semilla_contenido: int = 0,
         rng_partida: RngPartida | None = None,
         navegacion_fin=None,
         cadena_dirigido=None,
@@ -984,6 +1033,7 @@ class PartidaModoHistoria(Pantalla):
         self.preset = preset
         self.config_historia = config_historia or ConfigPresetHistoria()
         self.semilla_partida = semilla_partida
+        self.semilla_contenido = semilla_contenido or semilla_partida
         self._rng_partida = rng_partida or crear_rng_partida(semilla_partida)
         self.navegacion_fin: NavegacionFinPartida | None = navegacion_fin
         self.cadena_dirigido = cadena_dirigido
@@ -1093,6 +1143,7 @@ class PartidaModoHistoria(Pantalla):
 
     def _fin_partida(self, *, abandonado: bool = False) -> None:
         from Comun.generador_examen_historia import cargar_estadisticas_historicas
+        from Comun.modos_diarios import titulo_fin_partida_historia
 
         cierre = None
         if self.registros:
@@ -1108,10 +1159,12 @@ class PartidaModoHistoria(Pantalla):
                     )
                 except FileNotFoundError:
                     stats = {}
-            titulo_txt = (
-                f"ABANDONO — {self.preset.nombre}"
-                if abandonado
-                else f"FIN — {self.preset.nombre}"
+            titulo_txt = titulo_fin_partida_historia(
+                self.preset.id,
+                self.preset.nombre,
+                self.config_historia,
+                abandonado=abandonado,
+                semilla_partida=self.semilla_partida,
             )
             cierre = CierreInformePartida(
                 registros=list(self.registros),
@@ -1128,10 +1181,13 @@ class PartidaModoHistoria(Pantalla):
                 stats_historicas=stats,
                 abandonado=abandonado,
             )
-        titulo_pantalla = (
-            f"ABANDONO — {self.preset.nombre[:40]}"
-            if abandonado
-            else f"FIN — {self.preset.nombre[:44]}"
+        titulo_pantalla = titulo_fin_partida_historia(
+            self.preset.id,
+            self.preset.nombre,
+            self.config_historia,
+            abandonado=abandonado,
+            semilla_partida=self.semilla_partida,
+            max_len=72,
         )
         self.ir_a(
             ResumenHistoriaPartida(
@@ -1146,6 +1202,8 @@ class PartidaModoHistoria(Pantalla):
                 navegacion_fin=self.navegacion_fin,
                 config_historia=self.config_historia,
                 cadena_dirigido=self.cadena_dirigido,
+                semilla_partida=self.semilla_partida,
+                semilla_contenido=self.semilla_contenido,
             )
         )
 
@@ -1383,11 +1441,39 @@ class ResumenHistoriaPartida(ResumenPartida):
         navegacion_fin=None,
         config_historia: ConfigPresetHistoria | None = None,
         cadena_dirigido=None,
+        semilla_partida: int = 0,
+        semilla_contenido: int = 0,
     ) -> None:
         self.preset = preset
         self.config_historia = config_historia or ConfigPresetHistoria()
         self.cadena_dirigido = cadena_dirigido
-        titulo_resumen = titulo or f"FIN — {preset.nombre[:44]}"
+        self.semilla_partida = semilla_partida
+        self.semilla_contenido = semilla_contenido or semilla_partida
+        from Comun.modos_diarios import (
+            es_id_examen_fijo,
+            lineas_semillas_fin_examen_fijo,
+            titulo_fin_partida_historia,
+        )
+
+        if titulo is None:
+            titulo_resumen = titulo_fin_partida_historia(
+                preset.id,
+                preset.nombre,
+                self.config_historia,
+                semilla_partida=semilla_partida,
+                max_len=72,
+            )
+        else:
+            titulo_resumen = titulo
+        lineas_sem = ()
+        if es_id_examen_fijo(preset.id):
+            lineas_sem = tuple(
+                lineas_semillas_fin_examen_fijo(
+                    self.config_historia,
+                    semilla_partida=semilla_partida,
+                    semilla_contenido=self.semilla_contenido,
+                )
+            )
         super().__init__(
             estado,
             total_previsto,
@@ -1396,6 +1482,7 @@ class ResumenHistoriaPartida(ResumenPartida):
             salir_app,
             cierre_informe=cierre_informe,
             titulo=titulo_resumen,
+            lineas_tras_jugador=lineas_sem,
             navegacion_fin=navegacion_fin,
         )
 
@@ -1420,7 +1507,7 @@ class ResumenHistoriaPartida(ResumenPartida):
                     etiq,
                     rect_boton_etiqueta(etiq, fuente, x_centro=0, y=0, alto_min=44),
                     self._repetir,
-                    tooltip="Misma configuración; preguntas nuevas.",
+                    tooltip="Mismas preguntas (misma semilla de contenido); orden y opciones nuevos.",
                 )
             )
         if self._puede_examen_dirigido():
@@ -1480,6 +1567,7 @@ class ResumenHistoriaPartida(ResumenPartida):
                 salir_app=self.salir_app,
                 config_historia=self.config_historia,
                 semilla_partida=plan.semilla_partida,
+                semilla_contenido=plan.semilla_contenido,
                 rng_partida=plan.rng,
                 navegacion_fin=self.navegacion_fin,
                 cadena_dirigido=cadena,
@@ -1489,10 +1577,20 @@ class ResumenHistoriaPartida(ResumenPartida):
     def _construir_lineas(self) -> list[str]:
         abandonado = bool(self.cierre_informe and self.cierre_informe.abandonado)
         mostrar_aciertos = self.estado.reglas.correccion_al_final
+        meta = self.cierre_informe.meta if self.cierre_informe else {}
+        salas_superadas = None
+        n_salas = None
+        if self.cierre_informe and self.cierre_informe.prefijo == "escape":
+            if meta.get("salas_superadas") is not None:
+                salas_superadas = int(meta["salas_superadas"])
+            if meta.get("n_salas") is not None:
+                n_salas = int(meta["n_salas"])
         return lineas_resumen_breve(
             self.estado,
             self.total_previsto,
             mostrar_aciertos=mostrar_aciertos,
             abandonado=abandonado,
+            salas_superadas=salas_superadas,
+            n_salas=n_salas,
         )
 

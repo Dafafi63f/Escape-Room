@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 """Alcance y reglas de powerups del escape room.
 
-Inventario de pregunta: bomba, 50/50, skip… (un slot por pregunta, salvo skip/cambio).
+Inventario de pregunta: un objeto «de slot» por pregunta (bomba, 50/50, escudo…).
+Saltar y Cambio no ocupan ese slot: al usarlos cambias de pregunta y se desbloquea
+todo; si ya usaste otro objeto en la misma pregunta, no puedes Saltar ni Cambiar.
 
 Inventario de sala (ids distintos): reroll, limpieza de maldiciones y salto de sala;
 se usan en la pantalla de elección de puertas.
@@ -17,7 +19,13 @@ from typing import TYPE_CHECKING
 
 from Comun.objetos_partida import (
     EstadoInventarioEscape,
-    puede_usar_powerup_en_pregunta,
+    MENSAJE_POWERUP_YA_USADO_ESCAPE,
+    POWERUPS,
+    POWERUPS_INCOMPATIBLES_EN_PREGUNTA,
+    POWERUPS_MULTI_USO_PREGUNTA,
+    etiqueta_powerup,
+    powerups_usados_slot,
+    slot_powerup_ocupado,
 )
 
 if TYPE_CHECKING:
@@ -124,9 +132,33 @@ def puede_usar_powerup_escape(
         return "Este objeto es del inventario de pregunta."
     if inventario.cantidad_pregunta(articulo_id) <= 0:
         return "No tienes ese objeto."
-    return puede_usar_powerup_en_pregunta(
+    return puede_usar_powerup_en_pregunta_escape(
         articulo_id, inventario.powerups_usados_en_pregunta
     )
+
+
+def puede_usar_powerup_en_pregunta_escape(
+    powerup_id: str,
+    usados: set[str],
+) -> str | None:
+    """Escape: un slot por pregunta; Saltar/Cambio no lo ocupan pero sí lo respetan."""
+    if powerup_id in POWERUPS_MULTI_USO_PREGUNTA:
+        if slot_powerup_ocupado(usados):
+            return MENSAJE_POWERUP_YA_USADO_ESCAPE
+        return None
+    if slot_powerup_ocupado(usados):
+        return MENSAJE_POWERUP_YA_USADO_ESCAPE
+    if powerup_id in usados:
+        if powerup_id in POWERUPS:
+            return f"Ya usaste {etiqueta_powerup(powerup_id)} en esta pregunta."
+        return "Ya usaste este objeto en esta pregunta."
+    incompatibles = POWERUPS_INCOMPATIBLES_EN_PREGUNTA.get(powerup_id, frozenset())
+    for usado in powerups_usados_slot(usados):
+        if usado in incompatibles:
+            nom = etiqueta_powerup(powerup_id)
+            otro = etiqueta_powerup(usado) if usado in POWERUPS else usado
+            return f"No puedes combinar {nom} con {otro} en la misma pregunta."
+    return None
 
 
 def registrar_uso_powerup_escape(
@@ -136,8 +168,6 @@ def registrar_uso_powerup_escape(
     """Marca el uso según el alcance (llamar tras aplicar el efecto)."""
     if es_powerup_sala_escape(articulo_id):
         return
-    from Comun.objetos_partida import POWERUPS_MULTI_USO_PREGUNTA
-
     if articulo_id not in POWERUPS_MULTI_USO_PREGUNTA:
         inventario.powerups_usados_en_pregunta.add(articulo_id)
 

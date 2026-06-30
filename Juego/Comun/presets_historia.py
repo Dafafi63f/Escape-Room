@@ -17,8 +17,10 @@ from Comun.config_historia import (
     curso_semestre_desde_valores,
     defectos_config,
     estrategia_materias_desde_config,
+    estrategia_efectiva_desde_config,
     opciones_config_historia,
-    usar_analisis_historico_desde_config,
+    preset_usa_prioridad_materias,
+    usar_ponderacion_desde_config,
     max_materias_ambito,
     parse_opciones,
     tipos_desde_enfoque,
@@ -149,9 +151,17 @@ def preset_permite_examen_dirigido(preset_id: str, registros: list | None = None
     """«Otro examen dirigido»: simulacros multi-materia y examen fijo; no repasos ni una sola asignatura."""
     if preset_id not in _IDS_PRESET_EXAMEN_DIRIGIDO:
         return False
-    if registros is not None and len(materias_unicas_en_registros(registros)) < 2:
+    if registros is None:
+        return True
+    if not registros:
         return False
-    return True
+    materias = materias_unicas_en_registros(registros)
+    if len(materias) >= 2:
+        return True
+    # CSV mínimo sin columna Materia: el dirigido analiza el contenido del enunciado.
+    if preset_id == "examen_fijo" and not materias:
+        return True
+    return False
 
 
 # IDs retirados del cat?logo activo (documentaci?n, tests y tabla en Data/README.md).
@@ -193,6 +203,10 @@ def _es_preset_historia(preset: PresetHistoria) -> bool:
 
 def _es_preset_especial(preset: PresetHistoria) -> bool:
     return preset.contexto_reglas in _CONTEXTOS_ESPECIALES
+
+
+def es_preset_escape_room(preset) -> bool:
+    return getattr(preset, "contexto_reglas", "") == ContextoPartida.ESCAPE.value
 
 
 def _grupo_catalogo_historia(preset_id: str) -> int:
@@ -509,13 +523,14 @@ _ESTRATEGIA_MATERIAS: dict[str, tuple[PerfilPedagogico, bool]] = {
 def _resolver_perfil_y_seleccion(
     preset: PresetHistoria,
     cfg: ConfigPresetHistoria,
+    *,
+    perfil_datos=None,
 ) -> tuple[PerfilPedagogico, bool]:
-    if not preset.usa_analisis_historico:
-        return perfil_desde_preset(preset), preset.seleccion_determinista
-    estrategia = estrategia_materias_desde_config(cfg) or ESTRATEGIA_MATERIAS_DEFECTO
-    if estrategia in _ESTRATEGIA_MATERIAS:
-        perfil, seleccion_det = _ESTRATEGIA_MATERIAS[estrategia]
-        return perfil, seleccion_det
+    if preset_usa_prioridad_materias(preset, perfil_datos):
+        estrategia = estrategia_efectiva_desde_config(cfg, perfil=perfil_datos)
+        if estrategia in _ESTRATEGIA_MATERIAS:
+            perfil, seleccion_det = _ESTRATEGIA_MATERIAS[estrategia]
+            return perfil, seleccion_det
     return perfil_desde_preset(preset), preset.seleccion_determinista
 
 
@@ -573,7 +588,9 @@ def _ajustes_generador_examen_fijo_csv_minimo(
         return None
 
     orden = orden_preguntas_examen_fijo(cfg)
-    if orden == "dificultad":
+    if orden == "dificultad" and not (
+        perfil_datos is not None and perfil_datos.dataset_intermedio
+    ):
         orden = "aleatorio"
 
     return {
@@ -617,14 +634,16 @@ def argumentos_generador(
         n_materias = 1
 
     if usar_todas:
-        estrategia = estrategia_materias_desde_config(cfg) or ESTRATEGIA_MATERIAS_DEFECTO
+        estrategia = estrategia_efectiva_desde_config(cfg, perfil=perfil_datos)
         if estrategia in _ESTRATEGIA_MATERIAS:
             perfil, _ = _ESTRATEGIA_MATERIAS[estrategia]
         else:
             perfil = PerfilPedagogico.POR_CURSO
         seleccion_det = True
     else:
-        perfil, seleccion_det = _resolver_perfil_y_seleccion(preset, cfg)
+        perfil, seleccion_det = _resolver_perfil_y_seleccion(
+            preset, cfg, perfil_datos=perfil_datos
+        )
 
     if not usar_todas and n_materias is not None and materias_meta is not None:
         tope = max_materias_ambito(
@@ -652,7 +671,7 @@ def argumentos_generador(
         "seleccion_determinista": seleccion_det,
         "orden_preguntas": resolver_orden_preguntas(preset, cfg),
         "exigir_balance_completo": preset.exigir_balance_completo,
-        "usar_analisis_historico": usar_analisis_historico_desde_config(
+        "usar_analisis_historico": usar_ponderacion_desde_config(
             preset, cfg, perfil=perfil_datos
         ),
         "usar_plantillas_materia": preset.usar_plantillas_materia,

@@ -14,6 +14,8 @@ from Comun.motor_nucleo import EstadoPartida, formatear_duracion_seg
 from Comun.rutas import _ruta_json_escritura
 
 __all__ = [
+    "cargar_estadisticas_locales",
+    "combinar_stats_examen",
     "formatear_panel_estadisticas",
     "formatear_tarjeta_sigue_por_aqui",
     "registrar_cierre_partida",
@@ -23,6 +25,7 @@ __all__ = [
 
 _MAX_SESIONES = 120
 _MIN_INTENTOS_MATERIA = 3
+_MIN_INTENTOS_CONCEPTO = 3
 
 
 def resolver_path_estadisticas_jugador():
@@ -107,6 +110,7 @@ def _inc_modo(
     preguntas: int,
     aciertos: int,
     segundos: int = 0,
+    salas_superadas: int = 0,
 ) -> None:
     bucket = contenedor.setdefault(
         modo,
@@ -117,6 +121,8 @@ def _inc_modo(
     bucket["aciertos"] += aciertos
     if segundos > 0:
         bucket["segundos_jugados"] = int(bucket.get("segundos_jugados", 0)) + segundos
+    if salas_superadas > 0:
+        bucket["salas_superadas"] = int(bucket.get("salas_superadas", 0)) + salas_superadas
 
 
 def _actualizar_records(
@@ -177,23 +183,40 @@ def registrar_cierre_partida(
     if duracion_seg > 0:
         totales["segundos_jugados"] = int(totales.get("segundos_jugados", 0)) + duracion_seg
 
+    salas_sesion = (
+        int(meta["salas_superadas"])
+        if modo == "escape" and meta.get("salas_superadas") is not None
+        else 0
+    )
+    if salas_sesion > 0:
+        totales["salas_escape"] = int(totales.get("salas_escape", 0)) + salas_sesion
+
     _inc_modo(
         datos["por_modo"],
         modo,
         preguntas=preguntas_sesion,
         aciertos=aciertos_sesion,
         segundos=duracion_seg,
+        salas_superadas=salas_sesion,
     )
 
     por_materia: dict[str, dict[str, int]] = {}
     por_tipo: dict[str, dict[str, int]] = {}
+    por_concepto: dict[str, dict[str, int]] = {}
     for registro in cierre.registros:
-        _agregar_registro_agregados(registro, por_materia, por_tipo)
+        _agregar_registro_agregados(registro, por_materia, por_tipo, por_concepto)
 
     for materia, bucket in por_materia.items():
         _inc_bucket(
             datos["por_materia"],
             materia,
+            aciertos=bucket["aciertos"],
+            fallos=bucket["fallos"],
+        )
+    for concepto, bucket in por_concepto.items():
+        _inc_bucket(
+            datos.setdefault("por_concepto", {}),
+            concepto,
             aciertos=bucket["aciertos"],
             fallos=bucket["fallos"],
         )
@@ -251,6 +274,10 @@ def registrar_cierre_partida(
         dias.append(hoy)
     datos["dias_activos"] = dias[-400:]
 
+    from Comun.metadatos_inferidos import actualizar_desde_registros
+
+    actualizar_desde_registros(cierre.registros)
+
     _guardar_raw(datos)
 
 
@@ -258,11 +285,20 @@ def _agregar_registro_agregados(
     registro: RegistroRespuesta,
     por_materia: dict[str, dict[str, int]],
     por_tipo: dict[str, dict[str, int]],
+    por_concepto: dict[str, dict[str, int]],
 ) -> None:
+    from Comun.cadena_examen_dirigido import conceptos_registro
+
     materia = (registro.pregunta.materia or "—").strip() or "—"
     tipo = (registro.pregunta.tipo or "—").strip() or "—"
     for clave, contenedor in ((materia, por_materia), (tipo, por_tipo)):
         bucket = contenedor.setdefault(clave, {"aciertos": 0, "fallos": 0})
+        if registro.acierto:
+            bucket["aciertos"] += 1
+        else:
+            bucket["fallos"] += 1
+    for concepto in conceptos_registro(registro):
+        bucket = por_concepto.setdefault(concepto, {"aciertos": 0, "fallos": 0})
         if registro.acierto:
             bucket["aciertos"] += 1
         else:
@@ -316,6 +352,35 @@ _MODOS_ORDEN_COMPLETO: tuple[str, ...] = ("libre", "historia", "resistencia", "e
 _MODOS_ORDEN_MINIMO: tuple[str, ...] = ("libre", "historia", "resistencia")
 _TIPOS_ORDEN: tuple[str, ...] = ("Teoria", "Calculo")
 _PLACEHOLDER_MATERIAS = "  - (sin datos; min. 3 preguntas por materia)"
+_PLACEHOLDER_CONCEPTOS = (
+    "  - (sin datos; min. 3 respuestas con la misma palabra clave)"
+)
+
+
+def _lineas_conceptos(
+    por_concepto: dict[str, Any],
+    *,
+    peores: bool,
+    limite: int = 5,
+) -> list[str]:
+    from Comun.cadena_examen_dirigido import etiqueta_concepto
+
+    filas: list[tuple[str, float, int]] = []
+    for concepto, bucket in por_concepto.items():
+        intentos = int(bucket.get("intentos", 0))
+        if intentos < _MIN_INTENTOS_CONCEPTO:
+            continue
+        aciertos = int(bucket.get("aciertos", 0))
+        filas.append((concepto, _pct(aciertos, intentos), intentos))
+    if peores:
+        filas.sort(key=lambda x: (x[1], -x[2]))
+    else:
+        filas.sort(key=lambda x: (-x[1], -x[2]))
+    lineas: list[str] = []
+    for concepto, pct, intentos in filas[:limite]:
+        etiqueta = etiqueta_concepto(concepto)
+        lineas.append(f"  - {etiqueta}: {pct:.0f}% ({intentos} respuestas)")
+    return lineas
 
 
 def _lineas_materias(
@@ -375,8 +440,52 @@ def _mostrar_analisis_contenido(perfil) -> bool:
     return True
 
 
+def _mostrar_analisis_conceptos(perfil) -> bool:
+    """CSV mínimo u otro banco sin metadatos curriculares: análisis por palabras clave."""
+    return perfil is not None and perfil.csv_minimal
+
+
 def _mostrar_records_escape(perfil) -> bool:
     return perfil is None or not perfil.modo_minimo
+
+
+def _total_salas_escape(
+    por_modo: dict[str, Any],
+    sesiones: list[dict[str, Any]],
+) -> int:
+    bucket = por_modo.get("escape") or {}
+    if bucket.get("salas_superadas") is not None:
+        return int(bucket["salas_superadas"])
+    return sum(
+        int(s.get("salas_superadas") or 0)
+        for s in sesiones
+        if s.get("modo") == "escape"
+    )
+
+
+def _linea_modo_estadisticas(
+    modo: str,
+    bucket: dict[str, Any],
+    *,
+    perfil,
+    sesiones: list[dict[str, Any]],
+) -> str:
+    n = int(bucket.get("partidas", 0))
+    p = int(bucket.get("preguntas", 0))
+    a = int(bucket.get("aciertos", 0))
+    seg = int(bucket.get("segundos_jugados", 0))
+    tiempo_modo = f", {formatear_duracion_seg(seg)}" if seg else ""
+    etiqueta = _etiqueta_modo(modo, perfil)
+    if modo == "escape":
+        salas = _total_salas_escape({modo: bucket}, sesiones)
+        return (
+            f"  - {etiqueta}: {n} partidas, {salas} salas superadas, "
+            f"{a}/{p} aciertos ({_pct(a, p):.0f}%){tiempo_modo}"
+        )
+    return (
+        f"  - {etiqueta}: {n} partidas, {a}/{p} aciertos "
+        f"({_pct(a, p):.0f}%){tiempo_modo}"
+    )
 
 
 def _dias_sin_actividad(dias: list[str]) -> int:
@@ -385,6 +494,21 @@ def _dias_sin_actividad(dias: list[str]) -> int:
     hoy = datetime.now().date()
     ultimo = datetime.fromisoformat(max(dias)).date()
     return max(0, (hoy - ultimo).days)
+
+
+def _concepto_mas_debil(por_concepto: dict[str, Any]) -> tuple[str, float, int] | None:
+    from Comun.cadena_examen_dirigido import etiqueta_concepto
+
+    peor: tuple[str, float, int] | None = None
+    for concepto, bucket in por_concepto.items():
+        intentos = int(bucket.get("intentos", 0))
+        if intentos < _MIN_INTENTOS_CONCEPTO:
+            continue
+        aciertos = int(bucket.get("aciertos", 0))
+        pct = _pct(aciertos, intentos)
+        if peor is None or pct < peor[1] or (pct == peor[1] and intentos > peor[2]):
+            peor = (etiqueta_concepto(concepto), pct, intentos)
+    return peor
 
 
 def _materia_mas_debil(por_materia: dict[str, Any]) -> tuple[str, float, int] | None:
@@ -419,6 +543,7 @@ def formatear_tarjeta_sigue_por_aqui(perfil=None) -> list[str]:
     dias: list[str] = list(datos.get("dias_activos") or [])
     por_modo: dict[str, Any] = dict(datos.get("por_modo") or {})
     por_materia: dict[str, Any] = dict(datos.get("por_materia") or {})
+    por_concepto: dict[str, Any] = dict(datos.get("por_concepto") or {})
 
     partidas = int(totales.get("partidas", 0))
     lineas: list[str] = ["--- SIGUE POR AQUI ---"]
@@ -433,9 +558,15 @@ def formatear_tarjeta_sigue_por_aqui(perfil=None) -> list[str]:
             f"  Llevas {dias_sin} dias sin practicar; un examen corto hoy ayuda a retomar."
         )
 
-    debil = _materia_mas_debil(por_materia)
-    if debil is not None:
-        materia, pct, intentos = debil
+    debil_concepto = _concepto_mas_debil(por_concepto) if _mostrar_analisis_conceptos(perfil) else None
+    debil_materia = _materia_mas_debil(por_materia) if not debil_concepto else None
+    if debil_concepto is not None:
+        concepto, pct, intentos = debil_concepto
+        lineas.append(
+            f"  Refuerza «{concepto}»: {pct:.0f}% de acierto ({intentos} respuestas)."
+        )
+    elif debil_materia is not None:
+        materia, pct, intentos = debil_materia
         lineas.append(
             f"  Refuerza {materia}: {pct:.0f}% de acierto ({intentos} preguntas)."
         )
@@ -449,9 +580,13 @@ def formatear_tarjeta_sigue_por_aqui(perfil=None) -> list[str]:
         elif delta_pp >= 5:
             lineas.append("  Vas mejor que la semana pasada; manten el ritmo.")
 
-    if debil is None and _mostrar_analisis_contenido(perfil):
+    if debil_concepto is None and debil_materia is None and _mostrar_analisis_contenido(perfil):
         lineas.append(
             "  Responde al menos 3 preguntas por materia para ver puntos debiles."
+        )
+    if debil_concepto is None and _mostrar_analisis_conceptos(perfil):
+        lineas.append(
+            "  Responde mas preguntas para ver que palabras clave conviene repasar."
         )
 
     modo_sugerido = _modo_menos_jugado(por_modo, _modos_estadisticas(perfil))
@@ -475,15 +610,33 @@ def formatear_panel_estadisticas(perfil=None) -> str:
     por_modo: dict[str, Any] = dict(datos.get("por_modo") or {})
     por_materia: dict[str, Any] = dict(datos.get("por_materia") or {})
     por_tipo: dict[str, Any] = dict(datos.get("por_tipo") or {})
+    por_concepto: dict[str, Any] = dict(datos.get("por_concepto") or {})
 
     partidas = int(totales.get("partidas", 0))
     preguntas = int(totales.get("preguntas", 0))
     aciertos = int(totales.get("aciertos", 0))
     segundos_jugados = int(totales.get("segundos_jugados", 0))
+    salas_escape = _total_salas_escape(por_modo, sesiones)
+    if salas_escape <= 0:
+        salas_escape = int(totales.get("salas_escape", 0))
     pct_global = _pct(aciertos, preguntas)
 
     p_act, a_act, p_prev, a_prev, delta_pp = _evolucion_semanal(sesiones)
     signo_delta = "+" if delta_pp >= 0 else ""
+
+    resumen_global = [
+        f"  Partidas jugadas: {partidas}",
+    ]
+    if salas_escape > 0:
+        resumen_global.append(f"  Salas superadas (escape): {salas_escape}")
+    resumen_global.extend(
+        [
+            f"  Preguntas respondidas: {preguntas}",
+            f"  Aciertos: {aciertos}/{preguntas} ({pct_global:.1f}%)",
+            f"  Tiempo en partida: {formatear_duracion_seg(segundos_jugados)}",
+            f"  Dias con actividad: {len(dias)} (racha maxima: {_racha_dias(dias)} dias)",
+        ]
+    )
 
     lineas: list[str] = [
         "Datos locales (solo en este PC). Se actualizan al cerrar cada partida.",
@@ -491,11 +644,7 @@ def formatear_panel_estadisticas(perfil=None) -> str:
         *formatear_tarjeta_sigue_por_aqui(perfil),
         "",
         "--- RESUMEN GLOBAL ---",
-        f"  Partidas jugadas: {partidas}",
-        f"  Preguntas respondidas: {preguntas}",
-        f"  Aciertos: {aciertos}/{preguntas} ({pct_global:.1f}%)",
-        f"  Tiempo en partida: {formatear_duracion_seg(segundos_jugados)}",
-        f"  Dias con actividad: {len(dias)} (racha maxima: {_racha_dias(dias)} dias)",
+        *resumen_global,
         "",
         "--- EVOLUCION SEMANAL ---",
         f"  Esta semana: {_pct(a_act, p_act):.0f}% ({p_act} preguntas, {a_act}/{p_act} aciertos)",
@@ -507,14 +656,13 @@ def formatear_panel_estadisticas(perfil=None) -> str:
 
     for modo in _modos_estadisticas(perfil):
         bucket = por_modo.get(modo, {})
-        n = int(bucket.get("partidas", 0))
-        p = int(bucket.get("preguntas", 0))
-        a = int(bucket.get("aciertos", 0))
-        seg = int(bucket.get("segundos_jugados", 0))
-        tiempo_modo = f", {formatear_duracion_seg(seg)}" if seg else ""
         lineas.append(
-            f"  - {_etiqueta_modo(modo, perfil)}: {n} partidas, {a}/{p} aciertos "
-            f"({_pct(a, p):.0f}%){tiempo_modo}"
+            _linea_modo_estadisticas(
+                modo,
+                bucket,
+                perfil=perfil,
+                sesiones=sesiones,
+            )
         )
 
     lineas.append("")
@@ -558,4 +706,102 @@ def formatear_panel_estadisticas(perfil=None) -> str:
         mejores = _lineas_materias(por_materia, peores=False)
         lineas.extend(mejores if mejores else [_PLACEHOLDER_MATERIAS])
 
+    if _mostrar_analisis_conceptos(perfil):
+        lineas.extend(
+            [
+                "",
+                "--- ANALISIS POR CONCEPTOS ---",
+                "  Palabras clave inferidas del enunciado (segun tu banco de preguntas):",
+                "  Conceptos a reforzar:",
+            ]
+        )
+        peores = _lineas_conceptos(por_concepto, peores=True)
+        lineas.extend(peores if peores else [_PLACEHOLDER_CONCEPTOS])
+
+        lineas.append("  Conceptos fuertes:")
+        mejores = _lineas_conceptos(por_concepto, peores=False)
+        lineas.extend(mejores if mejores else [_PLACEHOLDER_CONCEPTOS])
+
     return "\n".join(lineas)
+
+
+def _bucket_a_estadistica_materia(clave: str, bucket: dict[str, Any]):
+    from Comun.generador_examen_historia import EstadisticaMateria
+
+    intentos = int(
+        bucket.get("intentos")
+        or int(bucket.get("aciertos", 0)) + int(bucket.get("fallos", 0))
+    )
+    if intentos <= 0:
+        return None
+    aciertos = int(bucket.get("aciertos", 0))
+    tasa_acierto = aciertos / intentos
+    indice = min(1.0, max(0.0, 1.0 - tasa_acierto))
+    return EstadisticaMateria(
+        materia=clave,
+        n_registros=intentos,
+        media=round(tasa_acierto * 10.0, 2),
+        tasa_suspens=round(1.0 - tasa_acierto, 3),
+        indice_dificultad=round(indice, 3),
+    )
+
+
+def cargar_estadisticas_locales(
+    perfil=None,
+    materias_meta: dict | None = None,
+) -> dict:
+    """Convierte ``estadisticas_jugador.json`` en stats del generador de exámenes."""
+    datos = _cargar_raw()
+    usar_conceptos = bool(perfil and perfil.csv_minimal)
+    if not usar_conceptos:
+        por_materia = datos.get("por_materia") or {}
+        claves_utiles = [k for k in por_materia if k and k != "—"]
+        if not claves_utiles and datos.get("por_concepto"):
+            usar_conceptos = True
+
+    fuente = (
+        datos.get("por_concepto") if usar_conceptos else datos.get("por_materia")
+    ) or {}
+    stats: dict = {}
+    for clave, bucket in fuente.items():
+        if not clave or clave == "—":
+            continue
+        if materias_meta is not None and not usar_conceptos and clave not in materias_meta:
+            continue
+        est = _bucket_a_estadistica_materia(clave, bucket)
+        if est is not None:
+            stats[clave] = est
+    return stats
+
+
+def combinar_stats_examen(historico: dict, local: dict) -> dict:
+    """Mezcla histórico MatCAD y práctica local ponderando por volumen de datos."""
+    from Comun.generador_examen_historia import EstadisticaMateria
+
+    if not historico:
+        return dict(local)
+    if not local:
+        return dict(historico)
+
+    combinado: dict[str, EstadisticaMateria] = {}
+    for clave in set(historico) | set(local):
+        h = historico.get(clave)
+        l = local.get(clave)
+        if h and l:
+            nh, nl = h.n_registros, l.n_registros
+            total = nh + nl
+            indice = (h.indice_dificultad * nh + l.indice_dificultad * nl) / total
+            media = (h.media * nh + l.media * nl) / total
+            tasa = (h.tasa_suspens * nh + l.tasa_suspens * nl) / total
+            combinado[clave] = EstadisticaMateria(
+                materia=clave,
+                n_registros=total,
+                media=round(media, 2),
+                tasa_suspens=round(tasa, 3),
+                indice_dificultad=round(indice, 3),
+            )
+        elif h:
+            combinado[clave] = h
+        else:
+            combinado[clave] = l
+    return combinado

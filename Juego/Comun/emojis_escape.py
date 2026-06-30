@@ -2,8 +2,14 @@
 # -*- coding: utf-8 -*-
 """Emojis y capas de iconos del modo escape room.
 
-Cada símbolo tiene una capa fija; el tooltip es genérico por capa y las
-variantes concretas van en la descripción de la carta de puerta.
+Cinco tipos principales de puerta: materia, bloque, reposo, tienda y jefe.
+En la fila de iconos solo van subtipos. Tamaño: materia 3/5; bloque 3/5 o 10 (👑 en salas ×10).
+
+* **Materia** — DIFICULTAD y/o TIPO_PREGUNTA (perfiles 🟢🔤…); solo bloques de 3 o 5.
+* **Bloque** — subtipo TIPO_PUERTA (🧩🎓📋🧭); puede llevar 👑 (10 preguntas).
+* **Reposo / tienda** — 💤 🛒.
+
+Los rasgos combinables (niebla, tiempo, botín…) van delante y detrás.
 """
 
 from __future__ import annotations
@@ -40,9 +46,11 @@ __all__ = [
     "EMOJI_NIEBLA_AMBOS",
     "EMOJI_NIEBLA_ENUNCIADO",
     "EMOJI_NIEBLA_OPCIONES",
+    "EMOJI_PUERTA_BLOQUE",
     "EMOJI_PUERTA_CURSO",
     "EMOJI_PUERTA_GRUPO",
     "EMOJI_PUERTA_MATERIA",
+    "EMOJI_BLOQUE_SUBTIPO_GRUPO",
     "EMOJI_PUERTA_PERIODO",
     "EMOJI_PUERTA_SEMESTRE",
     "EMOJI_TIPO_CALCULO",
@@ -51,6 +59,9 @@ __all__ = [
     "EMOJI_EVENTO_ESCAPE",
     "TOOLTIP_BOTIN",
     "TOOLTIP_BOTIN_DESCANSO",
+    "TOOLTIP_PUERTA_BLOQUE",
+    "emoji_subtipo_puerta_bloque_por_id",
+    "es_evento_puerta_bloque",
     "PERFIL_CAPA_TIPO_PREGUNTA",
     "capa_evento_escape",
     "emoji_dificultad_perfil",
@@ -91,7 +102,9 @@ CAPAS_ICONO_PROTEGIDO_ESCAPE = frozenset({
 
 # --- Tipo de puerta (contenido / filtro amplio) ---
 EMOJI_PUERTA_MATERIA = "📕"
-EMOJI_PUERTA_GRUPO = "🗃️"
+EMOJI_PUERTA_BLOQUE = "🗃️"
+EMOJI_BLOQUE_SUBTIPO_GRUPO = "🧩"
+EMOJI_PUERTA_GRUPO = EMOJI_BLOQUE_SUBTIPO_GRUPO
 EMOJI_PUERTA_CURSO = "🎓"
 EMOJI_PUERTA_SEMESTRE = "📋"
 EMOJI_PUERTA_PERIODO = "🧭"
@@ -130,15 +143,18 @@ EMOJI_MODO_ESCAPE = "🔐"
 
 # Tooltips fijos por capa de contenido
 TOOLTIP_PUERTA_MATERIA = "Preguntas de una materia concreta del plan."
-TOOLTIP_PUERTA_GRUPO = (
-    "Preguntas de varias materias de un mismo bloque temático del plan."
+TOOLTIP_PUERTA_BLOQUE = (
+    "Puerta bloque: ámbito amplio del plan (grupo, curso, semestre o periodo)."
 )
-TOOLTIP_PUERTA_CURSO = "Preguntas de todas las materias de un curso del plan."
+TOOLTIP_PUERTA_GRUPO = (
+    "Subtipo grupo: varias materias del mismo bloque temático G1–G10."
+)
+TOOLTIP_PUERTA_CURSO = "Subtipo curso: todas las materias de un curso del plan."
 TOOLTIP_PUERTA_SEMESTRE = (
-    "Preguntas del semestre indicado del plan (cualquier curso)."
+    "Subtipo semestre: preguntas del semestre indicado (cualquier curso)."
 )
 TOOLTIP_PUERTA_PERIODO = (
-    "Preguntas de un semestre académico concreto (curso-semestre, p. ej. 3-2)."
+    "Subtipo periodo: semestre académico concreto (curso-semestre, p. ej. 3-2)."
 )
 TOOLTIP_TIPO_TEORIA_GLOBAL = (
     "Solo preguntas teóricas (cualquier materia del ámbito)."
@@ -164,8 +180,6 @@ CAPA_EVENTO_ESCAPE: dict[str, CapaIconoEscape] = {
     "puerta_curso": CapaIconoEscape.TIPO_PUERTA,
     "puerta_semestre": CapaIconoEscape.TIPO_PUERTA,
     "puerta_periodo": CapaIconoEscape.TIPO_PUERTA,
-    "puerta_tipo_teoria": CapaIconoEscape.TIPO_PUERTA,
-    "puerta_tipo_calculo": CapaIconoEscape.TIPO_PUERTA,
     "descanso": CapaIconoEscape.DESCANSO,
     "tienda": CapaIconoEscape.TIENDA,
     "botin": CapaIconoEscape.BOTIN,
@@ -179,14 +193,19 @@ CAPA_EVENTO_ESCAPE: dict[str, CapaIconoEscape] = {
     "puerta_maldita": CapaIconoEscape.RIESGO,
 }
 
+_IDS_EVENTO_PUERTA_BLOQUE = frozenset({
+    "puerta_grupo",
+    "puerta_curso",
+    "puerta_semestre",
+    "puerta_periodo",
+})
+
 EMOJI_EVENTO_ESCAPE: dict[str, str] = {
     "puerta_materia": EMOJI_PUERTA_MATERIA,
-    "puerta_grupo": EMOJI_PUERTA_GRUPO,
+    "puerta_grupo": EMOJI_BLOQUE_SUBTIPO_GRUPO,
     "puerta_curso": EMOJI_PUERTA_CURSO,
     "puerta_semestre": EMOJI_PUERTA_SEMESTRE,
     "puerta_periodo": EMOJI_PUERTA_PERIODO,
-    "puerta_tipo_teoria": EMOJI_TIPO_TEORIA,
-    "puerta_tipo_calculo": EMOJI_TIPO_CALCULO,
     "descanso": EMOJI_DESCANSO,
     "tienda": EMOJI_TIENDA,
     "botin": EMOJI_BOTIN_ESCAPE,
@@ -260,8 +279,23 @@ EMOJIS_UI_BARRA_ESCAPE: dict[str, str] = {
 }
 
 
+def es_evento_puerta_bloque(evento_id: str) -> bool:
+    return evento_id in _IDS_EVENTO_PUERTA_BLOQUE
+
+
+def emoji_subtipo_puerta_bloque_por_id(evento_id: str) -> str | None:
+    if not es_evento_puerta_bloque(evento_id):
+        return None
+    return EMOJI_EVENTO_ESCAPE[evento_id]
+
+
 def capa_evento_escape(evento_id: str) -> CapaIconoEscape | None:
-    return CAPA_EVENTO_ESCAPE.get(evento_id)
+    capa = CAPA_EVENTO_ESCAPE.get(evento_id)
+    if capa is not None:
+        return capa
+    if evento_id == "botin" or evento_id.startswith("botin_"):
+        return CapaIconoEscape.BOTIN
+    return None
 
 
 def emoji_dificultad_perfil(perfil_id: str | None) -> str:

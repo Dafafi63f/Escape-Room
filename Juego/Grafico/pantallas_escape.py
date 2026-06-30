@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from Comun.config_historia import ConfigPresetHistoria, etiqueta_grupo_tematico
+from Comun.config_historia import ConfigPresetHistoria
 from Comun.emojis_escape import CapaIconoEscape, EMOJI_MODO_ESCAPE
 from Comun.escape_partida import (
     VIDAS_MAX_ABSOLUTO_ESCAPE,
@@ -19,7 +19,6 @@ from Comun.escape_partida import (
     aplicar_penalizacion_extra_fallo_puerta,
     bonificacion_completar_escape,
     debe_abandonar_puerta_por_perdida_vida,
-    etiqueta_penalizacion_fallo_puerta,
     materias_del_grupo,
     mensaje_acierto_desafio,
     mensaje_feedback_puerta_sin_pregunta,
@@ -51,6 +50,7 @@ from Comun.eventos_partida import (
     evento_sin_pregunta_escape,
     iconos_efecto_puerta,
     linea_bloque_preguntas_puerta,
+    linea_foco_contenido_puerta,
     linea_recompensa_pie_carta,
     lineas_botin_puerta,
 )
@@ -828,11 +828,6 @@ class PartidaEscapeRoom(Pantalla):
                 evento=p.evento,
                 modificadores=p.modificadores,
                 n_preguntas=p.n_preguntas,
-                delta_jefe=(
-                    bonificacion_completar_escape(p).delta_vidas
-                    if puerta_es_jefe(p)
-                    else 0
-                ),
                 rng=self.rng,
             )
             for p in self.puertas_actuales
@@ -943,18 +938,6 @@ class PartidaEscapeRoom(Pantalla):
         detalle: list[str] = []
         if puerta.n_preguntas > 0:
             detalle.append(linea_bloque_preguntas_puerta(puerta.n_preguntas))
-            pen = etiqueta_penalizacion_fallo_puerta(puerta)
-            if pen:
-                detalle.append(pen)
-        if evento.materia:
-            detalle.append(evento.materia)
-        if evento.grupo:
-            nombre_grupo = etiqueta_grupo_tematico(evento.grupo)
-            mats = materias_del_grupo(self.pool, evento.grupo)
-            if mats:
-                detalle.append(f"{nombre_grupo}  {len(mats)} materias")
-            else:
-                detalle.append(nombre_grupo)
         detalle.extend(
             lineas_botin_puerta(
                 puerta.modificadores,
@@ -962,6 +945,19 @@ class PartidaEscapeRoom(Pantalla):
                 vidas_max_absoluto=VIDAS_MAX_ABSOLUTO_ESCAPE,
             )
         )
+        if evento.materia:
+            detalle.append(evento.materia)
+        else:
+            foco = linea_foco_contenido_puerta(evento)
+            if foco:
+                if evento.grupo:
+                    mats = materias_del_grupo(self.pool, evento.grupo)
+                    if mats:
+                        detalle.append(f"{foco}  {len(mats)} materias")
+                    else:
+                        detalle.append(foco)
+                else:
+                    detalle.append(foco)
         if puerta_es_jefe(puerta):
             bonus = bonificacion_completar_escape(puerta)
             if bonus.delta_vidas > 0:
@@ -1069,13 +1065,7 @@ class PartidaEscapeRoom(Pantalla):
                     self.estado,
                     vidas_max=self.vidas_max,
                 ):
-                    self.feedback_mensaje = mensaje_feedback_puerta_sin_pregunta(puerta)
-                    self.feedback_solucion = None
-                    self.feedback_ok = True
-                    self.desafio_fallo = False
-                    self._bonus_completar_mostrado = False
-                    self.fase = "feedback"
-                    self.inicio_feedback = marcar_inicio_feedback()
+                    self._feedback_entrada_puerta_sin_pregunta(puerta)
                     return
                 self.desafio_fallo = False
                 self._bonus_completar_mostrado = False
@@ -1088,22 +1078,12 @@ class PartidaEscapeRoom(Pantalla):
                     vidas_max=self.vidas_max,
                 )
                 if not any(self._ofertas_tienda):
-                    self.feedback_mensaje = mensaje_feedback_puerta_sin_pregunta(puerta)
-                    self.feedback_solucion = None
-                    self.feedback_ok = True
-                    self.fase = "feedback"
-                    self.inicio_feedback = marcar_inicio_feedback()
+                    self._feedback_entrada_puerta_sin_pregunta(puerta)
                     return
                 self.fase = "tienda"
                 self._reconstruir_tienda()
                 return
-            self.feedback_mensaje = mensaje_feedback_puerta_sin_pregunta(puerta)
-            self.feedback_solucion = None
-            self.feedback_ok = True
-            self.desafio_fallo = False
-            self._bonus_completar_mostrado = False
-            self.fase = "feedback"
-            self.inicio_feedback = marcar_inicio_feedback()
+            self._feedback_entrada_puerta_sin_pregunta(puerta)
             return
 
         self._bonus_completar_mostrado = False
@@ -1708,6 +1688,7 @@ class PartidaEscapeRoom(Pantalla):
                         if victoria
                         else min(self.sala_idx, self.config.n_salas)
                     ),
+                    "n_salas": self.config.n_salas,
                 },
                 stats_historicas=stats,
                 abandonado=abandonado,
@@ -1853,6 +1834,10 @@ class PartidaEscapeRoom(Pantalla):
                     mensaje=f"{feedback.mensaje}{sufijo_avance_sala_tras_abandono()}",
                 )
         self.feedback_mensaje = feedback.mensaje
+        if self._puerta_completada_con_exito(resultado):
+            extra = self._consumir_bonus_completar_puerta()
+            if extra:
+                self.feedback_mensaje = f"{self.feedback_mensaje} {extra}"
         if feedback.solucion and self._presentacion_opciones is not None:
             self.feedback_solucion = solucion_feedback_grafico(
                 texto_solucion(p, self._presentacion_opciones)
@@ -1901,17 +1886,13 @@ class PartidaEscapeRoom(Pantalla):
             return
         self._avanzar_sala()
 
-    def _intentar_feedback_bonus_completar(self) -> bool:
-        """Muestra recompensa de puerta superada antes de avanzar de sala."""
-        if (
-            self.puerta_actual is None
-            or self.desafio_fallo
-            or self._bonus_completar_mostrado
-        ):
-            return False
+    def _aplicar_bonus_completar_puerta(self) -> str:
+        """Aplica botín/jefe de la puerta actual; devuelve texto para feedback."""
+        if self.puerta_actual is None or self.desafio_fallo:
+            return ""
         bonus = bonificacion_completar_escape(self.puerta_actual)
         if not bonus.tiene_recompensa:
-            return False
+            return ""
         _, self.vidas_max = aplicar_bonificacion_completar(
             self.estado,
             bonus,
@@ -1926,8 +1907,52 @@ class PartidaEscapeRoom(Pantalla):
                 vidas_max=self.vidas_max,
                 numero_sala=self.sala_idx + 1,
             )
+        return bonus.mensaje
+
+    def _puerta_completada_con_exito(self, resultado: ResultadoRespuesta) -> bool:
+        if not (resultado.acierto and not resultado.tiempo_agotado):
+            return False
+        if self.reintentar_pregunta or self.desafio_fallo:
+            return False
+        if self.puerta_actual is None or self.puerta_actual.modificadores.sin_pregunta:
+            return False
+        if not self.preguntas_desafio:
+            return False
+        return self.pregunta_idx >= len(self.preguntas_desafio) - 1
+
+    def _consumir_bonus_completar_puerta(self) -> str:
+        """Aplica botín/jefe pendiente; devuelve texto o vacío si ya se mostró."""
+        if (
+            self.puerta_actual is None
+            or self.desafio_fallo
+            or self._bonus_completar_mostrado
+        ):
+            return ""
+        extra = self._aplicar_bonus_completar_puerta()
+        if not extra:
+            return ""
         self._bonus_completar_mostrado = True
-        self.feedback_mensaje = bonus.mensaje
+        return extra
+
+    def _feedback_entrada_puerta_sin_pregunta(self, puerta: PuertaEscape) -> None:
+        """Una sola pantalla: descanso/tienda y botín si aplica (sin repetir recompensa)."""
+        self.feedback_mensaje = mensaje_feedback_puerta_sin_pregunta(puerta)
+        self.feedback_solucion = None
+        self.feedback_ok = True
+        self.desafio_fallo = False
+        self._bonus_completar_mostrado = False
+        extra = self._consumir_bonus_completar_puerta()
+        if extra:
+            self.feedback_mensaje = f"{self.feedback_mensaje} {extra}"
+        self.fase = "feedback"
+        self.inicio_feedback = marcar_inicio_feedback()
+
+    def _intentar_feedback_bonus_completar(self) -> bool:
+        """Muestra recompensa de puerta superada antes de avanzar de sala."""
+        extra = self._consumir_bonus_completar_puerta()
+        if not extra:
+            return False
+        self.feedback_mensaje = extra
         self.feedback_solucion = None
         self.feedback_ok = True
         self.fase = "feedback"

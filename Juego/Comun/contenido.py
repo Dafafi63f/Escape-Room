@@ -12,7 +12,7 @@ from pathlib import Path
 
 _COLUMNAS_MINIMAS = frozenset({"Pregunta", "A", "B", "C", "D", "Correcta"})
 _COLUMNAS_OPCIONALES = frozenset({"Id", "id"})
-_COLUMNAS_CURRICULARES = frozenset(
+_COLUMNAS_PEDAGOGICAS = frozenset(
     {
         "Materia",
         "Tema",
@@ -20,6 +20,10 @@ _COLUMNAS_CURRICULARES = frozenset(
         "Tipo",
         "Tematica",
         "Grupo",
+    }
+)
+_COLUMNAS_CURRICULARES_PLAN = frozenset(
+    {
         "Nivel",
         "Curso",
         "Año",
@@ -27,6 +31,7 @@ _COLUMNAS_CURRICULARES = frozenset(
         "Semestre",
     }
 )
+_COLUMNAS_CURRICULARES = _COLUMNAS_PEDAGOGICAS | _COLUMNAS_CURRICULARES_PLAN
 
 
 def leer_cabeceras_csv(path_csv: Path) -> set[str]:
@@ -41,10 +46,20 @@ def es_csv_minimal(cabeceras: set[str]) -> bool:
     return not cabeceras.intersection(_COLUMNAS_CURRICULARES)
 
 
+def es_csv_intermedio(cabeceras: set[str]) -> bool:
+    """CSV exportado tras jugar el mínimo: metadatos inferidos + materias/grupos artificiales."""
+    if not _COLUMNAS_MINIMAS.issubset(cabeceras):
+        return False
+    if cabeceras.intersection(_COLUMNAS_CURRICULARES_PLAN):
+        return False
+    # Distingue del CSV de autor MatCAD (Materia/Dificultad/Tipo sin Grupo/Tematica).
+    return {"Grupo", "Tematica"}.issubset(cabeceras)
+
+
 def exigir_csv_minimal(path_csv: Path) -> None:
-    """Fallo si el CSV no cumple el formato mínimo (único admitido para datos de usuario)."""
+    """Fallo si el CSV no cumple el formato mínimo o intermedio (datos de usuario)."""
     cabeceras = leer_cabeceras_csv(path_csv)
-    if es_csv_minimal(cabeceras):
+    if es_csv_minimal(cabeceras) or es_csv_intermedio(cabeceras):
         return
     if not _COLUMNAS_MINIMAS.issubset(cabeceras):
         raise ValueError(
@@ -55,14 +70,14 @@ def exigir_csv_minimal(path_csv: Path) -> None:
         f"CSV con metadatos curriculares no admitido para datos de usuario ({path_csv.name}). "
         "Usa columnas mínimas: Id;Pregunta;A;B;C;D;Correcta. "
         "Ejemplo: Data/Plantillas/Preguntas.csv. "
-        "Un paquete intermedio para bancos más complejos llegará en una versión futura."
+        "Mientras juegas, el juego infiere dificultad y tipo en metadatos_inferidos.json."
     )
 
 # --- paquete_distribucion ---
 
 
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from Comun.rutas import juego_dir
 
@@ -248,8 +263,22 @@ def inferir_materias_meta(preguntas: list[Pregunta]) -> dict[str, dict[str, str]
     }
     meta: dict[str, dict[str, str]] = {}
     for p in preguntas:
-        if p.materia not in meta:
-            meta[p.materia] = dict(vacio)
+        materia = (p.materia or "").strip()
+        if not materia:
+            continue
+        if materia not in meta:
+            meta[materia] = dict(vacio)
+        bucket = meta[materia]
+        if p.grupo and not bucket["grupo"]:
+            bucket["grupo"] = p.grupo.strip()
+        if p.tematica and not bucket["tematica"]:
+            bucket["tematica"] = p.tematica.strip()
+        if p.curso and not bucket["curso"]:
+            bucket["curso"] = p.curso.strip()
+        if p.semestre and not bucket["semestre"]:
+            bucket["semestre"] = p.semestre.strip()
+        if p.nivel and not bucket["nivel"]:
+            bucket["nivel"] = p.nivel.strip()
     return meta
 
 
@@ -271,6 +300,9 @@ def _inferir_capacidades_datos(
     cabeceras: set[str],
     *,
     path_historico: Path | None,
+    csv_minimal: bool = False,
+    dataset_intermedio: bool = False,
+    cobertura: dict | None = None,
 ) -> dict[str, bool]:
     tiene_metadatos_curriculares = any(
         m.get("curso") and m.get("semestre") for m in materias_meta.values()
@@ -279,6 +311,10 @@ def _inferir_capacidades_datos(
     tipos = {p.tipo for p in preguntas if p.tipo and p.tipo not in {"General", ""}}
     tiene_tipos_csv = "Tipo" in cabeceras or "tipo" in cabeceras
     tiene_tipos = tiene_tipos_csv and {"Teoria", "Calculo"}.issubset(tipos)
+    if dataset_intermedio and cobertura:
+        tiene_grupos = tiene_grupos or bool(cobertura.get("tiene_grupos_tematicos"))
+        if not tiene_tipos_csv:
+            tiene_tipos = bool(cobertura.get("tiene_tipos_pregunta"))
 
     analisis_historico = False
     tiene_historico = path_historico is not None and path_historico.is_file()
@@ -344,6 +380,7 @@ def _construir_contenido(
 ) -> ContenidoJuego:
     cabeceras = leer_cabeceras_csv(path_preguntas)
     csv_minimal = es_csv_minimal(cabeceras)
+    csv_intermedio = es_csv_intermedio(cabeceras)
 
     if path_listado is not None:
         materias_meta = cargar_materias(path_listado)
@@ -356,6 +393,22 @@ def _construir_contenido(
     if not preguntas:
         raise ValueError(f"El CSV no contiene preguntas válidas: {path_preguntas}")
 
+    dataset_intermedio = False
+    cobertura: dict[str, Any] = {}
+    if csv_minimal or csv_intermedio:
+        from Comun.metadatos_inferidos import (
+            cobertura_metadatos_inferidos,
+            enriquecer_preguntas_minimal,
+        )
+
+        if csv_minimal:
+            enriquecer_preguntas_minimal(preguntas)
+        cobertura = cobertura_metadatos_inferidos(preguntas)
+        dataset_intermedio = csv_intermedio or bool(cobertura.get("dataset_intermedio"))
+        if csv_minimal and dataset_intermedio:
+            enriquecer_preguntas_minimal(preguntas, aplicar_catalogo=True)
+            cobertura = cobertura_metadatos_inferidos(preguntas)
+
     if not tiene_listado:
         materias_meta = inferir_materias_meta(preguntas)
 
@@ -364,6 +417,9 @@ def _construir_contenido(
         materias_meta,
         cabeceras,
         path_historico=path_historico,
+        csv_minimal=csv_minimal,
+        dataset_intermedio=dataset_intermedio,
+        cobertura=cobertura,
     )
 
     tiene_preg_res = True  # exclusivas embebidas en preguntas_resistencia_exclusivas_datos.py
@@ -382,6 +438,7 @@ def _construir_contenido(
         tiene_grupos_tematicos=caps["tiene_grupos_tematicos"],
         tiene_tipos_pregunta=caps["tiene_tipos_pregunta"],
         analisis_historico_disponible=caps["analisis_historico_disponible"],
+        dataset_intermedio=dataset_intermedio,
     )
 
     return ContenidoJuego(

@@ -40,3 +40,5 @@ Docs/Entrega/*.synctex.gz
 Docs/Entrega/pandoc_reference.docx
 Docs/Entrega/pandoc_reference_default.docx
 Docs/Entrega/pandoc_reference.tmp.docx
+# Exportación local de la presentación (fuente versionada: Presentacion_TFG.pptx)
+Docs/Entrega/Presentacion_TFG.pdf

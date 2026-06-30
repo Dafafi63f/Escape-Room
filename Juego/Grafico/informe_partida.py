@@ -25,6 +25,8 @@ def lineas_resumen_breve(
     *,
     mostrar_aciertos: bool = True,
     abandonado: bool = False,
+    salas_superadas: int | None = None,
+    n_salas: int | None = None,
 ) -> list[str]:
     """Pocas líneas para la pantalla; el detalle va al .txt."""
     e = estado
@@ -48,7 +50,9 @@ def lineas_resumen_breve(
         and e.reglas.sistema_puntuacion != SistemaPuntuacion.PORCENTAJE
     ):
         lineas.append(f"Aciertos: {e.aciertos}/{e.respondidas}")
-    if e.respondidas < total_previsto:
+    if salas_superadas is not None and n_salas is not None:
+        lineas.append(f"Salas superadas: {salas_superadas}/{n_salas}")
+    elif e.respondidas < total_previsto:
         lineas.append(f"Preguntas respondidas: {e.respondidas}/{total_previsto}")
     if guardar_informes_txt_habilitados():
         lineas.append(

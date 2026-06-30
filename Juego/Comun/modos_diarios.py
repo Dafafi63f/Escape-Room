@@ -36,6 +36,9 @@ __all__ = [
     "semilla_defecto_examen_fijo",
     "semilla_diaria",
     "semilla_examen_dia",
+    "semilla_seleccion_examen_fijo",
+    "lineas_semillas_fin_examen_fijo",
+    "titulo_fin_partida_historia",
 ]
 
 # --- Plantilla examen balanceado 4×6 ---
@@ -122,3 +125,87 @@ def config_atajo_semilla(semilla: int | None = None) -> ConfigPresetHistoria:
             "semilla": semilla if semilla is not None else semilla_defecto_examen_fijo(),
         }
     )
+
+
+_ETIQUETAS_FIN_EXAMEN_FIJO = {
+    "diario": "Examen diario",
+    "aleatorio": "Examen aleatorio",
+    "semilla": "Examen fijo",
+}
+
+
+def semilla_seleccion_examen_fijo(
+    cfg: ConfigPresetHistoria,
+    *,
+    semilla_partida: int = 0,
+) -> int:
+    """Semilla que fija el contenido del examen (reproducible)."""
+    origen = origen_semilla_desde_config(cfg)
+    if origen == "diario":
+        return semilla_examen_dia()
+    if origen == "semilla":
+        return cfg.get_int("semilla", semilla_defecto_examen_fijo())
+    return semilla_partida
+
+
+def titulo_fin_examen_fijo(
+    cfg: ConfigPresetHistoria,
+    *,
+    abandonado: bool = False,
+    semilla_partida: int = 0,
+    max_len: int | None = None,
+) -> str:
+    """Título de fin/abandono según diario, aleatorio o semilla fija (sin semillas en cabecera)."""
+    del semilla_partida
+    origen = origen_semilla_desde_config(cfg)
+    modo = _ETIQUETAS_FIN_EXAMEN_FIJO.get(origen, "Examen fijo")
+    prefijo = "ABANDONO" if abandonado else "FIN"
+    titulo = f"{prefijo} — {modo}"
+    if max_len is not None:
+        titulo = titulo[:max_len]
+    return titulo
+
+
+def lineas_semillas_fin_examen_fijo(
+    cfg: ConfigPresetHistoria,
+    *,
+    semilla_partida: int = 0,
+    semilla_contenido: int = 0,
+) -> list[str]:
+    """Líneas de metadatos bajo «Jugador» en el resumen del examen fijo."""
+    sel = semilla_contenido or semilla_seleccion_examen_fijo(
+        cfg, semilla_partida=semilla_partida
+    )
+    if not sel:
+        return []
+    lineas = [f"Semilla contenido: {formatear_semilla_diaria(sel)}"]
+    if semilla_partida and semilla_partida != sel:
+        lineas.append(f"Semilla orden: {formatear_semilla_diaria(semilla_partida)}")
+    return lineas
+
+
+def titulo_fin_partida_historia(
+    preset_id: str,
+    preset_nombre: str,
+    cfg: ConfigPresetHistoria,
+    *,
+    abandonado: bool = False,
+    semilla_partida: int = 0,
+    max_len: int | None = None,
+) -> str:
+    """Título de resumen para presets historia; examen fijo distingue diario/aleatorio/fijo."""
+    if es_id_examen_fijo(preset_id):
+        return titulo_fin_examen_fijo(
+            cfg,
+            abandonado=abandonado,
+            semilla_partida=semilla_partida,
+            max_len=max_len,
+        )
+    prefijo = "ABANDONO" if abandonado else "FIN"
+    limite = 40 if abandonado else 44
+    if max_len is not None:
+        limite = min(limite, max_len)
+    titulo = f"{prefijo} — {preset_nombre[:limite]}"
+    if max_len is not None:
+        titulo = titulo[:max_len]
+    return titulo

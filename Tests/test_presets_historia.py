@@ -43,7 +43,7 @@ from Comun.presets_historia import (  # noqa: E402
     semilla_desde_preset,
     _cargar_presets_historia_archivo,
 )
-from Comun.config_historia import ConfigPresetHistoria, ID_ESTRATEGIA_MATERIAS, ORDEN_OPCIONES_HISTORIA, VALORES_PRIORIDAD_HISTORICA, limites_n_materias, opciones_config_historia, validar_config  # noqa: E402
+from Comun.config_historia import ConfigPresetHistoria, ID_ESTRATEGIA_MATERIAS, ID_ESTRATEGIA_PRACTICA, ORDEN_OPCIONES_HISTORIA, VALORES_PRIORIDAD_HISTORICA, limites_n_materias, opciones_config_historia, validar_config  # noqa: E402
 from Comun.presets_historia import PresetHistoria  # noqa: E402
 from Comun.generador_examen_historia import PerfilPedagogico  # noqa: E402
 from Comun.rutas import (  # noqa: E402
@@ -175,6 +175,29 @@ class TestPresetsHistoria(unittest.TestCase):
         unica = [RegistroRespuesta(1, p, "B", False)]
         self.assertEqual(materias_unicas_en_registros(unica), {"M1"})
         self.assertFalse(preset_permite_examen_dirigido("simulacro", unica))
+
+        sin_materia = [
+            RegistroRespuesta(
+                1,
+                Pregunta(
+                    texto="t",
+                    materia="",
+                    tematica="",
+                    dificultad="",
+                    tipo="",
+                    grupo="",
+                    nivel="",
+                    curso="",
+                    semestre="",
+                    opciones={"A": "a", "B": "b", "C": "c", "D": "d"},
+                    correcta="A",
+                ),
+                "B",
+                False,
+            )
+        ]
+        self.assertTrue(preset_permite_examen_dirigido("examen_fijo", sin_materia))
+        self.assertFalse(preset_permite_examen_dirigido("simulacro", sin_materia))
 
     def test_catalogo_activo_sin_presets_obsoletos(self) -> None:
         from Comun.presets_historia import PRESETS_HISTORIA_RETIRADOS, _es_preset_historia
@@ -543,7 +566,7 @@ class TestPresetsHistoria(unittest.TestCase):
         self.assertTrue(preset.usar_plantillas_materia)
         cfg = self._validar(preset, self._config_defecto(preset))
         kwargs = self._kwargs_generador(preset, cfg)
-        self.assertFalse(kwargs["usar_analisis_historico"])
+        self.assertTrue(kwargs["usar_analisis_historico"])
         self.assertEqual(kwargs["n_preguntas"], 12)
         plan_a = generar_examen(
             self.preguntas,
@@ -918,22 +941,33 @@ class TestPresetsHistoria(unittest.TestCase):
                 "curso",
                 "semestre",
                 ID_ESTRATEGIA_MATERIAS,
+                ID_ESTRATEGIA_PRACTICA,
                 "n_materias",
             ],
-            "repaso_area": ["grupo", ID_ESTRATEGIA_MATERIAS],
+            "repaso_area": ["grupo", ID_ESTRATEGIA_MATERIAS, ID_ESTRATEGIA_PRACTICA],
             "simulacro": [
                 "periodo",
                 "curso",
                 "semestre",
                 ID_ESTRATEGIA_MATERIAS,
+                ID_ESTRATEGIA_PRACTICA,
                 "n_materias",
                 "enfoque",
                 "tiempo_total_min",
             ],
-            "examen_asignatura": ["materia", "enfoque", "n_preguntas", "tiempo_total_min"],
+            "examen_asignatura": [
+                "materia",
+                ID_ESTRATEGIA_MATERIAS,
+                ID_ESTRATEGIA_PRACTICA,
+                "enfoque",
+                "n_preguntas",
+                "tiempo_total_min",
+            ],
             "examen_fijo": [
                 "origen_semilla",
                 "semilla",
+                ID_ESTRATEGIA_MATERIAS,
+                ID_ESTRATEGIA_PRACTICA,
             ],
         }
         for preset in self.presets:
@@ -943,16 +977,13 @@ class TestPresetsHistoria(unittest.TestCase):
                 orden_global = [i for i in ORDEN_OPCIONES_HISTORIA if i in ids]
                 self.assertEqual(ids, orden_global)
 
-    def test_todos_los_modos_tienen_misma_prioridad_historica(self) -> None:
-        esperada = VALORES_PRIORIDAD_HISTORICA
+    def test_todos_los_modos_tienen_prioridad_configurable(self) -> None:
         for preset in self.presets:
-            if not preset.usa_analisis_historico:
-                continue
             ops = opciones_config_historia(preset)
             prioridad = next(o for o in ops if o.id == ID_ESTRATEGIA_MATERIAS)
             with self.subTest(preset=preset.id):
-                self.assertEqual(prioridad.etiqueta, "Prioridad histórica")
-                self.assertEqual(prioridad.valores, esperada)
+                self.assertEqual(prioridad.id, ID_ESTRATEGIA_MATERIAS)
+                self.assertIn("debilidades", {v for v, _ in prioridad.valores})
 
     def test_todos_los_modos_historia_usan_analisis_historico_por_defecto(self) -> None:
         from Comun.presets_historia import _es_preset_historia
@@ -972,10 +1003,7 @@ class TestPresetsHistoria(unittest.TestCase):
         for preset in self.presets:
             cfg = self._validar(preset, self._config_defecto(preset))
             kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-            if preset.id in {"examen_asignatura", "examen_fijo"}:
-                self.assertFalse(kwargs["usar_analisis_historico"])
-            else:
-                self.assertTrue(kwargs["usar_analisis_historico"], preset.id)
+            self.assertTrue(kwargs["usar_analisis_historico"], preset.id)
 
     def test_prioridad_sin_historico_desactiva_analisis(self) -> None:
         preset = next(p for p in self.presets if p.id == "repaso")
@@ -1042,8 +1070,93 @@ class TestPresetsHistoria(unittest.TestCase):
         self.assertEqual(formatear_semilla_diaria(22_06_2026), "22062026")
         self.assertEqual(semilla_examen_dia(date(2026, 6, 18)), semilla_diaria(date(2026, 6, 18)))
 
-    def test_examen_fijo_sin_analisis_historico(self) -> None:
+    def test_titulo_fin_examen_fijo_por_origen(self) -> None:
+        from Comun.modos_diarios import (
+            config_atajo_aleatorio,
+            config_atajo_diario,
+            config_atajo_semilla,
+            lineas_semillas_fin_examen_fijo,
+            titulo_fin_examen_fijo,
+            titulo_fin_partida_historia,
+        )
+
+        cfg_diario = config_atajo_diario()
+        semilla_dia = semilla_examen_dia(date(2026, 6, 22))
+        with patch(
+            "Comun.modos_diarios.semilla_examen_dia", return_value=semilla_dia
+        ):
+            titulo = titulo_fin_examen_fijo(cfg_diario, semilla_partida=99_999_999)
+            lineas = lineas_semillas_fin_examen_fijo(
+                cfg_diario,
+                semilla_partida=99_999_999,
+                semilla_contenido=semilla_dia,
+            )
+        self.assertEqual(titulo, "FIN — Examen diario")
+        self.assertIn("22062026", lineas[0])
+        self.assertIn("99999999", lineas[1])
+
+        titulo_alea = titulo_fin_examen_fijo(
+            config_atajo_aleatorio(),
+            semilla_partida=12_345_678,
+        )
+        self.assertEqual(titulo_alea, "FIN — Examen aleatorio")
+        lineas_alea = lineas_semillas_fin_examen_fijo(
+            config_atajo_aleatorio(),
+            semilla_partida=12_345_678,
+            semilla_contenido=12_345_678,
+        )
+        self.assertEqual(len(lineas_alea), 1)
+        self.assertIn("12345678", lineas_alea[0])
+
+        titulo_fijo = titulo_fin_examen_fijo(
+            config_atajo_semilla(42_424_242),
+            semilla_partida=42_424_242,
+        )
+        self.assertEqual(titulo_fijo, "FIN — Examen fijo")
+        lineas_fijo = lineas_semillas_fin_examen_fijo(
+            config_atajo_semilla(42_424_242),
+            semilla_partida=42_424_242,
+            semilla_contenido=42_424_242,
+        )
+        self.assertIn("42424242", lineas_fijo[0])
+
+        titulo_historia = titulo_fin_partida_historia(
+            "repaso",
+            "Repaso por materia",
+            cfg_diario,
+        )
+        self.assertTrue(titulo_historia.startswith("FIN — Repaso"))
+
+    def test_repetir_examen_fijo_conserva_semilla_contenido(self) -> None:
+        preset, cfg = self._examen_fijo("aleatorio")
+        kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
+        plan1 = generar_examen(
+            self.preguntas,
+            materias_orden=self.orden,
+            materias_meta=self.materias_meta,
+            stats=self.stats,
+            semilla=1_001,
+            **kwargs,
+        )
+        plan2 = generar_examen(
+            self.preguntas,
+            materias_orden=self.orden,
+            materias_meta=self.materias_meta,
+            stats=self.stats,
+            semilla=2_002,
+            semilla_contenido=plan1.semilla_contenido,
+            **kwargs,
+        )
+        self.assertEqual(plan1.semilla_contenido, 1_001)
+        self.assertEqual(plan2.semilla_contenido, 1_001)
+        self.assertEqual(
+            sorted(p.texto for p in plan1.preguntas),
+            sorted(p.texto for p in plan2.preguntas),
+        )
+
+    def test_examen_fijo_sin_ponderacion_con_sin_historico(self) -> None:
         preset, cfg = self._examen_fijo("diario")
+        cfg.valores["estrategia_materias"] = "sin_historico"
         self.assertFalse(preset.usa_analisis_historico)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
         self.assertFalse(kwargs["usar_analisis_historico"])

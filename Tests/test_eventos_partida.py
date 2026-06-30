@@ -14,6 +14,7 @@ ensure_juego_path()
 from Comun.eventos_partida import (  # noqa: E402
     AlcanceEvento,
     EventoContenidoInstanciado,
+    RASGOS_BOTIN_ESCAPE,
     catalogo_eventos,
     combinar_modificadores_puerta,
     evento_por_id,
@@ -22,6 +23,7 @@ from Comun.eventos_partida import (  # noqa: E402
     eventos_para_resistencia,
     iconos_efecto_puerta,
     instanciar_evento_contenido,
+    lineas_botin_puerta,
     texto_evento_contenido,
 )
 from Comun.escape_room import PuertaEscape  # noqa: E402
@@ -95,6 +97,48 @@ class TestEventosPartida(unittest.TestCase):
         self.assertIn("G3 — Sistemas y seguridad", texto)
         self.assertNotIn("Grupo: G3", texto)
 
+    def test_tooltip_subtipo_bloque_generico_y_foco_en_texto(self) -> None:
+        from Comun.config_historia import etiqueta_curso_academico, etiqueta_periodo_academico
+        from Comun.eventos_partida import (
+            TOOLTIP_PUERTA_CURSO,
+            TOOLTIP_PUERTA_GRUPO,
+            TOOLTIP_PUERTA_PERIODO,
+            TOOLTIP_PUERTA_SEMESTRE,
+            iconos_contenido_puerta,
+            linea_foco_contenido_puerta,
+        )
+
+        curso_ev = EventoContenidoInstanciado(
+            definicion=evento_por_id("puerta_curso"),
+            curso="2",
+        )
+        self.assertEqual(iconos_contenido_puerta(curso_ev)[0].tooltip, TOOLTIP_PUERTA_CURSO)
+        self.assertEqual(linea_foco_contenido_puerta(curso_ev), etiqueta_curso_academico("2"))
+        self.assertIn(etiqueta_curso_academico("2"), texto_evento_contenido(curso_ev))
+
+        sem_ev = EventoContenidoInstanciado(
+            definicion=evento_por_id("puerta_semestre"),
+            semestre="1",
+        )
+        self.assertEqual(iconos_contenido_puerta(sem_ev)[0].tooltip, TOOLTIP_PUERTA_SEMESTRE)
+        self.assertEqual(linea_foco_contenido_puerta(sem_ev), "Semestre 1")
+
+        per_ev = EventoContenidoInstanciado(
+            definicion=evento_por_id("puerta_periodo"),
+            curso="3",
+            semestre="2",
+        )
+        self.assertEqual(iconos_contenido_puerta(per_ev)[0].tooltip, TOOLTIP_PUERTA_PERIODO)
+        etiqueta = etiqueta_periodo_academico("3", "2")
+        self.assertEqual(linea_foco_contenido_puerta(per_ev), etiqueta)
+
+        grupo_ev = EventoContenidoInstanciado(
+            definicion=evento_por_id("puerta_grupo"),
+            grupo="5",
+        )
+        self.assertEqual(iconos_contenido_puerta(grupo_ev)[0].tooltip, TOOLTIP_PUERTA_GRUPO)
+        self.assertNotIn("G5", iconos_contenido_puerta(grupo_ev)[0].tooltip)
+
     def test_alias_resistencia_relampago(self) -> None:
         ev = evento_resistencia_aleatorio("relampago", 0.5)
         self.assertIn("Relámpago", ev.etiqueta)
@@ -136,6 +180,80 @@ class TestEventosPartida(unittest.TestCase):
         )
         self.assertEqual(len(iconos), 1)
         self.assertEqual(iconos[0].emoji, EMOJI_DESCANSO)
+
+    def test_icono_botin_unico_con_varios_premios(self) -> None:
+        from Comun.emojis_escape import EMOJI_BOTIN_ESCAPE, TOOLTIP_BOTIN
+
+        mods = combinar_modificadores_puerta(
+            (evento_por_id("botin"), evento_por_id("botin_bomba")),
+            numero_sala=8,
+        )
+        evento = EventoContenidoInstanciado(
+            definicion=evento_por_id("puerta_materia"),
+            materia="Àlgebra Lineal",
+        )
+        iconos = iconos_efecto_puerta(
+            evento=evento,
+            modificadores=mods,
+            n_preguntas=3,
+            rng=random.Random(0),
+        )
+        botines = [ic for ic in iconos if ic.emoji == EMOJI_BOTIN_ESCAPE]
+        self.assertEqual(len(botines), 1)
+        self.assertEqual(iconos[-1].emoji, EMOJI_BOTIN_ESCAPE)
+        self.assertEqual(iconos[-1].tooltip, TOOLTIP_BOTIN)
+        self.assertEqual(len(lineas_botin_puerta(mods)), 2)
+
+    def test_icono_botin_al_final_y_pie_con_premio_concreto(self) -> None:
+        from Comun.emojis_escape import CapaIconoEscape, EMOJI_BOTIN_ESCAPE, TOOLTIP_BOTIN
+
+        mods = combinar_modificadores_puerta(
+            (evento_por_id("botin_fifty_fifty"),),
+            numero_sala=2,
+        )
+        evento = EventoContenidoInstanciado(
+            definicion=evento_por_id("solo_facil"),
+            materia="Càlcul en una Variable",
+            perfil_id="facil",
+        )
+        iconos = iconos_efecto_puerta(
+            evento=evento,
+            modificadores=mods,
+            n_preguntas=3,
+            rng=random.Random(0),
+        )
+        self.assertEqual(iconos[-1].capa, CapaIconoEscape.BOTIN)
+        self.assertEqual(iconos[-1].emoji, EMOJI_BOTIN_ESCAPE)
+        self.assertEqual(iconos[-1].tooltip, TOOLTIP_BOTIN)
+        self.assertNotIn("incorrecta", iconos[-1].tooltip.lower())
+        lineas = lineas_botin_puerta(mods)
+        self.assertEqual(len(lineas), 1)
+        self.assertIn("al superar", lineas[0].lower())
+
+    def test_botin_comodin_en_catalogo_y_icono_unico_al_final(self) -> None:
+        from Comun.emojis_escape import CapaIconoEscape, EMOJI_BOTIN_ESCAPE, TOOLTIP_BOTIN
+
+        self.assertIn("botin_comodin", RASGOS_BOTIN_ESCAPE)
+        mods = combinar_modificadores_puerta(
+            (evento_por_id("botin_comodin"),),
+            numero_sala=8,
+        )
+        evento = EventoContenidoInstanciado(
+            definicion=evento_por_id("solo_facil"),
+            materia="Àlgebra Lineal",
+            perfil_id="facil",
+        )
+        iconos = iconos_efecto_puerta(
+            evento=evento,
+            modificadores=mods,
+            n_preguntas=3,
+            rng=random.Random(0),
+        )
+        botines = [ic for ic in iconos if ic.emoji == EMOJI_BOTIN_ESCAPE]
+        self.assertEqual(len(botines), 1)
+        self.assertEqual(iconos[-1].capa, CapaIconoEscape.BOTIN)
+        self.assertEqual(iconos[-1].tooltip, TOOLTIP_BOTIN)
+        self.assertEqual(len(lineas_botin_puerta(mods)), 1)
 
 
 if __name__ == "__main__":

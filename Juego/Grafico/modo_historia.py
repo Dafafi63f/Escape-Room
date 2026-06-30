@@ -21,8 +21,8 @@ from Comun.semillas import resolver_semillas_partida
 from Comun.rutas import resolver_presets
 from Comun.generador_examen_historia import (
     PlanExamen,
-    cargar_estadisticas_historicas,
     generar_examen,
+    resolver_stats_para_generador,
 )
 
 if TYPE_CHECKING:
@@ -156,17 +156,9 @@ def preparar_partida_historia(
     config: ConfigPresetHistoria | None = None,
     *,
     semilla: int | None = None,
+    semilla_contenido: int | None = None,
 ) -> tuple[PlanExamen, ReglasPartida]:
     orden = orden_materias_juego(datos)
-    stats: dict = {}
-    if datos.perfil.analisis_historico_disponible and datos.path_historico is not None:
-        try:
-            stats = cargar_estadisticas_historicas(
-                datos.path_historico,
-                materias_validas=set(datos.materias_meta),
-            )
-        except FileNotFoundError:
-            stats = {}
     cfg = config or config_defecto(
         preset,
         materias_meta=datos.materias_meta,
@@ -193,26 +185,43 @@ def preparar_partida_historia(
         plantillas_materia=plantillas_materia,
     )
     orden_preguntas = resolver_orden_preguntas(preset, cfg)
-    semilla_partida = resolver_semillas_partida(
-        preset_id=preset.id,
-        cfg=cfg,
-        semilla_override=semilla,
-        orden_preguntas=orden_preguntas,
+    from Comun.modos_diarios import (
+        es_id_examen_fijo,
+        origen_semilla_desde_config,
+        semilla_contenido_examen_fijo,
     )
-    from Comun.modos_diarios import es_id_examen_fijo, origen_semilla_desde_config
+    from Comun.semillas import semilla_partida_aleatoria
 
-    semilla_contenido = None
-    if es_id_examen_fijo(preset.id) and origen_semilla_desde_config(cfg) == "diario":
-        from Comun.modos_diarios import semilla_contenido_examen_fijo
-
-        semilla_contenido = semilla_contenido_examen_fijo(cfg)
+    semilla_contenido_generador: int | None = semilla_contenido
+    if semilla_contenido is not None:
+        semilla_partida = (
+            semilla if semilla is not None else semilla_partida_aleatoria()
+        )
+    else:
+        semilla_partida = resolver_semillas_partida(
+            preset_id=preset.id,
+            cfg=cfg,
+            semilla_override=semilla,
+            orden_preguntas=orden_preguntas,
+        )
+        if es_id_examen_fijo(preset.id):
+            origen = origen_semilla_desde_config(cfg)
+            if origen in ("diario", "semilla"):
+                semilla_contenido_generador = semilla_contenido_examen_fijo(cfg)
+    stats = resolver_stats_para_generador(
+        preset=preset,
+        cfg=cfg,
+        perfil=datos.perfil,
+        path_historico=datos.path_historico,
+        materias_meta=datos.materias_meta,
+    )
     plan = generar_examen(
         datos.preguntas,
         materias_orden=orden,
         materias_meta=datos.materias_meta,
         stats=stats,
         semilla=semilla_partida,
-        semilla_contenido=semilla_contenido,
+        semilla_contenido=semilla_contenido_generador,
         **(_kwargs_generador_examen(datos, preset, cfg)),
     )
     reglas = aplicar_preset(preset, cfg)

@@ -125,6 +125,36 @@ class TestInformeExamen(unittest.TestCase):
         self.assertIn("Duración:", texto)
         self.assertIn("Tiempo global configurado: 1 h", texto)
 
+    def test_informe_escape_muestra_salas_superadas(self) -> None:
+        from Grafico.informe_partida import lineas_resumen_breve
+
+        reglas = preset_libre_arcade()
+        estado = EstadoPartida("Ana", reglas, vidas_restantes=2)
+        estado.aciertos = 4
+        estado.respondidas = 6
+        lineas = lineas_resumen_breve(
+            estado,
+            total_previsto=90,
+            salas_superadas=5,
+            n_salas=30,
+        )
+        self.assertIn("Salas superadas: 5/30", lineas)
+        self.assertNotIn("Preguntas respondidas:", "\n".join(lineas))
+
+        texto = formatear_informe_examen(
+            estado,
+            [RegistroRespuesta(1, _pregunta_simple(), "B", True)],
+            titulo="DERROTA — Escape",
+            meta={
+                "etiqueta_sesion": "Escape room",
+                "salas_superadas": 5,
+                "n_salas": 30,
+            },
+            total_previsto=90,
+        )
+        self.assertIn("Salas superadas: 5/30", texto)
+        self.assertNotIn("Preguntas: 1/90", texto)
+
     def test_nombres_archivo_distintos_por_id(self) -> None:
         id1 = generar_id_sesion()
         id2 = generar_id_sesion()

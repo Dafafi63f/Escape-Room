@@ -48,17 +48,23 @@ def _resolver(target: str, mods: dict[str, Path]) -> str | None:
     return None
 
 
-def _grafo_imports(mods: dict[str, Path]) -> dict[str, set[str]]:
+def _targets_import(node: ast.Import | ast.ImportFrom) -> list[str]:
+    if isinstance(node, ast.Import):
+        return [a.name for a in node.names]
+    if node.module:
+        return [node.module]
+    return []
+
+
+def _grafo_imports(mods: dict[str, Path], *, solo_modulo: bool = False) -> dict[str, set[str]]:
     g: dict[str, set[str]] = defaultdict(set)
     for mod, path in mods.items():
         tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            targets: list[str] = []
-            if isinstance(node, ast.Import):
-                targets = [a.name for a in node.names]
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                targets = [node.module]
-            for target in targets:
+        nodos = tree.body if solo_modulo else ast.walk(tree)
+        for node in nodos:
+            if not isinstance(node, (ast.Import, ast.ImportFrom)):
+                continue
+            for target in _targets_import(node):
                 resolved = _resolver(target, mods)
                 if resolved and resolved != mod:
                     g[mod].add(resolved)
@@ -80,6 +86,7 @@ def _cierre(raices: set[str], grafo: dict[str, set[str]]) -> set[str]:
 def auditar() -> tuple[set[str], set[str], set[str]]:
     mods = _listar_modulos()
     grafo = _grafo_imports(mods)
+    grafo_modulo = _grafo_imports(mods, solo_modulo=True)
     excluidos = {_modname(_JUEGO / rel) for rel in MODULOS_EXCLUIDOS_MINIMO}
     faltan = excluidos - set(mods)
     if faltan:
@@ -89,6 +96,13 @@ def auditar() -> tuple[set[str], set[str], set[str]]:
     desconocidas = raices - set(mods)
     if desconocidas:
         raise ValueError(f"Raíces de flujo desconocidas: {sorted(desconocidas)}")
+
+    violaciones = _cierre(raices, grafo_modulo) & excluidos
+    if violaciones:
+        raise ValueError(
+            "El flujo mínimo importa a nivel de módulo ficheros excluidos del zip: "
+            f"{sorted(violaciones)}"
+        )
 
     necesarios = _cierre(raices, grafo) - excluidos
     todos = set(mods) - excluidos

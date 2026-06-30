@@ -8,9 +8,8 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from Comun.config_historia import ConfigPresetHistoria
-from Comun.motor_nucleo import NavegacionFinPartida
-from Comun.escape_room import es_preset_escape_room
-from Comun.presets_historia import PresetHistoria, aplicar_preset
+from Comun.motor_nucleo import ContextoRepetirHistoria, NavegacionFinPartida
+from Comun.presets_historia import PresetHistoria, aplicar_preset, es_preset_escape_room
 from Comun.resistencia_partida import construir_banco_resistencia, es_preset_resistencia
 
 if TYPE_CHECKING:
@@ -29,6 +28,8 @@ def iniciar_pantalla_preset(
     *,
     navegacion_fin: NavegacionFinPartida | None = None,
     ajustes_escape: AjustesEscapeRoom | None = None,
+    semilla_contenido: int | None = None,
+    contexto_repetir: ContextoRepetirHistoria | None = None,
 ) -> Pantalla:
     """Devuelve la pantalla de partida según el preset (examen, resistencia o escape room)."""
     if es_preset_resistencia(preset):
@@ -98,7 +99,20 @@ def iniciar_pantalla_preset(
     from Grafico.modo_historia import preparar_partida_historia
     from Grafico.pantallas_examen_fijo import PartidaModoHistoria
 
-    plan, reglas = preparar_partida_historia(datos, preset, config)
+    plan, reglas = preparar_partida_historia(
+        datos,
+        preset,
+        config,
+        semilla_contenido=semilla_contenido,
+    )
+    if contexto_repetir is not None and plan.semilla_contenido:
+        contexto_repetir.semilla_contenido = plan.semilla_contenido
+    elif (
+        navegacion_fin is not None
+        and navegacion_fin.contexto_historia is not None
+        and plan.semilla_contenido
+    ):
+        navegacion_fin.contexto_historia.semilla_contenido = plan.semilla_contenido
     if not plan.preguntas:
         raise ValueError("No se pudo generar el examen.")
     return PartidaModoHistoria(
@@ -112,6 +126,7 @@ def iniciar_pantalla_preset(
         salir_app=salir_app,
         config_historia=config,
         semilla_partida=plan.semilla_partida,
+        semilla_contenido=plan.semilla_contenido,
         rng_partida=plan.rng,
         navegacion_fin=navegacion_fin,
     )

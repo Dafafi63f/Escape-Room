@@ -9,7 +9,12 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from Comun.config_historia import ConfigPresetHistoria
+from Comun.config_historia import (
+    ConfigPresetHistoria,
+    etiqueta_campo_estrategia_materias,
+    etiqueta_campo_estrategia_practica,
+    preset_usa_prioridad_materias,
+)
 from Comun.presets_historia import PresetHistoria
 from Comun.preferencias_grafico import nombre_jugador_grafico
 from Grafico.textos_grafico import (
@@ -41,6 +46,7 @@ from Grafico.tema import (
 )
 from Grafico.ui import (
     Boton,
+    dibujar_flecha_ciclo,
     dibujar_panel,
     dibujar_texto_multilinea,
     dibujar_tooltips_botones,
@@ -132,19 +138,14 @@ def _dibujar_flecha_carrusel(
     activo: bool,
     hover: bool,
 ) -> None:
-    from Grafico.ui import colores_boton
-
-    fondo, color, borde = colores_boton(activo=activo, hover=hover)
-    pygame.draw.rect(superficie, fondo, rect, border_radius=10)
-    pygame.draw.rect(superficie, borde, rect, width=2, border_radius=10)
-    cx, cy = rect.center
-    tam = 12
-    if direccion == "izq":
-        puntos = [(cx + tam // 3, cy - tam), (cx - tam // 2, cy), (cx + tam // 3, cy + tam)]
-    else:
-        puntos = [(cx - tam // 3, cy - tam), (cx + tam // 2, cy), (cx - tam // 3, cy + tam)]
-    if activo:
-        pygame.draw.polygon(superficie, color, puntos)
+    dibujar_flecha_ciclo(
+        superficie,
+        rect,
+        direccion,
+        activo=activo,
+        hover=hover,
+        border_radius=10,
+    )
 
 
 def _layout_puntos_carrusel(n: int) -> tuple[list[tuple[int, int]], int]:
@@ -454,20 +455,38 @@ class ConfigModoHistoria(Pantalla):
         superficie.blit(cat, cat.get_rect(midtop=(tarjeta.centerx, tarjeta.y + 16)))
 
         y_nombre = tarjeta.y + 34
-        if (
-            preset.usa_analisis_historico
-            and self.datos.perfil.analisis_historico_disponible
-        ):
-            badge = self.fuentes["pequena"].render(
-                etiqueta_campo("estrategia_materias", "Prioridad histórica MatCAD"),
+        if preset_usa_prioridad_materias(preset, self.datos.perfil):
+            y_badge = tarjeta.y + 34
+            if self.datos.perfil.analisis_historico_disponible:
+                badge_hist = self.fuentes["pequena"].render(
+                    etiqueta_campo(
+                        "estrategia_materias",
+                        etiqueta_campo_estrategia_materias(self.datos.perfil),
+                    ),
+                    True,
+                    (20, 110, 70),
+                )
+                superficie.blit(
+                    badge_hist,
+                    badge_hist.get_rect(midtop=(tarjeta.centerx, y_badge)),
+                )
+                y_badge += 22
+            badge_pract = self.fuentes["pequena"].render(
+                etiqueta_campo(
+                    "estrategia_practica",
+                    etiqueta_campo_estrategia_practica(),
+                ),
                 True,
                 (20, 110, 70),
             )
-            superficie.blit(badge, badge.get_rect(midtop=(tarjeta.centerx, tarjeta.y + 34)))
-            y_nombre = tarjeta.y + 58
+            superficie.blit(
+                badge_pract,
+                badge_pract.get_rect(midtop=(tarjeta.centerx, y_badge)),
+            )
+            y_nombre = y_badge + 24
         elif preset.usa_analisis_historico:
             aviso = self.fuentes["pequena"].render(
-                "Sin histórico: reparto equilibrado o curricular",
+                "Sin histórico MatCAD: prioridad según tu práctica",
                 True,
                 (120, 90, 40),
             )
@@ -527,7 +546,11 @@ class ConfigModoHistoria(Pantalla):
         _dibujar_cabecera_historia(
             superficie,
             self.fuentes,
-            "Ajusta la prioridad histórica MatCAD en cada modo (donde aplique)",
+            (
+                "Ajusta la prioridad histórica MatCAD y tu práctica en cada modo (donde aplique)"
+                if self.datos.perfil.analisis_historico_disponible
+                else "Ajusta la prioridad según tu práctica en cada modo (donde aplique)"
+            ),
         )
 
         preset_lbl = self.fuentes["menu"].render(

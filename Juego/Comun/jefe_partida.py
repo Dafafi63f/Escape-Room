@@ -7,7 +7,7 @@ from __future__ import annotations
 import random
 from collections import Counter
 
-from Comun.config_historia import GRUPOS_TEMATICOS, etiqueta_grupo_tematico
+from Comun.config_historia import etiqueta_grupo_tematico
 
 PREGUNTAS_POR_JEFE = 10
 TAMANOS_BLOQUE_NORMAL = (3, 5)
@@ -19,13 +19,6 @@ _ETIQUETA_DIFICULTAD_JEFE: dict[str, str] = {
     "medio": "medio",
     "dificil": "difícil",
     "equilibrado": "equilibrado",
-}
-
-_PERFIL_POR_DIFICULTAD_JEFE: dict[str, str] = {
-    "facil": "facil",
-    "medio": "media",
-    "dificil": "dificil",
-    "equilibrado": "balanceado",
 }
 
 # Resistencia: pity de jefe (primer intento no antes de ~20 preguntas; bloque de 10).
@@ -49,14 +42,24 @@ def tamano_coherente_bloque_o_jefe(preguntas: int, *, es_jefe: bool) -> bool:
 
 
 def sala_es_milestone_jefe(numero_sala: int) -> bool:
-    """Salas 10, 20, 30… dedicadas a jefes."""
+    """Salas 10, 20, 30… con bloques de 10 preguntas (👑); sin pity fuera de aquí."""
     return numero_sala > 0 and numero_sala % 10 == 0
 
 
 def n_puertas_jefe_en_sala(numero_sala: int) -> int:
+    """Cuántas puertas de bloque con 10 preguntas (👑) en salas múltiplo de 10.
+
+    Solo puertas de bloque (grupo/curso/semestre/periodo), nunca materia.
+    Sala 10 → 1/3, sala 20 → 2/3, sala 30+ → 3/3.
+    """
     if not sala_es_milestone_jefe(numero_sala):
         return 0
     return min(3, numero_sala // 10)
+
+
+def es_puerta_diez_preguntas(n_preguntas: int) -> bool:
+    """True si la puerta es un bloque largo de 10 (icono 👑 en carta)."""
+    return n_preguntas == PREGUNTAS_POR_JEFE
 
 
 def clasificar_dificultad_jefe(dificultades: list[str]) -> str:
@@ -80,10 +83,6 @@ def etiqueta_dificultad_jefe(tipo: str) -> str:
     return _ETIQUETA_DIFICULTAD_JEFE.get(tipo, tipo)
 
 
-def perfil_id_para_dificultad_jefe(tipo: str) -> str:
-    return _PERFIL_POR_DIFICULTAD_JEFE.get(tipo, "balanceado")
-
-
 def dificultades_permitidas_jefe(tipo: str) -> frozenset[str] | None:
     if tipo == "facil":
         return frozenset({"Facil"})
@@ -92,25 +91,6 @@ def dificultades_permitidas_jefe(tipo: str) -> frozenset[str] | None:
     if tipo == "dificil":
         return frozenset({"Dificil"})
     return None
-
-
-def elegir_dificultad_jefe_escape(numero_sala: int, rng: random.Random) -> str:
-    """Sesgo según progreso de la partida escape."""
-    t = min(1.0, max(0.0, (numero_sala - 10) / 20.0))
-    opciones: list[tuple[float, str]] = [
-        (0.28 - 0.12 * t, "facil"),
-        (0.32, "medio"),
-        (0.22 + 0.10 * t, "equilibrado"),
-        (0.10 + 0.18 * t, "dificil"),
-    ]
-    total = sum(p for p, _ in opciones)
-    roll = rng.random() * total
-    acum = 0.0
-    for peso, tipo in opciones:
-        acum += peso
-        if roll < acum:
-            return tipo
-    return "equilibrado"
 
 
 def elegir_dificultad_jefe_resistencia(numero_pregunta: int, rng: random.Random) -> str:
@@ -144,10 +124,6 @@ def debe_forzar_jefe_resistencia(preguntas_sin_jefe: int) -> bool:
 
 
 def etiqueta_jefe_grupo(grupo: str, *, dificultad: str, n: int = PREGUNTAS_POR_JEFE) -> str:
-    nom = etiqueta_grupo_tematico(grupo)
-    if grupo in GRUPOS_TEMATICOS:
-        foco = nom
-    else:
-        foco = nom
+    foco = etiqueta_grupo_tematico(grupo)
     dif = etiqueta_dificultad_jefe(dificultad)
     return f"Jefe: {n} preguntas {foco} ({dif})"

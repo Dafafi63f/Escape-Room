@@ -105,7 +105,8 @@ POWERUPS_LOOT_APUESTA = tuple(
 
 IDS_POWERUP = frozenset(POWERUPS.keys())
 
-# Saltar y Cambio: usos ilimitados por pregunta (no ocupan el slot único).
+# Saltar y Cambio: no ocupan el slot (resistencia y escape); en escape no se
+# pueden usar si ya hay otro objeto activo en la misma pregunta.
 POWERUPS_MULTI_USO_PREGUNTA = frozenset({"skip", "cambio"})
 
 _AYUDAS_OPCIONES = frozenset(
@@ -114,6 +115,9 @@ _AYUDAS_OPCIONES = frozenset(
 
 MENSAJE_POWERUP_YA_USADO = (
     "Solo puedes usar un objeto (salvo Saltar/Cambio) por pregunta."
+)
+MENSAJE_POWERUP_YA_USADO_ESCAPE = (
+    "Solo puedes usar un objeto por pregunta (Saltar/Cambio pasan a otra)."
 )
 
 POWERUPS_INCOMPATIBLES_EN_PREGUNTA: dict[str, frozenset[str]] = {
@@ -686,7 +690,15 @@ def usar_objeto(
     """Consume un powerup del inventario; devuelve mensaje de error o None."""
     if es_bonificacion(articulo_id):
         return "Las bonificaciones se aplican al obtenerlas."
-    if not escape:
+    if escape:
+        from Comun.powerups_puerta_escape import puede_usar_powerup_en_pregunta_escape
+
+        err_uso = puede_usar_powerup_en_pregunta_escape(
+            articulo_id, inventario.powerups_usados_en_pregunta
+        )
+        if err_uso:
+            return err_uso
+    else:
         err_uso = puede_usar_powerup_en_pregunta(
             articulo_id, inventario.powerups_usados_en_pregunta
         )

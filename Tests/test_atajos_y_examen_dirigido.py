@@ -354,8 +354,55 @@ class TestCadenaExamenDirigido(unittest.TestCase):
         self.assertEqual(len(plan.preguntas), 6)
         self.assertEqual(set(por_materia.values()), {3})
 
+    def test_tokens_enunciado_extrae_vocabulario_del_dataset(self) -> None:
+        from Comun.cadena_examen_dirigido import tokens_enunciado
 
-class TestCoherenciaBotonTecla(unittest.TestCase):
+        p = _pregunta("", "¿Cuál es la derivada de ln(x) para x>0?")
+        tokens = tokens_enunciado(p)
+        self.assertIn("derivada", tokens)
+        self.assertNotIn("cual", tokens)
+
+    def test_pesos_planos_favorecen_contenido_similar_a_fallos(self) -> None:
+        from Comun.cadena_examen_dirigido import calcular_pesos_preguntas_planas
+
+        matriz_a = _pregunta("", "Determinante de una matriz cuadrada 3x3")
+        matriz_b = _pregunta("", "Rango de una matriz rectangular")
+        calc_a = _pregunta("", "Derivada de x al cuadrado")
+        calc_b = _pregunta("", "Integral definida de x cuadrado")
+        pool = [matriz_a, matriz_b, calc_a, calc_b]
+        registros = [RegistroRespuesta(1, calc_a, "B", False)]
+        pesos = calcular_pesos_preguntas_planas(pool, registros)
+        por_texto = {p.texto: w for p, w in zip(pool, pesos, strict=True)}
+        self.assertGreater(por_texto[calc_b.texto], por_texto[matriz_a.texto])
+        self.assertGreater(por_texto[calc_b.texto], por_texto[matriz_b.texto])
+
+    def test_seleccion_plana_dirigida_prioriza_tema_fallado(self) -> None:
+        import random
+
+        from Comun.cadena_examen_dirigido import construir_seleccion_plana_dirigida
+
+        pool = [
+            _pregunta("", f"Matriz invertible caso {i}") for i in range(4)
+        ] + [
+            _pregunta("", f"Derivada polinomio grado {i}") for i in range(12)
+        ]
+        fallos = [pool[5], pool[6]]
+        registros = [
+            RegistroRespuesta(1, fallos[0], "B", False),
+            RegistroRespuesta(2, fallos[1], "B", False),
+        ]
+        seleccion = construir_seleccion_plana_dirigida(
+            pool,
+            8,
+            random.Random(0),
+            lambda p: (p.materia, p.texto),
+            registros,
+            fallos,
+        )
+        derivadas = sum(1 for p in seleccion if "derivada" in p.texto.lower())
+        matrices = sum(1 for p in seleccion if "matriz" in p.texto.lower())
+        self.assertGreaterEqual(derivadas, 5)
+        self.assertGreater(derivadas, matrices)
     def test_pulsar_boton_indice_respeta_activo(self) -> None:
         pulsado: list[bool] = []
 

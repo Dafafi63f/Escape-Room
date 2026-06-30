@@ -292,8 +292,16 @@ if TYPE_CHECKING:
 
 
 @dataclass
+class ContextoRepetirHistoria:
+    """Semilla de contenido del último examen (misma selección al repetir partida)."""
+
+    semilla_contenido: int | None = None
+
+
+@dataclass
 class NavegacionFinPartida:
     """Pantallas a las que puede ir el jugador desde el resumen final."""
 
     repetir: Callable[[], Pantalla] | None = None
     configurar: Callable[[], Pantalla] | None = None
+    contexto_historia: ContextoRepetirHistoria | None = None
