@@ -130,7 +130,7 @@ def escribir_plantilla_creador_privado(
 
 def mensaje_crear_creador_privado() -> str:
     return (
-        "Crea Data/Banco/creador_privado.json con la plantilla del modulo "
+        "Crea Data/Privado/creador_privado.json con la plantilla del modulo "
         "(python -m Comun.feedback desde Juego/)."
     )
 
@@ -268,7 +268,7 @@ def _enviar_smtp(reporte: ReporteFeedback, config: dict) -> tuple[bool, str | No
         return (
             False,
             "Faltan datos SMTP (servidor, usuario, password, destino) en "
-            "Data/Banco/creador_privado.json (seccion feedback_smtp).",
+            "Data/Privado/creador_privado.json (seccion feedback_smtp).",
         )
     puerto = int(config.get("smtp_puerto", 587))
     asunto = _correo_asunto(config, reporte)
@@ -307,7 +307,7 @@ def enviar_feedback(reporte: ReporteFeedback) -> ResultadoEnvioFeedback:
     resultado = ResultadoEnvioFeedback(archivo=archivo)
     if not config.get("habilitar_smtp", True):
         resultado.smtp_error = (
-            "SMTP deshabilitado en Data/Banco/creador_privado.json (seccion feedback_smtp)."
+            "SMTP deshabilitado en Data/Privado/creador_privado.json (seccion feedback_smtp)."
         )
         return resultado
     ok, error = _enviar_smtp(reporte, config)
@@ -328,7 +328,7 @@ def describir_resultado_envio(resultado: ResultadoEnvioFeedback) -> list[str]:
     elif _faltan_credenciales_smtp(resultado.smtp_error):
         lineas.append(
             "Envio automatico no configurado: falta smtp_password en "
-            "Data/Banco/creador_privado.json (seccion feedback_smtp)."
+            "Data/Privado/creador_privado.json (seccion feedback_smtp)."
         )
         lineas.append(mensaje_crear_creador_privado())
         lineas.append(
@@ -346,7 +346,7 @@ def describir_resultado_envio(resultado: ResultadoEnvioFeedback) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Genera Data/Banco/creador_privado.json desde la plantilla embebida",
+        description="Genera Data/Privado/creador_privado.json desde la plantilla embebida",
     )
     parser.add_argument(
         "--sobrescribir",

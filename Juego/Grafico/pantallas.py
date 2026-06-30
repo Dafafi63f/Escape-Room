@@ -31,6 +31,7 @@ from Comun.motor_nucleo import (
     texto_solucion,
 )
 from Comun.semillas import crear_rng_partida, semilla_partida_aleatoria
+from Comun.linea_estado_ui import texto_progreso_examen_cerrado
 from Comun.informe_examen import CierreInformePartida
 from Comun.preferencias_grafico import es_nombre_anonimo
 from Comun.motor_nucleo import NavegacionFinPartida
@@ -59,6 +60,7 @@ from Grafico.feedback_partida import (
     marcar_inicio_feedback,
     solucion_feedback_grafico,
 )
+from Comun.version import etiqueta_version
 from Comun.textos_ui import OPCIONES_MENU_PRINCIPAL
 from Grafico.textos_grafico import etiqueta_opcion_menu
 from Grafico.tooltips_ui import (
@@ -66,6 +68,7 @@ from Grafico.tooltips_ui import (
     TOOLTIP_GUARDAR_INFORME,
     tooltip_menu_principal,
 )
+from Grafico.atajos_teclado import manejar_teclado_partida
 from Grafico.textos_grafico import (
     BTN_ABANDONAR,
     BTN_CAMBIAR_OPCIONES,
@@ -102,9 +105,47 @@ MARGEN_INF_PARTIDA = 12
 ALTO_BOTON_CONTINUAR_PARTIDA = 44
 
 
+def fraccion_barra_progreso_partida(*, indice_pregunta: int, total: int) -> float:
+    """Fracción 0–1 alineada con «Pregunta N/total» (pregunta actual, no respondidas)."""
+    if total <= 0:
+        return 0.0
+    return min(1.0, (indice_pregunta + 1) / total)
+
+
 class Pantalla:
     def titulo_pausa(self) -> str:
         return "Pantalla actual"
+
+    def en_partida_activa(self) -> bool:
+        """True en pantallas de partida (Esc abre pausa)."""
+        return False
+
+    def atajo_avanzar(self) -> bool:
+        """Enter / avanzar: True si la pantalla consumió la tecla."""
+        from Grafico.atajos_teclado import pulsar_primer_boton
+
+        return pulsar_primer_boton(
+            self,
+            "boton_empezar",
+            "boton_siguiente",
+            "boton_continuar",
+            "boton_enviar",
+        )
+
+    def atajo_retroceder(self) -> bool:
+        """Retroceso / volver: True si la pantalla consumió la tecla."""
+        from Grafico.atajos_teclado import pulsar_primer_boton
+
+        return pulsar_primer_boton(self, "boton_volver", "boton_atras")
+
+    def atajo_opcion_numerica(self, indice: int) -> bool:
+        """Tecla 1–9 en menús con lista de botones."""
+        from Grafico.atajos_teclado import botones_menu_pantalla, pulsar_boton_indice
+
+        botones = botones_menu_pantalla(self)
+        if not botones:
+            return False
+        return pulsar_boton_indice(botones, indice)
 
     def manejar_evento(self, _evento: pygame.event.Event) -> Pantalla | None:
         return None
@@ -174,23 +215,24 @@ class MenuPrincipal(Pantalla):
         self.abrir_feedback = abrir_feedback or datos.abrir_feedback
         perfil = datos.perfil
         if perfil.tipo_paquete == "minimo":
-            self.mensaje = f"{datos.num_preguntas} preguntas · MATCAD mínimo"
+            self.mensaje = f"{datos.num_preguntas} preguntas  MATCAD mínimo"
         elif perfil.tipo_paquete == "completo":
             self.mensaje = (
-                f"{datos.num_preguntas} preguntas · {datos.num_materias} materias · MATCAD completo"
+                f"{datos.num_preguntas} preguntas  {datos.num_materias} materias  MATCAD completo"
             )
         elif perfil.paquete_completo:
             self.mensaje = (
-                f"{datos.num_preguntas} preguntas · {datos.num_materias} materias · juego completo"
+                f"{datos.num_preguntas} preguntas  {datos.num_materias} materias  juego completo"
             )
         elif perfil.solo_csv:
             self.mensaje = (
-                f"{datos.num_preguntas} preguntas · juego mínimo (CSV portable)"
+                f"{datos.num_preguntas} preguntas  juego mínimo (CSV portable)"
             )
         else:
-            self.mensaje = f"{datos.num_preguntas} preguntas · juego mínimo"
+            self.mensaje = f"{datos.num_preguntas} preguntas  juego mínimo"
+        self.mensaje = f"{self.mensaje}  {etiqueta_version()}"
         if datos.avisos_carga and perfil.tipo_paquete == "desarrollo":
-            self.mensaje += " · revisa la consola al arrancar"
+            self.mensaje += "  revisa los avisos al arrancar"
         self.fuentes = crear_fuentes()
         self.botones = self._crear_botones()
 
@@ -246,7 +288,18 @@ class MenuPrincipal(Pantalla):
             if self.abrir_feedback is not None:
                 self.abrir_feedback()
             return
-        self.mensaje = f"«{opcion_id}» — disponible próximamente."
+        self.mensaje = "Esta opción no está disponible."
+
+    def atajo_retroceder(self) -> bool:
+        self.salir_app()
+        return True
+
+    def atajo_avanzar(self) -> bool:
+        for boton in self.botones:
+            if boton.activo:
+                boton.al_pulsar()
+                return True
+        return False
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
         if evento.type == pygame.MOUSEMOTION:
@@ -367,6 +420,9 @@ class PartidaModoLibre(Pantalla):
             raise IndexError("Sin preguntas disponibles.")
         self._reconstruir_opciones()
 
+    def en_partida_activa(self) -> bool:
+        return True
+
     def _cargar_siguiente_pregunta(self, *, inicial: bool = False) -> bool:
         if not inicial and self.total is not None and self.indice_global >= self.total:
             return False
@@ -391,8 +447,18 @@ class PartidaModoLibre(Pantalla):
         return self.pool[self.pregunta_idx]
 
     def _texto_progreso(self) -> str:
-        total_txt = self.total if self.total is not None else "inf"
-        return f"Pregunta {self.indice_global + 1}/{total_txt}"
+        if self.infinito:
+            return ""
+        assert self.total is not None
+        return texto_progreso_examen_cerrado(self.indice_global + 1, self.total)
+
+    def _kwargs_progreso_barra(self) -> dict:
+        if self.infinito:
+            return {
+                "progreso": "",
+                "numero_pregunta": self.indice_global + 1,
+            }
+        return {"progreso": self._texto_progreso()}
 
     def _linea_estado_actual(self) -> str:
         seg_preg = None
@@ -403,8 +469,8 @@ class PartidaModoLibre(Pantalla):
             )
         return linea_estado(
             self.estado,
-            self._texto_progreso(),
             segundos_pregunta_restantes=seg_preg,
+            **self._kwargs_progreso_barra(),
         )
 
     def _dibujar_barra_superior(self, superficie: pygame.Surface) -> None:
@@ -428,11 +494,11 @@ class PartidaModoLibre(Pantalla):
         dibujar_estado_partida_en_barra(
             superficie,
             estado=self.estado,
-            progreso=self._texto_progreso(),
             fuentes=self.fuentes,
             x_centro_min=x_centro_min,
             x_centro_max=x_centro_max,
             segundos_pregunta_restantes=seg_preg,
+            **self._kwargs_progreso_barra(),
         )
         if self.nombre and not es_nombre_anonimo(self.nombre):
             nombre_txt = fuente.render(self.nombre, True, COLOR_ACENTO)
@@ -466,7 +532,7 @@ class PartidaModoLibre(Pantalla):
                 partes.append(f"Niv. {techo} ({describe_niveles_seleccion(self.niveles_complejidad)})")
             else:
                 partes.append(f"Niv. {describe_niveles_seleccion(self.niveles_complejidad)}")
-        return " · ".join(partes)
+        return "  ".join(partes)
 
     def _y_inicio_opciones(self) -> int:
         y = Y_PANEL_PREGUNTA + ALTO_PANEL_PREGUNTA + GAP_TRAS_PANEL_PARTIDA
@@ -630,7 +696,7 @@ class PartidaModoLibre(Pantalla):
         self._reconstruir_opciones()
 
     def titulo_pausa(self) -> str:
-        return f"{self.nombre} · {self._linea_estado_actual()}"
+        return f"{self.nombre}  {self._linea_estado_actual()}"
 
     def _actualizar_hover_partida_libre(self, pos: tuple[int, int]) -> None:
         self.boton_abandonar.actualizar_hover(pos)
@@ -643,11 +709,22 @@ class PartidaModoLibre(Pantalla):
         if self.boton_abandonar.manejar_clic(pos, boton):
             self._abandonar()
             return True
+        if self.fase == "feedback":
+            self._continuar()
+            return True
         if self.fase != "pregunta":
             return False
         return any(b.manejar_clic(pos, boton) for b in self.botones_opcion)
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
+        if manejar_teclado_partida(
+            evento,
+            fase=self.fase,
+            botones_opcion=self.botones_opcion,
+            on_responder=self._responder,
+            on_continuar=self._continuar,
+        ):
+            return None
         if evento.type == pygame.MOUSEMOTION:
             self._actualizar_hover_partida_libre(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
@@ -688,14 +765,17 @@ class PartidaModoLibre(Pantalla):
             COLOR_TITULO,
         )
 
-        # Progreso de la partida finita (respondidas / total); en infinito no se muestra.
+        # Progreso finito: misma noción que «Pregunta N/total»; en infinito no se muestra.
         if self.total is not None and self.total > 0:
             barra_y = Y_PANEL_PREGUNTA + panel.height + GAP_TRAS_PANEL_PARTIDA
             barra_fondo = pygame.Rect(
                 MARGEN, barra_y, ANCHO - 2 * MARGEN, ALTO_BARRA_PROGRESO_PARTIDA
             )
             pygame.draw.rect(superficie, (40, 56, 80), barra_fondo, border_radius=4)
-            progreso_w = int(barra_fondo.width * self.estado.respondidas / self.total)
+            frac = fraccion_barra_progreso_partida(
+                indice_pregunta=self.indice_global, total=self.total
+            )
+            progreso_w = int(barra_fondo.width * frac)
             if progreso_w:
                 pygame.draw.rect(
                     superficie,
@@ -808,6 +888,10 @@ class ResumenPartida(Pantalla):
             )
         )
         return lineas
+
+    def atajo_avanzar(self) -> bool:
+        self._ir_menu()
+        return True
 
     def _persistir_estadisticas_si_procede(self) -> None:
         if not self.cierre_informe or not self.cierre_informe.registros:

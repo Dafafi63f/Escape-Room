@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+import re
 import time
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
@@ -24,11 +25,16 @@ from Comun.objetos_partida import (
     descripcion_powerup,
     emoji_powerup,
     etiqueta_powerup,
+    elegir_powerup_loot,
     letras_ocultas_bomba,
+    letras_ocultas_comodin,
+    letras_ocultas_descarte_inteligente,
     letras_ocultas_fifty_fifty,
     letras_ocultas_por_cantidad,
     puede_usar_powerup_en_pregunta,
     revocar_powerup_usado,
+    segundos_pregunta_restantes,
+    tiempo_pregunta_agotado,
 )
 from Comun.semillas import RngPartida, crear_rng_partida, semilla_partida_aleatoria
 
@@ -134,43 +140,33 @@ def cuotas_banco_resistencia(
 
 # --- Mecánicas (tipos y constantes) ---
 
-_MALDIGIONES: tuple[tuple[str, str, str], ...] = (
-    ("niebla", "Maldición: 1 respuesta oculta", EMOJI_NIEBLA_OPCIONES),
-    ("sin_objetos", "Maldición: no puedes usar objetos", "⛔"),
-    ("relampago", "Maldición: relámpago forzado", "⚡"),
+# Catálogo de maldiciones de resistencia: ver ``maldiciones_partida``.
+
+from Comun.maldiciones_partida import (
+    DesafioBloqueTiempoResistencia,
+    DesafioMaldicionTiempo,
+    ModoFinMaldicion,
+    PREGUNTA_MIN_MALDICION_DESAFIO_TIEMPO_RESISTENCIA,
+    formatear_aviso_maldicion_desafio,
+    instanciar_maldicion_desafio_tiempo,
+    maldicion_desafio_expirada,
+    maldicion_tiene_desafio_tiempo,
+    maldicion_usa_duracion_preguntas,
+    mensaje_fin_partida_maldicion_desafio,
+    params_maldicion_desafio_tiempo,
+    texto_segmento_maldicion_desafio,
+    tick_maldicion_desafio_tras_acierto,
 )
 
-
+# Alias histórico.
+PREGUNTA_MIN_DESAFIO_BLOQUE_RESISTENCIA = PREGUNTA_MIN_MALDICION_DESAFIO_TIEMPO_RESISTENCIA
 # Presión por racha alta: la pregunta actual se vuelve más exigente (sin castigos automáticos).
 PRESION_RACHA_UMBRAL = 25
 _PRESION_RACHA_ESCALA = 30.0
 
-# Desafío aparte: X aciertos en Y segundos (fin de partida si expira). Distinto del tiempo por pregunta.
-PREGUNTA_MIN_DESAFIO_BLOQUE_RESISTENCIA = 120
 
-
-@dataclass
-class DesafioBloqueTiempoResistencia:
-    """Bloque de aciertos con tiempo total; independiente del cronómetro por pregunta."""
-
-    aciertos_objetivo: int
-    tiempo_limite_seg: int
-    aciertos_logrados: int = 0
-    inicio_monotonic: float = field(default_factory=time.monotonic)
-
-    def tiempo_restante_seg(self) -> int:
-        rest = int(self.tiempo_limite_seg - (time.monotonic() - self.inicio_monotonic))
-        return max(0, rest)
-
-    def completado(self) -> bool:
-        return self.aciertos_logrados >= self.aciertos_objetivo
-
-    def expirado(self) -> bool:
-        return not self.completado() and self.tiempo_restante_seg() <= 0
-
-
-def probabilidad_desafio_bloque_resistencia(numero_pregunta: int) -> float:
-    if numero_pregunta < PREGUNTA_MIN_DESAFIO_BLOQUE_RESISTENCIA:
+def probabilidad_maldicion_desafio_tiempo_resistencia(numero_pregunta: int) -> float:
+    if numero_pregunta < PREGUNTA_MIN_MALDICION_DESAFIO_TIEMPO_RESISTENCIA:
         return 0.0
     t = factor_progreso_resistencia(numero_pregunta)
     if t < 0.5:
@@ -178,24 +174,17 @@ def probabilidad_desafio_bloque_resistencia(numero_pregunta: int) -> float:
     return 0.06 + 0.14 * min(1.0, (t - 0.5) * 2.0)
 
 
+def probabilidad_desafio_bloque_resistencia(numero_pregunta: int) -> float:
+    return probabilidad_maldicion_desafio_tiempo_resistencia(numero_pregunta)
+
+
 def params_desafio_bloque_resistencia(numero_pregunta: int) -> tuple[int, int]:
-    """Devuelve (aciertos necesarios, segundos de bloque) según el progreso."""
-    t = factor_progreso_resistencia(numero_pregunta)
-    if t < 0.75:
-        return (3, 90)
-    if t < 0.9:
-        return (4, 75)
-    return (5, 60)
+    return params_maldicion_desafio_tiempo(numero_pregunta)
 
 
-def formatear_aviso_desafio_bloque(desafio: DesafioBloqueTiempoResistencia) -> str:
-    n = desafio.aciertos_objetivo
-    seg = desafio.tiempo_limite_seg
-    texto = (
-        f"Desafío de bloque: consigue {n} acierto"
-        f"{'s' if n != 1 else ''} en {seg} s o pierdes la partida."
-    )
-    return prefijar_emoji(texto, "⏲️")
+def formatear_aviso_desafio_bloque(desafio: DesafioMaldicionTiempo) -> str:
+    return formatear_aviso_maldicion_desafio(desafio)
+
 
 @dataclass(frozen=True)
 class BloqueFiltroActivo:
@@ -209,6 +198,9 @@ class BloqueFiltroActivo:
     curso: str | None = None
     semestre: str | None = None
     solo_revisadas: bool = False
+    es_jefe: bool = False
+    dificultad_jefe: str | None = None
+    preguntas_totales: int = 0
 
 
 _ETIQUETA_TIPO: dict[str, str] = {
@@ -231,7 +223,7 @@ def _descripcion_grupo_tematico(grupo: str, pool: list[Pregunta]) -> str:
         return f"de {materias[0]}"
     if materias:
         resto = f" (+{len(materias) - 2})" if len(materias) > 2 else ""
-        return f"de {' · '.join(materias[:2])}{resto}"
+        return f"de {', '.join(materias[:2])}{resto}"
     return f"de {etiqueta_grupo_tematico(grupo)}"
 
 
@@ -260,7 +252,11 @@ def _descripcion_semestre(curso: str, semestre: str) -> str:
 class MaldicionActiva:
     id: str
     etiqueta: str
+    modo_fin: ModoFinMaldicion = ModoFinMaldicion.DURACION
     preguntas_restantes: int = 1
+    multiplicador_puntos: float = 1.0
+    fin_partida_si_fallo: bool = False
+    desafio: DesafioMaldicionTiempo | None = None
 
 
 # --- Estado ---
@@ -268,6 +264,12 @@ class MaldicionActiva:
 VIDAS_MAX_INICIAL = 3
 VIDAS_MAX_ABSOLUTO = 9
 VIDAS_MIN_CAP = 2
+
+
+def _pity_maldiciones_resistencia_nuevo():
+    from Comun.maldiciones_partida import PityMaldicionesResistencia
+
+    return PityMaldicionesResistencia()
 
 
 def _pity_eventos_resistencia_nuevo():
@@ -287,6 +289,10 @@ class EstadoResistencia:
     letras_ocultas: frozenset[str] = field(default_factory=frozenset)  # bomba / 50-50: sin botón
     letras_niebla: frozenset[str] = field(default_factory=frozenset)  # niebla: botón con «???»
     tiempo_extra_seg: int = 0
+    factor_velocidad_tiempo: float = 1.0
+    segunda_oportunidad_activa: bool = False
+    doble_o_nada_activo: bool = False
+    skip_sin_cortar_racha: int = 0
     relampago_forzado_seg: int | None = None
     escudo_activo: bool = False
     bonus_proximo_acierto: int = 0
@@ -297,6 +303,14 @@ class EstadoResistencia:
     evento_si_no: EventoSiNo | None = None
     apuesta_activa: ApuestaRiesgo | None = None
     preguntas_sin_evento_si_no: int = 0
+    preguntas_sin_jefe: int = 0
+    preguntas_sin_desafio_bloque: int = 0
+    preguntas_sin_bloque: int = 0
+    tipos_evento_si_no_vistos: set[str] = field(default_factory=set)
+    kinds_bloque_vistos: set[str] = field(default_factory=set)
+    variedad_vista: set[str] = field(default_factory=set)
+    pity_variedad: object | None = None
+    pregunta_final_jefe: bool = False
     maldicion: MaldicionActiva | None = None
     ventana_resultados: list[bool] = field(default_factory=list)
     tiradas_recompensa: int = 0
@@ -305,23 +319,32 @@ class EstadoResistencia:
     banco_resistencia: object | None = None
     sin_escalada_dificultad: bool = False
     presion_racha_intensidad: float = 0.0
-    desafio_bloque: DesafioBloqueTiempoResistencia | None = None
     pity_eventos: object = field(default_factory=lambda: _pity_eventos_resistencia_nuevo())
+    pity_maldiciones: object = field(default_factory=lambda: _pity_maldiciones_resistencia_nuevo())
 
     def reset_pregunta(self) -> None:
         self.letras_ocultas = frozenset()
         self.letras_niebla = frozenset()
         self.tiempo_extra_seg = 0
+        self.factor_velocidad_tiempo = 1.0
+        self.segunda_oportunidad_activa = False
+        self.doble_o_nada_activo = False
         self.relampago_forzado_seg = None
         self.ultimo_evento = ""
         self.presion_racha_intensidad = 0.0
         self.objetos_bloqueados = False
         self.powerups_usados_en_pregunta.clear()
+        from Comun.maldiciones_partida import reaplicar_efectos_maldicion_persistente
+
+        reaplicar_efectos_maldicion_persistente(self)
 
     def reiniciar_slot_pregunta(self) -> None:
         """Nueva pregunta en el mismo turno (cambio): limpia ayudas de la anterior."""
         self.letras_ocultas = frozenset()
         self.tiempo_extra_seg = 0
+        self.factor_velocidad_tiempo = 1.0
+        self.segunda_oportunidad_activa = False
+        self.doble_o_nada_activo = False
         self.powerups_usados_en_pregunta.clear()
 
     def registrar_acierto(self) -> None:
@@ -360,53 +383,165 @@ class EstadoResistencia:
 
 
 def texto_segmento_desafio_bloque(er: EstadoResistencia) -> str | None:
-    db = er.desafio_bloque
-    if db is None:
-        return None
-    return f"{db.aciertos_logrados}/{db.aciertos_objetivo}·{db.tiempo_restante_seg()}s"
+    return texto_segmento_maldicion_desafio(er.maldicion)
 
 
 def desafio_bloque_expirado(er: EstadoResistencia) -> bool:
-    db = er.desafio_bloque
-    return db is not None and db.expirado()
+    return maldicion_desafio_expirada(er.maldicion)
+
+
+def _intentar_activar_maldicion_desafio_tiempo(
+    er: EstadoResistencia,
+    numero_pregunta: int,
+) -> str | None:
+    from Comun.maldiciones_partida import (
+        actualizar_pity_maldiciones_resistencia,
+        probabilidad_activar_maldicion_desafio_resistencia,
+    )
+
+    if er.maldicion is not None:
+        return None
+    er.preguntas_sin_desafio_bloque += 1
+    prob_base = probabilidad_maldicion_desafio_tiempo_resistencia(numero_pregunta)
+    prob_base += min(0.35, er.preguntas_sin_desafio_bloque * 0.012)
+    prob = probabilidad_activar_maldicion_desafio_resistencia(
+        numero_pregunta,
+        er.pity_maldiciones,
+        prob_base=prob_base,
+        pity_variedad=er.pity_variedad,
+    )
+    if prob <= 0.0:
+        return None
+    rng = rng_partida(er)
+    if rng.random() > prob:
+        return None
+    er.preguntas_sin_desafio_bloque = 0
+    maldicion = instanciar_maldicion_desafio_tiempo(numero_pregunta)
+    er.maldicion = maldicion
+    actualizar_pity_maldiciones_resistencia(
+        er.pity_maldiciones,
+        numero_pregunta=numero_pregunta,
+        maldicion_id_activada=maldicion.id,
+    )
+    from Comun.pity_variedad_resistencia import registrar_variedad_resistencia
+
+    registrar_variedad_resistencia(er, "maldicion")
+    desafio = maldicion.desafio
+    assert desafio is not None
+    return formatear_aviso_maldicion_desafio(desafio)
 
 
 def _intentar_activar_desafio_bloque(
     er: EstadoResistencia,
     numero_pregunta: int,
 ) -> str | None:
-    if er.desafio_bloque is not None:
-        return None
-    prob = probabilidad_desafio_bloque_resistencia(numero_pregunta)
-    if prob <= 0.0:
-        return None
-    rng = rng_partida(er)
-    if rng.random() > prob:
-        return None
-    aciertos, segundos = params_desafio_bloque_resistencia(numero_pregunta)
-    er.desafio_bloque = DesafioBloqueTiempoResistencia(
-        aciertos_objetivo=aciertos,
-        tiempo_limite_seg=segundos,
-    )
-    return formatear_aviso_desafio_bloque(er.desafio_bloque)
-
-
-def _tick_desafio_bloque_tras_acierto(er: EstadoResistencia, *, acierto: bool) -> list[str]:
-    db = er.desafio_bloque
-    if db is None or not acierto:
-        return []
-    db.aciertos_logrados += 1
-    if not db.completado():
-        return []
-    er.desafio_bloque = None
-    return [prefijar_emoji("Desafío de bloque superado.", "✅")]
+    return _intentar_activar_maldicion_desafio_tiempo(er, numero_pregunta)
 
 
 def finalizar_partida_por_desafio_bloque(estado: EstadoPartida, er: EstadoResistencia) -> str:
-    er.desafio_bloque = None
+    from Comun.maldiciones_partida import limpiar_efectos_maldicion_resistencia
+
+    er.maldicion = None
+    limpiar_efectos_maldicion_resistencia(er)
     if estado.vidas_restantes is not None:
         estado.vidas_restantes = 0
-    return prefijar_emoji("Desafío de bloque: tiempo agotado.", "⏲️")
+    return mensaje_fin_partida_maldicion_desafio()
+
+
+_RE_TOTAL_BLOQUE_FILTRO = re.compile(r"(?:Bloque|Jefe):\s*(\d+)\s*preguntas", re.I)
+
+
+def _preguntas_totales_bloque_filtro(bf: BloqueFiltroActivo) -> int:
+    if bf.preguntas_totales > 0:
+        return bf.preguntas_totales
+    coincidencia = _RE_TOTAL_BLOQUE_FILTRO.search(bf.etiqueta)
+    if coincidencia:
+        return int(coincidencia.group(1))
+    return max(1, bf.preguntas_restantes)
+
+
+def _descripcion_corta_bloque_filtro(bf: BloqueFiltroActivo) -> str:
+    prefijo = "Jefe: " if bf.es_jefe else "Bloque: "
+    resto = bf.etiqueta.removeprefix(prefijo) if bf.etiqueta.startswith(prefijo) else bf.etiqueta
+    if " preguntas " in resto:
+        corta = resto.split(" preguntas ", 1)[1]
+    else:
+        corta = resto.strip()
+    return corta.removeprefix("de ").strip()
+
+
+def segmento_bloque_filtro_barra(er: EstadoResistencia) -> str | None:
+    """Texto compacto del bloque/jefe activo para la barra superior."""
+    bf = er.bloque_filtro
+    if bf is None or bf.preguntas_restantes <= 0:
+        return None
+    from Comun.jefe_partida import tamano_coherente_bloque_o_jefe
+
+    total = _preguntas_totales_bloque_filtro(bf)
+    if not tamano_coherente_bloque_o_jefe(total, es_jefe=bf.es_jefe):
+        return None
+    actual = total - bf.preguntas_restantes + 1
+    progreso = f"{actual}/{total}"
+    if bf.es_jefe:
+        return f"Jefe {progreso}"
+    return progreso
+
+
+def texto_bloque_filtro_extra(er: EstadoResistencia) -> str | None:
+    """Línea persistente bajo la barra mientras dura un bloque o jefe."""
+    bf = er.bloque_filtro
+    if bf is None or bf.preguntas_restantes <= 0:
+        return None
+    segmento = segmento_bloque_filtro_barra(er)
+    if segmento is None:
+        return None
+    desc = _descripcion_corta_bloque_filtro(bf)
+    if bf.es_jefe:
+        from Comun.emojis_escape import EMOJI_JEFE
+
+        return prefijar_emoji(f"Jefe activo: {desc} ({segmento})", EMOJI_JEFE)
+    return prefijar_emoji(
+        f"Bloque activo: {desc} ({segmento})",
+        EMOJI_BLOQUE_FILTRO_RESISTENCIA,
+    )
+
+
+def formatear_aviso_jefe(etiqueta: str) -> str:
+    """Popup al empezar un jefe (10 preguntas, botín al completarlo)."""
+    from Comun.emojis_escape import EMOJI_JEFE
+
+    resto = etiqueta.removeprefix("Jefe: ").strip()
+    texto = (
+        f"¡Enfrentamiento con jefe! {resto}. "
+        "Derrotarlo al completar las preguntas da botín especial."
+    )
+    return prefijar_emoji(texto, EMOJI_JEFE)
+
+
+def _resumen_premio_jefe(recompensa: EventoRecompensaResistencia) -> str:
+    if recompensa.delta_vidas > 0:
+        return "+1 vida"
+    if recompensa.delta_vidas_max > 0:
+        return "corazón máximo +1"
+    if recompensa.powerup_id:
+        return etiqueta_powerup(recompensa.powerup_id)
+    if recompensa.bonus_proximo_acierto > 0:
+        from Comun.economia_partida import texto_bonus_amuleto
+
+        return texto_bonus_amuleto(recompensa.bonus_proximo_acierto)
+    premio = recompensa.etiqueta.removeprefix("Botín de jefe: ").strip()
+    return premio or recompensa.etiqueta
+
+
+def formatear_aviso_botin_jefe_resistencia(
+    recompensas: list[EventoRecompensaResistencia],
+) -> str:
+    """Un solo aviso con todo el botín del jefe (evita 3–4 popups sueltos)."""
+    from Comun.emojis_escape import EMOJI_JEFE
+
+    premios = ", ".join(_resumen_premio_jefe(r) for r in recompensas)
+    texto = f"¡Jefe derrotado! Botín: {premios}."
+    return prefijar_emoji(texto, EMOJI_JEFE)
 
 
 # --- Powerups (catálogo en objetos_partida) ---
@@ -425,6 +560,101 @@ class EventoRecompensaResistencia:
     powerup_id: str | None = None
     cantidad_powerup: int = 1
     bonus_proximo_acierto: int = 0
+
+
+def _familia_recompensa_resistencia(evento: EventoRecompensaResistencia) -> str:
+    if evento.delta_vidas > 0:
+        return "vida"
+    if evento.delta_vidas_max > 0:
+        return "vida_max_mas"
+    if evento.delta_vidas_max < 0:
+        return "vida_max_menos"
+    if evento.bonus_proximo_acierto:
+        return "amuleto"
+    if evento.powerup_id:
+        return f"objeto:{evento.powerup_id}"
+    return evento.etiqueta
+
+
+_MAX_INTENTOS_RECOMPENSA_ALEATORIA = 12
+
+
+@dataclass
+class _ContextoRecompensaTurno:
+    vidas: int | None
+    vidas_max: int
+    bonus_proximo: int
+    familias_otorgadas: set[str]
+
+    @classmethod
+    def desde(
+        cls,
+        estado: EstadoPartida,
+        er: EstadoResistencia,
+        familias_otorgadas: set[str] | None = None,
+    ) -> _ContextoRecompensaTurno:
+        return cls(
+            estado.vidas_restantes,
+            er.vidas_max,
+            er.bonus_proximo_acierto,
+            set(familias_otorgadas or ()),
+        )
+
+    def _util(self, evento: EventoRecompensaResistencia) -> bool:
+        if evento.delta_vidas > 0:
+            if self.vidas is None:
+                return False
+            return self.vidas < self.vidas_max
+        if evento.delta_vidas_max > 0:
+            return self.vidas_max < VIDAS_MAX_ABSOLUTO
+        if evento.delta_vidas_max < 0:
+            return self.vidas_max > VIDAS_MIN_CAP
+        if evento.bonus_proximo_acierto:
+            return self.bonus_proximo <= 0
+        return True
+
+    def puede_otorgar(self, evento: EventoRecompensaResistencia) -> bool:
+        if not self._util(evento):
+            return False
+        return _familia_recompensa_resistencia(evento) not in self.familias_otorgadas
+
+    def registrar(self, evento: EventoRecompensaResistencia) -> None:
+        if evento.delta_vidas_max:
+            self.vidas_max = max(
+                VIDAS_MIN_CAP,
+                min(VIDAS_MAX_ABSOLUTO, self.vidas_max + evento.delta_vidas_max),
+            )
+            if self.vidas is not None and self.vidas > self.vidas_max:
+                self.vidas = self.vidas_max
+        if evento.delta_vidas and self.vidas is not None:
+            self.vidas = max(0, min(self.vidas_max, self.vidas + evento.delta_vidas))
+        if evento.bonus_proximo_acierto:
+            self.bonus_proximo = evento.bonus_proximo_acierto
+        self.familias_otorgadas.add(_familia_recompensa_resistencia(evento))
+
+
+def _recompensa_resistencia_util(
+    estado: EstadoPartida,
+    er: EstadoResistencia,
+    evento: EventoRecompensaResistencia,
+) -> bool:
+    return _ContextoRecompensaTurno.desde(estado, er)._util(evento)
+
+
+def _otorgar_recompensa_resistencia(
+    estado: EstadoPartida,
+    er: EstadoResistencia,
+    evento: EventoRecompensaResistencia,
+    familias_otorgadas: set[str],
+) -> bool:
+    ctx = _ContextoRecompensaTurno.desde(estado, er, familias_otorgadas)
+    if not ctx.puede_otorgar(evento):
+        return False
+    aplicar_recompensa(estado, er, evento)
+    ctx.registrar(evento)
+    familias_otorgadas.clear()
+    familias_otorgadas.update(ctx.familias_otorgadas)
+    return True
 
 
 def letras_ocultas_niebla(
@@ -447,41 +677,62 @@ def _generar_recompensa_aleatoria(
     numero_pregunta: int,
     er: EstadoResistencia,
     estado: EstadoPartida,
+    ctx: _ContextoRecompensaTurno | None = None,
 ) -> EventoRecompensaResistencia:
 
     factor_bueno = max(0.08, factor_bueno_resistencia(numero_pregunta))
     factor_malo = max(0.08, factor_malo_resistencia(numero_pregunta))
+    vidas = ctx.vidas if ctx is not None else estado.vidas_restantes
+    vidas_max = ctx.vidas_max if ctx is not None else er.vidas_max
+    bonus_proximo = ctx.bonus_proximo if ctx is not None else er.bonus_proximo_acierto
     opciones: list[tuple[float, EventoRecompensaResistencia]] = []
 
-    vidas = estado.vidas_restantes
-    if vidas is not None and vidas < er.vidas_max:
+    if vidas is not None and vidas < vidas_max:
         opciones.append(
             (
                 0.20 * factor_bueno,
                 EventoRecompensaResistencia("¡Vida extra!", delta_vidas=1),
             )
         )
-    opciones.append(
-        (
-            0.10 * factor_bueno,
-            EventoRecompensaResistencia("Corazón máximo +1", delta_vidas_max=1),
+    if vidas_max < VIDAS_MAX_ABSOLUTO:
+        opciones.append(
+            (
+                0.10 * factor_bueno,
+                EventoRecompensaResistencia("Corazón máximo +1", delta_vidas_max=1),
+            )
         )
-    )
-    opciones.append(
-        (
-            0.14 * factor_malo,
-            EventoRecompensaResistencia("Corazón máximo −1", delta_vidas_max=-1),
+    if vidas_max > VIDAS_MIN_CAP:
+        opciones.append(
+            (
+                0.14 * factor_malo,
+                EventoRecompensaResistencia("Corazón máximo −1", delta_vidas_max=-1),
+            )
         )
-    )
-    opciones.append(
-        (
-            0.06 * factor_bueno,
-            EventoRecompensaResistencia(
-                "Amuleto arcade",
-                bonus_proximo_acierto=20,
-            ),
+    if bonus_proximo <= 0:
+        from Comun.economia_partida import bonus_amuleto_arcade
+
+        bonus_am = bonus_amuleto_arcade(numero_pregunta=numero_pregunta)
+        opciones.append(
+            (
+                0.06 * factor_bueno,
+                EventoRecompensaResistencia(
+                    "Amuleto arcade",
+                    bonus_proximo_acierto=bonus_am,
+                ),
+            )
         )
-    )
+
+    opciones = [
+        (peso, ev)
+        for peso, ev in opciones
+        if (ctx.puede_otorgar(ev) if ctx is not None else _recompensa_resistencia_util(estado, er, ev))
+    ]
+    if not opciones:
+        pid = elegir_powerup_loot(er.inventario, rng)
+        return EventoRecompensaResistencia(
+            f"Objeto: {etiqueta_powerup(pid)}",
+            powerup_id=pid,
+        )
 
     total = sum(p for p, _ in opciones)
     roll = rng.random() * total
@@ -490,7 +741,7 @@ def _generar_recompensa_aleatoria(
         acum += peso
         if roll < acum:
             return evento
-    pid = rng.choice(POWERUPS_LOOT)
+    pid = elegir_powerup_loot(er.inventario, rng)
     return EventoRecompensaResistencia(
         f"Objeto: {etiqueta_powerup(pid)}",
         powerup_id=pid,
@@ -502,22 +753,79 @@ def tirar_recompensas_tras_acierto(
     estado: EstadoPartida,
     *,
     numero_pregunta: int,
+    familias_otorgadas: set[str] | None = None,
 ) -> list[EventoRecompensaResistencia]:
     """Bonificaciones tras acertar; más probables al inicio, raras al final."""
 
     prob_tirada = probabilidad_buena_resistencia(numero_pregunta) * FACTOR_TIRADA_RECOMPENSA
     resultados: list[EventoRecompensaResistencia] = []
+    ctx = _ContextoRecompensaTurno.desde(estado, er, familias_otorgadas)
     for _ in range(MAX_TIRADAS_RECOMPENSA_ACIERTO):
         er.tiradas_recompensa += 1
         rng = rng_partida(er)
         if rng.random() > prob_tirada:
             continue
-        resultados.append(
-            _generar_recompensa_aleatoria(
-                rng, numero_pregunta=numero_pregunta, er=er, estado=estado
+        recompensa: EventoRecompensaResistencia | None = None
+        for _ in range(_MAX_INTENTOS_RECOMPENSA_ALEATORIA):
+            candidato = _generar_recompensa_aleatoria(
+                rng,
+                numero_pregunta=numero_pregunta,
+                er=er,
+                estado=estado,
+                ctx=ctx,
+            )
+            if not ctx.puede_otorgar(candidato):
+                continue
+            ctx.registrar(candidato)
+            recompensa = candidato
+            break
+        if recompensa is not None:
+            resultados.append(recompensa)
+    if familias_otorgadas is not None:
+        familias_otorgadas.update(ctx.familias_otorgadas)
+    return resultados
+
+
+def recompensas_completar_jefe_resistencia(
+    er: EstadoResistencia,
+    estado: EstadoPartida,
+    *,
+    numero_pregunta: int,
+) -> list[EventoRecompensaResistencia]:
+    """Botín garantizado al superar un jefe (mejor que las tiradas normales tras acierto)."""
+    from Comun.economia_partida import bonus_amuleto_arcade
+
+    rng = rng_partida(er)
+    candidatos: list[EventoRecompensaResistencia] = []
+    if estado.vidas_restantes is not None and estado.vidas_restantes < er.vidas_max:
+        candidatos.append(
+            EventoRecompensaResistencia("Botín de jefe: +1 vida", delta_vidas=1)
+        )
+    elif er.vidas_max < VIDAS_MAX_ABSOLUTO:
+        candidatos.append(
+            EventoRecompensaResistencia(
+                "Botín de jefe: corazón máximo +1",
+                delta_vidas_max=1,
             )
         )
-    return resultados
+    for _ in range(2):
+        pid = elegir_powerup_loot(er.inventario, rng)
+        candidatos.append(
+            EventoRecompensaResistencia(
+                f"Botín de jefe: {etiqueta_powerup(pid)}",
+                powerup_id=pid,
+            )
+        )
+    if er.bonus_proximo_acierto <= 0:
+        candidatos.append(
+            EventoRecompensaResistencia(
+                "Botín de jefe: amuleto arcade",
+                bonus_proximo_acierto=bonus_amuleto_arcade(
+                    numero_pregunta=numero_pregunta
+                ),
+            )
+        )
+    return candidatos
 
 # --- Iconos ---
 
@@ -560,6 +868,14 @@ def emoji_evento_etiqueta(etiqueta: str) -> str:
         return "☠️"
     if etiqueta.startswith("Bloque:"):
         return EMOJI_BLOQUE_FILTRO_RESISTENCIA
+    if etiqueta.startswith("Jefe:") or "Enfrentamiento con jefe" in etiqueta:
+        from Comun.emojis_escape import EMOJI_JEFE
+
+        return EMOJI_JEFE
+    if "Jefe derrotado" in etiqueta:
+        from Comun.emojis_escape import EMOJI_JEFE
+
+        return EMOJI_JEFE
     if "Maldición" in etiqueta:
         return "💀"
     if "Hito racha" in etiqueta:
@@ -582,6 +898,11 @@ def descripcion_evento_etiqueta(etiqueta: str) -> str:
         return "Esta pregunta será más difícil de lo habitual en esta fase."
     if etiqueta == "Pregunta extra difícil":
         return "Una pregunta muy exigente para esta fase de la partida."
+    if etiqueta.startswith("Jefe:") or "Enfrentamiento con jefe" in etiqueta:
+        return (
+            "Bloque de 10 preguntas del mismo tema. "
+            "Al completarlo recibes botín especial de jefe."
+        )
     return etiqueta
 
 
@@ -706,10 +1027,14 @@ def configurar_partida_resistencia(
         er.semilla_partida = semilla_partida_aleatoria()
     if er.rng is None:
         er.rng = crear_rng_partida(er.semilla_partida)
+    if er.pity_variedad is None:
+        from Comun.pity_variedad_resistencia import cargar_pity_variedad_resistencia
+
+        er.pity_variedad = cargar_pity_variedad_resistencia()
 
 
 def texto_progreso_resistencia(er: EstadoResistencia, numero_pregunta: int) -> str:
-    return f"#{numero_pregunta} · Racha {er.racha}"
+    return f"{numero_pregunta}  Racha {er.racha}"
 
 
 def _pregunta_cumple_bloque(p: Pregunta, bloque: BloqueFiltroActivo) -> bool:
@@ -725,6 +1050,12 @@ def _pregunta_cumple_bloque(p: Pregunta, bloque: BloqueFiltroActivo) -> bool:
         return False
     if bloque.semestre and p.semestre != bloque.semestre:
         return False
+    if bloque.dificultad_jefe:
+        from Comun.jefe_partida import dificultades_permitidas_jefe
+
+        permitidas = dificultades_permitidas_jefe(bloque.dificultad_jefe)
+        if permitidas is not None and p.dificultad not in permitidas:
+            return False
     return True
 
 
@@ -738,6 +1069,11 @@ def _bloque_viable_en_pool(
     *,
     minimo: int,
 ) -> bool:
+    from Comun.jefe_partida import tamano_coherente_bloque_o_jefe
+
+    total = bloque.preguntas_totales or bloque.preguntas_restantes
+    if not tamano_coherente_bloque_o_jefe(total, es_jefe=bloque.es_jefe):
+        return False
     return _contar_preguntas_bloque(pool, bloque) >= minimo
 
 
@@ -751,6 +1087,7 @@ def _bloque_filtro_grupo(
         return BloqueFiltroActivo(
             etiqueta=_etiqueta_bloque(n, f"de {GRUPOS_TEMATICOS[clave]}"),
             preguntas_restantes=n,
+            preguntas_totales=n,
             grupo=grupo,
         )
     materias = sorted({p.materia for p in pool if p.grupo == grupo and p.materia})
@@ -759,12 +1096,14 @@ def _bloque_filtro_grupo(
         return BloqueFiltroActivo(
             etiqueta=_etiqueta_bloque(n, f"de {materia}"),
             preguntas_restantes=n,
+            preguntas_totales=n,
             materia=materia,
             solo_revisadas=True,
         )
     return BloqueFiltroActivo(
         etiqueta=_etiqueta_bloque(n, _descripcion_grupo_tematico(grupo, pool)),
         preguntas_restantes=n,
+        preguntas_totales=n,
         grupo=grupo,
     )
 
@@ -773,8 +1112,10 @@ def consumir_bloque_filtro(er: EstadoResistencia) -> None:
     """Avanza el filtro de bloque; al expirar vuelve al pool por defecto del momento."""
     if not er.bloque_filtro or er.bloque_filtro.preguntas_restantes <= 0:
         return
+    era_jefe = er.bloque_filtro.es_jefe
     rest = er.bloque_filtro.preguntas_restantes - 1
     if rest <= 0:
+        er.pregunta_final_jefe = era_jefe
         er.bloque_filtro = None
         return
     bf = er.bloque_filtro
@@ -787,6 +1128,9 @@ def consumir_bloque_filtro(er: EstadoResistencia) -> None:
         curso=bf.curso,
         semestre=bf.semestre,
         solo_revisadas=bf.solo_revisadas,
+        es_jefe=bf.es_jefe,
+        dificultad_jefe=bf.dificultad_jefe,
+        preguntas_totales=bf.preguntas_totales or _preguntas_totales_bloque_filtro(bf),
     )
 
 
@@ -806,6 +1150,91 @@ def _pares_curso_semestre_en_pool(pool: list[Pregunta]) -> list[tuple[str, str]]
     return sorted({(p.curso, p.semestre) for p in pool if p.curso and p.semestre})
 
 
+def _intentar_activar_jefe_resistencia(
+    pool: list[Pregunta],
+    numero_pregunta: int,
+    er: EstadoResistencia,
+) -> str | None:
+    from Comun.jefe_partida import (
+        PREGUNTAS_POR_JEFE,
+        elegir_dificultad_jefe_resistencia,
+        etiqueta_jefe_grupo,
+        prob_jefe_resistencia,
+    )
+    from Comun.pity_variedad_resistencia import (
+        min_pregunta_jefe_resistencia,
+        preguntas_hard_pity_jefe_resistencia,
+        registrar_variedad_resistencia,
+    )
+
+    if er.bloque_filtro and er.bloque_filtro.preguntas_restantes > 0:
+        return None
+    min_jefe = min_pregunta_jefe_resistencia(er.pity_variedad)
+    if numero_pregunta < min_jefe:
+        return None
+
+    er.preguntas_sin_jefe += 1
+    rng = rng_partida(er)
+    forzar = er.preguntas_sin_jefe >= preguntas_hard_pity_jefe_resistencia(
+        er.pity_variedad
+    )
+    prob = prob_jefe_resistencia(er.preguntas_sin_jefe)
+    if er.pity_variedad is not None:
+        prob = min(0.98, prob + er.pity_variedad.boost_prob("jefe"))
+    if not forzar and rng.random() > prob:
+        return None
+
+    grupos = _grupos_en_pool(pool)
+    if not grupos:
+        return None
+    grupo = rng.choice(grupos)
+    dif = elegir_dificultad_jefe_resistencia(numero_pregunta, rng)
+    bloque = BloqueFiltroActivo(
+        etiqueta=etiqueta_jefe_grupo(grupo, dificultad=dif, n=PREGUNTAS_POR_JEFE),
+        preguntas_restantes=PREGUNTAS_POR_JEFE,
+        preguntas_totales=PREGUNTAS_POR_JEFE,
+        grupo=grupo,
+        es_jefe=True,
+        dificultad_jefe=dif,
+    )
+    if not _bloque_viable_en_pool(pool, bloque, minimo=PREGUNTAS_POR_JEFE):
+        bloque = BloqueFiltroActivo(
+            etiqueta=etiqueta_jefe_grupo(grupo, dificultad="equilibrado", n=PREGUNTAS_POR_JEFE),
+            preguntas_restantes=PREGUNTAS_POR_JEFE,
+            preguntas_totales=PREGUNTAS_POR_JEFE,
+            grupo=grupo,
+            es_jefe=True,
+            dificultad_jefe="equilibrado",
+        )
+        if not _bloque_viable_en_pool(pool, bloque, minimo=PREGUNTAS_POR_JEFE):
+            return None
+
+    er.preguntas_sin_jefe = 0
+    er.bloque_filtro = bloque
+    registrar_variedad_resistencia(er, "jefe")
+    return formatear_aviso_jefe(bloque.etiqueta)
+
+
+def _semestres_en_pool(pool: list[Pregunta]) -> list[str]:
+    return sorted({p.semestre for p in pool if p.semestre})
+
+
+def _kind_bloque_filtro(bloque: BloqueFiltroActivo) -> str:
+    from Comun.filtros_bloque import clasificar_filtro_bloque, kind_filtro_bloque
+
+    tipo = clasificar_filtro_bloque(
+        materia=bloque.materia,
+        tipo=bloque.tipo,
+        grupo=bloque.grupo,
+        curso=bloque.curso,
+        semestre=bloque.semestre,
+        es_jefe=bloque.es_jefe,
+    )
+    if tipo is None:
+        return "otro"
+    return kind_filtro_bloque(tipo)
+
+
 def _generar_bloque_filtro(
     pool: list[Pregunta],
     numero_pregunta: int,
@@ -815,13 +1244,23 @@ def _generar_bloque_filtro(
         return None
     if numero_pregunta < PREGUNTA_MIN_EVENTOS_ALEATORIOS:
         return None
+    from Comun.pity_variedad_resistencia import (
+        debe_forzar_bloque_resistencia,
+        registrar_variedad_resistencia,
+    )
+
+    er.preguntas_sin_bloque += 1
     rng = rng_partida(er)
+    from Comun.jefe_partida import elegir_tamano_bloque_normal
 
     prob = probabilidad_buena_resistencia(numero_pregunta) * 0.42
-    if rng.random() > prob:
+    if er.pity_variedad is not None:
+        prob = min(0.95, prob * er.pity_variedad.peso_boost("bloque"))
+    forzar = debe_forzar_bloque_resistencia(er)
+    if not forzar and rng.random() > prob:
         return None
 
-    n = rng.randint(3, 5)
+    n = elegir_tamano_bloque_normal(rng)
     opciones: list[BloqueFiltroActivo] = []
     materias = _materias_en_pool(pool)
     grupos = _grupos_en_pool(pool)
@@ -831,6 +1270,7 @@ def _generar_bloque_filtro(
             BloqueFiltroActivo(
                 etiqueta=_etiqueta_bloque(n, f"de {mat}"),
                 preguntas_restantes=n,
+                preguntas_totales=n,
                 materia=mat,
                 solo_revisadas=True,
             )
@@ -839,6 +1279,7 @@ def _generar_bloque_filtro(
         BloqueFiltroActivo(
             etiqueta=_etiqueta_bloque(n, _descripcion_tipo_bloque("Calculo")),
             preguntas_restantes=n,
+            preguntas_totales=n,
             tipo="Calculo",
         )
     )
@@ -846,6 +1287,7 @@ def _generar_bloque_filtro(
         BloqueFiltroActivo(
             etiqueta=_etiqueta_bloque(n, _descripcion_tipo_bloque("Teoria")),
             preguntas_restantes=n,
+            preguntas_totales=n,
             tipo="Teoria",
         )
     )
@@ -859,6 +1301,7 @@ def _generar_bloque_filtro(
             BloqueFiltroActivo(
                 etiqueta=_etiqueta_bloque(n, _descripcion_curso(curso)),
                 preguntas_restantes=n,
+                preguntas_totales=n,
                 curso=curso,
             )
         )
@@ -869,8 +1312,20 @@ def _generar_bloque_filtro(
             BloqueFiltroActivo(
                 etiqueta=_etiqueta_bloque(n, _descripcion_semestre(curso, semestre)),
                 preguntas_restantes=n,
+                preguntas_totales=n,
                 curso=curso,
                 semestre=semestre,
+            )
+        )
+    semestres = _semestres_en_pool(pool)
+    if semestres:
+        sem = rng.choice(semestres)
+        opciones.append(
+            BloqueFiltroActivo(
+                etiqueta=_etiqueta_bloque(n, f"del semestre {sem}"),
+                preguntas_restantes=n,
+                preguntas_totales=n,
+                semestre=sem,
             )
         )
     viables = [
@@ -880,7 +1335,18 @@ def _generar_bloque_filtro(
     ]
     if not viables:
         return None
-    return rng.choice(viables)
+    pesos = []
+    for bloque in viables:
+        kind = _kind_bloque_filtro(bloque)
+        peso = 1.0
+        if kind not in er.kinds_bloque_vistos:
+            peso += 0.85
+        pesos.append(peso)
+    elegido = rng.choices(viables, weights=pesos, k=1)[0]
+    er.preguntas_sin_bloque = 0
+    er.kinds_bloque_vistos.add(_kind_bloque_filtro(elegido))
+    registrar_variedad_resistencia(er, "bloque")
+    return elegido
 
 
 def preparar_eventos_nuevo_turno(
@@ -897,10 +1363,14 @@ def preparar_eventos_nuevo_turno(
     if aviso_presion:
         avisos.append(aviso_presion)
     if not er.sin_escalada_dificultad:
-        bloque = _generar_bloque_filtro(pool, numero_pregunta, er)
-        if bloque:
-            er.bloque_filtro = bloque
-            avisos.append(formatear_aviso_bloque(bloque.etiqueta))
+        aviso_jefe = _intentar_activar_jefe_resistencia(pool, numero_pregunta, er)
+        if aviso_jefe:
+            avisos.append(aviso_jefe)
+        elif not er.bloque_filtro or er.bloque_filtro.preguntas_restantes <= 0:
+            bloque = _generar_bloque_filtro(pool, numero_pregunta, er)
+            if bloque:
+                er.bloque_filtro = bloque
+                avisos.append(formatear_aviso_bloque(bloque.etiqueta))
     if not er.evento_si_no:
         er.evento_si_no = elegir_evento_si_no(numero_pregunta, er, estado)
     if not er.sin_escalada_dificultad:
@@ -924,20 +1394,31 @@ def _activar_maldicion(er: EstadoResistencia, numero_pregunta: int) -> Maldicion
     fallos = sum(1 for ok in er.ventana_resultados if not ok)
     if len(er.ventana_resultados) < 3 or fallos < 2:
         return None
+    from Comun.maldiciones_partida import (
+        elegir_plantilla_maldicion_resistencia,
+        instanciar_maldicion_resistencia,
+        plantillas_maldicion_resistencia,
+        probabilidad_activar_maldicion_fallo_resistencia,
+    )
+
+    prob = probabilidad_activar_maldicion_fallo_resistencia(
+        numero_pregunta,
+        er.pity_maldiciones,
+        prob_base=probabilidad_mala_resistencia(numero_pregunta),
+        pity_variedad=er.pity_variedad,
+    )
+    if prob <= 0.0:
+        return None
     rng = rng_partida(er)
-
-    if rng.random() > probabilidad_mala_resistencia(numero_pregunta):
+    if rng.random() > prob:
         return None
-    from Comun.eventos_partida import niebla_disponible_resistencia
-
-    maldiciones = list(_MALDIGIONES)
-    if not niebla_disponible_resistencia(numero_pregunta):
-        maldiciones = [m for m in maldiciones if m[0] != "niebla"]
-    if not maldiciones:
+    candidatas = plantillas_maldicion_resistencia(numero_pregunta)
+    if not candidatas:
         return None
-    cid, etiqueta, _ = rng.choice(maldiciones)
-    duracion = 2 if rng.random() < 0.35 else 1
-    return MaldicionActiva(id=cid, etiqueta=etiqueta, preguntas_restantes=duracion)
+    plantilla = elegir_plantilla_maldicion_resistencia(
+        candidatas, er.pity_maldiciones, rng
+    )
+    return instanciar_maldicion_resistencia(plantilla, rng)
 
 
 def aplicar_efectos_maldicion(
@@ -948,17 +1429,13 @@ def aplicar_efectos_maldicion(
 ) -> None:
     if not er.maldicion:
         return
-    cid = er.maldicion.id
-    if cid == "niebla" and p is not None:
-        er.letras_niebla = er.letras_niebla | letras_ocultas_niebla(
-            p,
-            1,
-            rng=rng_partida(er),
-        )
-    elif cid == "sin_objetos":
+    from Comun.maldiciones_partida import plantilla_maldicion_resistencia
+
+    plantilla = plantilla_maldicion_resistencia(er.maldicion.id)
+    if plantilla is None:
+        return
+    if plantilla.efecto.bloquea_objetos:
         er.objetos_bloqueados = True
-    elif cid == "relampago":
-        er.relampago_forzado_seg = 8
 
 
 def procesar_post_turno_resistencia(
@@ -974,18 +1451,45 @@ def procesar_post_turno_resistencia(
         er.ventana_resultados.pop(0)
 
     if er.maldicion:
-        er.maldicion.preguntas_restantes -= 1
-        if er.maldicion.preguntas_restantes <= 0:
-            er.maldicion = None
-            er.objetos_bloqueados = False
+        from Comun.maldiciones_partida import (
+            limpiar_efectos_maldicion_resistencia,
+            maldicion_usa_duracion_preguntas,
+        )
 
+        if maldicion_tiene_desafio_tiempo(er.maldicion):
+            avisos_desafio = tick_maldicion_desafio_tras_acierto(
+                er.maldicion, acierto=acierto
+            )
+            if avisos_desafio:
+                er.maldicion = None
+                limpiar_efectos_maldicion_resistencia(er)
+            avisos.extend(avisos_desafio)
+        elif maldicion_usa_duracion_preguntas(er.maldicion):
+            er.maldicion.preguntas_restantes -= 1
+            if er.maldicion.preguntas_restantes <= 0:
+                er.maldicion = None
+                limpiar_efectos_maldicion_resistencia(er)
+
+    nueva: MaldicionActiva | None = None
     if not acierto:
         nueva = _activar_maldicion(er, numero_pregunta)
         if nueva:
             er.maldicion = nueva
             avisos.append(formatear_aviso_maldicion(nueva.etiqueta))
+            from Comun.maldiciones_partida import reaplicar_efectos_maldicion_persistente
+            from Comun.pity_variedad_resistencia import registrar_variedad_resistencia
 
-    avisos.extend(_tick_desafio_bloque_tras_acierto(er, acierto=acierto))
+            reaplicar_efectos_maldicion_persistente(er)
+            registrar_variedad_resistencia(er, "maldicion")
+
+    from Comun.maldiciones_partida import actualizar_pity_maldiciones_resistencia
+
+    actualizar_pity_maldiciones_resistencia(
+        er.pity_maldiciones,
+        numero_pregunta=numero_pregunta,
+        maldicion_id_activada=nueva.id if nueva else None,
+        maldicion_vigente=er.maldicion is not None and nueva is None,
+    )
 
     er.apuesta_activa = None
     er.evento_si_no = None
@@ -1000,11 +1504,24 @@ def pregunta_compatible_bloque(p: Pregunta, er: EstadoResistencia) -> bool:
 
 
 
-def formatear_aviso_recompensa(etiqueta: str) -> str:
+def formatear_aviso_recompensa(
+    etiqueta: str,
+    *,
+    bonus_proximo_acierto: int = 0,
+) -> str:
     if etiqueta.startswith("Objeto: "):
         texto = f"¡Obtuviste {etiqueta.removeprefix('Objeto: ')}!"
+    elif "Botín de jefe" in etiqueta:
+        if etiqueta.startswith("Botín de jefe: "):
+            premio = etiqueta.removeprefix("Botín de jefe: ")
+            texto = f"¡Jefe derrotado! {premio}."
+        else:
+            texto = etiqueta
     elif "Amuleto arcade" in etiqueta:
-        texto = "¡Amuleto activado! +20 pts en tu próximo acierto."
+        from Comun.economia_partida import bonus_amuleto_arcade, texto_bonus_amuleto
+
+        bonus = bonus_proximo_acierto or bonus_amuleto_arcade()
+        texto = f"¡Amuleto activado! {texto_bonus_amuleto(bonus)}."
     elif "Vida extra" in etiqueta:
         texto = "¡Recompensa! +1 vida."
     elif "máximo +1" in etiqueta or "maximo +1" in etiqueta.lower():
@@ -1026,6 +1543,10 @@ def formatear_aviso_evento(etiqueta: str) -> str:
         texto = f"¡{etiqueta}!"
     elif etiqueta in {"Pregunta difícil", "Pregunta extra difícil"}:
         texto = f"¡{etiqueta}!"
+    elif etiqueta.startswith("Jefe:") or "Enfrentamiento con jefe" in etiqueta:
+        if "Enfrentamiento con jefe" in etiqueta:
+            return etiqueta
+        return formatear_aviso_jefe(etiqueta)
     else:
         texto = f"Ahora: {etiqueta}"
     return prefijar_emoji(texto, emoji_evento_etiqueta(etiqueta))
@@ -1110,7 +1631,9 @@ def usar_powerup(
     p: Pregunta,
 ) -> str | None:
     """Consume un powerup almacenable; devuelve mensaje de error o None si OK."""
-    if er.objetos_bloqueados:
+    from Comun.maldiciones_partida import objetos_bloqueados_efectivo_resistencia
+
+    if objetos_bloqueados_efectivo_resistencia(er):
         return "Maldición activa: no puedes usar objetos."
     err_uso = puede_usar_powerup_en_pregunta(powerup_id, er.powerups_usados_en_pregunta)
     if err_uso:
@@ -1122,10 +1645,30 @@ def usar_powerup(
     elif powerup_id == "bomba":
         ocultas = letras_ocultas_bomba(p)
         er.letras_ocultas = er.letras_ocultas | ocultas
+    elif powerup_id == "comodin":
+        er.letras_ocultas = er.letras_ocultas | letras_ocultas_comodin(p)
+    elif powerup_id == "descarte_inteligente":
+        er.letras_ocultas = letras_ocultas_descarte_inteligente(p)
     elif powerup_id == "tiempo_extra":
         er.tiempo_extra_seg += 20
+    elif powerup_id == "tiempo_lento":
+        er.factor_velocidad_tiempo = 0.5
     elif powerup_id == "escudo":
         er.escudo_activo = True
+    elif powerup_id == "sello_purga":
+        if er.maldicion is None:
+            er.agregar_powerup(powerup_id)
+            return "No hay maldición activa."
+        from Comun.maldiciones_partida import limpiar_efectos_maldicion_resistencia
+
+        er.maldicion = None
+        limpiar_efectos_maldicion_resistencia(er)
+    elif powerup_id == "segunda_oportunidad":
+        er.segunda_oportunidad_activa = True
+    elif powerup_id == "doble_o_nada":
+        er.doble_o_nada_activo = True
+    elif powerup_id == "racha_congelada":
+        er.skip_sin_cortar_racha += 1
     elif powerup_id == "skip":
         pass
     elif powerup_id == "cambio":
@@ -1133,7 +1676,10 @@ def usar_powerup(
     else:
         er.agregar_powerup(powerup_id)
         return f"Objeto desconocido: {powerup_id}"
-    er.powerups_usados_en_pregunta.add(powerup_id)
+    from Comun.objetos_partida import POWERUPS_MULTI_USO_PREGUNTA
+
+    if powerup_id not in POWERUPS_MULTI_USO_PREGUNTA:
+        er.powerups_usados_en_pregunta.add(powerup_id)
     return None
 
 
@@ -1154,8 +1700,9 @@ def aplicar_bonificaciones_puntos_resistencia(
     acierto: bool,
     tiempo_agotado: bool,
     mult_apuesta: int = 1,
+    mult_maldicion: float = 1.0,
 ) -> None:
-    """Aplica multiplicadores de escalada, racha, apuesta y pregunta exclusiva."""
+    """Aplica multiplicadores de escalada, racha, apuesta, maldición y pregunta exclusiva."""
     if not acierto or tiempo_agotado:
         return
     delta = estado.puntos_arcade - puntos_prev
@@ -1171,6 +1718,11 @@ def aplicar_bonificaciones_puntos_resistencia(
         extra += delta * 0.5
     if mult_apuesta > 1:
         extra += delta * (mult_apuesta - 1)
+    if mult_maldicion < 1.0:
+        estado.puntos_arcade, aplicado = sumar_puntos_arcade(
+            estado.puntos_arcade, int(delta * (mult_maldicion - 1.0))
+        )
+        del aplicado
     if extra > 0:
         estado.puntos_arcade, _ = sumar_puntos_arcade(estado.puntos_arcade, int(extra))
 
@@ -1186,25 +1738,33 @@ def _aplicar_recompensa_apuesta_exito(
     recompensa = er.apuesta_activa.recompensa
     avisos: list[str] = []
     if recompensa.delta_vidas:
-        aplicar_recompensa(
-            estado,
-            er,
-            EventoRecompensaResistencia(
-                "Apuesta: vida extra",
-                delta_vidas=recompensa.delta_vidas,
-            ),
-        )
-        n = recompensa.delta_vidas
-        avisos.append(f"Apuesta: +{n} vida" + ("s" if n > 1 else ""))
+        if (
+            estado.vidas_restantes is not None
+            and estado.vidas_restantes < er.vidas_max
+        ):
+            aplicar_recompensa(
+                estado,
+                er,
+                EventoRecompensaResistencia(
+                    "Apuesta: vida extra",
+                    delta_vidas=recompensa.delta_vidas,
+                ),
+            )
+            n = recompensa.delta_vidas
+            avisos.append(f"Apuesta: +{n} vida" + ("s" if n > 1 else ""))
     if recompensa.powerup_id:
         er.agregar_powerup(recompensa.powerup_id, recompensa.cantidad_powerup)
         nom = etiqueta_powerup(recompensa.powerup_id)
-        avisos.append(f"Apuesta: {nom}")
+        avisos.append(f"Recompensa de apuesta: {nom}")
     elif recompensa.powerup_aleatorio:
+        from Comun.objetos_partida import POWERUPS_LOOT_APUESTA
+
         rng = rng_partida(er)
-        pid = rng.choice(POWERUPS_LOOT)
+        pid = elegir_powerup_loot(
+            er.inventario, rng, pool=POWERUPS_LOOT_APUESTA
+        )
         er.agregar_powerup(pid, 1)
-        avisos.append(f"Apuesta: {etiqueta_powerup(pid)}")
+        avisos.append(f"Recompensa de apuesta: {etiqueta_powerup(pid)}")
     return avisos
 
 
@@ -1229,8 +1789,11 @@ def _aplicar_penalizacion_apuesta(
     if extra > 0 and estado.vidas_restantes is not None:
         estado.vidas_restantes = max(0, estado.vidas_restantes - extra)
     if coste.puntos_perdidos > 0:
+        from Comun.economia_partida import puntos_penalizacion_escalados
+
+        penal = puntos_penalizacion_escalados(coste.puntos_perdidos, numero_pregunta)
         estado.puntos_arcade, aplicado = sumar_puntos_arcade(
-            estado.puntos_arcade, -coste.puntos_perdidos
+            estado.puntos_arcade, -penal
         )
         if aplicado < 0:
             avisos.append(f"Apuesta: {aplicado} puntos")
@@ -1277,7 +1840,58 @@ def procesar_turno_resistencia(
             reintentar_pregunta=True,
         )
 
+    if fallo and er.segunda_oportunidad_activa:
+        er.segunda_oportunidad_activa = False
+        solucion = None
+        if estado.reglas.mostrar_solucion_tras_fallo:
+            from Comun.motor_nucleo import texto_solucion
+
+            solucion = texto_solucion(p)
+        return ResultadoTurnoResistencia(
+            feedback=FeedbackRespuesta(
+                mensaje="Segunda oportunidad: inténtalo otra vez.",
+                solucion=solucion,
+            ),
+            reintentar_pregunta=True,
+        )
+
+    from Comun.maldiciones_partida import maldicion_es_fatal, mensaje_fallo_maldicion_fatal
+
+    if fallo and maldicion_es_fatal(er.maldicion):
+        feedback = evaluar_respuesta(p, estado, resultado)
+        if estado.vidas_restantes is not None:
+            estado.vidas_restantes = 0
+        feedback = replace(
+            feedback,
+            sin_vidas=True,
+            mensaje=f"{feedback.mensaje}{mensaje_fallo_maldicion_fatal()}",
+        )
+        avisos_post = list(
+            procesar_post_turno_resistencia(
+                er, acierto=False, numero_pregunta=indice_pregunta
+            )
+        )
+        return ResultadoTurnoResistencia(
+            feedback=feedback,
+            avisos_extra=tuple(avisos_post),
+        )
+
     feedback = evaluar_respuesta(p, estado, resultado)
+
+    puntos_prev = estado.puntos_arcade
+    doble_o_nada = er.doble_o_nada_activo
+    if doble_o_nada:
+        er.doble_o_nada_activo = False
+
+    if acierto and doble_o_nada:
+        delta = estado.puntos_arcade - puntos_prev
+        if delta > 0:
+            estado.puntos_arcade, _ = sumar_puntos_arcade(
+                estado.puntos_arcade, delta
+            )
+
+    if fallo and doble_o_nada and estado.vidas_restantes is not None:
+        estado.vidas_restantes = max(0, estado.vidas_restantes - 1)
 
     if acierto and er.bonus_proximo_acierto:
         bonus = er.bonus_proximo_acierto
@@ -1297,20 +1911,45 @@ def procesar_turno_resistencia(
         feedback = replace(feedback, sin_vidas=True)
 
     avisos_post: list[str] = list(avisos_apuesta_fallo)
+    familias_recompensa: set[str] = set()
     if acierto:
         er.registrar_acierto()
-        avisos_post.extend(
-            _aplicar_recompensa_apuesta_exito(
-                estado, er, numero_pregunta=indice_pregunta
-            )
-        )
+        for aviso in _aplicar_recompensa_apuesta_exito(
+            estado, er, numero_pregunta=indice_pregunta
+        ):
+            avisos_post.append(aviso)
+            if "vida" in aviso.lower():
+                familias_recompensa.add("vida")
         for recompensa in tirar_recompensas_tras_acierto(
-            er, estado, numero_pregunta=indice_pregunta
+            er,
+            estado,
+            numero_pregunta=indice_pregunta,
+            familias_otorgadas=familias_recompensa,
         ):
             aplicar_recompensa(estado, er, recompensa)
-            avisos_post.append(formatear_aviso_recompensa(recompensa.etiqueta))
+            avisos_post.append(
+                formatear_aviso_recompensa(
+                    recompensa.etiqueta,
+                    bonus_proximo_acierto=recompensa.bonus_proximo_acierto,
+                )
+            )
+        if er.pregunta_final_jefe:
+            er.pregunta_final_jefe = False
+            candidatas = recompensas_completar_jefe_resistencia(
+                er, estado, numero_pregunta=indice_pregunta
+            )
+            otorgadas: list[EventoRecompensaResistencia] = []
+            for recompensa in candidatas:
+                if _otorgar_recompensa_resistencia(
+                    estado, er, recompensa, familias_recompensa
+                ):
+                    otorgadas.append(recompensa)
+            if otorgadas:
+                avisos_post.append(formatear_aviso_botin_jefe_resistencia(otorgadas))
     elif fallo:
         er.registrar_fallo()
+        if er.pregunta_final_jefe:
+            er.pregunta_final_jefe = False
 
     avisos_post.extend(
         procesar_post_turno_resistencia(er, acierto=acierto, numero_pregunta=indice_pregunta)
@@ -1395,6 +2034,8 @@ __all__ = [
     "formatear_aviso_desafio_bloque",
     "formatear_aviso_bloque",
     "formatear_aviso_evento",
+    "formatear_aviso_jefe",
+    "formatear_aviso_botin_jefe_resistencia",
     "formatear_aviso_maldicion",
     "formatear_aviso_presion_racha",
     "formatear_aviso_recompensa",
@@ -1419,6 +2060,8 @@ __all__ = [
     "rng_partida",
     "separar_emoji_mensaje",
     "texto_progreso_resistencia",
+    "segmento_bloque_filtro_barra",
+    "texto_bloque_filtro_extra",
     "texto_segmento_desafio_bloque",
     "tiempo_pregunta_efectivo",
     "tirar_recompensas_tras_acierto",

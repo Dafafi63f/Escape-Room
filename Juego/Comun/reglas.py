@@ -62,7 +62,7 @@ class ReglasPartida:
         partes.append(f"puntuación: {self.sistema_puntuacion.value}")
         if self.correccion_al_final:
             partes.append("corrección al final (sin pistas durante el examen)")
-        return " · ".join(partes)
+        return "  ".join(partes)
 
 
 def vidas_iniciales_partida(reglas: ReglasPartida) -> int:

@@ -6,7 +6,7 @@ Se importa con `Juego/` en el `sys.path` (véase [`juego_grafico.py`](../juego_g
 
 ## Juego completo vs mínimo
 
-Al arrancar, [`contenido.py`](contenido.py) construye un [`PerfilContenido`](perfil_contenido.py) según los datos disponibles. La UI y el motor consultan **propiedades del perfil** (`modo_minimo`, `banco_beta_disponible`, `filtros_libre_disponibles`, `modo_disponible()`, etc.) en lugar de ramificar por rutas globales.
+Al arrancar, [`contenido.py`](contenido.py) construye un [`PerfilContenido`](perfil_contenido.py) según los datos disponibles. La UI y el motor consultan **propiedades del perfil** (`modo_minimo`, `banco_beta_disponible` — banco ampliado 960 —, `filtros_libre_disponibles`, `modo_disponible()`, etc.) en lugar de ramificar por rutas globales.
 
 | Módulo | Responsabilidad |
 |--------|-----------------|

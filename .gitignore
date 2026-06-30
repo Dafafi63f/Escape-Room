@@ -1,9 +1,20 @@
-﻿# --- Generado al jugar / privado local (no versionar; borrar con borrar_temporales.py) ---
-Data/Banco/creador_privado.json
+﻿# --- Generado al jugar (no versionar; borrar con borrar_temporales.py) ---
 Data/Juego/preferencias_*.json
 Data/Juego/estadisticas_jugador.json
 Data/Juego/ranking_*.json
 Data/Juego/*.txt
+# Obsoletos en Data/Juego/ (catálogo en Juego/; exclusivas resistencia en .py)
+Data/Juego/presets.json
+Data/Juego/preguntas_resistencia.json
+Data/Juego/defaults/
+# Privado del autor / fuentes locales (no van al zip ni a git; ver Data/Privado/README.md)
+Data/Privado/*
+!Data/Privado/README.md
+!Data/Privado/Preguntas_minimal.csv
+# Legacy: migrar a Data/Privado/
+Data/Banco/creador_privado.json
+Data/*.xlsx
+Files/fuentes/
 # --- Temporales (limpiar con borrar_temporales.py) ---
 __pycache__/
 .mypy_cache/

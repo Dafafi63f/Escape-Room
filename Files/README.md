@@ -19,12 +19,12 @@ Rutas canónicas: [`rutas_data.py`](rutas_data.py) (`DATA_BANCO`, `DATA_JUEGO`).
 
 Toda escritura en `plantillas.json` pasa por `utils_banco_cerrado.guardar_plantillas_json()`.
 
-### Base vs beta (qué queda por revisar)
+### Base vs banco ampliado (qué queda por revisar)
 
 | Pool | Filas | Revisión manual |
 |------|-------|----------------|
 | **Base** (`Preguntas.csv` + `uso: dataset_480` en JSON) | 480 | Completada: enunciado, distractores, materia, tipo, dificultad |
-| **Beta jugable** (`internet`, `repuesto`, `general`, …) | 480 | Metadatos OK; **pendiente: enunciado y opciones A–D** |
+| **Ampliado** (`internet`, `repuesto`, `general`, …) | 480 | Metadatos OK; **pendiente: enunciado y opciones A–D** |
 
 `clasificar_pregunta.py` y `plantillas reclasificar` leen `Data/Banco/criterios_clasificacion_materia.csv` (cerrado; editar a mano si hiciera falta).
 

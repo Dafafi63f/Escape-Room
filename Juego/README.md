@@ -1,6 +1,6 @@
 # Juego — cuestionario MATCAD
 
-Interfaz gráfica del juego (pygame) sobre el dominio compartido en [`Comun/`](Comun/README.md).
+Interfaz gráfica del juego (pygame) sobre el dominio compartido en [`Comun/`](Comun/README.md). **Versión entregable:** `v1.0.0` (ver [`Docs/RELEASE_1.0.md`](../Docs/RELEASE_1.0.md)).
 
 **Requisitos para jugar** (Python, pip, zips, PCs del centro): [`COMO_JUGAR.md`](COMO_JUGAR.md).
 
@@ -64,4 +64,4 @@ cd Juego
 python -m Comun.feedback
 ```
 
-Genera `Data/Banco/creador_privado.json` (no versionado).
+Genera `Data/Privado/creador_privado.json` (no versionado).

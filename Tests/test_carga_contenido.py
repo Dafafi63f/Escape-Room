@@ -25,7 +25,7 @@ from Comun.rutas import PATH_PREGUNTAS, resolver_plantillas  # noqa: E402
 from Grafico.pantallas import MenuPrincipal  # noqa: E402
 from Grafico.pantallas_libre import ConfigOpcionesLibre  # noqa: E402
 
-_FIXTURE = Path(__file__).resolve().parent / "Fixtures" / "Preguntas_minimal.csv"
+_FIXTURE = Path(__file__).resolve().parents[1] / "Data" / "Privado" / "Preguntas_minimal.csv"
 
 
 class TestCargaContenidoPortable(unittest.TestCase):
@@ -413,11 +413,31 @@ class TestCargaContenidoPortable(unittest.TestCase):
         self.assertIn("Juego/Grafico/pantallas_escape.py", actuales)
         self.assertIn("Juego/Comun/rutas.py", actuales)
         self.assertNotIn("Data/Banco/creador_privado.json", actuales)
+        self.assertNotIn("Data/Privado/creador_privado.json", actuales)
         self.assertNotIn("Docs/CHANGELOG_JUEGO.md", actuales)
         self.assertNotIn("Juego/LEEME.txt", actuales)
         self.assertNotIn("Juego/Distribucion/Jugar.bat", actuales)
         self.assertFalse(any(n.startswith("Juego/Scripts/") for n in actuales))
         self.assertFalse(any(n.startswith("Juego/Distribucion/") for n in actuales))
+        self.assertFalse(
+            any(n.startswith("Data/Juego/") for n in actuales),
+            "El zip portable no debe incluir runtime ni catálogos en Data/Juego/",
+        )
+        self.assertFalse(any(n.startswith("Data/Privado/") for n in actuales))
+
+    def test_auditar_carpetas_data_sin_problemas_en_repo(self) -> None:
+        from Comun.persistencia import auditar_carpetas_data
+
+        raiz = Path(__file__).resolve().parents[1]
+        problemas = auditar_carpetas_data(raiz)
+        self.assertEqual(problemas, [], "\n".join(problemas))
+
+    def test_zip_portable_excluye_data_juego_y_privado(self) -> None:
+        from Docs.utilidades_tfg import _iterar_ficheros_zip_portable
+
+        archivos = {arc for _, arc in _iterar_ficheros_zip_portable()}
+        self.assertFalse(any(a.startswith("Data/Juego/") for a in archivos))
+        self.assertFalse(any(a.startswith("Data/Privado/") for a in archivos))
 
     def test_auditoria_contenido_minimo_coherente(self) -> None:
         """Las exclusiones no deben romper el cierre de imports del flujo mínimo."""

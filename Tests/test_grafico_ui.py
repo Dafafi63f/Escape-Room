@@ -714,6 +714,68 @@ class TestTooltipsUi(unittest.TestCase):
         self.assertIn("cronómetro", tooltip_opcion_ciclo_libre("tiempo_modo", "ninguno") or "")
         self.assertIn("Puntos", tooltip_opcion_ciclo_libre("sistema", "arcade") or "")
 
+
+class TestPosicionBotonesFila(unittest.TestCase):
+    def test_empaqueta_cuatro_botones_fin_partida_en_dos_filas(self) -> None:
+        import pygame
+
+        pygame.init()
+        from Grafico.tema import ANCHO, MARGEN, crear_fuentes
+        from Grafico.textos_grafico import etiqueta
+        from Grafico.ui import Boton, empaquetar_indices_en_filas, posicionar_botones_fila, rect_boton_etiqueta
+        from Comun.textos_ui import (
+            BTN_CAMBIAR_OPCIONES,
+            BTN_EXAMEN_DIRIGIDO,
+            BTN_REPETIR_PARTIDA,
+            BTN_VOLVER_MENU,
+        )
+
+        fuente = crear_fuentes()["menu"]
+        etiqs = [
+            etiqueta(*b)
+            for b in (
+                BTN_REPETIR_PARTIDA,
+                BTN_EXAMEN_DIRIGIDO,
+                BTN_CAMBIAR_OPCIONES,
+                BTN_VOLVER_MENU,
+            )
+        ]
+        botones = [
+            Boton(
+                etiq,
+                rect_boton_etiqueta(etiq, fuente, x_centro=0, y=0, alto_min=44),
+                lambda: None,
+            )
+            for etiq in etiqs
+        ]
+        anchos = [b.rect.width for b in botones]
+        ancho_max = ANCHO - 2 * MARGEN
+        filas = empaquetar_indices_en_filas(anchos, ancho_disponible=ancho_max, gap=10)
+        self.assertEqual(len(filas), 2)
+        posicionar_botones_fila(botones, 632, x_centro=ANCHO // 2, gap=10)
+        for boton in botones:
+            self.assertGreaterEqual(boton.rect.left, MARGEN)
+            self.assertLessEqual(boton.rect.right, ANCHO - MARGEN)
+
+
+class TestBarraProgresoPartida(unittest.TestCase):
+    def test_ultima_pregunta_llena_la_barra(self) -> None:
+        from Grafico.pantallas import fraccion_barra_progreso_partida
+
+        self.assertEqual(
+            fraccion_barra_progreso_partida(indice_pregunta=19, total=20),
+            1.0,
+        )
+
+    def test_primera_pregunta_no_vacia(self) -> None:
+        from Grafico.pantallas import fraccion_barra_progreso_partida
+
+        self.assertEqual(
+            fraccion_barra_progreso_partida(indice_pregunta=0, total=20),
+            0.05,
+        )
+
+
 # --- test_texto_grafico.py ---
 
 class TestTextoGrafico(unittest.TestCase):
@@ -815,38 +877,45 @@ from Comun.reglas import ReglasPartida, SistemaPuntuacion, preset_libre_arcade, 
 
 
 class TestBarraEstado(unittest.TestCase):
-    def test_segmentos_modo_libre(self) -> None:
+    def test_segmentos_modo_libre_infinito(self) -> None:
         reglas = preset_libre_arcade()
         estado = EstadoPartida(nombre="Ana", reglas=reglas, vidas_restantes=3)
-        segs = segmentos_linea_estado(estado, "Pregunta 1/inf")
+        segs = segmentos_linea_estado(estado, "", numero_pregunta=1)
         textos = [s.texto for s in segs]
-        self.assertIn("Pregunta 1/∞", textos)
+        self.assertIn("1", textos)
         self.assertIn("3/3", textos)
         self.assertIn("0", textos)
-        self.assertEqual(segs[0].emoji, "📝")
+        self.assertEqual(segs[0].emoji, "❓")
         self.assertEqual(segs[1].emoji, "❤️")
-        self.assertEqual(segs[2].emoji, EMOJI_TIEMPO_TOTAL)
-        self.assertEqual(segs[3].emoji, "⭐")
+        self.assertEqual(segs[2].emoji, "⭐")
+        self.assertNotIn("tiempo_total", [s.id for s in segs])
+
+    def test_segmentos_modo_libre_finito(self) -> None:
+        reglas = preset_libre_arcade()
+        estado = EstadoPartida(nombre="Ana", reglas=reglas, vidas_restantes=3)
+        segs = segmentos_linea_estado(estado, "3/10")
+        progreso = next(s for s in segs if s.id == "progreso")
+        self.assertEqual(progreso.emoji, "📝")
+        self.assertEqual(progreso.texto, "3/10")
 
     def test_formato_texto_con_emojis(self) -> None:
         reglas = preset_libre_arcade()
         estado = EstadoPartida(nombre="Ana", reglas=reglas, vidas_restantes=3)
         texto = formatear_linea_estado(
-            segmentos_linea_estado(estado, "Pregunta 1/inf"),
+            segmentos_linea_estado(estado, "", numero_pregunta=1),
             usar_emojis=True,
         )
-        self.assertIn("📝", texto)
+        self.assertIn("❓", texto)
         self.assertIn("❤️", texto)
-        self.assertIn(EMOJI_TIEMPO_TOTAL, texto)
+        self.assertNotIn(EMOJI_TIEMPO_TOTAL, texto)
         self.assertIn("⭐", texto)
-        self.assertIn("∞", texto)
-        self.assertIn("·", texto)
 
     def test_linea_estado_motor_usa_emojis(self) -> None:
         reglas = preset_libre_arcade()
         estado = EstadoPartida(nombre="Ana", reglas=reglas, vidas_restantes=2)
-        texto = linea_estado(estado, "Pregunta 3/10")
+        texto = linea_estado(estado, "3/10")
         self.assertIn("📝", texto)
+        self.assertIn("3/10", texto)
         self.assertIn("❤️", texto)
 
     def test_segmentos_racha_resistencia(self) -> None:
@@ -862,31 +931,53 @@ class TestBarraEstado(unittest.TestCase):
         )
         pregunta = next(s for s in segs if s.id == "progreso")
         racha = next(s for s in segs if s.id == "racha")
-        self.assertEqual(pregunta.emoji, "📝")
-        self.assertEqual(pregunta.texto, "#13")
+        self.assertEqual(pregunta.emoji, "❓")
+        self.assertEqual(pregunta.texto, "13")
         self.assertEqual(racha.emoji, "🔥")
         self.assertEqual(racha.texto, "12")
-        activo = next(s for s in segs if s.id == "tiempo_total")
         temporizador = next(s for s in segs if s.id == "tiempo_preg")
-        self.assertEqual(activo.emoji, EMOJI_TIEMPO_TOTAL)
         self.assertEqual(temporizador.emoji, EMOJI_TIEMPO_PREG)
         self.assertEqual(temporizador.texto, "8s")
+        self.assertNotIn("tiempo_total", [s.id for s in segs])
 
-    def test_tiempo_activo_transcurrido_sin_temporizador(self) -> None:
+    def test_sin_chip_tiempo_sin_limite_global(self) -> None:
         reglas = preset_libre_arcade()
         estado = EstadoPartida(nombre="Ana", reglas=reglas, vidas_restantes=3)
-        activo = next(s for s in segmentos_linea_estado(estado, "Pregunta 1/∞") if s.id == "tiempo_total")
-        self.assertEqual(activo.emoji, EMOJI_TIEMPO_TOTAL)
-        self.assertTrue(activo.texto.endswith("s"))
+        ids = [s.id for s in segmentos_linea_estado(estado, "Pregunta 1/∞")]
+        self.assertNotIn("tiempo_total", ids)
 
     def test_ambos_tiempos_simultaneos(self) -> None:
-        reglas = preset_libre_contrarreloj()
+        reglas = ReglasPartida(
+            sistema_puntuacion=SistemaPuntuacion.PORCENTAJE,
+            tiempo_por_pregunta_seg=90,
+            tiempo_total_seg=600,
+        )
         estado = EstadoPartida(nombre="Ana", reglas=reglas, vidas_restantes=None)
-        segs = segmentos_linea_estado(estado, "Pregunta 1/10", segundos_pregunta_restantes=42)
+        segs = segmentos_linea_estado(estado, "1/10", segundos_pregunta_restantes=42)
         ids = [s.id for s in segs]
         self.assertIn("tiempo_total", ids)
         self.assertIn("tiempo_preg", ids)
         self.assertLess(ids.index("tiempo_total"), ids.index("tiempo_preg"))
+
+    def test_barra_no_muestra_nota_ni_porcentaje_durante_partida(self) -> None:
+        from Comun.reglas import preset_historia_examen, preset_libre_contrarreloj, preset_libre_repaso
+
+        for reglas in (preset_historia_examen(), preset_libre_repaso(), preset_libre_contrarreloj()):
+            with self.subTest(sistema=reglas.sistema_puntuacion):
+                estado = EstadoPartida(nombre="Ana", reglas=reglas, vidas_restantes=None)
+                estado.respondidas = 10
+                estado.aciertos = 7
+                ids = [s.id for s in segmentos_linea_estado(estado, "10/24")]
+                self.assertNotIn("nota", ids)
+                self.assertNotIn("aciertos", ids)
+                self.assertNotIn("puntos", ids)
+
+    def test_modo_libre_sigue_mostrando_puntos_arcade(self) -> None:
+        reglas = preset_libre_arcade()
+        estado = EstadoPartida(nombre="Ana", reglas=reglas, vidas_restantes=3)
+        estado.respondidas = 2
+        ids = [s.id for s in segmentos_linea_estado(estado, "", numero_pregunta=2)]
+        self.assertIn("puntos", ids)
 
     def test_progreso_puerta_escape_en_barra(self) -> None:
         from Comun.reglas import preset_escape

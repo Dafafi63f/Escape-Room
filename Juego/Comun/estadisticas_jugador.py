@@ -15,6 +15,7 @@ from Comun.rutas import _ruta_json_escritura
 
 __all__ = [
     "formatear_panel_estadisticas",
+    "formatear_tarjeta_sigue_por_aqui",
     "registrar_cierre_partida",
     "resolver_path_estadisticas_jugador",
     "vaciar_estadisticas_jugador",
@@ -224,6 +225,19 @@ def registrar_cierre_partida(
     }
     if modo == "resistencia" and meta.get("racha") is not None:
         sesion["racha"] = int(meta["racha"])
+
+    if modo == "resistencia":
+        visto_raw = meta.get("resistencia_variedad_vista")
+        if isinstance(visto_raw, (list, tuple, set, frozenset)):
+            from Comun.pity_variedad_resistencia import PityVariedadResistencia
+
+            pity_variedad = PityVariedadResistencia.desde_dict(
+                datos.get("resistencia_variedad")
+            )
+            pity_variedad.registrar_partida(
+                {str(x) for x in visto_raw if isinstance(x, str)}
+            )
+            datos["resistencia_variedad"] = pity_variedad.a_dict()
     if modo == "escape" and meta.get("salas_superadas") is not None:
         sesion["salas_superadas"] = int(meta["salas_superadas"])
 
@@ -365,6 +379,92 @@ def _mostrar_records_escape(perfil) -> bool:
     return perfil is None or not perfil.modo_minimo
 
 
+def _dias_sin_actividad(dias: list[str]) -> int:
+    if not dias:
+        return 0
+    hoy = datetime.now().date()
+    ultimo = datetime.fromisoformat(max(dias)).date()
+    return max(0, (hoy - ultimo).days)
+
+
+def _materia_mas_debil(por_materia: dict[str, Any]) -> tuple[str, float, int] | None:
+    peor: tuple[str, float, int] | None = None
+    for materia, bucket in por_materia.items():
+        intentos = int(bucket.get("intentos", 0))
+        if intentos < _MIN_INTENTOS_MATERIA:
+            continue
+        aciertos = int(bucket.get("aciertos", 0))
+        pct = _pct(aciertos, intentos)
+        if peor is None or pct < peor[1] or (pct == peor[1] and intentos > peor[2]):
+            peor = (materia, pct, intentos)
+    return peor
+
+
+def _modo_menos_jugado(por_modo: dict[str, Any], modos: tuple[str, ...]) -> str | None:
+    candidatos: list[tuple[int, str]] = []
+    for modo in modos:
+        partidas = int((por_modo.get(modo) or {}).get("partidas", 0))
+        candidatos.append((partidas, modo))
+    if not candidatos or all(n == 0 for n, _ in candidatos):
+        return None
+    candidatos.sort()
+    return candidatos[0][1]
+
+
+def formatear_tarjeta_sigue_por_aqui(perfil=None) -> list[str]:
+    """Líneas de la tarjeta «Sigue por aquí» para el panel de estadísticas."""
+    datos = _cargar_raw()
+    totales = datos.get("totales") or {}
+    sesiones: list[dict[str, Any]] = list(datos.get("sesiones") or [])
+    dias: list[str] = list(datos.get("dias_activos") or [])
+    por_modo: dict[str, Any] = dict(datos.get("por_modo") or {})
+    por_materia: dict[str, Any] = dict(datos.get("por_materia") or {})
+
+    partidas = int(totales.get("partidas", 0))
+    lineas: list[str] = ["--- SIGUE POR AQUI ---"]
+
+    if partidas == 0:
+        lineas.append("  Juega tu primera partida para ver recomendaciones.")
+        return lineas
+
+    dias_sin = _dias_sin_actividad(dias)
+    if dias_sin >= 2:
+        lineas.append(
+            f"  Llevas {dias_sin} dias sin practicar; un examen corto hoy ayuda a retomar."
+        )
+
+    debil = _materia_mas_debil(por_materia)
+    if debil is not None:
+        materia, pct, intentos = debil
+        lineas.append(
+            f"  Refuerza {materia}: {pct:.0f}% de acierto ({intentos} preguntas)."
+        )
+
+    p_act, a_act, p_prev, a_prev, delta_pp = _evolucion_semanal(sesiones)
+    if p_act >= 5 and p_prev >= 5:
+        if delta_pp <= -5:
+            lineas.append(
+                f"  Esta semana bajaste {abs(delta_pp):.0f} pp; conviene repasar."
+            )
+        elif delta_pp >= 5:
+            lineas.append("  Vas mejor que la semana pasada; manten el ritmo.")
+
+    if debil is None and _mostrar_analisis_contenido(perfil):
+        lineas.append(
+            "  Responde al menos 3 preguntas por materia para ver puntos debiles."
+        )
+
+    modo_sugerido = _modo_menos_jugado(por_modo, _modos_estadisticas(perfil))
+    if modo_sugerido is not None and int((por_modo.get(modo_sugerido) or {}).get("partidas", 0)) == 0:
+        lineas.append(
+            f"  Prueba el modo {_etiqueta_modo(modo_sugerido, perfil)}; aun no lo has usado."
+        )
+
+    if len(lineas) == 1:
+        lineas.append("  Sigue practicando; aqui apareceran consejos personalizados.")
+    return lineas
+
+
 def formatear_panel_estadisticas(perfil=None) -> str:
     """Texto multilínea para la pantalla «Mis estadísticas»."""
     datos = _cargar_raw()
@@ -387,6 +487,8 @@ def formatear_panel_estadisticas(perfil=None) -> str:
 
     lineas: list[str] = [
         "Datos locales (solo en este PC). Se actualizan al cerrar cada partida.",
+        "",
+        *formatear_tarjeta_sigue_por_aqui(perfil),
         "",
         "--- RESUMEN GLOBAL ---",
         f"  Partidas jugadas: {partidas}",

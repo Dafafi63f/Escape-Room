@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Núcleo del motor de partida (sin E/S de pygame ni terminal)."""
+"""Núcleo del motor de partida (sin E/S de pygame)."""
 
 from __future__ import annotations
 
@@ -68,10 +68,11 @@ class EstadoPartida:
         return max(0, rest)
 
     def tiempo_transcurrido_seg(self) -> int:
-        """Segundos desde el inicio de la partida (tiempo activo sin límite global)."""
+        """Segundos desde el inicio (informe y estadísticas; no se muestra en la barra)."""
         return max(0, int(time.monotonic() - self.inicio_total))
 
     def duracion_partida_seg(self) -> int:
+        """Duración real de la partida para informes al finalizar."""
         return self.tiempo_transcurrido_seg()
 
     def debe_continuar(self, total_previsto: int | None) -> bool:
@@ -202,10 +203,14 @@ def linea_estado(
     *,
     segundos_pregunta_restantes: int | None = None,
     vidas_max: int | None = None,
+    numero_pregunta: int | None = None,
+    racha: int | None = None,
     progreso_puerta: str | None = None,
     progreso_sala: str | None = None,
     mostrar_tiempo_activo: bool = True,
     desafio_bloque_texto: str | None = None,
+    bloque_filtro_texto: str | None = None,
+    efectos_puerta: tuple[str, ...] = (),
 ) -> str:
     from Comun.linea_estado_ui import linea_estado_con_iconos
 
@@ -214,10 +219,14 @@ def linea_estado(
         progreso,
         segundos_pregunta_restantes=segundos_pregunta_restantes,
         vidas_max=vidas_max,
+        numero_pregunta=numero_pregunta,
+        racha=racha,
         progreso_puerta=progreso_puerta,
         progreso_sala=progreso_sala,
         mostrar_tiempo_activo=mostrar_tiempo_activo,
         desafio_bloque_texto=desafio_bloque_texto,
+        bloque_filtro_texto=bloque_filtro_texto,
+        efectos_puerta=efectos_puerta,
     )
 
 

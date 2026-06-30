@@ -26,6 +26,7 @@ __all__ = [
     "BTN_GUARDAR_INFORME",
     "BTN_REPETIR_PARTIDA",
     "BTN_CAMBIAR_OPCIONES",
+    "BTN_EXAMEN_DIRIGIDO",
     "BTN_PANTALLA_TITULO",
     "BTN_SALIR_PROGRAMA",
     "BTN_SIGUIENTE",
@@ -318,7 +319,7 @@ def info_dataset(
     simetrico: bool = True,
     contexto: ContextoUi = "grafico",
 ) -> str:
-    cuerpo = f"{num_preguntas} preguntas · {num_materias} materias"
+    cuerpo = f"{num_preguntas} preguntas  {num_materias} materias"
     return con_emoji(
         cuerpo,
         _p("📚", "📕"),
@@ -389,6 +390,7 @@ BTN_VACIAR_ESTADISTICAS = ("Restablecer estadísticas", _p("↺"))
 BTN_GUARDAR_INFORME = ("Guardar informe y volver", _p("💾"))
 BTN_REPETIR_PARTIDA = ("Repetir partida", _p("🔁"))
 BTN_CAMBIAR_OPCIONES = ("Cambiar opciones", _p("⚙️"))
+BTN_EXAMEN_DIRIGIDO = ("Otro examen dirigido", _p("🎯"))
 BTN_PANTALLA_TITULO = ("Pantalla de título", _p("🏠", "📋"))
 BTN_SALIR_PROGRAMA = ("Salir del programa", _p("🚪"))
 

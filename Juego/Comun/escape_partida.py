@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Pool del escape room (dataset revisado o modo beta).
+"""Pool del escape room (banco revisado o ampliado).
 
 Responsabilidades
 -----------------
@@ -51,11 +51,20 @@ __all__ = [
     "materias_del_pool",
     "materias_viables_sala",
     "puerta_es_jefe",
+    "puerta_es_maldita",
+    "procesar_fallo_puerta_maldita",
     "reglas_juego_desafio",
     "reglas_partida_desde_desafio",
     "seleccionar_preguntas_desafio",
     "tiempo_pregunta_escape_por_defecto",
     "acotar_tiempo_pregunta_escape",
+    "aplicar_penalizacion_extra_fallo_puerta",
+    "debe_abandonar_puerta_por_perdida_vida",
+    "etiqueta_penalizacion_fallo_puerta",
+    "puerta_tiene_bloque_preguntas",
+    "sufijo_avance_sala_tras_abandono",
+    "sufijo_mensaje_fallo_puerta",
+    "vidas_perdidas_fallo_puerta",
     "TIEMPO_PREGUNTA_MIN_ESCAPE",
     "VIDAS_MAX_ABSOLUTO_ESCAPE",
     "VIDAS_MAX_ESCAPE",
@@ -63,11 +72,12 @@ __all__ = [
 
 _DIFICULTADES_TODAS = frozenset({"Facil", "Media", "Dificil"})
 _PLANTILLA_BALANCEADA = "puerta_materia"
-_TAMANOS_REDUCCION = (3, 5, 10)
+_TAMANOS_REDUCCION = (3, 5)
 VIDAS_MAX_ESCAPE = 3
 VIDAS_MAX_ABSOLUTO_ESCAPE = 9
 TIEMPO_PREGUNTA_MIN_ESCAPE = 20
-_DIFICULTAD_JEFE = frozenset({"Dificil"})
+VIDAS_FALLO_PUERTA_ESCAPE = 1
+VIDAS_FALLO_PUERTA_JEFE_ESCAPE = 2
 
 
 @dataclass(frozen=True)
@@ -86,6 +96,8 @@ class FiltroPoolEscalada:
 class FiltroContenidoEvento:
     materia: str | None
     grupo: str | None
+    curso: str | None
+    semestre: str | None
     dificultades_permitidas: frozenset[str] | None
     tipos_permitidos: frozenset[str] | None
 
@@ -95,6 +107,8 @@ class CriteriosSeleccionPool:
     n_preguntas: int
     materia: str | None
     grupo: str | None
+    curso: str | None
+    semestre: str | None
     dificultades_permitidas: frozenset[str]
     min_complejidad: int
     max_complejidad: int
@@ -145,14 +159,15 @@ class BonificacionCompletarEscape:
             else:
                 partes.append(f"❤️ Puerta superada: recuperas {txt}.")
         if self.powerups:
+            from Comun.emojis_escape import EMOJI_BOTIN_ESCAPE
             from Comun.resistencia_motor import etiqueta_powerup
 
             for pid, cant in self.powerups:
                 nom = etiqueta_powerup(pid)
                 if cant == 1:
-                    partes.append(f"🎁 Objeto: {nom}.")
+                    partes.append(f"{EMOJI_BOTIN_ESCAPE} Objeto: {nom}.")
                 else:
-                    partes.append(f"🎁 Objetos: {cant}× {nom}.")
+                    partes.append(f"{EMOJI_BOTIN_ESCAPE} Objetos: {cant}× {nom}.")
         return " ".join(partes)
 
     def _texto_vidas(self) -> str:
@@ -161,11 +176,103 @@ class BonificacionCompletarEscape:
 
 
 def puerta_es_jefe(puerta: PuertaEscape) -> bool:
-    """Bloque largo con preguntas solo difíciles."""
-    if puerta.modificadores.sin_pregunta or puerta.n_preguntas < 10:
+    """Bloque de jefe: 10 preguntas de un grupo temático."""
+    return puerta.es_jefe
+
+
+def puerta_es_maldita(puerta: PuertaEscape | None) -> bool:
+    """Puerta con fin de partida al fallar cualquier pregunta."""
+    if puerta is None:
         return False
-    difs = puerta.evento.dificultades_permitidas
-    return difs is not None and difs <= _DIFICULTAD_JEFE and "Dificil" in difs
+    return bool(puerta.modificadores.fin_partida_si_fallo)
+
+
+@dataclass(frozen=True)
+class ResultadoFalloPuertaMaldita:
+    fin_partida: bool
+    consumir_proteccion: bool
+    mensaje_extra: str
+
+
+def procesar_fallo_puerta_maldita(
+    puerta: PuertaEscape | None,
+    *,
+    proteccion_activa: bool,
+) -> ResultadoFalloPuertaMaldita | None:
+    """Tras un fallo real (sin escudo/2.ª oportunidad). None si la puerta no es maldita."""
+    if not puerta_es_maldita(puerta):
+        return None
+    if proteccion_activa:
+        return ResultadoFalloPuertaMaldita(
+            fin_partida=False,
+            consumir_proteccion=True,
+            mensaje_extra=" Sello de purga roto: pierdes vida y abandonas la puerta.",
+        )
+    return ResultadoFalloPuertaMaldita(
+        fin_partida=True,
+        consumir_proteccion=False,
+        mensaje_extra=" Puerta maldita: fin de partida.",
+    )
+def puerta_tiene_bloque_preguntas(puerta: PuertaEscape | None) -> bool:
+    if puerta is None:
+        return False
+    return not puerta.modificadores.sin_pregunta and puerta.n_preguntas > 0
+
+
+def debe_abandonar_puerta_por_perdida_vida(
+    puerta: PuertaEscape | None,
+    *,
+    vidas_antes: int | None,
+    vidas_despues: int | None,
+    reintentar: bool,
+) -> bool:
+    """Pierdes vida en una puerta con preguntas → abandonas y avanzas de sala."""
+    if reintentar or not puerta_tiene_bloque_preguntas(puerta):
+        return False
+    if vidas_antes is None or vidas_despues is None:
+        return False
+    return vidas_despues < vidas_antes
+
+
+def vidas_perdidas_fallo_puerta(puerta: PuertaEscape) -> int:
+    """Vidas que se pierden al fallar una pregunta de la puerta (abandona el bloque)."""
+    if puerta.modificadores.sin_pregunta or puerta.n_preguntas <= 0:
+        return 0
+    if puerta_es_jefe(puerta):
+        return VIDAS_FALLO_PUERTA_JEFE_ESCAPE
+    return VIDAS_FALLO_PUERTA_ESCAPE
+
+
+def aplicar_penalizacion_extra_fallo_puerta(estado, puerta: PuertaEscape | None) -> int:
+    """Resta vidas adicionales tras ``evaluar_respuesta`` (que ya resta 1)."""
+    if puerta is None:
+        return 0
+    extra = vidas_perdidas_fallo_puerta(puerta) - 1
+    if extra <= 0 or estado.vidas_restantes is None:
+        return 0
+    estado.vidas_restantes = max(0, estado.vidas_restantes - extra)
+    return extra
+
+
+def etiqueta_penalizacion_fallo_puerta(puerta: PuertaEscape) -> str:
+    n = vidas_perdidas_fallo_puerta(puerta)
+    if n <= 0:
+        return ""
+    if n == 1:
+        return "Al fallar una pregunta: −1 vida. Pasas a la siguiente sala."
+    return f"Al fallar una pregunta: −{n} vidas. Pasas a la siguiente sala."
+
+
+def sufijo_avance_sala_tras_abandono() -> str:
+    return " Pasas a la siguiente sala."
+
+
+def sufijo_mensaje_fallo_puerta(puerta: PuertaEscape) -> str:
+    n = vidas_perdidas_fallo_puerta(puerta)
+    if n <= 1:
+        return ""
+    txt = "1 vida" if n == 1 else f"{n} vidas"
+    return f" (pierdes {txt}, puerta jefe)"
 
 
 def mensaje_feedback_puerta_sin_pregunta(puerta: PuertaEscape) -> str:
@@ -414,6 +521,8 @@ def filtro_contenido_evento(evento: EventoContenidoInstanciado) -> FiltroConteni
     return FiltroContenidoEvento(
         materia=evento.materia,
         grupo=evento.grupo,
+        curso=evento.curso,
+        semestre=evento.semestre,
         dificultades_permitidas=evento.dificultades_permitidas,
         tipos_permitidos=evento.tipos_permitidos,
     )
@@ -432,6 +541,8 @@ def combinar_criterios_seleccion_pool(
         n_preguntas=puerta.n_preguntas,
         materia=contenido.materia,
         grupo=contenido.grupo,
+        curso=contenido.curso,
+        semestre=contenido.semestre,
         dificultades_permitidas=permitidas,
         min_complejidad=escalada.min_complejidad,
         max_complejidad=escalada.max_complejidad,
@@ -514,6 +625,10 @@ def _pregunta_cumple_contenido(p: Pregunta, criterios: CriteriosSeleccionPool) -
     if criterios.materia and p.materia != criterios.materia:
         return False
     if criterios.grupo and p.grupo != criterios.grupo:
+        return False
+    if criterios.curso and p.curso != criterios.curso:
+        return False
+    if criterios.semestre and p.semestre != criterios.semestre:
         return False
     if criterios.tipos_permitidos and p.tipo not in criterios.tipos_permitidos:
         return False
@@ -674,23 +789,41 @@ def grupos_viables_sala(
 
 
 def _evento_es_grupo(evento: EventoContenidoInstanciado) -> bool:
-    opts = evento.contenido_escape
-    return bool(opts and opts.usa_grupo and evento.grupo)
+    from Comun.eventos_partida import tipo_filtro_evento
+    from Comun.filtros_bloque import TipoFiltroBloque
+
+    return tipo_filtro_evento(evento) == TipoFiltroBloque.GRUPO
+
+
+def _evento_es_materia(evento: EventoContenidoInstanciado) -> bool:
+    from Comun.eventos_partida import tipo_filtro_evento
+    from Comun.filtros_bloque import TipoFiltroBloque
+
+    return tipo_filtro_evento(evento) == TipoFiltroBloque.MATERIA
 
 
 def _evento_balanceado_desde(evento: EventoContenidoInstanciado) -> EventoContenidoInstanciado:
     from Comun.eventos_partida import (
         definicion_grupo_con_perfil,
         perfil_materia_por_id,
+        tipo_filtro_evento,
     )
+    from Comun.filtros_bloque import TipoFiltroBloque
 
-    if evento.id == _PLANTILLA_BALANCEADA:
+    if evento.id == _PLANTILLA_BALANCEADA and evento.perfil_id == "balanceado":
         return evento
     opts = evento.contenido_escape
     balanceado = perfil_materia_por_id("balanceado")
-    if opts and opts.usa_grupo:
+    if tipo_filtro_evento(evento) == TipoFiltroBloque.GRUPO:
         return EventoContenidoInstanciado(
             definicion=definicion_grupo_con_perfil(balanceado),
+            grupo=evento.grupo,
+            perfil_id="balanceado",
+        )
+    if evento.materia:
+        return EventoContenidoInstanciado(
+            definicion=evento_por_id(_PLANTILLA_BALANCEADA),
+            materia=evento.materia,
             grupo=evento.grupo,
             perfil_id="balanceado",
         )
@@ -698,6 +831,8 @@ def _evento_balanceado_desde(evento: EventoContenidoInstanciado) -> EventoConten
         definicion=evento_por_id(_PLANTILLA_BALANCEADA),
         materia=evento.materia,
         grupo=evento.grupo,
+        curso=evento.curso,
+        semestre=evento.semestre,
         perfil_id="balanceado",
     )
 
@@ -721,6 +856,8 @@ def asegurar_puerta_viable(
     grupos_pool: tuple[str, ...] = (),
 ) -> PuertaEscape:
     """Ajusta tamaño, contenido o rasgos si no hay preguntas suficientes."""
+    if puerta.es_jefe:
+        return puerta
     if _puerta_cumple(puerta, pool, numero_sala=numero_sala, n_salas=n_salas):
         return puerta
     if puerta.modificadores.sin_pregunta:
@@ -767,7 +904,7 @@ def asegurar_puerta_viable(
         if mejor is not None:
             return mejor
 
-    if candidata.evento.materia:
+    if materias_pool:
         from Comun.escape_room import PuertaEscape
 
         mejor: PuertaEscape | None = None

@@ -2,7 +2,18 @@
 
 Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial detallado está en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
 
-**Última actualización:** 2026-06-28
+**Última actualización:** 2026-06-29
+
+## Versión entregable 1.0.0 (pausa de desarrollo)
+
+- [x] **Juego v1.0.0** jugable de extremo a extremo (ver [`RELEASE_1.0.md`](RELEASE_1.0.md))
+- [x] Etiqueta de versión en menú e Info del juego
+- [x] Banco por defecto: 480 revisadas; ampliado opcional y etiquetado
+- [x] 578 tests + `Files/health_check.py`
+- [x] Regenerar zip portable antes de distribuir (`utilidades_tfg.py --solo-zip --forzar-zip`)
+- [ ] PDF memoria y defensa (fuera del código del juego)
+
+*A partir de aquí: ideas futuras; no son requisito para jugar la v1.0.*
 
 ## Cómo mantenerlo
 
@@ -16,10 +27,10 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 | Área | Hecho | Pendiente |
 |------|-------|-----------|
 | TFG / memoria | Borrador, figuras, CI docs | PDF final, piloto usuarios |
-| Banco y datos | 480 + plantillas + pool 1000 | Revisar beta, Moodle, prerrequisitos |
+| Banco y datos | 480 + plantillas + pool 1000 | Revisar banco ampliado, Moodle, prerrequisitos |
 | Juego (5 modos) | Libre, historia, resistencia, escape, feedback | Mapas/UI visual, muchas ideas UX |
 | Estadísticas locales | v1 (panel simplificado + JSON) | Gráficos, repaso, botones acción |
-| Ingeniería | 468 tests, CI, zips, scripts | Docker |
+| Ingeniería | 578 tests, CI, zips, scripts | Docker |
 
 ---
 
@@ -47,7 +58,7 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 ### Juego pygame — modos y sistemas
 
 - [x] Lanzador único `juego_grafico.py` (migración «solo pygame»)
-- [x] **Modo libre:** filtros curso/semestre/materia, banco seguro/beta, informe `.txt` al cerrar
+- [x] **Modo libre:** filtros curso/semestre/materia, banco revisado/ampliado, informe `.txt` al cerrar
 - [x] **Modo historia:** carrusel presets, examen balanceado por histórico
 - [x] **Modo resistencia:** racha, apuestas, maldiciones, bloques temáticos, objetos, eventos sí/no + pity
 - [x] **Modo escape room:** salas 5–50, 3 puertas, tienda/botín/descanso/jefe, inventario, pity, economía arcade
@@ -61,7 +72,7 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 
 ### Ingeniería
 
-- [x] **468** tests unitarios (`Tests/`)
+- [x] **578** tests unitarios (`Tests/`)
 - [x] CI GitHub Actions: pre-commit, tests, integración, mypy, SonarCloud (opcional)
 - [x] `pre-commit`, `mypy.ini`, `.python-version` (3.14 en CI)
 - [x] Zip portable (`MATCAD_juego_portable.zip`) y mínimo (`MATCAD_juego_minimal.zip`)
@@ -115,8 +126,8 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 - [x] `plantillas.json`: 960 filas equilibradas
 - [x] Pool juego: 1000 preguntas reales; sin `variaciones`
 - [x] 40 exclusivas resistencia embebidas en `preguntas_resistencia_exclusivas_datos.py`
-- [ ] Revisar enunciado y distractores del pool **beta** (`auditar-distractores`)
-- [ ] Conmutador global «solo banco producción» (ocultar beta en todos los modos)
+- [x] Revisar enunciado y distractores del **banco ampliado** (`auditar-distractores`) — 2026-06-29: 98 incidencias en 960 instancias (sin opciones_duplicadas; corregidas CDV#16 y ProgSist#19)
+- [ ] Conmutador global «solo banco producción» (ocultar banco ampliado en todos los modos)
 
 ### Integración y mantenimiento
 
@@ -144,7 +155,7 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 - [ ] Tutorial interactivo primera vez
 - [ ] Tamaño de fuente y alto contraste
 - [ ] Indicadores daltonismo en A–D
-- [ ] Atajos de teclado en partida (1–4, Esc, Enter)
+- [x] Atajos de teclado en partida (1–4, Esc, Enter, Supr, H, F)
 
 ### Informes y compartición
 
@@ -173,7 +184,7 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 
 ### Pendiente
 
-- [ ] Tarjeta «Sigue por aquí»
+- [x] Tarjeta «Sigue por aquí»
 - [ ] Gráficos semanales (% y volumen) + filtro por modo
 - [ ] Tendencia por materia (↑ ↓ →)
 - [ ] Mejor nota historia/libre por preset; hitos desbloqueados
@@ -191,7 +202,7 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 **Completado**
 
 - [x] Asistente filtros (curso, semestre, materia, tipo, dificultad)
-- [x] Modo seguro (480) y beta (plantillas)
+- [x] Banco revisado (480) y ampliado opcional (plantillas)
 - [x] Partida finita e infinita
 - [x] Informe al cerrar con desglose
 
@@ -210,7 +221,7 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 
 **Pendiente**
 
-- [ ] Tras cerrar un simulacro/examen (historia o examen fijo): botón «Otro examen dirigido» que genera un nuevo test usando los **aciertos y fallos de esa sesión** (materias/temas débiles del jugador), no solo el histórico institucional del grado
+- [x] Tras cerrar un simulacro/examen (historia o examen fijo): botón «Otro examen dirigido» que genera un nuevo test usando los **aciertos y fallos de esa sesión** (materias/temas débiles del jugador), no solo el histórico institucional del grado
 
 ### Modo resistencia
 
@@ -285,7 +296,7 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 
 ### Completado
 
-- [x] Suite tests unitarios (468 tests)
+- [x] Suite tests unitarios (578 tests)
 - [x] CI: tests.yml (pre-commit, unit, integration, mypy, summary)
 - [x] CI: sonarcloud.yml, pr_agent.yml (opcionales)
 - [x] mypy en `Juego/Comun` y `Files/`

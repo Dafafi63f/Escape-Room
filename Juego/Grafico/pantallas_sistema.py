@@ -4,18 +4,20 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 import pygame
 
 from Grafico.changelog_juego import cargar_changelog_juego_grafico
 from Comun.feedback import texto_bloque_contacto_alternativo
+from Comun.version import texto_version_completo
 from Grafico.pantallas import Pantalla
 from Grafico.tema import (
     ALTO,
     ANCHO,
     COLOR_FONDO,
+    COLOR_TEXTO,
     COLOR_TEXTO_PANEL,
     COLOR_TITULO,
     MARGEN,
@@ -24,12 +26,13 @@ from Grafico.tema import (
     crear_fuentes,
 )
 from Grafico.texto import dibujar_texto_centro, preparar_texto_ui, renderizar_texto_mixto
-from Grafico.textos_grafico import BTN_VOLVER, etiqueta, titulo_pantalla
+from Grafico.textos_grafico import BTN_VOLVER, etiqueta, texto_controles_juego_grafico, titulo_pantalla
 from Grafico.ui import (
     Boton,
     capturar,
     dibujar_panel,
     dibujar_tooltips_botones,
+    partir_texto,
     partir_texto_con_sangria,
     posicionar_pila_inferior,
     rect_boton_etiqueta,
@@ -49,7 +52,48 @@ _ESPACIO_HINT_SCROLL = 36
 
 
 def _texto_contacto_hub() -> str:
-    return texto_bloque_contacto_alternativo()
+    return f"{texto_version_completo()}\n\n{texto_bloque_contacto_alternativo()}"
+
+
+def _dibujar_hint_scroll_raton(
+    superficie: pygame.Surface,
+    fuente: pygame.font.Font,
+    *,
+    y_centro: int,
+    texto: str = "Rueda del ratón para desplazarte",
+) -> None:
+    """Hint sobre fondo oscuro, centrado en la franja entre panel y botones."""
+    hint = fuente.render(preparar_texto_ui(texto), True, COLOR_TEXTO)
+    superficie.blit(hint, hint.get_rect(center=(ANCHO // 2, y_centro)))
+
+
+def _lineas_texto_panel(
+    fuente: pygame.font.Font,
+    texto: str,
+    ancho: int,
+) -> list[str]:
+    lineas: list[str] = []
+    for bloque in texto.split("\n"):
+        if not bloque.strip():
+            lineas.append("")
+            continue
+        lineas.extend(partir_texto(fuente, bloque, ancho))
+    return lineas
+
+
+def _alto_contenido_bloques(
+    fuente_cuerpo: pygame.font.Font,
+    fuente_titulo: pygame.font.Font,
+    bloques: Sequence[tuple[str, list[str]]],
+) -> int:
+    alto_linea = fuente_cuerpo.get_linesize() + 4
+    alto = 12
+    for indice, (titulo, lineas) in enumerate(bloques):
+        if indice > 0:
+            alto += 12
+        alto += fuente_titulo.get_height() + 8 + len(lineas) * alto_linea
+    alto += 12
+    return alto
 
 
 @dataclass(frozen=True)
@@ -183,19 +227,10 @@ class PantallaInfoTexto(Pantalla):
             if y > self._panel.bottom + alto_linea:
                 break
         if self._max_scroll() > 0:
-            hint = fuente.render(
-                preparar_texto_ui("Rueda del ratón para desplazarte"),
-                True,
-                COLOR_TEXTO_PANEL,
-            )
-            superficie.blit(
-                hint,
-                hint.get_rect(
-                    midbottom=(
-                        ANCHO // 2,
-                        self.boton_volver.rect.top - _GAP_PANEL_VOLVER,
-                    ),
-                ),
+            _dibujar_hint_scroll_raton(
+                superficie,
+                fuente,
+                y_centro=self._panel.bottom + _ESPACIO_HINT_SCROLL // 2,
             )
         self.boton_volver.dibujar(superficie, self.fuentes["menu"])
         dibujar_tooltips_botones(superficie, self.fuentes["pequena"], [self.boton_volver])
@@ -218,35 +253,57 @@ class PantallaInfoHub(Pantalla):
         self._navegar = navegar
         self._perfil = perfil
         self.fuentes = crear_fuentes()
-        self._lineas_contacto = self._construir_lineas_contacto()
-        self._construir_layout_contacto()
+        self.scroll = 0
+        self._bloques_info = (
+            ("Controles del juego", self._construir_lineas_controles()),
+            ("Contacto del creador", self._construir_lineas_contacto()),
+        )
+        self._construir_layout_paneles()
         self._crear_botones()
 
-    def _construir_lineas_contacto(self) -> list[str]:
-        fuente = self.fuentes["pequena"]
-        ancho = ANCHO - 2 * MARGEN - 24
-        lineas: list[str] = []
-        for bloque in _texto_contacto_hub().split("\n"):
-            if not bloque.strip():
-                lineas.append("")
-                continue
-            lineas.extend(partir_texto(fuente, bloque, ancho))
-        return lineas
+    def _ancho_texto_panel(self) -> int:
+        return ANCHO - 2 * MARGEN - 24
 
-    def _construir_layout_contacto(self) -> None:
-        fuente = self.fuentes["pequena"]
-        alto_linea = fuente.get_linesize() + 4
-        alto_titulo = self.fuentes["menu"].get_height()
-        alto_cuerpo = len(self._lineas_contacto) * alto_linea
-        alto_panel = 10 + alto_titulo + 8 + alto_cuerpo + _PAD_CONTACTO
-        y_panel = Y_INICIO_TITULO + 40 + _GAP_TRAS_SUBTITULO
-        self._rect_contacto = pygame.Rect(
-            MARGEN,
-            y_panel,
-            ANCHO - 2 * MARGEN,
-            max(72, alto_panel),
+    def _construir_lineas_controles(self) -> list[str]:
+        return _lineas_texto_panel(
+            self.fuentes["pequena"],
+            texto_controles_juego_grafico(),
+            self._ancho_texto_panel(),
         )
-        self._y_botones_seccion = self._rect_contacto.bottom + _GAP_CONTACTO_BOTONES
+
+    def _construir_lineas_contacto(self) -> list[str]:
+        return _lineas_texto_panel(
+            self.fuentes["pequena"],
+            _texto_contacto_hub(),
+            self._ancho_texto_panel(),
+        )
+
+    def _construir_layout_paneles(self) -> None:
+        alto_botones = len(SECCIONES_INFO) * 48 + max(0, len(SECCIONES_INFO) - 1) * 12
+        y_volver_top = ALTO - 28 - 48
+        self._y_botones_seccion = y_volver_top - _GAP_CONTACTO_BOTONES - alto_botones
+        y_viewport = Y_INICIO_TITULO + 40 + _GAP_TRAS_SUBTITULO
+        alto_viewport = max(
+            120,
+            self._y_botones_seccion
+            - _GAP_CONTACTO_BOTONES
+            - _ESPACIO_HINT_SCROLL
+            - y_viewport,
+        )
+        self._rect_viewport = pygame.Rect(
+            MARGEN,
+            y_viewport,
+            ANCHO - 2 * MARGEN,
+            alto_viewport,
+        )
+
+    def _max_scroll(self) -> int:
+        alto_total = _alto_contenido_bloques(
+            self.fuentes["pequena"],
+            self.fuentes["menu"],
+            self._bloques_info,
+        )
+        return max(0, alto_total - self._rect_viewport.height)
 
     def _crear_botones(self) -> None:
         fuente = self.fuentes["menu"]
@@ -317,7 +374,12 @@ class PantallaInfoHub(Pantalla):
         return [*self.botones_seccion, self.boton_volver]
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
-        if evento.type == pygame.MOUSEMOTION:
+        if evento.type == pygame.MOUSEWHEEL:
+            self.scroll = max(
+                0,
+                min(self._max_scroll(), self.scroll - int(evento.y) * 24),
+            )
+        elif evento.type == pygame.MOUSEMOTION:
             for boton in self._botones_ui():
                 boton.actualizar_hover(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
@@ -337,31 +399,42 @@ class PantallaInfoHub(Pantalla):
             bold=True,
         )
         subt = self.fuentes["menu"].render(
-            "Estadísticas, contacto y novedades del juego.",
+            "Controles, estadísticas, contacto y novedades del juego.",
             True,
             COLOR_TEXTO_PANEL,
         )
         superficie.blit(subt, subt.get_rect(center=(ANCHO // 2, Y_INICIO_TITULO + 40)))
-        self._dibujar_contacto(superficie)
+        self._dibujar_bloques_info(superficie)
+        if self._max_scroll() > 0:
+            _dibujar_hint_scroll_raton(
+                superficie,
+                self.fuentes["pequena"],
+                y_centro=self._rect_viewport.bottom + _ESPACIO_HINT_SCROLL // 2,
+            )
         for boton in self.botones_seccion:
             boton.dibujar(superficie, self.fuentes["menu"])
         self.boton_volver.dibujar(superficie, self.fuentes["menu"])
         dibujar_tooltips_botones(superficie, self.fuentes["pequena"], self._botones_ui())
 
-    def _dibujar_contacto(self, superficie: pygame.Surface) -> None:
-        dibujar_panel(superficie, self._rect_contacto, color=(255, 255, 255))
-        tit = self.fuentes["menu"].render("Contacto del creador", True, _COLOR_TEXTO_INFO)
-        superficie.blit(tit, (self._rect_contacto.x + _PAD_CONTACTO, self._rect_contacto.y + 10))
+    def _dibujar_bloques_info(self, superficie: pygame.Surface) -> None:
+        dibujar_panel(superficie, self._rect_viewport, color=(255, 255, 255))
         fuente = self.fuentes["pequena"]
+        fuente_titulo = self.fuentes["menu"]
         alto_linea = fuente.get_linesize() + 4
-        y = self._rect_contacto.y + 10 + tit.get_height() + 8
-        for linea in self._lineas_contacto:
-            if linea:
-                txt = fuente.render(linea, True, _COLOR_TEXTO_INFO)
-                superficie.blit(txt, (self._rect_contacto.x + _PAD_CONTACTO, y))
-            y += alto_linea
-            if y > self._rect_contacto.bottom - 8:
-                break
+        y = self._rect_viewport.y + 12 - self.scroll
+        for indice, (titulo, lineas) in enumerate(self._bloques_info):
+            if indice > 0:
+                y += 12
+            tit_render = fuente_titulo.render(titulo, True, _COLOR_TEXTO_INFO)
+            if y + tit_render.get_height() >= self._rect_viewport.y and y <= self._rect_viewport.bottom:
+                superficie.blit(tit_render, (self._rect_viewport.x + _PAD_CONTACTO, y))
+            y += tit_render.get_height() + 8
+            for linea in lineas:
+                if y + alto_linea >= self._rect_viewport.y and y <= self._rect_viewport.bottom:
+                    if linea:
+                        txt = fuente.render(linea, True, _COLOR_TEXTO_INFO)
+                        superficie.blit(txt, (self._rect_viewport.x + _PAD_CONTACTO, y))
+                y += alto_linea
 
 # --- Feedback ---
 
@@ -395,6 +468,7 @@ from Grafico.textos_grafico import BTN_ENVIAR, BTN_VOLVER, etiqueta, etiqueta_ca
 from Grafico.ui import (
     Boton,
     CampoTexto,
+    COLOR_BOTON_BORDE,
     COLOR_CAMPO_ACTIVO,
     COLOR_CAMPO_FONDO,
     capturar,
@@ -451,6 +525,8 @@ class CampoTextoArea:
         if evento.key == pygame.K_BACKSPACE:
             self.texto = self.texto[:-1]
             return True
+        if evento.key == pygame.K_DELETE:
+            return True
         if evento.key == pygame.K_ESCAPE:
             self.activo = False
             return True
@@ -466,7 +542,7 @@ class CampoTextoArea:
 
     def dibujar(self, pantalla: pygame.Surface, fuente: pygame.font.Font) -> None:
         fondo = COLOR_CAMPO_ACTIVO if self.activo else COLOR_CAMPO_FONDO
-        borde = COLOR_ACENTO if self.activo else (180, 190, 205)
+        borde = COLOR_ACENTO if self.activo else COLOR_BOTON_BORDE
         pygame.draw.rect(pantalla, fondo, self.rect, border_radius=8)
         pygame.draw.rect(pantalla, borde, self.rect, width=2, border_radius=8)
         inner = pygame.Rect(

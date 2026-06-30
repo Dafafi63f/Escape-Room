@@ -19,8 +19,7 @@ from Grafico.fuentes import crear_fuente, fuente_disponible, render_icono_barra
 from Grafico.tema import COLOR_TEXTO, Y_ICONOS_FIJOS, alto_icono_fijo
 
 _GAP_EMOJI_TEXTO = 4
-_GAP_ENTRE_CHIPS = 10
-_SEPARADOR = "·"
+_GAP_ENTRE_CHIPS = 12
 
 __all__ = [
     "SegmentoEstado",
@@ -78,12 +77,11 @@ def _escala_fuentes(
     if not segmentos:
         return fuente_txt, fuente_emoji
     separadores = max(0, len(segmentos) - 1)
-    sep_w = fuente_txt.size(_SEPARADOR)[0]
     ancho = sum(
         _ancho_chip(s, fuente_txt, fuente_emoji, emojis_activos=emojis_activos)
         for s in segmentos
     )
-    ancho += separadores * (_GAP_ENTRE_CHIPS + sep_w)
+    ancho += separadores * _GAP_ENTRE_CHIPS
     if ancho <= ancho_max:
         return fuente_txt, fuente_emoji
     factor = max(0.65, ancho_max / ancho)
@@ -121,13 +119,11 @@ def dibujar_linea_estado_con_iconos(
         ancho_max=ancho_max,
     )
 
-    sep_surf = fuente_txt.render(_SEPARADOR, True, (120, 140, 170))
-    sep_w = sep_surf.get_width()
     ancho_total = sum(
         _ancho_chip(s, fuente_txt, fuente_emoji, emojis_activos=emojis_activos)
         for s in segmentos
     )
-    ancho_total += max(0, len(segmentos) - 1) * (_GAP_ENTRE_CHIPS + sep_w)
+    ancho_total += max(0, len(segmentos) - 1) * _GAP_ENTRE_CHIPS
     x = x_centro - ancho_total // 2
     if x_min is not None:
         x = max(x, x_min)
@@ -136,9 +132,7 @@ def dibujar_linea_estado_con_iconos(
 
     for i, seg in enumerate(segmentos):
         if i > 0:
-            x += _GAP_ENTRE_CHIPS // 2
-            superficie.blit(sep_surf, (x, y + 2))
-            x += sep_w + _GAP_ENTRE_CHIPS // 2
+            x += _GAP_ENTRE_CHIPS
 
         icono_surf = _superficie_icono(
             seg, fuente_txt, fuente_emoji, color_texto, emojis_activos=emojis_activos
@@ -169,6 +163,8 @@ def dibujar_estado_partida_en_barra(
     progreso_sala: str | None = None,
     mostrar_tiempo_activo: bool = True,
     desafio_bloque_texto: str | None = None,
+    bloque_filtro_texto: str | None = None,
+    efectos_puerta: tuple[str, ...] = (),
 ) -> None:
     """Atajo: segmentos + dibujo centrado en la zona disponible."""
     if y is None:
@@ -186,6 +182,8 @@ def dibujar_estado_partida_en_barra(
         progreso_sala=progreso_sala,
         mostrar_tiempo_activo=mostrar_tiempo_activo,
         desafio_bloque_texto=desafio_bloque_texto,
+        bloque_filtro_texto=bloque_filtro_texto,
+        efectos_puerta=efectos_puerta,
     )
     fuente_emoji = fuentes.get("icono_emoji")
     if fuente_emoji is None:

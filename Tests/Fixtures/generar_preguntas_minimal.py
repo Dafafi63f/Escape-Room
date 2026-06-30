@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Genera ``Tests/Fixtures/Preguntas_minimal.csv`` desde ``Data/Banco/Preguntas.csv`` (solo columnas mínimas)."""
+"""Genera ``Data/Privado/Preguntas_minimal.csv`` desde ``Data/Banco/Preguntas.csv`` (solo columnas mínimas)."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 
 _RAIZ = Path(__file__).resolve().parents[2]
 _ORIGEN = _RAIZ / "Data" / "Banco" / "Preguntas.csv"
-_DESTINO = Path(__file__).resolve().parent / "Preguntas_minimal.csv"
+_DESTINO = _RAIZ / "Data" / "Privado" / "Preguntas_minimal.csv"
 _COLUMNAS = ("Id", "Pregunta", "A", "B", "C", "D", "Correcta")
 
 

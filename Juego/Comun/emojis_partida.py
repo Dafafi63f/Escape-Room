@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Emojis del modo partida (objetos, ofertas resistencia, recompensas gratis).
 
-Un emoji por tipo de efecto; evita reutilizar ✨/🎁 para mecánicas distintas.
+Un emoji por tipo de efecto; evita reutilizar el mismo símbolo para mecánicas distintas.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ EMOJI_AMULETO_PUNTOS = "🔮"
 EMOJI_REFUERZO_VITAL = "❤️"
 
 # Ofertas sí/no resistencia (sin artículo de catálogo).
-EMOJI_SORPRESA_RESISTENCIA = "🎲"
+EMOJI_SORPRESA_RESISTENCIA = "🎁"
 EMOJI_PURGA_MALDICION = "🕯️"
 EMOJI_RIESGO_PREGUNTA = "🎰"
 EMOJI_RIESGO_ACIERTO = "✅"
@@ -32,8 +32,9 @@ EMOJI_RECOMPENSA_PIERDE_VIDA = "💔"
 # Fallback cuando no hay emoji concreto para un powerup/objeto.
 EMOJI_OBJETO_DESCONOCIDO = "📦"
 
-# Bloque temático resistencia (filtro temporal: N preguntas de materia/tipo/grupo/curso).
-EMOJI_BLOQUE_FILTRO_RESISTENCIA = "🎯"
+# Bloque de 3/5 preguntas con filtro amplio (avisos resistencia; 🎯 en escape si no es materia única).
+EMOJI_BLOQUE_PREGUNTAS = "🎯"
+EMOJI_BLOQUE_FILTRO_RESISTENCIA = EMOJI_BLOQUE_PREGUNTAS
 
 _EMOJI_OFERTA_SI_NO: dict[str, str] = {
     "riesgo_pregunta": EMOJI_RIESGO_PREGUNTA,
@@ -74,3 +75,13 @@ def emoji_recompensa_por_etiqueta(etiqueta: str) -> str:
     if "máximo −1" in etiqueta or ("maximo" in etiqueta.lower() and "−1" in etiqueta):
         return EMOJI_RECOMPENSA_VIDA_MAX_MENOS
     return EMOJI_OBJETO_DESCONOCIDO
+
+
+# Alternativas guardadas (no activas; cambiar EMOJI_SORPRESA_RESISTENCIA arriba si se adoptan).
+# 🎲 liberado: doble_o_nada, examen aleatorio, pack tienda, fallback eventos resistencia.
+ALTERNATIVAS_EMOJI_SORPRESA_RESISTENCIA: tuple[str, ...] = (
+    "🎲",
+    "❓",
+    "📦",
+    "✨",
+)

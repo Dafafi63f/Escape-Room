@@ -148,6 +148,34 @@ class TestPresetsHistoria(unittest.TestCase):
         self.assertNotIn("examen_dia_historia", ids)
         self.assertNotIn("examen_aleatorio_historia", ids)
 
+    def test_examen_dirigido_solo_en_simulacros(self) -> None:
+        from Comun.informe_examen import RegistroRespuesta
+        from Comun.modelos import Pregunta
+        from Comun.presets_historia import materias_unicas_en_registros, preset_permite_examen_dirigido
+
+        self.assertFalse(preset_permite_examen_dirigido("repaso"))
+        self.assertFalse(preset_permite_examen_dirigido("repaso_area"))
+        self.assertTrue(preset_permite_examen_dirigido("simulacro"))
+        self.assertFalse(preset_permite_examen_dirigido("examen_asignatura"))
+        self.assertTrue(preset_permite_examen_dirigido("examen_fijo"))
+
+        p = Pregunta(
+            texto="t",
+            materia="M1",
+            tematica="",
+            dificultad="Facil",
+            tipo="Teoria",
+            grupo="TF",
+            nivel="1",
+            curso="1",
+            semestre="1",
+            opciones={"A": "a", "B": "b", "C": "c", "D": "d"},
+            correcta="A",
+        )
+        unica = [RegistroRespuesta(1, p, "B", False)]
+        self.assertEqual(materias_unicas_en_registros(unica), {"M1"})
+        self.assertFalse(preset_permite_examen_dirigido("simulacro", unica))
+
     def test_catalogo_activo_sin_presets_obsoletos(self) -> None:
         from Comun.presets_historia import PRESETS_HISTORIA_RETIRADOS, _es_preset_historia
 

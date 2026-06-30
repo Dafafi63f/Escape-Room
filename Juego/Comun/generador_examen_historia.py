@@ -23,8 +23,6 @@ from Comun.reglas import validar_total_preguntas
 from Comun.rutas import resolver_historico_qualificacions
 from Comun.semillas import RngPartida
 
-# --- Perfiles pedagógicos ---
-
 from enum import Enum
 
 
@@ -238,15 +236,38 @@ def _elegir_pregunta(
     usadas_ids: set,
     rng: random.Random,
     pregunta_key: Callable,
+    *,
+    perfiles_fallo: dict[str, tuple[tuple[str, str], ...]] | None = None,
+    prob_perfil_fallo: float = 0.72,
 ) -> object | None:
     candidatas: list = []
     for (tipo, _dificultad), lista in pool.get(materia, {}).items():
         if tipo not in tipos_permitidos:
             continue
         candidatas.extend(p for p in lista if pregunta_key(p) not in usadas_ids)
-    if candidatas:
-        return rng.choice(candidatas)
-    return None
+    if not candidatas:
+        return None
+    if perfiles_fallo:
+        perfiles = perfiles_fallo.get(materia)
+        if perfiles:
+            similares = [
+                p
+                for p in candidatas
+                if (
+                    (getattr(p, "tipo", "") or "").strip(),
+                    (getattr(p, "dificultad", "") or "").strip(),
+                )
+                in perfiles
+            ]
+            otros = [p for p in candidatas if p not in similares]
+            if otros and similares:
+                from Comun.cadena_examen_dirigido import PROB_EXPLORACION_PERFIL_PREGUNTA
+
+                if rng.random() < PROB_EXPLORACION_PERFIL_PREGUNTA:
+                    return rng.choice(otros)
+            if similares and rng.random() < prob_perfil_fallo:
+                return rng.choice(similares)
+    return rng.choice(candidatas)
 
 
 def _clave_orden_dificultad_pregunta(pregunta: object) -> tuple[int, int, str]:
@@ -324,6 +345,41 @@ def _filtrar_materias_candidatas(
     return candidatas
 
 
+def _cupo_preguntas_materia(
+    pool_idx: dict[str, dict[tuple[str, str], list]],
+    materia: str,
+    tipos_permitidos: frozenset[str],
+    usadas: set,
+    pregunta_key: Callable,
+) -> int:
+    """Preguntas aún no usadas de una materia (respetando tipos permitidos)."""
+    total = 0
+    for (tipo, _), lista in pool_idx.get(materia, {}).items():
+        if tipo not in tipos_permitidos:
+            continue
+        total += sum(1 for p in lista if pregunta_key(p) not in usadas)
+    return total
+
+
+def _materias_con_cupo_disponible(
+    candidatas: list[str],
+    pool_idx: dict[str, dict[tuple[str, str], list]],
+    tipos_permitidos: frozenset[str],
+    usadas: set,
+    pregunta_key: Callable,
+    *,
+    min_cupo: int,
+) -> list[str]:
+    return [
+        m
+        for m in candidatas
+        if _cupo_preguntas_materia(
+            pool_idx, m, tipos_permitidos, usadas, pregunta_key
+        )
+        >= min_cupo
+    ]
+
+
 def _materias_unicas_en_orden(seleccion: list) -> list[str]:
     vistas: list[str] = []
     for p in seleccion:
@@ -343,6 +399,7 @@ def _construir_seleccion_equitativa(
     pregunta_key: Callable,
     *,
     exigir_balance_completo: bool,
+    perfiles_fallo: dict[str, tuple[tuple[str, str], ...]] | None = None,
 ) -> list:
     seleccion: list = []
     for materia in pool_materias:
@@ -354,6 +411,7 @@ def _construir_seleccion_equitativa(
                 usadas,
                 rng,
                 pregunta_key,
+                perfiles_fallo=perfiles_fallo,
             )
             if p is None:
                 if exigir_balance_completo:
@@ -377,6 +435,8 @@ def _construir_seleccion_ponderada(
     usadas: set,
     rng: random.Random,
     pregunta_key: Callable,
+    *,
+    perfiles_fallo: dict[str, tuple[tuple[str, str], ...]] | None = None,
 ) -> list:
     """Reparte preguntas eligiendo materia por peso histórico en cada elección."""
     if not pool_materias or preguntas_por_materia <= 0:
@@ -394,6 +454,7 @@ def _construir_seleccion_ponderada(
                 usadas,
                 rng,
                 pregunta_key,
+                perfiles_fallo=perfiles_fallo,
             )
             if p is not None:
                 usadas.add(pregunta_key(p))
@@ -413,6 +474,7 @@ def _construir_seleccion_ponderada(
             usadas,
             rng,
             pregunta_key,
+            perfiles_fallo=perfiles_fallo,
         )
         if p is None:
             intentos_fallidos += 1
@@ -537,6 +599,25 @@ def _ordenar_seleccion_examen(
     raise ValueError(f"orden_preguntas desconocido: {orden_preguntas!r}")
 
 
+def calcular_pesos_desde_registros(registros: list) -> dict[str, float]:
+    """Pesos de selección por materia según fallos de una sesión (más fallos ⇒ más peso)."""
+    fallos: dict[str, int] = defaultdict(int)
+    intentos: dict[str, int] = defaultdict(int)
+    for registro in registros:
+        materia = (getattr(registro.pregunta, "materia", "") or "").strip()
+        if not materia:
+            continue
+        intentos[materia] += 1
+        if not registro.acierto:
+            fallos[materia] += 1
+    pesos: dict[str, float] = {}
+    for materia, total in intentos.items():
+        n_fallos = fallos.get(materia, 0)
+        tasa_fallo = n_fallos / total
+        pesos[materia] = max(0.05, 0.20 + tasa_fallo + 0.80 * n_fallos)
+    return pesos
+
+
 def generar_examen(
     preguntas: list,
     *,
@@ -563,6 +644,10 @@ def generar_examen(
     semilla: int | None = None,
     semilla_contenido: int | None = None,
     pregunta_key: Callable | None = None,
+    pesos_materia_sesion: dict[str, float] | None = None,
+    preguntas_excluir: list | None = None,
+    perfiles_fallo: dict[str, tuple[tuple[str, str], ...]] | None = None,
+    registros_dirigido: list | None = None,
 ) -> PlanExamen:
     """
     Construye un examen eligiendo N preguntas por materia del pool disponible.
@@ -698,12 +783,74 @@ def generar_examen(
         usar_analisis_historico=usar_analisis_historico,
         indices_ambito=indices_ambito or None,
     )
+    pesos_seleccion_materias = pesos
+    if pesos_materia_sesion is not None and registros_dirigido is not None:
+        raise ValueError("Use registros_dirigido o pesos_materia_sesion, no ambos.")
+    if registros_dirigido is not None:
+        from Comun.cadena_examen_dirigido import calcular_pesos_materia_dirigido
+
+        pesos_materia_sesion = calcular_pesos_materia_dirigido(registros_dirigido, candidatas)
+    if pesos_materia_sesion is not None:
+        pesos_seleccion_materias = {
+            m: max(0.05, pesos_materia_sesion.get(m, 0.15)) for m in candidatas
+        }
+
+    candidatas_pool = candidatas
+    if registros_dirigido is not None or pesos_materia_sesion is not None:
+        usadas_exclusion: set = set()
+        if preguntas_excluir:
+            for pregunta in preguntas_excluir:
+                usadas_exclusion.add(pregunta_key(pregunta))
+        pool_idx_previo = _indice_pool(preguntas)
+        min_cupo_materia = preguntas_por_materia if exigir_balance_completo else 1
+        candidatas_pool = _materias_con_cupo_disponible(
+            candidatas,
+            pool_idx_previo,
+            tipos_permitidos,
+            usadas_exclusion,
+            pregunta_key,
+            min_cupo=min_cupo_materia,
+        )
+        if len(candidatas_pool) < n_efectivo:
+            candidatas_pool = _materias_con_cupo_disponible(
+                candidatas,
+                pool_idx_previo,
+                tipos_permitidos,
+                usadas_exclusion,
+                pregunta_key,
+                min_cupo=1,
+            )
+        if len(candidatas_pool) < n_efectivo:
+            raise ValueError(
+                "No quedan suficientes asignaturas con preguntas nuevas en la ventana "
+                f"reciente de exámenes dirigidos ({len(usadas_exclusion)} preguntas bloqueadas). "
+                "Prueba «Repetir partida» o vuelve al menú."
+            )
+        pesos_seleccion_materias = {
+            m: pesos_seleccion_materias.get(m, 0.15) for m in candidatas_pool
+        }
+
     if todas_en_ambito:
-        pool_materias = list(candidatas)
+        pool_materias = list(candidatas_pool)
     elif seleccion_determinista:
-        pool_materias = candidatas[:n_efectivo]
+        pool_materias = candidatas_pool[:n_efectivo]
+    elif registros_dirigido is not None:
+        from Comun.cadena_examen_dirigido import elegir_materias_para_examen_dirigido
+
+        pool_materias = elegir_materias_para_examen_dirigido(
+            candidatas_pool,
+            pesos_seleccion_materias,
+            n_efectivo,
+            registros_dirigido,
+            rng_seleccion,
+        )
+        pool_materias.sort(
+            key=lambda m: materias_orden.index(m) if m in materias_orden else 999
+        )
     else:
-        pool_materias = elegir_materias_ponderadas(candidatas, pesos, n_efectivo, rng_seleccion)
+        pool_materias = elegir_materias_ponderadas(
+            candidatas_pool, pesos_seleccion_materias, n_efectivo, rng_seleccion
+        )
         pool_materias.sort(
             key=lambda m: materias_orden.index(m) if m in materias_orden else 999
         )
@@ -716,6 +863,15 @@ def generar_examen(
 
     pool_idx = _indice_pool(preguntas)
     usadas: set = set()
+    if preguntas_excluir:
+        for pregunta in preguntas_excluir:
+            usadas.add(pregunta_key(pregunta))
+
+    if pesos_materia_sesion is not None and not exigir_balance_completo:
+        pesos = {
+            m: max(0.05, pesos_materia_sesion.get(m, 0.15)) for m in pool_materias
+        }
+        reparto_equitativo = False
 
     if reparto_equitativo:
         seleccion = _construir_seleccion_equitativa(
@@ -727,6 +883,7 @@ def generar_examen(
             rng_seleccion,
             pregunta_key,
             exigir_balance_completo=exigir_balance_completo,
+            perfiles_fallo=perfiles_fallo,
         )
     else:
         seleccion = _construir_seleccion_ponderada(
@@ -738,6 +895,7 @@ def generar_examen(
             usadas,
             rng_seleccion,
             pregunta_key,
+            perfiles_fallo=perfiles_fallo,
         )
 
     if exigir_balance_completo and pool_materias:
@@ -756,6 +914,12 @@ def generar_examen(
     )
 
     if not seleccion:
+        if pesos_materia_sesion is not None and preguntas_excluir:
+            raise ValueError(
+                "No se pudo completar el examen dirigido: las asignaturas elegidas "
+                "no tienen bastantes preguntas nuevas tras excluir las ya hechas en la cadena. "
+                "Prueba «Repetir partida» o reduce la cadena volviendo al menú."
+            )
         raise ValueError("No se pudo construir el examen con el banco y filtros dados.")
 
     validar_total_preguntas(len(seleccion))

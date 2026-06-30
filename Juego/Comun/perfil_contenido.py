@@ -37,7 +37,7 @@ class PerfilContenido:
 
     @property
     def banco_beta_disponible(self) -> bool:
-        """Modo beta (480 extras): solo si el autor incluye ``plantillas.json``."""
+        """Banco ampliado (480 extras): solo si el autor incluye ``plantillas.json``."""
         return self.tiene_plantillas and not self.modo_minimo
 
     @property

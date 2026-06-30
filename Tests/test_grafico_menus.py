@@ -100,6 +100,72 @@ class TestAppPausaGrafico(unittest.TestCase):
         self.app.actual.volver()
         self.assertIsInstance(self.app.actual, ConfigOpcionesLibre)
 
+    def test_barra_en_partida_solo_pausa_activa(self) -> None:
+        class PartidaFake:
+            def en_partida_activa(self) -> bool:
+                return True
+
+            def titulo_pausa(self) -> str:
+                return "Partida de prueba"
+
+            def restaurar_vista_completa(self) -> None:
+                return None
+
+        self.app.actual = PartidaFake()
+        self.app._actualizar_estado_barra_fija()
+        por_tipo = {tipo: boton.activo for boton, tipo in self.app._botones_fijos}
+        self.assertTrue(por_tipo["pausa"])
+        self.assertFalse(por_tipo["diarios"])
+        self.assertFalse(por_tipo["ranking"])
+        self.assertFalse(por_tipo["feedback"])
+        self.assertFalse(por_tipo["opciones"])
+
+    def test_barra_en_config_todos_activos_salvo_diarios_perfil(self) -> None:
+        from Grafico.pantallas_libre import ConfigOpcionesLibre
+
+        self.app.actual = ConfigOpcionesLibre(
+            self.datos, self.app._ir_a, self.app._salir
+        )
+        self.app._actualizar_estado_barra_fija()
+        por_tipo = {tipo: boton.activo for boton, tipo in self.app._botones_fijos}
+        self.assertTrue(por_tipo["pausa"])
+        self.assertTrue(por_tipo["ranking"])
+        self.assertTrue(por_tipo["feedback"])
+        self.assertTrue(por_tipo["opciones"])
+
+    def test_tooltip_no_en_boton_inactivo(self) -> None:
+        import pygame
+        from Grafico.ui import Boton, boton_muestra_tooltip
+
+        boton = Boton("Gris", pygame.Rect(0, 0, 80, 40), lambda: None, tooltip="No debe verse")
+        boton.activo = False
+        boton.hover = True
+        self.assertFalse(boton_muestra_tooltip(boton))
+
+    def test_teclas_barra_bloqueadas_en_partida(self) -> None:
+        import pygame
+
+        class PartidaFake:
+            def en_partida_activa(self) -> bool:
+                return True
+
+        self.app.actual = PartidaFake()
+        antes = self.app.actual
+        for tecla in (pygame.K_d, pygame.K_h, pygame.K_f, pygame.K_o):
+            self.app._manejar_teclado_global(
+                pygame.event.Event(pygame.KEYDOWN, key=tecla)
+            )
+            self.assertIs(self.app.actual, antes)
+
+    def test_tecla_o_abre_opciones(self) -> None:
+        import pygame
+        from Grafico.pantallas import MenuPrincipal
+
+        self.app.actual = MenuPrincipal(self.datos, self.app._ir_a, self.app._salir)
+        evento = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_o)
+        self.assertTrue(self.app._manejar_teclado_global(evento))
+        self.assertTrue(self.app._menu_opciones_abierto)
+
     def test_pausa_bloquea_iconos_fijos(self) -> None:
         self.app._abrir_menu_pausa()
         self.assertTrue(self.app._barra_fija_bloqueada())
@@ -109,14 +175,186 @@ class TestAppPausaGrafico(unittest.TestCase):
         self.assertFalse(self.app._manejar_clic_fijos(pos_opciones, 1))
         self.assertFalse(self.app._menu_opciones_abierto)
 
-    def test_opciones_overlay_bloquea_iconos_fijos(self) -> None:
+    def test_esc_en_pausa_salir(self) -> None:
+        import pygame
+        from Grafico.pantallas_libre import ConfigOpcionesLibre
+
+        self.app.actual = ConfigOpcionesLibre(
+            self.datos, self.app._ir_a, self.app._salir
+        )
+        self.app._abrir_menu_pausa()
+        evento = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
+        self.assertTrue(self.app._manejar_teclado_pausa(evento))
+        self.assertFalse(self.app.ejecutando)
+
+    def test_enter_en_pausa_continua(self) -> None:
+        import pygame
+        from Grafico.pantallas_libre import ConfigOpcionesLibre
+
+        self.app.actual = ConfigOpcionesLibre(
+            self.datos, self.app._ir_a, self.app._salir
+        )
+        self.app._abrir_menu_pausa()
+        evento = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)
+        self.assertTrue(self.app._manejar_teclado_pausa(evento))
+        self.assertFalse(self.app._menu_pausa_abierto)
+        self.assertIsInstance(self.app.actual, ConfigOpcionesLibre)
+
+    def test_retroceso_en_pausa_va_al_menu_principal(self) -> None:
+        import pygame
+        from Grafico.pantallas import MenuPrincipal
+        from Grafico.pantallas_libre import ConfigOpcionesLibre
+
+        self.app.actual = ConfigOpcionesLibre(
+            self.datos, self.app._ir_a, self.app._salir
+        )
+        self.app._abrir_menu_pausa()
+        evento = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_BACKSPACE)
+        self.assertTrue(self.app._manejar_teclado_pausa(evento))
+        self.assertFalse(self.app._menu_pausa_abierto)
+        self.assertIsInstance(self.app.actual, MenuPrincipal)
+
+    def test_feedback_tecla_f_en_pausa(self) -> None:
+        import pygame
+        from Grafico.pantallas_libre import ConfigOpcionesLibre
+        from Grafico.pantallas_sistema import PantallaFeedback
+
+        self.app.actual = ConfigOpcionesLibre(
+            self.datos, self.app._ir_a, self.app._salir
+        )
+        self.app._abrir_menu_pausa()
+        evento = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_f)
+        self.assertTrue(self.app._manejar_teclado_pausa(evento))
+        self.assertFalse(self.app._menu_pausa_abierto)
+        self.assertIsInstance(self.app.actual, PantallaFeedback)
+
+    def test_feedback_icono_en_pausa(self) -> None:
+        import pygame
+        from Grafico.pantallas_libre import ConfigOpcionesLibre
+        from Grafico.pantallas_sistema import PantallaFeedback
+
+        self.app.actual = ConfigOpcionesLibre(
+            self.datos, self.app._ir_a, self.app._salir
+        )
+        self.app._abrir_menu_pausa()
+        pos_feedback = next(
+            b.rect.center for b, tipo in self.app._botones_fijos if tipo == "feedback"
+        )
+        evento = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=pos_feedback, button=1)
+        self.assertTrue(self.app._manejar_feedback_en_pausa(evento))
+        self.assertFalse(self.app._menu_pausa_abierto)
+        self.assertIsInstance(self.app.actual, PantallaFeedback)
+
+    def test_opciones_overlay_solo_pausa_y_opciones_en_barra(self) -> None:
+        import pygame
+        from Grafico.pantallas import MenuPrincipal
+
+        self.app.actual = MenuPrincipal(self.datos, self.app._ir_a, self.app._salir)
         self.app._abrir_menu_opciones()
         self.assertTrue(self.app._barra_fija_bloqueada())
+        pos_info = next(
+            b.rect.center for b, tipo in self.app._botones_fijos if tipo == "ranking"
+        )
+        evento_info = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=pos_info, button=1)
+        self.assertFalse(self.app._manejar_interaccion_barra_fija_overlay(evento_info))
         pos_pausa = next(
             b.rect.center for b, tipo in self.app._botones_fijos if tipo == "pausa"
         )
-        self.assertFalse(self.app._manejar_clic_fijos(pos_pausa, 1))
-        self.assertFalse(self.app._menu_pausa_abierto)
+        evento_pausa = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=pos_pausa, button=1)
+        self.assertTrue(self.app._manejar_interaccion_barra_fija_overlay(evento_pausa))
+        self.assertFalse(self.app._menu_opciones_abierto)
+        self.assertTrue(self.app._menu_pausa_abierto)
+
+    def test_esc_en_bienvenida_no_abre_pausa(self) -> None:
+        import pygame
+        from Comun.preferencias_grafico import PreferenciasGrafico, guardar_preferencias_grafico
+        from Grafico.app import AplicacionGrafica
+        from Grafico.pantallas_inicio import PantallaBienvenida
+        from Tests.Fixtures.helpers_navegacion_grafico import preferencias_grafico_aisladas
+
+        with preferencias_grafico_aisladas():
+            guardar_preferencias_grafico(
+                PreferenciasGrafico(
+                    nombre_jugador="",
+                    mostrar_tooltips=True,
+                    mostrar_emojis=True,
+                    guardar_informes_txt=True,
+                )
+            )
+            app = AplicacionGrafica(self.datos, saltar_bienvenida=False)
+        self.assertIsInstance(app.actual, PantallaBienvenida)
+        evento = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
+        self.assertTrue(app._manejar_teclado_global(evento))
+        self.assertFalse(app._menu_pausa_abierto)
+
+    def test_h_en_bienvenida_no_abre_info(self) -> None:
+        import pygame
+        from Comun.preferencias_grafico import PreferenciasGrafico, guardar_preferencias_grafico
+        from Grafico.app import AplicacionGrafica
+        from Grafico.pantallas_inicio import PantallaBienvenida
+        from Grafico.pantallas_sistema import PantallaInfoHub
+        from Tests.Fixtures.helpers_navegacion_grafico import preferencias_grafico_aisladas
+
+        with preferencias_grafico_aisladas():
+            guardar_preferencias_grafico(
+                PreferenciasGrafico(
+                    nombre_jugador="",
+                    mostrar_tooltips=True,
+                    mostrar_emojis=True,
+                    guardar_informes_txt=True,
+                )
+            )
+            app = AplicacionGrafica(self.datos, saltar_bienvenida=False)
+        self.assertIsInstance(app.actual, PantallaBienvenida)
+        evento = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h)
+        app._manejar_teclado_global(evento)
+        self.assertNotIsInstance(app.actual, PantallaInfoHub)
+
+    def test_barra_con_opciones_abiertas_pausa_y_opciones_activas(self) -> None:
+        from Grafico.pantallas import MenuPrincipal
+
+        self.app.actual = MenuPrincipal(self.datos, self.app._ir_a, self.app._salir)
+        self.app._abrir_menu_opciones()
+        self.app._actualizar_estado_barra_fija()
+        por_tipo = {tipo: boton.activo for boton, tipo in self.app._botones_fijos}
+        self.assertTrue(por_tipo["pausa"])
+        self.assertTrue(por_tipo["opciones"])
+        self.assertFalse(por_tipo["ranking"])
+        self.assertFalse(por_tipo["feedback"])
+
+    def test_esc_en_opciones_abre_pausa(self) -> None:
+        import pygame
+        from Grafico.pantallas import MenuPrincipal
+
+        self.app.actual = MenuPrincipal(self.datos, self.app._ir_a, self.app._salir)
+        self.app._abrir_menu_opciones()
+        evento = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
+        self.app._manejar_eventos_overlay(evento)
+        self.assertFalse(self.app._menu_opciones_abierto)
+        self.assertTrue(self.app._menu_pausa_abierto)
+
+    def test_h_cierra_info_si_ya_abierta(self) -> None:
+        import pygame
+        from Grafico.pantallas import MenuPrincipal
+        from Grafico.pantallas_sistema import PantallaInfoHub
+
+        self.app.actual = MenuPrincipal(self.datos, self.app._ir_a, self.app._salir)
+        self.app._abrir_info()
+        self.assertIsInstance(self.app.actual, PantallaInfoHub)
+        evento = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h)
+        self.app._manejar_teclado_global(evento)
+        self.assertIsInstance(self.app.actual, MenuPrincipal)
+
+    def test_pausa_abierta_pausa_y_feedback_blancos_en_barra(self) -> None:
+        from Grafico.pantallas import MenuPrincipal
+
+        self.app.actual = MenuPrincipal(self.datos, self.app._ir_a, self.app._salir)
+        self.app._abrir_menu_pausa()
+        self.app._actualizar_estado_barra_fija()
+        por_tipo = {tipo: boton.activo for boton, tipo in self.app._botones_fijos}
+        self.assertTrue(por_tipo["pausa"])
+        self.assertTrue(por_tipo["feedback"])
+        self.assertFalse(por_tipo["ranking"])
 
     def test_bienvenida_bloquea_iconos_fijos(self) -> None:
         from Comun.preferencias_grafico import PreferenciasGrafico, guardar_preferencias_grafico
@@ -136,6 +374,11 @@ class TestAppPausaGrafico(unittest.TestCase):
             app = AplicacionGrafica(self.datos, saltar_bienvenida=False)
         self.assertIsInstance(app.actual, PantallaBienvenida)
         self.assertTrue(app._barra_fija_bloqueada())
+        app._actualizar_estado_barra_fija()
+        self.assertTrue(
+            all(not boton.activo for boton, _tipo in app._botones_fijos),
+            "En bienvenida todos los iconos de la barra deben estar inactivos",
+        )
         pos_opciones = next(
             b.rect.center for b, tipo in app._botones_fijos if tipo == "opciones"
         )
@@ -157,6 +400,77 @@ class TestAppPausaGrafico(unittest.TestCase):
 
         partida.fase = "pregunta"
         self.assertFalse(partida.popup_bloqueante())
+
+
+class TestPoliticaBarraPartida(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        import pygame
+
+        pygame.init()
+        pygame.display.set_mode((800, 600))
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        import pygame
+
+        from Grafico.fuentes import invalidar_cache_fuentes
+
+        invalidar_cache_fuentes()
+        if pygame.get_init():
+            pygame.quit()
+
+    def setUp(self) -> None:
+        from Grafico.app import AplicacionGrafica, DatosJuego
+
+        self.datos = DatosJuego(10, 2, [], {}, Path("."), Path("."))
+        self.app = AplicacionGrafica(self.datos)
+
+    def test_feedback_icono_activo_con_pausa_en_menu_principal(self) -> None:
+        from Grafico.pantallas import MenuPrincipal
+
+        self.app.actual = MenuPrincipal(self.datos, self.app._ir_a, self.app._salir)
+        self.app._abrir_menu_pausa()
+        self.app._actualizar_estado_barra_fija()
+        feedback = self.app._boton_barra_por_tipo("feedback")
+        info = self.app._boton_barra_por_tipo("ranking")
+        assert feedback is not None and info is not None
+        self.assertTrue(feedback.activo)
+        self.assertFalse(info.activo)
+
+    def test_feedback_icono_en_pausa_desde_menu_principal(self) -> None:
+        import pygame
+        from Grafico.pantallas import MenuPrincipal
+        from Grafico.pantallas_sistema import PantallaFeedback
+
+        self.app.actual = MenuPrincipal(self.datos, self.app._ir_a, self.app._salir)
+        self.app._abrir_menu_pausa()
+        pos_feedback = next(
+            b.rect.center for b, tipo in self.app._botones_fijos if tipo == "feedback"
+        )
+        evento = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=pos_feedback, button=1)
+        self.assertTrue(self.app._manejar_feedback_en_pausa(evento))
+        self.assertFalse(self.app._menu_pausa_abierto)
+        self.assertIsInstance(self.app.actual, PantallaFeedback)
+
+    def test_feedback_icono_activo_con_pausa_en_partida(self) -> None:
+        class PartidaFake:
+            def en_partida_activa(self) -> bool:
+                return True
+
+            def titulo_pausa(self) -> str:
+                return "Partida"
+
+            def restaurar_vista_completa(self) -> None:
+                return None
+
+        self.app.actual = PartidaFake()
+        self.app._abrir_menu_pausa()
+        self.app._actualizar_estado_barra_fija()
+        feedback = self.app._boton_barra_por_tipo("feedback")
+        assert feedback is not None
+        self.assertTrue(feedback.activo)
+
 
 # --- test_botones_menus_grafico.py ---
 
@@ -250,12 +564,16 @@ class TestBotonesMenusGrafico(unittest.TestCase):
 
     def test_info_hub(self) -> None:
         from Grafico.pantallas_sistema import PantallaInfoHub
+        from Grafico.textos_grafico import texto_controles_juego_grafico
 
         hub = PantallaInfoHub(
             lambda: None,
             navegar=lambda _p: None,
         )
         self._assert_botones_validos("InfoHub", hub._botones_ui())
+        self.assertIn("1–4", texto_controles_juego_grafico())
+        self.assertEqual(hub._bloques_info[0][0], "Controles del juego")
+        self.assertGreater(hub._max_scroll(), 0)
 
     def test_feedback(self) -> None:
         from Grafico.pantallas_sistema import PantallaFeedback

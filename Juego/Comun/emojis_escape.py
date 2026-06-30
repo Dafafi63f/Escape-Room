@@ -10,9 +10,12 @@ from __future__ import annotations
 
 from enum import Enum
 
+from Comun.emojis_partida import EMOJI_BLOQUE_PREGUNTAS
+
 __all__ = [
     "ALTERNATIVAS_EMOJI_NIEBLA",
     "ALTERNATIVAS_EMOJI_PUERTA",
+    "ALTERNATIVAS_EMOJI_BOTIN_ESCAPE",
     "CAPA_EVENTO_ESCAPE",
     "CAPAS_ICONO_PROTEGIDO_ESCAPE",
     "CapaIconoEscape",
@@ -31,13 +34,17 @@ __all__ = [
     "EMOJI_DIF_MEDIA",
     "EMOJI_DOBLE_PUNTOS",
     "EMOJI_JEFE",
+    "EMOJI_BLOQUE_PUERTA",
     "EMOJI_MIX_MATERIA",
     "EMOJI_MODO_ESCAPE",
     "EMOJI_NIEBLA_AMBOS",
     "EMOJI_NIEBLA_ENUNCIADO",
     "EMOJI_NIEBLA_OPCIONES",
+    "EMOJI_PUERTA_CURSO",
     "EMOJI_PUERTA_GRUPO",
     "EMOJI_PUERTA_MATERIA",
+    "EMOJI_PUERTA_PERIODO",
+    "EMOJI_PUERTA_SEMESTRE",
     "EMOJI_TIPO_CALCULO",
     "EMOJI_TIPO_TEORIA",
     "EMOJI_TRIPLE_PUNTOS",
@@ -63,6 +70,8 @@ class CapaIconoEscape(str, Enum):
     DESCANSO = "descanso"
     TIENDA = "tienda"
     JEFE = "jefe"
+    BLOQUE = "bloque"
+    RIESGO = "riesgo"
     UI_MODO = "ui_modo"
     UI_BARRA = "ui_barra"
 
@@ -75,12 +84,17 @@ CAPAS_ICONO_PROTEGIDO_ESCAPE = frozenset({
     CapaIconoEscape.BOTIN,
     CapaIconoEscape.DESCANSO,
     CapaIconoEscape.TIENDA,
+    CapaIconoEscape.BLOQUE,
+    CapaIconoEscape.RIESGO,
 })
 
 
-# --- Tipo de puerta (contenido) ---
+# --- Tipo de puerta (contenido / filtro amplio) ---
 EMOJI_PUERTA_MATERIA = "📕"
 EMOJI_PUERTA_GRUPO = "🗃️"
+EMOJI_PUERTA_CURSO = "🎓"
+EMOJI_PUERTA_SEMESTRE = "📋"
+EMOJI_PUERTA_PERIODO = "🧭"
 
 # --- Capa dificultad (puerta de materia) ---
 EMOJI_DIF_FACIL = "🟢"
@@ -96,7 +110,7 @@ EMOJI_TIPO_CALCULO = "🔢"
 # --- Rasgos de puerta (catálogo) ---
 EMOJI_DESCANSO = "💤"
 EMOJI_TIENDA = "🛒"
-EMOJI_BOTIN_ESCAPE = "🎁"
+EMOJI_BOTIN_ESCAPE = "💰"
 EMOJI_RECOMPENSA_VIDA = "❤️"
 EMOJI_RECOMPENSA_VIDA_MAX = "💖"
 EMOJI_NIEBLA_ENUNCIADO = "🍃"
@@ -107,15 +121,30 @@ EMOJI_CRONO_BLOQUE = "⏰"
 EMOJI_CRONO_DOBLE = "⏲️"
 EMOJI_DOBLE_PUNTOS = "✨"
 EMOJI_TRIPLE_PUNTOS = "💫"
+EMOJI_PUERTA_MALDITA = "💀"
 
-# --- Jefe, menú ---
+# --- Jefe, bloque, menú ---
 EMOJI_JEFE = "👑"
+EMOJI_BLOQUE_PUERTA = EMOJI_BLOQUE_PREGUNTAS
 EMOJI_MODO_ESCAPE = "🔐"
 
 # Tooltips fijos por capa de contenido
 TOOLTIP_PUERTA_MATERIA = "Preguntas de una materia concreta del plan."
 TOOLTIP_PUERTA_GRUPO = (
     "Preguntas de varias materias de un mismo bloque temático del plan."
+)
+TOOLTIP_PUERTA_CURSO = "Preguntas de todas las materias de un curso del plan."
+TOOLTIP_PUERTA_SEMESTRE = (
+    "Preguntas del semestre indicado del plan (cualquier curso)."
+)
+TOOLTIP_PUERTA_PERIODO = (
+    "Preguntas de un semestre académico concreto (curso-semestre, p. ej. 3-2)."
+)
+TOOLTIP_TIPO_TEORIA_GLOBAL = (
+    "Solo preguntas teóricas (cualquier materia del ámbito)."
+)
+TOOLTIP_TIPO_CALCULO_GLOBAL = (
+    "Solo preguntas de cálculo (cualquier materia del ámbito)."
 )
 TOOLTIP_DIF_BALANCEADO = "Cualquier dificultad de la materia."
 TOOLTIP_DIF_FACIL = "Solo preguntas fáciles."
@@ -127,10 +156,16 @@ TOOLTIP_TIPO_CALCULO = "Solo preguntas de cálculo."
 TOOLTIP_BOTIN = "Recompensa al superar la puerta sin fallar."
 TOOLTIP_BOTIN_DESCANSO = "Recompensa al elegir esta puerta de descanso."
 TOOLTIP_TIENDA = "Compra objetos con puntos arcade."
+TOOLTIP_PUERTA_MALDITA = "Si fallas cualquier pregunta, acaba la partida."
 
 CAPA_EVENTO_ESCAPE: dict[str, CapaIconoEscape] = {
     "puerta_materia": CapaIconoEscape.TIPO_PUERTA,
     "puerta_grupo": CapaIconoEscape.TIPO_PUERTA,
+    "puerta_curso": CapaIconoEscape.TIPO_PUERTA,
+    "puerta_semestre": CapaIconoEscape.TIPO_PUERTA,
+    "puerta_periodo": CapaIconoEscape.TIPO_PUERTA,
+    "puerta_tipo_teoria": CapaIconoEscape.TIPO_PUERTA,
+    "puerta_tipo_calculo": CapaIconoEscape.TIPO_PUERTA,
     "descanso": CapaIconoEscape.DESCANSO,
     "tienda": CapaIconoEscape.TIENDA,
     "botin": CapaIconoEscape.BOTIN,
@@ -141,11 +176,17 @@ CAPA_EVENTO_ESCAPE: dict[str, CapaIconoEscape] = {
     "cronometro_doble": CapaIconoEscape.TIEMPO,
     "doble_puntos": CapaIconoEscape.PUNTOS,
     "triple_puntos": CapaIconoEscape.PUNTOS,
+    "puerta_maldita": CapaIconoEscape.RIESGO,
 }
 
 EMOJI_EVENTO_ESCAPE: dict[str, str] = {
     "puerta_materia": EMOJI_PUERTA_MATERIA,
     "puerta_grupo": EMOJI_PUERTA_GRUPO,
+    "puerta_curso": EMOJI_PUERTA_CURSO,
+    "puerta_semestre": EMOJI_PUERTA_SEMESTRE,
+    "puerta_periodo": EMOJI_PUERTA_PERIODO,
+    "puerta_tipo_teoria": EMOJI_TIPO_TEORIA,
+    "puerta_tipo_calculo": EMOJI_TIPO_CALCULO,
     "descanso": EMOJI_DESCANSO,
     "tienda": EMOJI_TIENDA,
     "botin": EMOJI_BOTIN_ESCAPE,
@@ -156,6 +197,7 @@ EMOJI_EVENTO_ESCAPE: dict[str, str] = {
     "cronometro_doble": EMOJI_CRONO_DOBLE,
     "doble_puntos": EMOJI_DOBLE_PUNTOS,
     "triple_puntos": EMOJI_TRIPLE_PUNTOS,
+    "puerta_maldita": EMOJI_PUERTA_MALDITA,
 }
 
 PERFIL_CAPA_DIFICULTAD: dict[str, tuple[CapaIconoEscape, str]] = {
@@ -181,9 +223,24 @@ _IDS_PERFIL_MIX_MATERIA = frozenset({
 
 # Alternativas guardadas (no activas; cambiar EMOJI_PUERTA_* arriba si se adoptan).
 ALTERNATIVAS_EMOJI_PUERTA: dict[str, tuple[str, ...]] = {
-    "materia": ("🎓", "📚", "🏷️", "📖", "🎯", "🔬", "📌"),
+    "materia": ("📚", "🏷️", "📖", "🔬", "📌"),
     "grupo": ("🗂️", "🧩", "🌐", "📦", "🔗", "🏛️", "🎛️"),
+    "curso": ("📚", "🏛️", "📖", "🎒"),
+    "semestre": ("📆", "📅", "⏳", "📑"),
+    "periodo": ("🗓️", "📍", "📌", "🔗"),
 }
+
+# Alternativas guardadas (no activas; cambiar EMOJI_BOTIN_ESCAPE arriba si se adoptan).
+ALTERNATIVAS_EMOJI_BOTIN_ESCAPE: tuple[str, ...] = (
+    "🧰",
+    "📦",
+    "💎",
+    "✨",
+    "🏆",
+    "🪙",
+    "🎒",
+    "🎁",
+)
 
 # Alternativas guardadas (niebla enunciado/ambos inactivos; catálogo solo niebla_opciones).
 ALTERNATIVAS_EMOJI_NIEBLA: dict[str, tuple[str, ...]] = {

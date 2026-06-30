@@ -150,6 +150,21 @@ def _dir_juego_datos() -> Path:
     return _asegurar_directorio(_data_root() / "Juego")
 
 
+def _dir_privado() -> Path:
+    """Directorio ``Data/Privado/`` (config del autor y fuentes locales; no se versiona)."""
+    return _asegurar_directorio(_data_root() / "Privado")
+
+
+def resolver_dir_privado() -> Path:
+    """Ruta a ``Data/Privado/`` (crea la carpeta si hace falta)."""
+    return _dir_privado()
+
+
+def resolver_preguntas_minimal() -> Path:
+    """CSV mínimo del banco (480 filas) para tests y zip mínimo."""
+    return _dir_privado() / "Preguntas_minimal.csv"
+
+
 def _dir_data_escritura() -> Path:
     return _dir_juego_datos()
 
@@ -283,10 +298,14 @@ def resolver_config_creador_privado() -> Path | None:
     global _path_creador_privado
     if _path_creador_privado is not _CREADOR_PRIVADO_SIN_RESOLVER:
         return _path_creador_privado
-    canonico = _raiz_paquete() / "Data" / "Banco" / "creador_privado.json"
+    canonico = _dir_privado() / "creador_privado.json"
     if canonico.is_file():
         _path_creador_privado = canonico
         return canonico
+    legado = _dir_banco() / "creador_privado.json"
+    if legado.is_file():
+        _path_creador_privado = legado
+        return legado
     for p in _candidatos_bajo_data(_raiz_paquete(), "creador_privado.json", zona="banco"):
         if p.is_file():
             _path_creador_privado = p
@@ -300,7 +319,7 @@ def resolver_ruta_creador_privado_defecto() -> Path:
     existente = resolver_config_creador_privado()
     if existente is not None:
         return existente
-    return _dir_banco() / "creador_privado.json"
+    return _dir_privado() / "creador_privado.json"
 
 
 def resolver_dir_informes() -> Path:

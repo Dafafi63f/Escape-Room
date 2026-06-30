@@ -15,7 +15,7 @@ de resistencia (decisión antes de la pregunta) también están en este módulo.
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import TYPE_CHECKING, Literal
 
@@ -40,10 +40,15 @@ from Comun.emojis_escape import (
     EMOJI_DIF_MEDIA,
     EMOJI_DOBLE_PUNTOS,
     EMOJI_JEFE,
+    EMOJI_BLOQUE_PUERTA,
     EMOJI_MIX_MATERIA,
     EMOJI_NIEBLA_OPCIONES,
+    EMOJI_PUERTA_CURSO,
     EMOJI_PUERTA_GRUPO,
     EMOJI_PUERTA_MATERIA,
+    EMOJI_PUERTA_MALDITA,
+    EMOJI_PUERTA_PERIODO,
+    EMOJI_PUERTA_SEMESTRE,
     EMOJI_TIPO_CALCULO,
     EMOJI_TIPO_TEORIA,
     EMOJI_TRIPLE_PUNTOS,
@@ -52,8 +57,14 @@ from Comun.emojis_escape import (
     TOOLTIP_DIF_FACIL,
     TOOLTIP_DIF_MEDIA,
     TOOLTIP_MIX_MATERIA,
+    TOOLTIP_PUERTA_CURSO,
     TOOLTIP_PUERTA_GRUPO,
     TOOLTIP_PUERTA_MATERIA,
+    TOOLTIP_PUERTA_MALDITA,
+    TOOLTIP_PUERTA_PERIODO,
+    TOOLTIP_PUERTA_SEMESTRE,
+    TOOLTIP_TIPO_CALCULO_GLOBAL,
+    TOOLTIP_TIPO_TEORIA_GLOBAL,
     TOOLTIP_BOTIN,
     TOOLTIP_BOTIN_DESCANSO,
     TOOLTIP_TIENDA,
@@ -94,6 +105,7 @@ class ModificadoresDesafio:
     delta_vidas_al_completar: int = 0
     delta_vidas_max_al_completar: int = 0
     sin_pregunta: bool = False
+    fin_partida_si_fallo: bool = False
     powerup_al_completar: str | None = None
 
 
@@ -220,11 +232,20 @@ def _fusionar_tiempo(actual: int | None, nuevo: int | None) -> int | None:
 
 @dataclass(frozen=True)
 class OpcionesContenidoEscape:
-    """Cómo instanciar un evento de contenido (materia/grupo concretos en runtime)."""
+    """Cómo instanciar un evento de contenido (materia/grupo/curso… en runtime)."""
 
     usa_grupo: bool = False
     usa_materia: bool = True
     tipos_permitidos: frozenset[str] | None = None
+    ambito: str = "materia"
+
+    @property
+    def ambito_efectivo(self) -> str:
+        if self.ambito != "materia":
+            return self.ambito
+        if self.usa_grupo:
+            return "grupo"
+        return "materia"
 
 
 @dataclass(frozen=True)
@@ -252,6 +273,7 @@ class ModificadoresPuerta:
     sin_pregunta: bool = False
     delta_vidas_al_completar: int = 0
     delta_vidas_max_al_completar: int = 0
+    fin_partida_si_fallo: bool = False
     rasgos: tuple[str, ...] = ()
     eventos_ids: tuple[str, ...] = ()
 
@@ -283,6 +305,8 @@ class EventoContenidoInstanciado:
     definicion: DefinicionEvento
     materia: str | None = None
     grupo: str | None = None
+    curso: str | None = None
+    semestre: str | None = None
     perfil_id: str | None = None
 
     @property
@@ -397,7 +421,84 @@ _CATALOGO: tuple[DefinicionEvento, ...] = (
         ModificadoresDesafio(),
         rol_escape=RolEscape.CONTENIDO,
         nivel_min_sala_escape=6,
-        contenido_escape=OpcionesContenidoEscape(usa_grupo=True, usa_materia=False),
+        contenido_escape=OpcionesContenidoEscape(usa_grupo=True, usa_materia=False, ambito="grupo"),
+    ),
+    _c(
+        "puerta_tipo_teoria",
+        "Puerta teórica",
+        "Preguntas teóricas de cualquier materia del ámbito.",
+        EMOJI_TIPO_TEORIA,
+        AlcanceEvento.ESCAPE,
+        ModificadoresDesafio(),
+        rol_escape=RolEscape.CONTENIDO,
+        nivel_min_sala_escape=8,
+        contenido_escape=OpcionesContenidoEscape(
+            usa_materia=False,
+            usa_grupo=False,
+            ambito="tipo_teoria",
+            tipos_permitidos=frozenset({"Teoria"}),
+        ),
+    ),
+    _c(
+        "puerta_tipo_calculo",
+        "Puerta de cálculo",
+        "Preguntas de cálculo de cualquier materia del ámbito.",
+        EMOJI_TIPO_CALCULO,
+        AlcanceEvento.ESCAPE,
+        ModificadoresDesafio(),
+        rol_escape=RolEscape.CONTENIDO,
+        nivel_min_sala_escape=8,
+        contenido_escape=OpcionesContenidoEscape(
+            usa_materia=False,
+            usa_grupo=False,
+            ambito="tipo_calculo",
+            tipos_permitidos=frozenset({"Calculo"}),
+        ),
+    ),
+    _c(
+        "puerta_curso",
+        "Puerta de curso",
+        "Preguntas de todas las materias de un curso del plan.",
+        EMOJI_PUERTA_CURSO,
+        AlcanceEvento.ESCAPE,
+        ModificadoresDesafio(),
+        rol_escape=RolEscape.CONTENIDO,
+        nivel_min_sala_escape=10,
+        contenido_escape=OpcionesContenidoEscape(
+            usa_materia=False,
+            usa_grupo=False,
+            ambito="curso",
+        ),
+    ),
+    _c(
+        "puerta_semestre",
+        "Puerta de semestre",
+        "Preguntas del semestre indicado del plan (cualquier curso).",
+        EMOJI_PUERTA_SEMESTRE,
+        AlcanceEvento.ESCAPE,
+        ModificadoresDesafio(),
+        rol_escape=RolEscape.CONTENIDO,
+        nivel_min_sala_escape=12,
+        contenido_escape=OpcionesContenidoEscape(
+            usa_materia=False,
+            usa_grupo=False,
+            ambito="semestre",
+        ),
+    ),
+    _c(
+        "puerta_periodo",
+        "Puerta de periodo",
+        "Preguntas de un semestre académico concreto (curso-semestre).",
+        EMOJI_PUERTA_PERIODO,
+        AlcanceEvento.ESCAPE,
+        ModificadoresDesafio(),
+        rol_escape=RolEscape.CONTENIDO,
+        nivel_min_sala_escape=14,
+        contenido_escape=OpcionesContenidoEscape(
+            usa_materia=False,
+            usa_grupo=False,
+            ambito="periodo",
+        ),
     ),
     # --- Puerta escape (rasgos de juego combinables) ---
     _c(
@@ -446,7 +547,13 @@ _CATALOGO: tuple[DefinicionEvento, ...] = (
     _def_botin_objeto_escape("botin_tiempo_extra", powerup_id="tiempo_extra"),
     _def_botin_objeto_escape("botin_cambio", powerup_id="cambio"),
     _def_botin_objeto_escape("botin_skip", powerup_id="skip"),
+    _def_botin_objeto_escape("botin_comodin", powerup_id="comodin"),
+    _def_botin_objeto_escape("botin_descarte", powerup_id="descarte_inteligente", nivel_min_sala=4),
+    _def_botin_objeto_escape("botin_tiempo_lento", powerup_id="tiempo_lento", nivel_min_sala=4),
     _def_botin_objeto_escape("botin_escudo", powerup_id="escudo", nivel_min_sala=6),
+    _def_botin_objeto_escape("botin_segunda", powerup_id="segunda_oportunidad", nivel_min_sala=6),
+    _def_botin_objeto_escape("botin_doble", powerup_id="doble_o_nada", nivel_min_sala=6),
+    _def_botin_objeto_escape("botin_racha", powerup_id="racha_congelada", nivel_min_sala=8),
     _def_botin_objeto_escape(
         "botin_refuerzo",
         powerup_id="vida_refuerzo",
@@ -457,8 +564,15 @@ _CATALOGO: tuple[DefinicionEvento, ...] = (
         "botin_amuleto",
         powerup_id="amuleto_puntos",
         nivel_min_sala=4,
-        descripcion="+20 pts en tu próximo acierto",
+        descripcion="Pts extra en tu próximo acierto (escala con la sala)",
     ),
+    _def_botin_objeto_escape("botin_reroll_puertas", powerup_id="reroll_puertas", nivel_min_sala=5),
+    _def_botin_objeto_escape(
+        "botin_limpieza_maldiciones",
+        powerup_id="limpieza_maldiciones",
+        nivel_min_sala=8,
+    ),
+    _def_botin_objeto_escape("botin_salto_sala", powerup_id="salto_sala", nivel_min_sala=10),
     _c(
         "niebla_opciones",
         "Niebla en opciones",
@@ -526,6 +640,16 @@ _CATALOGO: tuple[DefinicionEvento, ...] = (
         ModificadoresDesafio(multiplicador_puntos=3),
         rol_escape=RolEscape.PUERTA,
         nivel_min_sala_escape=24,
+    ),
+    _c(
+        "puerta_maldita",
+        "Puerta maldita",
+        "Si fallas cualquier pregunta, acaba la partida.",
+        EMOJI_PUERTA_MALDITA,
+        AlcanceEvento.ESCAPE,
+        ModificadoresDesafio(fin_partida_si_fallo=True),
+        rol_escape=RolEscape.PUERTA,
+        nivel_min_sala_escape=12,
     ),
 )
 
@@ -630,12 +754,22 @@ _IDS_BOTIN_POWERUP_ESCAPE = (
     "botin_escudo",
     "botin_refuerzo",
     "botin_amuleto",
+    "botin_reroll_puertas",
+    "botin_limpieza_maldiciones",
+    "botin_salto_sala",
 )
 RASGOS_BOTIN_POWERUP_ESCAPE = frozenset(_IDS_BOTIN_POWERUP_ESCAPE)
 RASGOS_BOTIN_ESCAPE = RASGOS_BOTIN_VIDAS_ESCAPE | RASGOS_BOTIN_POWERUP_ESCAPE
 RASGOS_RECOMPENSA_VIDAS_ESCAPE = RASGOS_BOTIN_VIDAS_ESCAPE
 SALAS_HARD_PITY_BOTIN_ESCAPE = 3
 RASGOS_PUERTA_SIN_PREGUNTA_ESCAPE = frozenset({"descanso", "tienda"})
+RASGO_PUERTA_MALDITA = "puerta_maldita"
+# Única maldición en escape (mortal). Los cronómetros son desafíos de tiempo normales.
+RASGOS_MALDICION_ESCAPE = frozenset({RASGO_PUERTA_MALDITA})
+SALA_MIN_MALDICION_ESCAPE = 12
+SALAS_HARD_PITY_MALDICION_ESCAPE = 18
+_PITY_INCREMENT_MALDICION_POR_SALA = 0.22
+_PESO_BASE_MALDICION_ESCAPE = 1.0
 RASGOS_EXTRA_PUERTA_SIN_PREGUNTA_ESCAPE = RASGOS_BOTIN_ESCAPE  # solo descanso; ver extras_escape_para_pausa
 _RASGOS_SOLO_RECOMPENSA = RASGOS_BOTIN_ESCAPE
 RASGOS_NIEBLA_PUERTA_ESCAPE = frozenset({"niebla_opciones"})
@@ -659,11 +793,13 @@ def extras_escape_para_pausa(pausa_id: str) -> frozenset[str]:
 
 @dataclass
 class PityPuertasEspecialesEscape:
-    """Salas seguidas sin ver descanso, tienda o botín; sube la probabilidad por puerta."""
+    """Salas seguidas sin ver descanso, tienda, botín o maldición; sube prob. por puerta."""
 
     salas_sin_descanso: int = 0
     salas_sin_tienda: int = 0
     salas_sin_botin: int = 0
+    salas_sin_maldicion: int = 0
+    maldiciones_sin_por_id: dict[str, int] = field(default_factory=dict)
 
 
 def prob_puerta_especial_con_pity(
@@ -701,11 +837,90 @@ def debe_garantizar_tienda_escape(
     return pity.salas_sin_tienda >= umbral_sin
 
 
+def debe_garantizar_maldicion_escape(
+    pity: PityPuertasEspecialesEscape,
+    numero_sala: int,
+) -> bool:
+    """Hard pity: tras muchas salas sin rasgo punitivo, se fuerza uno elegible."""
+    if numero_sala < SALA_MIN_MALDICION_ESCAPE:
+        return False
+    return pity.salas_sin_maldicion >= SALAS_HARD_PITY_MALDICION_ESCAPE - 1
+
+
+def _peso_desafio_puerta_con_pity(
+    ev: DefinicionEvento,
+    pity: PityPuertasEspecialesEscape | None,
+) -> float:
+    peso = 1.0
+    if pity is not None and ev.id in RASGOS_MALDICION_ESCAPE:
+        peso += pity.maldiciones_sin_por_id.get(ev.id, 0) * _PITY_INCREMENT_MALDICION_POR_SALA
+        peso += pity.salas_sin_maldicion * 0.04
+    return peso
+
+
+def _sala_tiene_maldicion(puertas: tuple) -> bool:
+    for puerta in puertas:
+        mods = puerta.modificadores if hasattr(puerta, "modificadores") else puerta
+        if any(eid in RASGOS_MALDICION_ESCAPE for eid in mods.eventos_ids):
+            return True
+    return False
+
+
+def _ids_maldicion_en_puertas(puertas: tuple) -> frozenset[str]:
+    vistos: set[str] = set()
+    for puerta in puertas:
+        mods = puerta.modificadores if hasattr(puerta, "modificadores") else puerta
+        for eid in mods.eventos_ids:
+            if eid in RASGOS_MALDICION_ESCAPE:
+                vistos.add(eid)
+    return frozenset(vistos)
+
+
+def _intentar_inyectar_maldicion_escape(
+    elegidos: list[DefinicionEvento],
+    desafios: list[DefinicionEvento],
+    *,
+    numero_sala: int,
+    rng: random.Random,
+    pity: PityPuertasEspecialesEscape | None,
+) -> list[DefinicionEvento]:
+    if numero_sala < SALA_MIN_MALDICION_ESCAPE:
+        return elegidos
+    if any(e.id in RASGOS_MALDICION_ESCAPE for e in elegidos):
+        return elegidos
+    if pity is None or not debe_garantizar_maldicion_escape(pity, numero_sala):
+        return elegidos
+    candidatas = [
+        e
+        for e in desafios
+        if e.id in RASGOS_MALDICION_ESCAPE
+        and e.nivel_min_sala_escape <= numero_sala
+        and _compatible_con_rasgos_puerta(e, tuple(elegidos))
+    ]
+    if not candidatas:
+        return elegidos
+    pesos = [_peso_desafio_puerta_con_pity(e, pity) for e in candidatas]
+    maldicion = rng.choices(candidatas, weights=pesos, k=1)[0]
+    if len(elegidos) >= _MAX_RASGOS_PUERTA_COMBINADOS:
+        reemplazables = [
+            i for i, ev in enumerate(elegidos) if ev.id not in RASGOS_MALDICION_ESCAPE
+        ]
+        if reemplazables:
+            elegidos[rng.choice(reemplazables)] = maldicion
+    else:
+        elegidos.append(maldicion)
+    return elegidos
+
+
 def debe_garantizar_botin_escape(
     pity: PityPuertasEspecialesEscape,
     numero_sala: int,
 ) -> bool:
-    """Hard pity: cada 3 salas sin botín, se fuerza uno en una puerta normal."""
+    """Hard pity: cada 3 salas sin botín, al menos una puerta de la sala lo lleva.
+
+    Independiente del azar que pueda repartir 0–3 botines en puertas distintas.
+    El forzado nunca cae en tienda (solo pregunta o descanso).
+    """
     min_sala = min(
         evento_por_id(eid).nivel_min_sala_escape for eid in RASGOS_BOTIN_ESCAPE
     )
@@ -727,6 +942,48 @@ def elegir_botin_para_sala(
     if not disponibles:
         return None
     return rng.choice(disponibles)
+
+
+def _botines_elegibles_escape(numero_sala: int) -> list[DefinicionEvento]:
+    return [
+        evento_por_id(eid)
+        for eid in sorted(RASGOS_BOTIN_ESCAPE)
+        if evento_por_id(eid).nivel_min_sala_escape <= numero_sala
+    ]
+
+
+def elegir_botines_jefe_escape(
+    numero_sala: int,
+    rng: random.Random,
+) -> tuple[DefinicionEvento, ...]:
+    """Botín garantizado al superar un jefe: mejor que el azar de una puerta normal."""
+    disponibles = _botines_elegibles_escape(numero_sala)
+    if not disponibles:
+        return (evento_por_id("botin_refuerzo"), evento_por_id("botin_bomba"))
+
+    vida_opts = [
+        ev
+        for ev in disponibles
+        if ev.id in RASGOS_BOTIN_VIDAS_ESCAPE or ev.id == "botin_refuerzo"
+    ]
+    objeto_opts = [ev for ev in disponibles if ev.id in RASGOS_BOTIN_POWERUP_ESCAPE]
+    vida_opts.sort(key=lambda ev: ev.nivel_min_sala_escape, reverse=True)
+    objeto_opts.sort(key=lambda ev: ev.nivel_min_sala_escape, reverse=True)
+
+    elegidos: list[DefinicionEvento] = []
+    if vida_opts:
+        tier_vida = vida_opts[: max(1, (len(vida_opts) + 1) // 2)]
+        elegidos.append(rng.choice(tier_vida))
+    if objeto_opts:
+        tier_obj = objeto_opts[: max(1, (len(objeto_opts) + 1) // 2)]
+        candidatos = [ev for ev in tier_obj if ev.id not in {e.id for e in elegidos}]
+        elegidos.append(rng.choice(candidatos or tier_obj))
+    while len(elegidos) < 2 and len(disponibles) > len(elegidos):
+        restantes = [ev for ev in disponibles if ev.id not in {e.id for e in elegidos}]
+        if not restantes:
+            break
+        elegidos.append(rng.choice(restantes))
+    return tuple(_filtrar_rasgos_puerta_compatibles(tuple(elegidos)))
 
 
 def _sala_tiene_botin(puertas: tuple) -> bool:
@@ -754,6 +1011,14 @@ def actualizar_pity_tras_sala(
     hubo_descanso = any("descanso" in _ids(p) for p in puertas)
     hubo_tienda = any("tienda" in _ids(p) for p in puertas)
     hubo_botin = _sala_tiene_botin(puertas)
+    hubo_maldicion = _sala_tiene_maldicion(puertas)
+    maldicion_vistos = _ids_maldicion_en_puertas(puertas)
+    maldiciones_sin_por_id = dict(pity.maldiciones_sin_por_id)
+    for mid in RASGOS_MALDICION_ESCAPE:
+        if mid in maldicion_vistos:
+            maldiciones_sin_por_id[mid] = 0
+        else:
+            maldiciones_sin_por_id[mid] = maldiciones_sin_por_id.get(mid, 0) + 1
     tienda_elegible = numero_sala >= evento_por_id("tienda").nivel_min_sala_escape
     salas_sin_tienda = pity.salas_sin_tienda
     if hubo_tienda:
@@ -775,6 +1040,8 @@ def actualizar_pity_tras_sala(
         salas_sin_descanso=0 if hubo_descanso else pity.salas_sin_descanso + 1,
         salas_sin_tienda=salas_sin_tienda,
         salas_sin_botin=0 if hubo_botin else pity.salas_sin_botin + 1,
+        salas_sin_maldicion=0 if hubo_maldicion else pity.salas_sin_maldicion + 1,
+        maldiciones_sin_por_id=maldiciones_sin_por_id,
     )
 
 
@@ -872,7 +1139,7 @@ def definicion_materia_con_perfil(perfil: PerfilContenidoMateria) -> DefinicionE
 def definicion_grupo_con_perfil(perfil: PerfilContenidoMateria) -> DefinicionEvento:
     base = _POR_ID["puerta_grupo"]
     opts_base = base.contenido_escape or OpcionesContenidoEscape(
-        usa_grupo=True, usa_materia=False
+        usa_grupo=True, usa_materia=False, ambito="grupo"
     )
     if perfil.opts:
         opts = replace(
@@ -890,34 +1157,69 @@ def definicion_grupo_con_perfil(perfil: PerfilContenidoMateria) -> DefinicionEve
     )
 
 
+_AMBITOS_FILTRO_AMPLIO: tuple[tuple[str, int, str], ...] = (
+    ("grupo", 6, "puerta_grupo"),
+    ("tipo_teoria", 8, "puerta_tipo_teoria"),
+    ("tipo_calculo", 8, "puerta_tipo_calculo"),
+    ("curso", 10, "puerta_curso"),
+    ("semestre", 12, "puerta_semestre"),
+    ("periodo", 14, "puerta_periodo"),
+)
+
+
+def _ambitos_amplio_disponibles(numero_sala: int) -> list[str]:
+    return [ambito for ambito, min_sala, _ in _AMBITOS_FILTRO_AMPLIO if numero_sala >= min_sala]
+
+
+def _plantilla_filtro_amplio(
+    ambito: str,
+    *,
+    perfiles: list[PerfilContenidoMateria],
+    numero_sala: int,
+    rng: random.Random,
+) -> tuple[DefinicionEvento, str | None]:
+    if ambito == "grupo":
+        if perfiles:
+            perfil = perfiles.pop(0)
+        else:
+            perfil = rng.choice(perfiles_materia_escape_para_sala(numero_sala))
+        return definicion_grupo_con_perfil(perfil), perfil.id
+    for nombre, _, plantilla_id in _AMBITOS_FILTRO_AMPLIO:
+        if nombre == ambito:
+            return evento_por_id(plantilla_id), None
+    raise ValueError(f"Ámbito de filtro amplio desconocido: {ambito!r}")
+
+
 def elegir_plantillas_contenido_escape(
     cantidad: int,
     numero_sala: int,
     rng: random.Random,
 ) -> tuple[tuple[DefinicionEvento, str | None], ...]:
-    """Elige plantillas de contenido: puerta de materia (con perfil) o puerta de grupo."""
+    """Elige plantillas: mayoría materia (con perfil) y como máximo un filtro amplio por sala."""
     if cantidad <= 0:
         return ()
     perfiles = list(perfiles_materia_escape_para_sala(numero_sala))
     rng.shuffle(perfiles)
-    grupo_disponible = (
-        _POR_ID["puerta_grupo"].nivel_min_sala_escape <= numero_sala
-    )
+    ambitos_amplio = _ambitos_amplio_disponibles(numero_sala)
     elegidas: list[tuple[DefinicionEvento, str | None]] = []
-    grupo_asignado = False
+    amplio_asignado = False
     for i in range(cantidad):
-        usar_grupo = (
-            grupo_disponible
-            and not grupo_asignado
+        usar_amplio = (
+            ambitos_amplio
+            and not amplio_asignado
             and (i == cantidad - 1 or rng.random() < 0.34)
         )
-        if usar_grupo:
-            if perfiles:
-                perfil = perfiles.pop(0)
-            else:
-                perfil = rng.choice(perfiles_materia_escape_para_sala(numero_sala))
-            elegidas.append((definicion_grupo_con_perfil(perfil), perfil.id))
-            grupo_asignado = True
+        if usar_amplio:
+            ambito = rng.choice(ambitos_amplio)
+            elegidas.append(
+                _plantilla_filtro_amplio(
+                    ambito,
+                    perfiles=perfiles,
+                    numero_sala=numero_sala,
+                    rng=rng,
+                )
+            )
+            amplio_asignado = True
             continue
         if perfiles:
             perfil = perfiles.pop(0)
@@ -1033,6 +1335,8 @@ def _compatible_con_rasgos_puerta(
     if candidato.exclusivo_puerta_escape:
         permitidos = extras_escape_para_pausa(candidato.id)
         return all(e.id in permitidos for e in elegidos)
+    if candidato.id == RASGO_PUERTA_MALDITA:
+        return not any(e.exclusivo_puerta_escape for e in elegidos)
     if any(e.exclusivo_puerta_escape for e in elegidos):
         pausa = next(e for e in elegidos if e.exclusivo_puerta_escape)
         return candidato.id in extras_escape_para_pausa(pausa.id)
@@ -1139,6 +1443,7 @@ def combinar_modificadores_puerta(
     mult = 1
     delta_vidas = 0
     delta_vidas_max = 0
+    fin_partida_si_fallo = False
     etiquetas: list[str] = []
 
     for ev in rasgos:
@@ -1157,6 +1462,7 @@ def combinar_modificadores_puerta(
         mult = max(mult, m.multiplicador_puntos)
         delta_vidas += m.delta_vidas_al_completar
         delta_vidas_max += m.delta_vidas_max_al_completar
+        fin_partida_si_fallo = fin_partida_si_fallo or m.fin_partida_si_fallo
         etiquetas.append(ev.nombre)
 
     return ModificadoresPuerta(
@@ -1166,6 +1472,7 @@ def combinar_modificadores_puerta(
         multiplicador_puntos=mult,
         delta_vidas_al_completar=delta_vidas,
         delta_vidas_max_al_completar=delta_vidas_max,
+        fin_partida_si_fallo=fin_partida_si_fallo,
         rasgos=tuple(etiquetas),
         eventos_ids=tuple(e.id for e in rasgos),
     )
@@ -1185,6 +1492,7 @@ def _modificadores_desde_evento(
         sin_pregunta=m.sin_pregunta,
         delta_vidas_al_completar=m.delta_vidas_al_completar,
         delta_vidas_max_al_completar=m.delta_vidas_max_al_completar,
+        fin_partida_si_fallo=m.fin_partida_si_fallo,
         rasgos=etiquetas or (ev.nombre,),
         eventos_ids=(ev.id,),
     )
@@ -1194,18 +1502,23 @@ def _elegir_desafios_puerta(
     desafios: list[DefinicionEvento],
     cantidad: int,
     rng: random.Random,
+    pity: PityPuertasEspecialesEscape | None = None,
 ) -> list[DefinicionEvento]:
     """Elige rasgos de puerta sin combinar miembros de la misma familia exclusiva."""
     if cantidad <= 0 or not desafios:
         return []
-    pool = list(desafios)
-    rng.shuffle(pool)
     elegidos: list[DefinicionEvento] = []
-    for ev in pool:
-        if len(elegidos) >= cantidad:
+    pool = list(desafios)
+    while len(elegidos) < cantidad and pool:
+        compatibles = [
+            ev for ev in pool if _compatible_con_rasgos_puerta(ev, tuple(elegidos))
+        ]
+        if not compatibles:
             break
-        if _compatible_con_rasgos_puerta(ev, tuple(elegidos)):
-            elegidos.append(ev)
+        pesos = [_peso_desafio_puerta_con_pity(ev, pity) for ev in compatibles]
+        ev = rng.choices(compatibles, weights=pesos, k=1)[0]
+        elegidos.append(ev)
+        pool.remove(ev)
     return elegidos
 
 
@@ -1218,28 +1531,37 @@ def generar_modificadores_puerta(
     pity: PityPuertasEspecialesEscape | None = None,
     estado=None,
     vidas_max: int | None = None,
+    permitir_pausas: bool = True,
 ) -> ModificadoresPuerta:
-    pausa = _intentar_modificadores_pausa_especial(
-        numero_sala=numero_sala,
-        rng=rng,
-        pausas_usadas=pausas_usadas,
-        pity=pity,
-        estado=estado,
-        vidas_max=vidas_max,
-    )
-    if pausa is not None:
-        return pausa
+    if permitir_pausas:
+        pausa = _intentar_modificadores_pausa_especial(
+            numero_sala=numero_sala,
+            rng=rng,
+            pausas_usadas=pausas_usadas,
+            pity=pity,
+            estado=estado,
+            vidas_max=vidas_max,
+        )
+        if pausa is not None:
+            return pausa
 
     disponibles = [
         e for e in eventos_puerta_escape_para_sala(numero_sala) if not e.exclusivo_puerta_escape
     ]
     recompensas = [e for e in disponibles if e.id in RASGOS_BOTIN_ESCAPE]
     desafios = [
-        e for e in disponibles
+        e
+        for e in disponibles
         if e.id not in RASGOS_BOTIN_ESCAPE
+        and (
+            numero_sala >= SALA_MIN_MALDICION_ESCAPE
+            or e.id not in RASGOS_MALDICION_ESCAPE
+        )
     ]
     min_rasgos = 0
     prob_rasgo = 0.42 + min(0.45, (numero_sala - 1) * 0.012)
+    if numero_sala < SALA_MIN_MALDICION_ESCAPE:
+        prob_rasgo *= 0.72
     if rng.random() < prob_rasgo:
         min_rasgos = 1
     if numero_sala >= 12 and rng.random() < 0.28:
@@ -1249,7 +1571,14 @@ def generar_modificadores_puerta(
     if max_rasgos <= 0 and not recompensas:
         return combinar_modificadores_puerta((), numero_sala=numero_sala)
     n_extra = rng.randint(min(min_rasgos, max_rasgos), max_rasgos) if max_rasgos else 0
-    elegidos = _elegir_desafios_puerta(desafios, n_extra, rng)
+    elegidos = _elegir_desafios_puerta(desafios, n_extra, rng, pity=pity)
+    elegidos = _intentar_inyectar_maldicion_escape(
+        elegidos,
+        desafios,
+        numero_sala=numero_sala,
+        rng=rng,
+        pity=pity,
+    )
     if recompensas and rng.random() < _PROB_BOTIN_BASE + min(0.03, (numero_sala - 1) * 0.001):
         botin = elegir_botin_para_sala(numero_sala, rng)
         if botin is not None:
@@ -1261,6 +1590,34 @@ def grupos_del_pool(pool: list[Pregunta]) -> tuple[str, ...]:
     return tuple(sorted({p.grupo for p in pool if p.grupo}))
 
 
+def cursos_del_pool(pool: list[Pregunta]) -> tuple[str, ...]:
+    return tuple(sorted({p.curso for p in pool if p.curso}))
+
+
+def semestres_del_pool(pool: list[Pregunta]) -> tuple[str, ...]:
+    return tuple(sorted({p.semestre for p in pool if p.semestre}))
+
+
+def periodos_del_pool(pool: list[Pregunta]) -> tuple[tuple[str, str], ...]:
+    return tuple(sorted({(p.curso, p.semestre) for p in pool if p.curso and p.semestre}))
+
+
+def tipo_filtro_evento(evento: EventoContenidoInstanciado):
+    from Comun.filtros_bloque import TipoFiltroBloque, clasificar_filtro_evento_escape
+
+    opts = evento.contenido_escape
+    return clasificar_filtro_evento_escape(
+        definicion_id=evento.id,
+        materia=evento.materia,
+        grupo=evento.grupo,
+        curso=evento.curso,
+        semestre=evento.semestre,
+        tipos_permitidos=evento.tipos_permitidos,
+        usa_grupo=bool(opts and opts.usa_grupo),
+        ambito=opts.ambito_efectivo if opts else "materia",
+    )
+
+
 def instanciar_evento_contenido(
     plantilla: DefinicionEvento,
     *,
@@ -1270,25 +1627,39 @@ def instanciar_evento_contenido(
     indice_puerta: int,
     materia_preferida: str | None = None,
     perfil_id: str | None = None,
+    cursos_pool: tuple[str, ...] = (),
+    semestres_pool: tuple[str, ...] = (),
+    periodos_pool: tuple[tuple[str, str], ...] = (),
 ) -> EventoContenidoInstanciado:
     if plantilla.rol_escape != RolEscape.CONTENIDO:
         raise ValueError(f"El evento {plantilla.id!r} no es de contenido escape.")
     opts = plantilla.contenido_escape or OpcionesContenidoEscape()
+    ambito = opts.ambito_efectivo
     materia: str | None = None
     grupo: str | None = None
+    curso: str | None = None
+    semestre: str | None = None
 
-    if opts.usa_grupo and grupos_pool:
+    if ambito == "grupo" and grupos_pool:
         grupo = rng.choice(grupos_pool)
-    elif opts.usa_materia and materias_pool:
+    elif ambito == "materia" and materias_pool:
         if materia_preferida and materia_preferida in materias_pool:
             materia = materia_preferida
         else:
             materia = materias_pool[indice_puerta % len(materias_pool)]
+    elif ambito == "curso" and cursos_pool:
+        curso = rng.choice(cursos_pool)
+    elif ambito == "semestre" and semestres_pool:
+        semestre = rng.choice(semestres_pool)
+    elif ambito == "periodo" and periodos_pool:
+        curso, semestre = rng.choice(periodos_pool)
 
     return EventoContenidoInstanciado(
         definicion=plantilla,
         materia=materia,
         grupo=grupo,
+        curso=curso,
+        semestre=semestre,
         perfil_id=perfil_id,
     )
 
@@ -1301,7 +1672,7 @@ def linea_recompensa_pie_carta(texto: str, *, emoji: str = "") -> str:
 
 
 def _emoji_recompensa_botin_carta(m: ModificadoresDesafio) -> str:
-    """Emoji del premio concreto (arriba en la carta va siempre 🎁)."""
+    """Emoji del premio concreto (arriba en la carta va siempre el de botín)."""
     if m.powerup_al_completar:
         from Comun.objetos_partida import BONIFICACIONES, emoji_powerup
 
@@ -1425,6 +1796,24 @@ def _icono_jefe_puerta(delta_jefe: int) -> IconoEfectoPuerta | None:
     )
 
 
+def _icono_bloque_puerta(
+    evento: EventoContenidoInstanciado,
+    n_preguntas: int,
+) -> IconoEfectoPuerta | None:
+    from Comun.filtros_bloque import requiere_icono_bloque_escape
+    from Comun.jefe_partida import tamano_coherente_bloque_o_jefe
+
+    if not tamano_coherente_bloque_o_jefe(n_preguntas, es_jefe=False):
+        return None
+    if not requiere_icono_bloque_escape(tipo_filtro_evento(evento)):
+        return None
+    return IconoEfectoPuerta(
+        emoji=EMOJI_BLOQUE_PUERTA,
+        tooltip=linea_bloque_preguntas_puerta(n_preguntas),
+        capa=CapaIconoEscape.BLOQUE,
+    )
+
+
 def texto_modificadores_puerta(
     modificadores: ModificadoresPuerta,
     *,
@@ -1442,7 +1831,7 @@ def texto_modificadores_puerta(
     lineas.extend(lineas_botin_puerta(modificadores))
     lineas.append(linea_bloque_preguntas_puerta(n_preguntas))
     if modificadores.rasgos:
-        lineas.append(" · ".join(modificadores.rasgos))
+        lineas.append("  ".join(modificadores.rasgos))
     if modificadores.tiempo_puerta_seg:
         lineas.append(f"Tiempo de puerta: {modificadores.tiempo_puerta_seg} s")
     if modificadores.tiempo_pregunta_seg:
@@ -1451,6 +1840,8 @@ def texto_modificadores_puerta(
         lineas.append(f"{modificadores.opciones_ocultas} opción(es) oculta(s)")
     if modificadores.multiplicador_puntos > 1:
         lineas.append(f"×{modificadores.multiplicador_puntos} puntos")
+    if modificadores.fin_partida_si_fallo:
+        lineas.append("Si fallas: fin de partida.")
     return "\n".join(lineas)
 
 
@@ -1518,18 +1909,14 @@ def _icono_capa_tipo_pregunta(
 
 
 def iconos_contenido_puerta(evento: EventoContenidoInstanciado) -> tuple[IconoEfectoPuerta, ...]:
-    """Capas de contenido: tipo de puerta + dificultad + tipo de pregunta (tooltips fijos)."""
-    opts = evento.contenido_escape
+    """Capas de contenido según el filtro (materia, grupo, curso, tipo…)."""
+    from Comun.config_historia import etiqueta_curso_academico, etiqueta_periodo_academico
+    from Comun.filtros_bloque import TipoFiltroBloque
+
+    tipo = tipo_filtro_evento(evento)
     iconos: list[IconoEfectoPuerta] = []
-    if opts and opts.usa_grupo:
-        iconos.append(
-            IconoEfectoPuerta(
-                EMOJI_PUERTA_GRUPO,
-                TOOLTIP_PUERTA_GRUPO,
-                CapaIconoEscape.TIPO_PUERTA,
-            )
-        )
-    else:
+
+    if tipo == TipoFiltroBloque.MATERIA:
         iconos.append(
             IconoEfectoPuerta(
                 EMOJI_PUERTA_MATERIA,
@@ -1537,12 +1924,78 @@ def iconos_contenido_puerta(evento: EventoContenidoInstanciado) -> tuple[IconoEf
                 CapaIconoEscape.TIPO_PUERTA,
             )
         )
-    dif = _icono_capa_dificultad_contenido(evento)
-    if dif is not None:
-        iconos.append(dif)
-    tipo = _icono_capa_tipo_pregunta(evento)
-    if tipo is not None:
-        iconos.append(tipo)
+        dif = _icono_capa_dificultad_contenido(evento)
+        if dif is not None:
+            iconos.append(dif)
+        tipo_ic = _icono_capa_tipo_pregunta(evento)
+        if tipo_ic is not None:
+            iconos.append(tipo_ic)
+    elif tipo == TipoFiltroBloque.GRUPO:
+        iconos.append(
+            IconoEfectoPuerta(
+                EMOJI_PUERTA_GRUPO,
+                TOOLTIP_PUERTA_GRUPO,
+                CapaIconoEscape.TIPO_PUERTA,
+            )
+        )
+        dif = _icono_capa_dificultad_contenido(evento)
+        if dif is not None:
+            iconos.append(dif)
+        tipo_ic = _icono_capa_tipo_pregunta(evento)
+        if tipo_ic is not None:
+            iconos.append(tipo_ic)
+    elif tipo == TipoFiltroBloque.CURSO:
+        tooltip = TOOLTIP_PUERTA_CURSO
+        if evento.curso:
+            tooltip = f"{TOOLTIP_PUERTA_CURSO} ({etiqueta_curso_academico(evento.curso)})."
+        iconos.append(
+            IconoEfectoPuerta(
+                EMOJI_PUERTA_CURSO,
+                tooltip,
+                CapaIconoEscape.TIPO_PUERTA,
+            )
+        )
+    elif tipo == TipoFiltroBloque.SEMESTRE:
+        tooltip = TOOLTIP_PUERTA_SEMESTRE
+        if evento.semestre:
+            tooltip = f"{TOOLTIP_PUERTA_SEMESTRE} (semestre {evento.semestre})."
+        iconos.append(
+            IconoEfectoPuerta(
+                EMOJI_PUERTA_SEMESTRE,
+                tooltip,
+                CapaIconoEscape.TIPO_PUERTA,
+            )
+        )
+    elif tipo == TipoFiltroBloque.PERIODO:
+        tooltip = TOOLTIP_PUERTA_PERIODO
+        if evento.curso and evento.semestre:
+            tooltip = (
+                f"{TOOLTIP_PUERTA_PERIODO} "
+                f"({etiqueta_periodo_academico(evento.curso, evento.semestre)})."
+            )
+        iconos.append(
+            IconoEfectoPuerta(
+                EMOJI_PUERTA_PERIODO,
+                tooltip,
+                CapaIconoEscape.TIPO_PUERTA,
+            )
+        )
+    elif tipo == TipoFiltroBloque.TIPO_TEORIA:
+        iconos.append(
+            IconoEfectoPuerta(
+                EMOJI_TIPO_TEORIA,
+                TOOLTIP_TIPO_TEORIA_GLOBAL,
+                CapaIconoEscape.TIPO_PUERTA,
+            )
+        )
+    elif tipo == TipoFiltroBloque.TIPO_CALCULO:
+        iconos.append(
+            IconoEfectoPuerta(
+                EMOJI_TIPO_CALCULO,
+                TOOLTIP_TIPO_CALCULO_GLOBAL,
+                CapaIconoEscape.TIPO_PUERTA,
+            )
+        )
     return tuple(iconos)
 
 
@@ -1582,6 +2035,8 @@ def tooltip_efecto_rasgo_puerta(
         partes.append(
             f"×{m.multiplicador_puntos} puntos en cada acierto de esta puerta."
         )
+    if evento_id == RASGO_PUERTA_MALDITA or m.fin_partida_si_fallo:
+        return TOOLTIP_PUERTA_MALDITA
     return " ".join(partes) if partes else ev.descripcion
 
 
@@ -1817,6 +2272,10 @@ def iconos_efecto_puerta(
     if jefe is not None:
         iconos.append(jefe)
 
+    bloque = _icono_bloque_puerta(evento, n_preguntas)
+    if bloque is not None:
+        iconos.append(bloque)
+
     if not modificadores.sin_pregunta and n_preguntas > 0:
         iconos.extend(iconos_contenido_puerta(evento))
 
@@ -1932,6 +2391,7 @@ PREGUNTA_MIN_RIESGO_PREGUNTA = 8
 FACTOR_PROB_EVENTO_SI_NO = 0.34
 PITY_INC_EVENTO_SI_NO = 0.03
 PITY_MAX_BOOST_EVENTO_SI_NO = 0.28
+PITY_BOOST_EVENTO_SI_NO_UNSEEN = 0.95
 
 def _economia():
     from Comun import economia_partida as economia
@@ -2029,7 +2489,11 @@ def texto_recompensa_riesgo_pregunta(recompensa: RecompensaApuesta) -> str:
     return ", ".join(partes) if partes else "sin bonus extra"
 
 
-def texto_coste_riesgo_pregunta(coste: CosteApuesta) -> str:
+def texto_coste_riesgo_pregunta(
+    coste: CosteApuesta,
+    *,
+    numero_pregunta: int | None = None,
+) -> str:
     if coste.fin_partida:
         return "la partida termina al instante"
     partes: list[str] = []
@@ -2046,7 +2510,12 @@ def texto_coste_riesgo_pregunta(coste: CosteApuesta) -> str:
     elif vida_txt:
         partes.append(vida_txt)
     if coste.puntos_perdidos > 0:
-        partes.append(f"−{coste.puntos_perdidos} puntos")
+        perdidos = coste.puntos_perdidos
+        if numero_pregunta is not None:
+            perdidos = _economia().puntos_penalizacion_escalados(
+                coste.puntos_perdidos, numero_pregunta
+            )
+        partes.append(f"−{perdidos} puntos")
     if coste.pierde_powerup_aleatorio:
         partes.append("pierdes un objeto al azar")
     return "; ".join(partes)
@@ -2085,13 +2554,12 @@ def _resumen_efecto_evento_si_no(evento: EventoSiNo) -> str:
             from Comun.emojis_partida import EMOJI_RIESGO_ACIERTO, EMOJI_RIESGO_FALLO
 
             return (
-                f"{EMOJI_RIESGO_ACIERTO} {_acortar_frase_riesgo(ok)} · "
+                f"{EMOJI_RIESGO_ACIERTO} {_acortar_frase_riesgo(ok)}  "
                 f"{EMOJI_RIESGO_FALLO} {_acortar_frase_riesgo(fallo)}"
             )
         return descripcion
     resumenes: dict[TipoEventoSiNo, str] = {
         "vida": "+1 vida",
-        "amuleto": "+20 pts en próximo acierto",
         "sorpresa": "objeto al azar",
         "purga_maldicion": "quitar maldición",
     }
@@ -2101,7 +2569,11 @@ def _resumen_efecto_evento_si_no(evento: EventoSiNo) -> str:
 
 
 def titulo_popup_evento_si_no(evento: EventoSiNo) -> str:
-    """Nombre concreto del evento (p. ej. «Amuleto arcade»), no «Oferta» genérico."""
+    """Título del popup: apuestas por nombre; compras con prefijo «Oferta»."""
+    if evento.es_riesgo_en_pregunta:
+        return evento.titulo
+    if evento.tipo == "compra":
+        return f"Oferta — {evento.titulo}"
     return evento.titulo
 
 
@@ -2160,7 +2632,7 @@ def _evento_riesgo_pregunta(
     rng = motor.rng_partida(er)
     riesgo = elegir_riesgo_pregunta(rng, numero_pregunta)
     recomp = texto_recompensa_riesgo_pregunta(riesgo.recompensa)
-    coste = texto_coste_riesgo_pregunta(riesgo.coste)
+    coste = texto_coste_riesgo_pregunta(riesgo.coste, numero_pregunta=numero_pregunta)
     return EventoSiNo(
         tipo="riesgo_pregunta",
         titulo=riesgo.etiqueta,
@@ -2179,11 +2651,16 @@ def _evento_compra(
     art = _elegir_articulo_compra(rng, numero_pregunta, er, estado)
     if art is None:
         return None
+    precio_base = _economia().precio_resistencia_articulo(art.id, numero_pregunta)
+    precio_ef, etiqueta = _economia().variar_precio_tienda(
+        rng, precio_base, gratis_permitido=True
+    )
+    titulo = art.nombre if not etiqueta else f"{art.nombre} ({etiqueta})"
     return EventoSiNo(
         tipo="compra",
-        titulo=art.nombre,
+        titulo=titulo,
         descripcion_si=f"compras {art.nombre.lower()}",
-        precio=_economia().precio_resistencia_articulo(art.id, numero_pregunta),
+        precio=precio_ef,
         articulo_id=art.id,
     )
 
@@ -2224,14 +2701,19 @@ def _candidatos_evento_si_no(
         )
 
     if numero_pregunta >= PREGUNTA_MIN_EVENTO_SI_NO:
+        precio_amuleto = _economia().precio_resistencia_oferta(
+            numero_pregunta, tipo="amuleto"
+        )
+        bonus_amuleto = _economia().bonus_amuleto_tras_compra(
+            precio_amuleto,
+            numero_pregunta=numero_pregunta,
+        )
         candidatos.append(
             EventoSiNo(
                 tipo="amuleto",
                 titulo="Amuleto arcade",
-                descripcion_si="+20 pts en próximo acierto",
-                precio=_economia().precio_resistencia_oferta(
-                    numero_pregunta, tipo="amuleto"
-                ),
+                descripcion_si=_economia().texto_bonus_amuleto(bonus_amuleto),
+                precio=precio_amuleto,
             )
         )
 
@@ -2286,17 +2768,25 @@ def elegir_evento_si_no(
     prob_base = (
         motor.probabilidad_buena_resistencia(numero_pregunta) * FACTOR_PROB_EVENTO_SI_NO
     )
-    boost = min(
-        PITY_MAX_BOOST_EVENTO_SI_NO,
-        er.preguntas_sin_evento_si_no * PITY_INC_EVENTO_SI_NO,
+    from Comun.pity_variedad_resistencia import (
+        registrar_variedad_resistencia,
+        umbral_prob_evento_si_no_resistencia,
     )
-    if rng.random() > prob_base + boost:
+
+    if rng.random() > umbral_prob_evento_si_no_resistencia(er, prob_base):
         er.preguntas_sin_evento_si_no += 1
         return None
 
-    pesos = [_PESO_TIPO_EVENTO.get(c.tipo, 1.0) for c in candidatos]
+    pesos = []
+    for c in candidatos:
+        peso = _PESO_TIPO_EVENTO.get(c.tipo, 1.0)
+        if c.tipo not in er.tipos_evento_si_no_vistos:
+            peso *= 1.0 + PITY_BOOST_EVENTO_SI_NO_UNSEEN
+        pesos.append(peso)
     elegido = rng.choices(candidatos, weights=pesos, k=1)[0]
     er.preguntas_sin_evento_si_no = 0
+    er.tipos_evento_si_no_vistos.add(elegido.tipo)
+    registrar_variedad_resistencia(er, "evento_si_no")
     return elegido
 
 
@@ -2323,10 +2813,10 @@ def _aplicar_sorpresa_resistencia(
     ):
         bid = rng.choice(bonifs)
         economia.efecto_compra_resistencia(
-            bid, estado, er, vidas_max=er.vidas_max
+            bid, estado, er, vidas_max=er.vidas_max, numero_pregunta=numero_pregunta
         )
         return
-    pid = rng.choice(motor.POWERUPS_LOOT)
+    pid = objetos.elegir_powerup_loot(er.inventario, rng)
     er.agregar_powerup(pid, 1)
 
 
@@ -2400,6 +2890,9 @@ def aceptar_evento_si_no(
             estado,
             er,
             vidas_max=er.vidas_max,
+            rng=motor.rng_partida(er),
+            numero_pregunta=numero_pregunta,
+            precio_pagado=evento.precio,
         )
         if err:
             return err
@@ -2410,12 +2903,17 @@ def aceptar_evento_si_no(
                 (estado.vidas_restantes or 0) + 1,
             )
     elif evento.tipo == "amuleto":
-        er.bonus_proximo_acierto = 20
+        er.bonus_proximo_acierto = _economia().bonus_amuleto_tras_compra(
+            evento.precio,
+            numero_pregunta=numero_pregunta,
+        )
     elif evento.tipo == "sorpresa":
         _aplicar_sorpresa_resistencia(er, estado, numero_pregunta=numero_pregunta)
     elif evento.tipo == "purga_maldicion":
+        from Comun.maldiciones_partida import limpiar_efectos_maldicion_resistencia
+
         er.maldicion = None
-        er.objetos_bloqueados = False
+        limpiar_efectos_maldicion_resistencia(er)
 
     return None
 
@@ -2430,7 +2928,10 @@ def mensaje_exito_evento_si_no(evento: EventoSiNo) -> str | None:
     if evento.tipo == "vida":
         return "Refuerzo vital: +1 vida."
     if evento.tipo == "amuleto":
-        return "Amuleto activado: +20 pts en tu próximo acierto."
+        return (
+            "Amuleto activado: "
+            f"{evento.descripcion_si.strip().removesuffix('.')}."
+        )
     if evento.tipo == "sorpresa":
         return "Caja misteriosa abierta."
     if evento.tipo == "purga_maldicion":

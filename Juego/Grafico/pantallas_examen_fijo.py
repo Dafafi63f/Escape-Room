@@ -27,6 +27,7 @@ from Comun.motor_nucleo import (
     texto_solucion,
 )
 from Comun.semillas import RngPartida, crear_rng_partida
+from Comun.linea_estado_ui import texto_progreso_examen_cerrado
 from Comun.resistencia_motor import (
     aplicar_bonificaciones_puntos_resistencia,
     aplicar_modificadores_visuales_escalada,
@@ -43,7 +44,6 @@ from Comun.resistencia_motor import (
     procesar_turno_resistencia,
     puede_usar_powerup_en_pregunta,
     revocar_powerup_usado,
-    texto_progreso_resistencia,
     texto_segmento_desafio_bloque,
     tiempo_pregunta_efectivo,
     usar_powerup,
@@ -88,17 +88,21 @@ from Comun.config_historia import (
     semestres_para_curso,
     validar_config,
 )
-from Comun.presets_historia import PresetHistoria, config_defecto
+from Comun.presets_historia import PresetHistoria, config_defecto, preset_permite_examen_dirigido
 from Comun.preferencias_grafico import nombre_jugador_grafico
 from Comun.reglas import ReglasPartida, formatear_resultado_puntuacion, vidas_iniciales_partida
 from Comun.informe_examen import CierreInformePartida, meta_cierre_historia
+from Grafico.atajos_teclado import manejar_teclado_partida
 from Grafico.textos_grafico import (
     BTN_ABANDONAR,
     BTN_APUESTA_NO,
     BTN_APUESTA_SI,
     BTN_ATRAS,
+    BTN_CAMBIAR_OPCIONES,
     BTN_CONTINUAR,
     BTN_EMPEZAR,
+    BTN_EXAMEN_DIRIGIDO,
+    BTN_REPETIR_PARTIDA,
     BTN_VOLVER,
     BTN_VOLVER_MENU,
     emoji_icono,
@@ -128,6 +132,7 @@ from Grafico.pantallas import (
     ALTURA_BARRA_PARTIDA,
     ALTO_BOTON_CONTINUAR_PARTIDA,
     ALTO_BARRA_PROGRESO_PARTIDA,
+    fraccion_barra_progreso_partida,
     ALTO_OPCION_PARTIDA,
     ALTO_PANEL_PREGUNTA,
     GAP_TRAS_BARRA_PROGRESO,
@@ -971,6 +976,7 @@ class PartidaModoHistoria(Pantalla):
         semilla_partida: int = 0,
         rng_partida: RngPartida | None = None,
         navegacion_fin=None,
+        cadena_dirigido=None,
     ) -> None:
         from Comun.motor_nucleo import NavegacionFinPartida
 
@@ -980,6 +986,7 @@ class PartidaModoHistoria(Pantalla):
         self.semilla_partida = semilla_partida
         self._rng_partida = rng_partida or crear_rng_partida(semilla_partida)
         self.navegacion_fin: NavegacionFinPartida | None = navegacion_fin
+        self.cadena_dirigido = cadena_dirigido
         self.preguntas = preguntas
         self.materias_examen = materias_examen or []
         self.total = len(preguntas)
@@ -1013,6 +1020,9 @@ class PartidaModoHistoria(Pantalla):
         )
         self._reconstruir_opciones()
 
+    def en_partida_activa(self) -> bool:
+        return True
+
     def _pregunta_actual(self) -> Pregunta:
         return self.preguntas[self.indice]
 
@@ -1020,7 +1030,7 @@ class PartidaModoHistoria(Pantalla):
         return self._y_inicio_opciones() + 4 * (ALTO_OPCION_PARTIDA + SEP_OPCIONES_PARTIDA)
 
     def _texto_progreso(self) -> str:
-        return f"Pregunta {self.indice + 1}/{self.total}"
+        return texto_progreso_examen_cerrado(self.indice + 1, self.total)
 
     def _linea_estado_actual(self) -> str:
         seg_preg = None
@@ -1134,6 +1144,8 @@ class PartidaModoHistoria(Pantalla):
                 cierre_informe=cierre,
                 titulo=titulo_pantalla,
                 navegacion_fin=self.navegacion_fin,
+                config_historia=self.config_historia,
+                cadena_dirigido=self.cadena_dirigido,
             )
         )
 
@@ -1222,7 +1234,7 @@ class PartidaModoHistoria(Pantalla):
         return None
 
     def titulo_pausa(self) -> str:
-        return f"{self.preset.nombre} · {self._linea_estado_actual()}"
+        return f"{self.preset.nombre}  {self._linea_estado_actual()}"
 
     def _dibujar_barra_superior(self, superficie: pygame.Surface) -> None:
         fuente = self.fuentes["pequena"]
@@ -1272,11 +1284,22 @@ class PartidaModoHistoria(Pantalla):
     def _manejar_clic_partida(self, pos: tuple[int, int], boton: int) -> bool:
         if self.boton_abandonar.manejar_clic(pos, boton):
             return True
+        if self.fase == "feedback":
+            self._continuar()
+            return True
         if self.fase != "pregunta":
             return False
         return any(b.manejar_clic(pos, boton) for b in self.botones_opcion)
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
+        if manejar_teclado_partida(
+            evento,
+            fase=self.fase,
+            botones_opcion=self.botones_opcion,
+            on_responder=self._responder,
+            on_continuar=self._continuar,
+        ):
+            return None
         if evento.type == pygame.MOUSEMOTION:
             self._actualizar_hover_partida(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
@@ -1294,7 +1317,7 @@ class PartidaModoHistoria(Pantalla):
         mostrar_meta = self.datos.perfil.mostrar_metadatos_pregunta
         if mostrar_meta:
             meta = self.fuentes["pequena"].render(
-                f"{p.materia} · {p.tipo} / {p.dificultad}",
+                f"{p.materia}  {p.tipo} / {p.dificultad}",
                 True,
                 COLOR_ACENTO,
             )
@@ -1313,7 +1336,10 @@ class PartidaModoHistoria(Pantalla):
                 MARGEN, barra_y, ANCHO - 2 * MARGEN, ALTO_BARRA_PROGRESO_PARTIDA
             )
             pygame.draw.rect(superficie, (40, 56, 80), barra_fondo, border_radius=4)
-            progreso_w = int(barra_fondo.width * self.estado.respondidas / self.total)
+            frac = fraccion_barra_progreso_partida(
+                indice_pregunta=self.indice, total=self.total
+            )
+            progreso_w = int(barra_fondo.width * frac)
             if progreso_w:
                 pygame.draw.rect(
                     superficie,
@@ -1355,8 +1381,12 @@ class ResumenHistoriaPartida(ResumenPartida):
         cierre_informe: CierreInformePartida | None = None,
         titulo: str | None = None,
         navegacion_fin=None,
+        config_historia: ConfigPresetHistoria | None = None,
+        cadena_dirigido=None,
     ) -> None:
         self.preset = preset
+        self.config_historia = config_historia or ConfigPresetHistoria()
+        self.cadena_dirigido = cadena_dirigido
         titulo_resumen = titulo or f"FIN — {preset.nombre[:44]}"
         super().__init__(
             estado,
@@ -1367,6 +1397,93 @@ class ResumenHistoriaPartida(ResumenPartida):
             cierre_informe=cierre_informe,
             titulo=titulo_resumen,
             navegacion_fin=navegacion_fin,
+        )
+
+    def _puede_examen_dirigido(self) -> bool:
+        if not self.cierre_informe or self.cierre_informe.abandonado:
+            return False
+        if self.cierre_informe.prefijo != "examen":
+            return False
+        if not preset_permite_examen_dirigido(
+            self.preset.id, self.cierre_informe.registros
+        ):
+            return False
+        return bool(self.cierre_informe.registros)
+
+    def _crear_botones_accion(self) -> None:
+        fuente = self.fuentes["menu"]
+        nav = self.navegacion_fin
+        if nav and nav.repetir:
+            etiq = etiqueta(*BTN_REPETIR_PARTIDA)
+            self._botones_accion.append(
+                Boton(
+                    etiq,
+                    rect_boton_etiqueta(etiq, fuente, x_centro=0, y=0, alto_min=44),
+                    self._repetir,
+                    tooltip="Misma configuración; preguntas nuevas.",
+                )
+            )
+        if self._puede_examen_dirigido():
+            etiq_dir = etiqueta(*BTN_EXAMEN_DIRIGIDO)
+            self._botones_accion.append(
+                Boton(
+                    etiq_dir,
+                    rect_boton_etiqueta(etiq_dir, fuente, x_centro=0, y=0, alto_min=44),
+                    self._otro_examen_dirigido,
+                    tooltip="Nuevo test aleatorio priorizando tus fallos acumulados en la cadena.",
+                )
+            )
+        if nav and nav.configurar:
+            etiq = etiqueta(*BTN_CAMBIAR_OPCIONES)
+            self._botones_accion.append(
+                Boton(
+                    etiq,
+                    rect_boton_etiqueta(etiq, fuente, x_centro=0, y=0, alto_min=44),
+                    self._configurar,
+                    tooltip="Vuelve a la pantalla de ajustes del modo.",
+                )
+            )
+        etiq_menu = etiqueta(*BTN_VOLVER_MENU)
+        self._botones_accion.append(
+            Boton(
+                etiq_menu,
+                rect_boton_etiqueta(etiq_menu, fuente, x_centro=0, y=0, alto_min=44),
+                self._ir_menu,
+            )
+        )
+
+    def _otro_examen_dirigido(self) -> None:
+        if not self._guardar_informe_si_procede() or not self.cierre_informe:
+            return
+        from Grafico.modo_historia import preparar_examen_dirigido_sesion
+
+        try:
+            plan, reglas, cadena = preparar_examen_dirigido_sesion(
+                self.datos,
+                self.preset,
+                self.config_historia,
+                self.cierre_informe.registros,
+                cadena=self.cadena_dirigido,
+            )
+        except ValueError as exc:
+            self.mensaje_pie = str(exc)
+            return
+        self.ir_a(
+            PartidaModoHistoria(
+                nombre=self.estado.nombre,
+                preset=self.preset,
+                preguntas=plan.preguntas,
+                materias_examen=plan.materias,
+                reglas=reglas,
+                ir_a=self.ir_a,
+                datos=self.datos,
+                salir_app=self.salir_app,
+                config_historia=self.config_historia,
+                semilla_partida=plan.semilla_partida,
+                rng_partida=plan.rng,
+                navegacion_fin=self.navegacion_fin,
+                cadena_dirigido=cadena,
+            )
         )
 
     def _construir_lineas(self) -> list[str]:

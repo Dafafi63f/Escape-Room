@@ -29,12 +29,12 @@ ETIQUETAS_TIER_RESISTENCIA: dict[int, str] = {
     4: "Imposible",
 }
 
-# Modo beta (libre/escape): extras sin revisar manualmente; sin autogeneradas.
+# Banco ampliado (libre/escape): extras en plantillas.json; sin autogeneradas.
 USOS_PLANTILLA_BETA_JUEGO = frozenset(
     {"repuesto", "internet", "general", "calculo", "dificil", "reserva", "web_seed"}
 )
 
-# Extras reales de plantillas.json (mismo pool que modo beta, sin sintéticas).
+# Extras reales de plantillas.json (mismo pool que banco ampliado, sin sintéticas).
 USOS_PLANTILLA_RESISTENCIA = USOS_PLANTILLA_BETA_JUEGO
 
 # Nunca entran al juego (usos legacy de relleno estructural; el JSON cerrado no los usa).
@@ -137,7 +137,7 @@ def cargar_preguntas_exclusivas_resistencia(
 
 @dataclass(frozen=True)
 class BancoResistencia:
-    """Capas del banco: revisado → plantillas beta → exclusivas difíciles."""
+    """Capas del banco: revisado → banco ampliado → exclusivas difíciles."""
 
     revisadas: tuple[Pregunta, ...]
     plantillas: tuple[Pregunta, ...]
@@ -174,7 +174,7 @@ def construir_banco_resistencia(
     path_plantillas: Path | None = None,
     path_preguntas_csv: Path | None = None,
 ) -> BancoResistencia:
-    """Banco en capas: dataset revisado + plantillas beta + exclusivas."""
+    """Banco en capas: dataset revisado + banco ampliado + exclusivas."""
     revisadas = tuple(pool_resistencia_desde_dataset(preguntas_dataset))
     plantillas: tuple[Pregunta, ...] = ()
     if path_plantillas is not None:

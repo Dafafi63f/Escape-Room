@@ -132,14 +132,11 @@ def _dibujar_flecha_carrusel(
     activo: bool,
     hover: bool,
 ) -> None:
-    if not activo:
-        fondo, color = (40, 40, 40), (100, 100, 100)
-    elif hover:
-        fondo, color = (90, 140, 210), (255, 255, 255)
-    else:
-        fondo, color = (55, 95, 160), (240, 248, 255)
+    from Grafico.ui import colores_boton
+
+    fondo, color, borde = colores_boton(activo=activo, hover=hover)
     pygame.draw.rect(superficie, fondo, rect, border_radius=10)
-    pygame.draw.rect(superficie, color, rect, width=2, border_radius=10)
+    pygame.draw.rect(superficie, borde, rect, width=2, border_radius=10)
     cx, cy = rect.center
     tam = 12
     if direccion == "izq":

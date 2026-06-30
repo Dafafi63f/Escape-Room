@@ -259,7 +259,8 @@ class TestDominioJuego(unittest.TestCase):
             vidas=3,
             segundos_pregunta=45,
         )
-        self.assertIn("Pregunta", texto)
+        self.assertIn("1", texto)
+        self.assertNotIn("Pregunta", texto)
 
     def test_linea_estado_nota_en_curso(self) -> None:
         from Comun.reglas import SistemaPuntuacion

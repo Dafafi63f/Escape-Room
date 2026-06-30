@@ -23,8 +23,6 @@ __all__ = [
 FICHERO_CHANGELOG_PROYECTO = "CHANGELOG_PROYECTO.md"
 FICHERO_CHANGELOG_JUEGO = "CHANGELOG_JUEGO.md"
 _SUBDIR_DOCS = "Docs"
-_LEGACY_CHANGELOG_PROYECTO = "CHANGELOG.md"
-_LEGACY_CHANGELOG_JUEGO = "CHANGELOG_JUEGO_GRAFICO.md"
 
 
 def _raiz_repo() -> Path:
@@ -50,33 +48,30 @@ def _primer_existente(candidatos: list[Path]) -> Path | None:
 
 
 def resolver_changelog_proyecto() -> Path | None:
-    """``CHANGELOG_PROYECTO.md`` en ``Docs/`` (o raíz legada)."""
+    """``CHANGELOG_PROYECTO.md`` en ``Docs/``."""
     raiz = _raiz_repo()
     docs = _docs_dir()
     candidatos = [
         docs / FICHERO_CHANGELOG_PROYECTO,
         raiz / FICHERO_CHANGELOG_PROYECTO,
-        raiz / _LEGACY_CHANGELOG_PROYECTO,
     ]
     return _primer_existente(candidatos)
 
 
 def resolver_changelog_juego_grafico() -> Path | None:
-    """``CHANGELOG_JUEGO.md`` en ``Docs/``, ``Juego/`` (mínimo) o rutas legadas."""
+    """``CHANGELOG_JUEGO.md`` en ``Docs/`` o ``Juego/`` (paquete mínimo)."""
     raiz = _raiz_repo()
     docs = _docs_dir()
     candidatos = [
         docs / FICHERO_CHANGELOG_JUEGO,
         juego_dir() / FICHERO_CHANGELOG_JUEGO,
         raiz / FICHERO_CHANGELOG_JUEGO,
-        raiz / _LEGACY_CHANGELOG_JUEGO,
-        juego_dir() / _LEGACY_CHANGELOG_JUEGO,
     ]
     return _primer_existente(candidatos)
 
 
 def resolver_changelog() -> Path | None:
-    """Alias legado → changelog del proyecto."""
+    """Alias de ``resolver_changelog_proyecto``."""
     return resolver_changelog_proyecto()
 
 

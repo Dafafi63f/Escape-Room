@@ -185,7 +185,7 @@ def evaluar_requisitos_completo() -> ResultadoValidacion:
     """Comprueba dataset, listado, presets y CSV con metadatos curriculares.
 
     ``plantillas.json`` no es obligatorio: es herramienta del autor (revisado vs pendiente).
-    Si existe, activa modo beta y amplía el pool de resistencia.
+    Si existe, activa el banco ampliado y el pool de resistencia con plantillas.
     """
     faltas: list[str] = []
     path_csv = _comprobar_archivo(resolver_dataset, "Preguntas.csv", faltas)

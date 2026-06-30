@@ -14,12 +14,15 @@ from Comun.motor_nucleo import EstadoPartida
 from Comun.objetos_partida import (
     ArticuloTienda,
     CATALOGO_ARTICULOS,
+    OfertaTienda,
     aplicar_bonificacion,
     articulo_por_id,
     articulo_tienda_por_id,
     bonificacion_aplicable,
     es_bonificacion,
+    es_pack,
     es_powerup,
+    resolver_contenido_pack,
 )
 from Comun.reglas import sumar_puntos_arcade
 
@@ -41,29 +44,153 @@ PRECIO_BASE_PURGA_MALDICION_RESISTENCIA = 45
 # En resistencia el precio sube con el progreso; en escape se usa siempre el base.
 _INFLACION_MAX_PRECIO_RESISTENCIA = 1.0
 
+# Amuleto arcade: bonus en el próximo acierto (escala con la partida).
+BONUS_AMULETO_BASE = 20
+_MULT_MAX_BONUS_AMULETO_RESISTENCIA = 3.0
+_MULT_MAX_BONUS_AMULETO_ESCAPE = 2.5
+_ROI_MIN_AMULETO_COMPRA = 1.3
+
 ARTICULOS_COMPRA_RESISTENCIA = frozenset(
     {
         "fifty_fifty",
         "bomba",
+        "comodin",
+        "descarte_inteligente",
         "skip",
         "tiempo_extra",
+        "tiempo_lento",
         "escudo",
+        "sello_purga",
         "cambio",
+        "segunda_oportunidad",
+        "doble_o_nada",
+        "racha_congelada",
+        "pack_ayudas",
+        "pack_random_3",
+        "pack_supervivencia",
         "vida_refuerzo",
         "amuleto_puntos",
     }
 )
 
+# Variación de precio en tienda escape y ofertas compra (resistencia).
+PROB_PRECIO_GRATIS_TIENDA = 0.10
+PROB_PRECIO_DESCUENTO_TIENDA = 0.32
+PROB_PRECIO_INFLACION_TIENDA = 0.18
+_RANGO_DESCUENTO = (0.10, 0.30)
+_RANGO_INFLACION = (0.10, 0.25)
+
 
 def peso_articulo(articulo_id: str) -> float:
     if es_bonificacion(articulo_id):
         return PESO_BONIFICACION
+    if es_pack(articulo_id):
+        return PESO_POWERUP * 0.75
     return PESO_POWERUP
+
+
+def variar_precio_tienda(
+    rng: random.Random,
+    precio_base: int,
+    *,
+    gratis_permitido: bool,
+) -> tuple[int, str | None]:
+    """Devuelve (precio efectivo, etiqueta opcional: Gratis, -20 %, +15 %)."""
+    if precio_base <= 0:
+        return 0, "Gratis"
+    if gratis_permitido and rng.random() < PROB_PRECIO_GRATIS_TIENDA:
+        return 0, "Gratis"
+    roll = rng.random()
+    if roll < PROB_PRECIO_DESCUENTO_TIENDA:
+        desc = rng.uniform(*_RANGO_DESCUENTO)
+        precio = max(1, int(round(precio_base * (1.0 - desc))))
+        return precio, f"-{int(desc * 100)}%"
+    if roll < PROB_PRECIO_DESCUENTO_TIENDA + PROB_PRECIO_INFLACION_TIENDA:
+        inc = rng.uniform(*_RANGO_INFLACION)
+        precio = int(round(precio_base * (1.0 + inc)))
+        return precio, f"+{int(inc * 100)}%"
+    return precio_base, None
+
+
+def oferta_desde_articulo(
+    rng: random.Random,
+    articulo: ArticuloTienda,
+    *,
+    gratis_permitido: bool,
+    precio_base: int | None = None,
+) -> OfertaTienda:
+    base = precio_base if precio_base is not None else articulo.precio
+    precio_ef, etiqueta = variar_precio_tienda(
+        rng, base, gratis_permitido=gratis_permitido
+    )
+    return OfertaTienda(
+        articulo=articulo,
+        precio_efectivo=precio_ef,
+        etiqueta_precio=etiqueta,
+    )
 
 
 def precio_base_articulo(articulo_id: str) -> int:
     """Precio base compartido (escape = resistencia al inicio de partida)."""
     return articulo_tienda_por_id(articulo_id).precio
+
+
+def _mult_bonus_amuleto_resistencia(numero_pregunta: int) -> float:
+    from Comun.resistencia_motor import factor_progreso_resistencia
+
+    t = factor_progreso_resistencia(numero_pregunta)
+    return 1.0 + (_MULT_MAX_BONUS_AMULETO_RESISTENCIA - 1.0) * t
+
+
+def _mult_bonus_amuleto_escape(numero_sala: int) -> float:
+    t = min(1.0, max(0.0, (numero_sala - 1) / 29.0))
+    return 1.0 + (_MULT_MAX_BONUS_AMULETO_ESCAPE - 1.0) * t
+
+
+def bonus_amuleto_arcade(
+    *,
+    numero_pregunta: int | None = None,
+    numero_sala: int | None = None,
+) -> int:
+    """Bonus de pts en el próximo acierto (loot, botín, etc.)."""
+    if numero_pregunta is not None:
+        mult = _mult_bonus_amuleto_resistencia(numero_pregunta)
+    elif numero_sala is not None:
+        mult = _mult_bonus_amuleto_escape(numero_sala)
+    else:
+        mult = 1.0
+    return max(BONUS_AMULETO_BASE, int(round(BONUS_AMULETO_BASE * mult)))
+
+
+def bonus_amuleto_tras_compra(
+    precio_pagado: int,
+    *,
+    numero_pregunta: int | None = None,
+    numero_sala: int | None = None,
+) -> int:
+    """Al comprar: al menos rentable frente al precio y escalado con la partida."""
+    escalado = bonus_amuleto_arcade(
+        numero_pregunta=numero_pregunta,
+        numero_sala=numero_sala,
+    )
+    minimo = max(1, int(round(precio_pagado * _ROI_MIN_AMULETO_COMPRA)))
+    return max(escalado, minimo)
+
+
+def texto_bonus_amuleto(bonus: int) -> str:
+    return f"+{bonus} pts en tu próximo acierto"
+
+
+def puntos_penalizacion_escalados(base: int, numero_pregunta: int) -> int:
+    """Penalización de pts en apuestas/riesgo (misma curva que precios en resistencia)."""
+    if base <= 0:
+        return 0
+    from Comun.resistencia_motor import factor_progreso_resistencia
+
+    mult = 1.0 + _INFLACION_MAX_PRECIO_RESISTENCIA * factor_progreso_resistencia(
+        numero_pregunta
+    )
+    return max(base, int(round(base * mult)))
 
 
 def precio_resistencia_escalado(precio_base: int, numero_pregunta: int) -> int:
@@ -122,13 +249,15 @@ def articulo_comprable_tienda_escape(
     *,
     vidas_max: int | None = None,
     comprados_en_visita: set[str] | frozenset[str] | None = None,
+    precio_efectivo: int | None = None,
 ) -> str | None:
     """None si se puede comprar ahora; mensaje de error en caso contrario."""
     if comprados_en_visita is not None and articulo_id in comprados_en_visita:
         return "Ya compraste este objeto en esta visita."
     art = articulo_tienda_por_id(articulo_id)
-    if estado.puntos_arcade < art.precio:
-        return f"Necesitas {art.precio} pts (tienes {estado.puntos_arcade})."
+    precio = art.precio if precio_efectivo is None else precio_efectivo
+    if estado.puntos_arcade < precio:
+        return f"Necesitas {precio} pts (tienes {estado.puntos_arcade})."
     if es_bonificacion(articulo_id) and not bonificacion_aplicable(
         articulo_id, estado, vidas_max=vidas_max
     ):
@@ -208,8 +337,8 @@ def seleccionar_articulos_tienda_visita(
     indice_visita: int = 0,
     estado: EstadoPartida | None = None,
     vidas_max: int | None = None,
-) -> tuple[ArticuloTienda | None, ...]:
-    """Tres slots por visita; al menos uno asequible si hay estado y puntos."""
+) -> tuple[OfertaTienda | None, ...]:
+    """Tres slots por visita; precios con descuento, inflación o gratis (máx. 1)."""
     pool = list(articulos_tienda_para_sala(numero_sala))
     n = ARTICULOS_POR_VISITA_TIENDA
     if not pool:
@@ -259,7 +388,19 @@ def seleccionar_articulos_tienda_visita(
         )
         elegidos.append(candidato)
 
-    return tuple(elegidos)
+    gratis_disponible = True
+    ofertas: list[OfertaTienda | None] = []
+    for art in elegidos:
+        if art is None:
+            ofertas.append(None)
+            continue
+        oferta = oferta_desde_articulo(
+            rng, art, gratis_permitido=gratis_disponible
+        )
+        if oferta.etiqueta_precio == "Gratis":
+            gratis_disponible = False
+        ofertas.append(oferta)
+    return tuple(ofertas)
 
 
 def comprar_articulo(
@@ -269,23 +410,45 @@ def comprar_articulo(
     *,
     comprados_en_visita: set[str] | frozenset[str] | None = None,
     vidas_max: int | None = None,
+    precio_efectivo: int | None = None,
+    rng: random.Random | None = None,
+    numero_pregunta: int | None = None,
+    numero_sala: int | None = None,
+    loot_pool: tuple[str, ...] | None = None,
 ) -> str | None:
     """Resta puntos arcade; powerups al inventario, bonificaciones al instante."""
     art = articulo_por_id(articulo_id)
+    precio = art.precio if precio_efectivo is None else precio_efectivo
     if comprados_en_visita is not None and articulo_id in comprados_en_visita:
         return "Ya compraste este objeto en esta visita."
-    if estado.puntos_arcade < art.precio:
-        return f"Necesitas {art.precio} pts (tienes {estado.puntos_arcade})."
+    if estado.puntos_arcade < precio:
+        return f"Necesitas {precio} pts (tienes {estado.puntos_arcade})."
     if es_bonificacion(articulo_id):
         if not bonificacion_aplicable(articulo_id, estado, vidas_max=vidas_max):
             return "Esta bonificación no aplica ahora."
-    estado.puntos_arcade, _ = sumar_puntos_arcade(estado.puntos_arcade, -art.precio)
+    estado.puntos_arcade, _ = sumar_puntos_arcade(estado.puntos_arcade, -precio)
     if es_bonificacion(articulo_id):
         return aplicar_bonificacion(
-            articulo_id, estado, inventario, vidas_max=vidas_max
+            articulo_id,
+            estado,
+            inventario,
+            vidas_max=vidas_max,
+            numero_pregunta=numero_pregunta,
+            numero_sala=numero_sala,
+            precio_pagado=precio,
         )
-    inventario.agregar(articulo_id)
-    return None
+    if es_pack(articulo_id):
+        rng_pack = rng or random.Random()
+        pool = loot_pool
+        for pid, cant in resolver_contenido_pack(
+            articulo_id, rng_pack, inventario, loot_pool=pool
+        ):
+            inventario.agregar(pid, cant)
+        return None
+    if es_powerup(articulo_id):
+        inventario.agregar(articulo_id)
+        return None
+    return f"Artículo desconocido: {articulo_id!r}"
 
 
 def articulo_comprable_en_resistencia(
@@ -301,7 +464,7 @@ def articulo_comprable_en_resistencia(
         return False
     if es_bonificacion(articulo_id):
         return bonificacion_aplicable(articulo_id, estado, vidas_max=vidas_max)
-    return es_powerup(articulo_id)
+    return es_powerup(articulo_id) or es_pack(articulo_id)
 
 
 def articulo_comprable_resistencia(
@@ -350,13 +513,28 @@ def efecto_compra_resistencia(
     er,
     *,
     vidas_max: int | None = None,
+    rng: random.Random | None = None,
+    numero_pregunta: int | None = None,
+    precio_pagado: int | None = None,
 ) -> str | None:
     """Aplica compra en resistencia: powerup al inventario, bonificación al instante."""
     tope = vidas_max if vidas_max is not None else getattr(er, "vidas_max", None)
     if es_bonificacion(articulo_id):
+        if precio_pagado is None and numero_pregunta is not None:
+            precio_pagado = precio_resistencia_articulo(articulo_id, numero_pregunta)
         return aplicar_bonificacion(
-            articulo_id, estado, er, vidas_max=tope
+            articulo_id,
+            estado,
+            er,
+            vidas_max=tope,
+            numero_pregunta=numero_pregunta,
+            precio_pagado=precio_pagado,
         )
+    if es_pack(articulo_id):
+        rng_pack = rng or random.Random()
+        for pid, cant in resolver_contenido_pack(articulo_id, rng_pack, er.inventario):
+            er.agregar_powerup(pid, cant)
+        return None
     if not es_powerup(articulo_id):
         return f"Artículo desconocido: {articulo_id!r}"
     er.agregar_powerup(articulo_id)

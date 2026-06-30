@@ -4,7 +4,7 @@
 Punto de entrada del cuestionario MATCAD en pygame.
 
 Cinco modos: libre, historia, resistencia, escape room y feedback.
-Controles: ratón para navegar; teclado solo para escribir texto cuando haga falta.
+Controles: ratón para navegar; teclado para atajos (1–4, Enter, retroceso, Esc/D/H/F/O) y texto en campos.
 
 Uso:
   pip install -r Juego/requirements.txt

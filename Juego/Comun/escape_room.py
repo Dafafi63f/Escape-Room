@@ -14,28 +14,34 @@ import random
 from dataclasses import dataclass, replace
 
 from Comun.eventos_partida import (
+    DefinicionEvento,
     EventoContenidoInstanciado,
     ModificadoresPuerta,
     PityPuertasEspecialesEscape,
     RASGOS_BOTIN_ESCAPE,
     RASGOS_PUERTA_SIN_PREGUNTA_ESCAPE,
+    RASGO_PUERTA_MALDITA,
     SALAS_HARD_PITY_BOTIN_ESCAPE,
     SALAS_HARD_PITY_DESCANSO_ESCAPE,
     SALAS_HARD_PITY_TIENDA_ESCAPE,
     actualizar_pity_tras_sala,
     combinar_modificadores_puerta,
+    cursos_del_pool,
     debe_garantizar_botin_escape,
     debe_garantizar_descanso_escape,
     debe_garantizar_tienda_escape,
     definicion_grupo_con_perfil,
     definicion_materia_con_perfil,
     elegir_botin_para_sala,
+    elegir_botines_jefe_escape,
     elegir_plantillas_contenido_escape,
     evento_por_id,
     generar_modificadores_puerta,
     instanciar_evento_contenido,
     materias_distintas_puertas,
     perfil_materia_por_id,
+    periodos_del_pool,
+    semestres_del_pool,
     texto_evento_contenido,
     texto_modificadores_puerta,
 )
@@ -44,6 +50,14 @@ from Comun.escape_partida import (
     grupos_del_pool,
     grupos_viables_sala,
     materias_viables_sala,
+)
+from Comun.jefe_partida import (
+    PREGUNTAS_POR_JEFE,
+    TAMANOS_BLOQUE_NORMAL,
+    elegir_dificultad_jefe_escape,
+    n_puertas_jefe_en_sala,
+    perfil_id_para_dificultad_jefe,
+    sala_es_milestone_jefe,
 )
 from Comun.modelos import BancoPreguntas, OPCIONES_BANCO_JUEGO, Pregunta
 
@@ -54,7 +68,7 @@ SALAS_MIN = 5
 SALAS_MAX = 50
 SALAS_PASO = 5
 SALAS_DEFECTO = 30
-TAMANOS_PUERTA = (3, 5, 10)
+TAMANOS_PUERTA = TAMANOS_BLOQUE_NORMAL
 OPCIONES_BANCO_ESCAPE = OPCIONES_BANCO_JUEGO
 
 __all__ = [
@@ -80,6 +94,8 @@ __all__ = [
     "generar_puertas_sala",
     "generar_salas_escape",
     "normalizar_n_salas_escape",
+    "quitar_maldicion_puertas_sala",
+    "regenerar_puertas_sala_escape",
     "semilla_partida_escape",
     "tamanos_puerta_para_sala",
     "total_preguntas_escape",
@@ -114,6 +130,7 @@ class PuertaEscape:
     n_preguntas: int
     modificadores: ModificadoresPuerta
     evento: EventoContenidoInstanciado
+    es_jefe: bool = False
 
     @property
     def texto_completo(self) -> str:
@@ -126,6 +143,10 @@ class PuertaEscape:
 
 def firma_puerta_escape(puerta: PuertaEscape) -> tuple[str, ...]:
     """Identidad visible de la puerta para evitar duplicados en la misma sala."""
+    if puerta.es_jefe:
+        foco = puerta.evento.etiqueta_foco or puerta.evento.grupo or ""
+        perfil = puerta.evento.perfil_id or ""
+        return ("jefe", puerta.evento.id, perfil, foco)
     if puerta.modificadores.sin_pregunta:
         for eid in puerta.modificadores.eventos_ids:
             if eid in RASGOS_PUERTA_SIN_PREGUNTA_ESCAPE:
@@ -200,7 +221,7 @@ def tamanos_puerta_para_sala(
         elif t < 0.85:
             plantilla = [3, 5, 5]
         else:
-            plantilla = [3, 5, 10]
+            plantilla = [3, 5, 5]
 
     tamanos = list(plantilla)
     while len(tamanos) < puertas_por_sala:
@@ -260,6 +281,14 @@ def generar_puertas_sala(
     return puertas, estado_pity
 
 
+def _pools_filtro_contenido(pool: list[Pregunta]) -> dict[str, tuple]:
+    return {
+        "cursos_pool": cursos_del_pool(pool),
+        "semestres_pool": semestres_del_pool(pool),
+        "periodos_pool": periodos_del_pool(pool),
+    }
+
+
 def _reconstruir_puerta_con_preguntas(
     indice: int,
     *,
@@ -279,6 +308,7 @@ def _reconstruir_puerta_con_preguntas(
     pity: PityPuertasEspecialesEscape,
     estado=None,
     vidas_max: int | None = None,
+    permitir_pausas: bool = True,
 ) -> PuertaEscape:
     mods = generar_modificadores_puerta(
         numero_sala=numero_sala,
@@ -288,6 +318,7 @@ def _reconstruir_puerta_con_preguntas(
         pity=pity,
         estado=estado,
         vidas_max=vidas_max,
+        permitir_pausas=permitir_pausas,
     )
     if mods.sin_pregunta:
         n_preg = 0
@@ -302,29 +333,19 @@ def _reconstruir_puerta_con_preguntas(
     else:
         plantilla_usada = plantilla
         perfil_usado = perfil_id
-        if (
-            n_preg >= 10
-            and numero_sala >= perfil_materia_por_id("dificil").nivel_min_sala
-            and rng.random() < 0.6
-        ):
-            perfil_dificil = perfil_materia_por_id("dificil")
-            opts_jefe = plantilla.contenido_escape
-            if opts_jefe and opts_jefe.usa_grupo:
-                plantilla_usada = definicion_grupo_con_perfil(perfil_dificil)
-            else:
-                plantilla_usada = definicion_materia_con_perfil(perfil_dificil)
-            perfil_usado = "dificil"
         materia_pref = materias_puerta[indice] if indice < len(materias_puerta) else None
         opts = plantilla_usada.contenido_escape
-        usa_grupo = bool(opts and opts.usa_grupo)
+        ambito = opts.ambito_efectivo if opts else "materia"
+        pools_filtro = _pools_filtro_contenido(pool_preguntas)
         evento = instanciar_evento_contenido(
             plantilla_usada,
-            materias_pool=materias_base if not usa_grupo else materias_pool,
-            grupos_pool=grupos_base if usa_grupo else grupos_pool,
+            materias_pool=materias_base if ambito == "materia" else materias_pool,
+            grupos_pool=grupos_base if ambito == "grupo" else grupos_pool,
             rng=rng,
             indice_puerta=sala_idx * 10 + indice,
-            materia_preferida=None if usa_grupo else materia_pref,
+            materia_preferida=None if ambito != "materia" else materia_pref,
             perfil_id=perfil_usado,
+            **pools_filtro,
         )
     puerta = PuertaEscape(
         indice=indice,
@@ -431,6 +452,42 @@ def _insertar_puerta_especial_escape(
     )
 
 
+def _puerta_acepta_botin_hard_pity(puerta: PuertaEscape) -> bool:
+    """Puertas donde el hard pity puede forzar botín (nunca tienda ni jefe)."""
+    if puerta.es_jefe:
+        return False
+    if "tienda" in puerta.modificadores.eventos_ids:
+        return False
+    if any(eid in RASGOS_BOTIN_ESCAPE for eid in puerta.modificadores.eventos_ids):
+        return False
+    if puerta.modificadores.sin_pregunta:
+        return "descanso" in puerta.modificadores.eventos_ids
+    return True
+
+
+def _mods_puerta_con_botin_anadido(
+    puerta: PuertaEscape,
+    botin: DefinicionEvento,
+    *,
+    numero_sala: int,
+) -> ModificadoresPuerta:
+    if puerta.modificadores.sin_pregunta:
+        pausa = evento_por_id("descanso")
+        rasgos: list[DefinicionEvento] = [pausa]
+        for eid in puerta.modificadores.eventos_ids:
+            if eid in RASGOS_BOTIN_ESCAPE:
+                rasgos.append(evento_por_id(eid))
+        rasgos.append(botin)
+        return combinar_modificadores_puerta(tuple(rasgos), numero_sala=numero_sala)
+    ev_ids = [
+        eid
+        for eid in puerta.modificadores.eventos_ids
+        if eid not in RASGOS_BOTIN_ESCAPE
+    ]
+    rasgos = [evento_por_id(eid) for eid in ev_ids] + [botin]
+    return combinar_modificadores_puerta(tuple(rasgos), numero_sala=numero_sala)
+
+
 def _insertar_botin_en_puerta_escape(
     puertas: list[PuertaEscape],
     *,
@@ -438,29 +495,169 @@ def _insertar_botin_en_puerta_escape(
     rng: random.Random,
     sala_idx: int,
 ) -> None:
+    """Hard pity: al menos una puerta con botín (pregunta o descanso; nunca tienda)."""
+    del sala_idx
     if any(
         any(eid in RASGOS_BOTIN_ESCAPE for eid in p.modificadores.eventos_ids)
         for p in puertas
     ):
         return
-    candidatos = [
-        i for i, p in enumerate(puertas) if not p.modificadores.sin_pregunta
-    ]
+    candidatos = [i for i, p in enumerate(puertas) if _puerta_acepta_botin_hard_pity(p)]
     if not candidatos:
         return
     idx = rng.choice(candidatos)
-    puerta = puertas[idx]
-    ev_ids = [
-        eid
-        for eid in puerta.modificadores.eventos_ids
-        if eid not in RASGOS_BOTIN_ESCAPE
-    ]
     botin = elegir_botin_para_sala(numero_sala, rng)
     if botin is None:
         return
-    rasgos = [evento_por_id(eid) for eid in ev_ids] + [botin]
-    mods = combinar_modificadores_puerta(tuple(rasgos), numero_sala=numero_sala)
+    puerta = puertas[idx]
+    mods = _mods_puerta_con_botin_anadido(puerta, botin, numero_sala=numero_sala)
     puertas[idx] = replace(puerta, modificadores=mods)
+
+
+def _crear_puerta_jefe_escape(
+    indice: int,
+    *,
+    numero_sala: int,
+    sala_idx: int,
+    grupos_base: tuple[str, ...],
+    grupos_pool: tuple[str, ...],
+    pool_preguntas: list[Pregunta],
+    n_salas: int,
+    rng: random.Random,
+    grupos_usados: set[str],
+) -> PuertaEscape:
+    dif_tipo = elegir_dificultad_jefe_escape(numero_sala, rng)
+    perfil_id = perfil_id_para_dificultad_jefe(dif_tipo)
+    perfil = perfil_materia_por_id(perfil_id)
+    plantilla = definicion_grupo_con_perfil(perfil)
+    candidatos = [g for g in grupos_base if g not in grupos_usados] or list(grupos_base)
+    if not candidatos:
+        candidatos = list(grupos_pool) or list(grupos_base)
+    grupo = rng.choice(candidatos)
+    grupos_usados.add(grupo)
+    mods = generar_modificadores_puerta(
+        numero_sala=numero_sala,
+        rng=rng,
+        indice_puerta=indice,
+        pausas_usadas=frozenset(RASGOS_PUERTA_SIN_PREGUNTA_ESCAPE),
+        pity=None,
+        permitir_pausas=False,
+    )
+    rasgos = [evento_por_id(eid) for eid in mods.eventos_ids]
+    rasgos.extend(elegir_botines_jefe_escape(numero_sala, rng))
+    mods = combinar_modificadores_puerta(tuple(rasgos), numero_sala=numero_sala)
+    if mods.fin_partida_si_fallo:
+        rasgos_limpios = [
+            evento_por_id(eid) for eid in mods.eventos_ids if eid != "puerta_maldita"
+        ]
+        mods = combinar_modificadores_puerta(tuple(rasgos_limpios), numero_sala=numero_sala)
+    evento = instanciar_evento_contenido(
+        plantilla,
+        materias_pool=(),
+        grupos_pool=(grupo,),
+        rng=rng,
+        indice_puerta=sala_idx * 10 + indice,
+        perfil_id=perfil_id,
+    )
+    puerta = PuertaEscape(
+        indice=indice,
+        n_preguntas=PREGUNTAS_POR_JEFE,
+        modificadores=mods,
+        evento=evento,
+        es_jefe=True,
+    )
+    return asegurar_puerta_viable(
+        pool_preguntas,
+        puerta,
+        numero_sala=numero_sala,
+        n_salas=n_salas,
+        indice_puerta=indice,
+        materias_pool=(),
+        grupos_pool=grupos_base or grupos_pool,
+    )
+
+
+def _construir_puertas_sala_jefe(
+    sala_idx: int,
+    *,
+    materias_pool: tuple[str, ...],
+    pool_preguntas: list[Pregunta],
+    rng: random.Random,
+    puertas_por_sala: int,
+    n_salas: int,
+    pity: PityPuertasEspecialesEscape,
+) -> tuple[PuertaEscape, ...]:
+    numero_sala = sala_idx + 1
+    n_jefes = n_puertas_jefe_en_sala(numero_sala)
+    grupos_pool = grupos_del_pool(pool_preguntas)
+    grupos_base = grupos_viables_sala(
+        pool_preguntas,
+        grupos_pool,
+        numero_sala=numero_sala,
+        n_salas=n_salas,
+    )
+    materias_base = materias_viables_sala(
+        pool_preguntas,
+        materias_pool,
+        numero_sala=numero_sala,
+        n_salas=n_salas,
+    )
+    plantillas = elegir_plantillas_contenido_escape(puertas_por_sala, numero_sala, rng)
+    materias_puerta = materias_distintas_puertas(materias_base, puertas_por_sala, rng)
+    tamanos = tamanos_puerta_para_sala(
+        sala_idx, n_salas=n_salas, puertas_por_sala=puertas_por_sala, rng=rng
+    )
+
+    puertas: list[PuertaEscape] = []
+    grupos_usados: set[str] = set()
+    for i in range(n_jefes):
+        puertas.append(
+            _crear_puerta_jefe_escape(
+                i,
+                numero_sala=numero_sala,
+                sala_idx=sala_idx,
+                grupos_base=grupos_base,
+                grupos_pool=grupos_pool,
+                pool_preguntas=pool_preguntas,
+                n_salas=n_salas,
+                rng=rng,
+                grupos_usados=grupos_usados,
+            )
+        )
+
+    n_normales = puertas_por_sala - n_jefes
+    for j in range(n_normales):
+        i = n_jefes + j
+        plantilla, perfil_id = plantillas[i] if i < len(plantillas) else plantillas[-1]
+        puertas.append(
+            _reconstruir_puerta_con_preguntas(
+                i,
+                plantilla=plantilla,
+                perfil_id=perfil_id,
+                n_preg=tamanos[i] if i < len(tamanos) else 3,
+                numero_sala=numero_sala,
+                sala_idx=sala_idx,
+                materias_base=materias_base,
+                materias_pool=materias_pool,
+                materias_puerta=materias_puerta,
+                grupos_base=grupos_base,
+                grupos_pool=grupos_pool,
+                pool_preguntas=pool_preguntas,
+                n_salas=n_salas,
+                rng=rng,
+                pity=pity,
+                permitir_pausas=False,
+            )
+        )
+
+    if debe_garantizar_botin_escape(pity, numero_sala):
+        _insertar_botin_en_puerta_escape(
+            puertas,
+            numero_sala=numero_sala,
+            rng=rng,
+            sala_idx=sala_idx,
+        )
+    return tuple(puertas)
 
 
 def _aplicar_hard_pity_puertas_especiales(
@@ -475,6 +672,8 @@ def _aplicar_hard_pity_puertas_especiales(
     vidas_max: int | None = None,
 ) -> None:
     """Inserta descanso o tienda si el hard pity lo exige y aún no hay ninguno en la sala."""
+    if sala_es_milestone_jefe(numero_sala):
+        return
     if debe_garantizar_descanso_escape(pity, numero_sala):
         _insertar_puerta_especial_escape(
             puertas,
@@ -525,6 +724,17 @@ def _construir_puertas_sala(
 ) -> tuple[PuertaEscape, ...]:
     del sala
     numero_sala = sala_idx + 1
+    if sala_es_milestone_jefe(numero_sala):
+        return _construir_puertas_sala_jefe(
+            sala_idx,
+            materias_pool=materias_pool,
+            pool_preguntas=pool_preguntas,
+            rng=rng,
+            puertas_por_sala=puertas_por_sala,
+            n_salas=n_salas,
+            pity=pity,
+        )
+
     plantillas = elegir_plantillas_contenido_escape(puertas_por_sala, numero_sala, rng)
     materias_base = materias_viables_sala(
         pool_preguntas,
@@ -574,25 +784,19 @@ def _construir_puertas_sala(
         else:
             plantilla_usada = plantilla
             perfil_usado = perfil_id
-            if n_preg >= 10 and numero_sala >= perfil_materia_por_id("dificil").nivel_min_sala and rng.random() < 0.6:
-                perfil_dificil = perfil_materia_por_id("dificil")
-                opts_jefe = plantilla.contenido_escape
-                if opts_jefe and opts_jefe.usa_grupo:
-                    plantilla_usada = definicion_grupo_con_perfil(perfil_dificil)
-                else:
-                    plantilla_usada = definicion_materia_con_perfil(perfil_dificil)
-                perfil_usado = "dificil"
             materia_pref = materias_puerta[i] if i < len(materias_puerta) else None
             opts = plantilla_usada.contenido_escape
-            usa_grupo = bool(opts and opts.usa_grupo)
+            ambito = opts.ambito_efectivo if opts else "materia"
+            pools_filtro = _pools_filtro_contenido(pool_preguntas)
             evento = instanciar_evento_contenido(
                 plantilla_usada,
-                materias_pool=materias_base if not usa_grupo else materias_pool,
-                grupos_pool=grupos_base if usa_grupo else grupos_pool,
+                materias_pool=materias_base if ambito == "materia" else materias_pool,
+                grupos_pool=grupos_base if ambito == "grupo" else grupos_pool,
                 rng=rng,
                 indice_puerta=sala_idx * 10 + i,
-                materia_preferida=None if usa_grupo else materia_pref,
+                materia_preferida=None if ambito != "materia" else materia_pref,
                 perfil_id=perfil_usado,
+                **pools_filtro,
             )
         puerta = PuertaEscape(indice=i, n_preguntas=n_preg, modificadores=mods, evento=evento)
         puerta = asegurar_puerta_viable(
@@ -634,6 +838,62 @@ def _construir_puertas_sala(
         vidas_max=vidas_max,
     )
     return tuple(puertas)
+
+
+def regenerar_puertas_sala_escape(
+    sala: SalaEscapeRoom,
+    sala_idx: int,
+    *,
+    materias_pool: tuple[str, ...],
+    pool_preguntas: list[Pregunta],
+    rng: random.Random,
+    puertas_por_sala: int = PUERTAS_POR_SALA,
+    n_salas: int = SALAS_DEFECTO,
+    pity: PityPuertasEspecialesEscape | None = None,
+    estado=None,
+    vidas_max: int | None = None,
+) -> tuple[PuertaEscape, ...]:
+    """Reroll de puertas sin avanzar el pity de salas."""
+    del pity
+    puertas: tuple[PuertaEscape, ...] = ()
+    for _ in range(64):
+        puertas = _construir_puertas_sala(
+            sala,
+            sala_idx,
+            materias_pool=materias_pool,
+            pool_preguntas=pool_preguntas,
+            rng=rng,
+            puertas_por_sala=puertas_por_sala,
+            n_salas=n_salas,
+            pity=None,
+            estado=estado,
+            vidas_max=vidas_max,
+        )
+        firmas = [firma_puerta_escape(p) for p in puertas]
+        if len(set(firmas)) == len(firmas):
+            return puertas
+    return puertas
+
+
+def quitar_maldicion_puertas_sala(
+    puertas: tuple[PuertaEscape, ...],
+    *,
+    numero_sala: int,
+) -> tuple[PuertaEscape, ...]:
+    """Elimina el rasgo maldito de cada puerta de la sala."""
+    resultado: list[PuertaEscape] = []
+    for puerta in puertas:
+        if not puerta.modificadores.fin_partida_si_fallo:
+            resultado.append(puerta)
+            continue
+        rasgos = [
+            evento_por_id(eid)
+            for eid in puerta.modificadores.eventos_ids
+            if eid != RASGO_PUERTA_MALDITA
+        ]
+        mods = combinar_modificadores_puerta(tuple(rasgos), numero_sala=numero_sala)
+        resultado.append(replace(puerta, modificadores=mods))
+    return tuple(resultado)
 
 
 def semilla_partida_escape() -> int:

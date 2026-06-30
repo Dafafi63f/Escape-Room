@@ -24,6 +24,10 @@ from Comun.motor_nucleo import (
     texto_solucion,
 )
 from Comun.semillas import RngPartida, crear_rng_partida
+from Comun.objetos_partida import (
+    segundos_pregunta_restantes,
+    tiempo_pregunta_agotado,
+)
 from Comun.resistencia_motor import (
     aplicar_bonificaciones_puntos_resistencia,
     aplicar_modificadores_visuales_escalada,
@@ -40,7 +44,8 @@ from Comun.resistencia_motor import (
     procesar_turno_resistencia,
     puede_usar_powerup_en_pregunta,
     revocar_powerup_usado,
-    texto_progreso_resistencia,
+    segmento_bloque_filtro_barra,
+    separar_emoji_mensaje,
     texto_segmento_desafio_bloque,
     tiempo_pregunta_efectivo,
     usar_powerup,
@@ -88,9 +93,10 @@ from Comun.config_historia import (
     validar_config,
 )
 from Comun.presets_historia import PresetHistoria, config_defecto
-from Comun.preferencias_grafico import nombre_jugador_grafico
+from Comun.preferencias_grafico import emojis_habilitados, nombre_jugador_grafico
 from Comun.reglas import ReglasPartida, formatear_resultado_puntuacion, vidas_iniciales_partida
 from Comun.informe_examen import CierreInformePartida, meta_cierre_historia
+from Grafico.atajos_teclado import manejar_teclado_partida
 from Grafico.textos_grafico import (
     BTN_ABANDONAR,
     BTN_APUESTA_NO,
@@ -114,6 +120,8 @@ from Grafico.aviso_resistencia import (
 )
 from Grafico.feedback_partida import (
     dibujar_feedback_partida,
+    evento_clic_salta_espera,
+    evento_tecla_salta_espera,
     feedback_debe_avanzar,
     marcar_inicio_feedback,
     solucion_feedback_grafico,
@@ -133,7 +141,6 @@ from Grafico.pantallas import (
     MenuPrincipal,
     Pantalla,
     ResumenPartida,
-    _segundos_pregunta_restantes,
     rect_enunciado_panel_pregunta,
 )
 from Grafico.tooltips_ui import (
@@ -159,6 +166,7 @@ from Grafico.tema import (
     COLOR_TEXTO,
     COLOR_TITULO,
     MARGEN,
+    TAMANO_FUENTE_PEQUENA,
     Y_INICIO_TITULO,
     crear_fuentes,
     x_min_centro_barra_partida,
@@ -172,7 +180,6 @@ from Grafico.ui import (
     dibujar_caja_valor_ciclo,
     dibujar_panel,
     dibujar_texto_multilinea,
-    dibujar_tooltip,
     dibujar_tooltips_botones,
     medir_etiqueta_boton,
     posicionar_botones_fila,
@@ -181,7 +188,13 @@ from Grafico.ui import (
     tamano_grupo_botones,
     unir_partes_cabientes,
 )
-from Grafico.texto import dibujar_texto_centro, preparar_texto_ui, texto_requiere_fuentes_mixtas
+from Grafico.texto import (
+    dibujar_texto_centro,
+    medir_texto_mixto,
+    preparar_texto_ui,
+    renderizar_texto_mixto,
+    texto_requiere_fuentes_mixtas,
+)
 
 if TYPE_CHECKING:
     from Grafico.app import DatosJuego
@@ -250,6 +263,8 @@ class PartidaResistencia(Pantalla):
         self.botones_powerup: list[Boton] = []
         self.inicio_pregunta = time.monotonic()
         self.inicio_feedback = 0.0
+        self._timer_pausa_acum_seg = 0.0
+        self._timer_pausa_desde: float | None = None
         lbl_abandonar = etiqueta(*BTN_ABANDONAR)
         self.boton_abandonar = Boton(
             lbl_abandonar,
@@ -263,6 +278,44 @@ class PartidaResistencia(Pantalla):
             raise ValueError("Sin preguntas para resistencia.")
         self._entrar_pregunta_o_avisos()
 
+    def _fases_pausa_timers(self) -> bool:
+        return self.fase in ("aviso", "evento_si_no")
+
+    def _barra_muestra_estado_pregunta(self) -> bool:
+        """Cronómetro y símbolos de la pregunta solo cuando empieza a contar el tiempo."""
+        return self.fase == "pregunta"
+
+    def _barra_muestra_bloque_filtro(self) -> bool:
+        """Bloque temático activo: visible en pregunta y feedback (como progreso de puerta en escape)."""
+        return self.fase in ("pregunta", "feedback")
+
+    def _reset_pausa_timer_pregunta(self) -> None:
+        self._timer_pausa_acum_seg = 0.0
+        self._timer_pausa_desde = None
+
+    def _pausa_timer_pregunta_seg(self) -> float:
+        pausa = self._timer_pausa_acum_seg
+        if self._timer_pausa_desde is not None:
+            pausa += time.monotonic() - self._timer_pausa_desde
+        return pausa
+
+    def _sincronizar_pausa_timers(self) -> None:
+        from Comun.maldiciones_partida import desafio_maldicion_activo
+
+        pausar = self._fases_pausa_timers()
+        desafio = desafio_maldicion_activo(self.er.maldicion)
+        if pausar:
+            if self._timer_pausa_desde is None:
+                self._timer_pausa_desde = time.monotonic()
+            if desafio is not None:
+                desafio.pausar()
+        else:
+            if self._timer_pausa_desde is not None:
+                self._timer_pausa_acum_seg += time.monotonic() - self._timer_pausa_desde
+                self._timer_pausa_desde = None
+            if desafio is not None:
+                desafio.reanudar()
+
     def _iniciar_fase_pregunta(self) -> None:
         p = self._pregunta_actual()
         aplicar_modificadores_visuales_escalada(
@@ -270,6 +323,7 @@ class PartidaResistencia(Pantalla):
         )
         self.fase = "pregunta"
         self.inicio_pregunta = time.monotonic()
+        self._reset_pausa_timer_pregunta()
         self.avisos_cola = []
         self.indice_aviso = 0
         self._reconstruir_opciones()
@@ -281,6 +335,7 @@ class PartidaResistencia(Pantalla):
         *,
         es_recompensa: bool = False,
     ) -> None:
+        self._reset_pausa_timer_pregunta()
         self.avisos_cola = avisos
         self.aviso_es_recompensa = es_recompensa
         self.indice_aviso = 0
@@ -354,6 +409,27 @@ class PartidaResistencia(Pantalla):
             familia_etiqueta="emoji",
         )
 
+    def en_partida_activa(self) -> bool:
+        return True
+
+    def atajo_avanzar(self) -> bool:
+        if self.fase == "evento_si_no":
+            from Grafico.atajos_teclado import pulsar_boton_si_activo
+
+            return pulsar_boton_si_activo(self.boton_evento_si)
+        return False
+
+    def atajo_opcion_numerica(self, indice: int) -> bool:
+        if self.fase == "evento_si_no":
+            from Grafico.atajos_teclado import pulsar_boton_si_activo
+
+            if indice == 1:
+                return pulsar_boton_si_activo(self.boton_evento_si)
+            if indice == 2:
+                return pulsar_boton_si_activo(self.boton_evento_no)
+            return False
+        return super().atajo_opcion_numerica(indice)
+
     def _aceptar_evento_si_no(self) -> None:
         evento = self.er.evento_si_no
         if evento is None:
@@ -373,6 +449,14 @@ class PartidaResistencia(Pantalla):
     def _rechazar_evento_si_no(self) -> None:
         self.er.evento_si_no = None
         self._entrar_pregunta_o_avisos()
+
+    def _segundos_restantes_pregunta(self) -> int | None:
+        return segundos_pregunta_restantes(
+            self.inicio_pregunta,
+            self._limite_tiempo_pregunta(),
+            factor_velocidad=self.er.factor_velocidad_tiempo,
+            pausa_seg=self._pausa_timer_pregunta_seg(),
+        )
 
     def _limite_tiempo_pregunta(self) -> int | None:
         return tiempo_pregunta_efectivo(
@@ -401,7 +485,6 @@ class PartidaResistencia(Pantalla):
         )
         if idx is None:
             return False
-        consumir_bloque_filtro(self.er)
         self.pregunta_idx = idx
         return True
 
@@ -409,9 +492,6 @@ class PartidaResistencia(Pantalla):
         if self.pregunta_idx is None:
             raise IndexError("Sin pregunta cargada.")
         return self.pool[self.pregunta_idx]
-
-    def _texto_progreso(self) -> str:
-        return texto_progreso_resistencia(self.er, self._numero_pregunta())
 
     def _altura_banda_powerups(self) -> int:
         n = sum(1 for pid in self.er.inventario if self.er.cantidad(pid) > 0)
@@ -435,21 +515,28 @@ class PartidaResistencia(Pantalla):
         x_centro_min = x_min_centro_barra_partida(self.fuentes["menu"])
         return max(80, ANCHO - MARGEN - x_centro_min)
 
-    def _partes_texto_extra_layout(self) -> list[str]:
-        if self.er.sin_escalada_dificultad:
-            limite = None
-            if self.fase in ("pregunta", "feedback") and self.pregunta_idx is not None:
-                limite = self._limite_tiempo_pregunta()
-            return partes_texto_barra_resistencia(
-                self.escalada,
-                self.er,
-                limite_tiempo_seg=limite,
-            )
+    def _partes_texto_extra_contenido(self) -> list[str]:
+        from Comun.resistencia_motor import texto_bloque_filtro_extra
+
         partes: list[str] = []
+        bloque_extra = texto_bloque_filtro_extra(self.er)
+        if bloque_extra:
+            partes.append(bloque_extra)
+        if self.er.sin_escalada_dificultad:
+            limite = self._limite_tiempo_pregunta()
+            partes.extend(
+                partes_texto_barra_resistencia(
+                    self.escalada,
+                    self.er,
+                    limite_tiempo_seg=limite,
+                )
+            )
+            return partes
         partes.extend(partes_texto_efectos_escalada(self.escalada, solo_eventos=False))
-        if self.er.bloque_filtro:
-            partes.append(self.er.bloque_filtro.etiqueta)
         return partes
+
+    def _partes_texto_extra_layout(self) -> list[str]:
+        return self._partes_texto_extra_contenido()
 
     def _y_panel_pregunta(self) -> int:
         return Y_PANEL_PREGUNTA + self._offset_y_panel()
@@ -477,7 +564,17 @@ class PartidaResistencia(Pantalla):
         return y
 
     def _texto_desafio_bloque_barra(self) -> str | None:
+        if not self._barra_muestra_estado_pregunta():
+            return None
         return texto_segmento_desafio_bloque(self.er)
+
+    def _kwargs_bloque_filtro_barra(self) -> dict[str, str]:
+        if not self._barra_muestra_bloque_filtro():
+            return {}
+        texto = segmento_bloque_filtro_barra(self.er)
+        if texto is None:
+            return {}
+        return {"bloque_filtro_texto": texto}
 
     def _comprobar_desafio_bloque_expirado(self) -> bool:
         if not desafio_bloque_expirado(self.er):
@@ -489,29 +586,30 @@ class PartidaResistencia(Pantalla):
 
     def _linea_estado_actual(self) -> str:
         seg_preg = None
-        if self.fase == "pregunta":
-            seg_preg = _segundos_pregunta_restantes(
-                self.inicio_pregunta,
-                self._limite_tiempo_pregunta(),
-            )
+        if self._barra_muestra_estado_pregunta():
+            seg_preg = self._segundos_restantes_pregunta()
         return linea_estado(
             self.estado,
-            self._texto_progreso(),
+            "",
             segundos_pregunta_restantes=seg_preg,
             vidas_max=self.er.vidas_max,
+            numero_pregunta=self._numero_pregunta(),
+            racha=self.er.racha,
             desafio_bloque_texto=self._texto_desafio_bloque_barra(),
+            **self._kwargs_bloque_filtro_barra(),
         )
 
     def _reconstruir_powerups(self) -> None:
+        from Comun.maldiciones_partida import objetos_bloqueados_efectivo_resistencia
+
         self.botones_powerup = []
-        if self.fase != "pregunta" or self.er.objetos_bloqueados:
+        if self.fase != "pregunta":
             return
+        objetos_bloqueados = objetos_bloqueados_efectivo_resistencia(self.er)
         items = [
             (pid, self.er.cantidad(pid))
             for pid in sorted(self.er.inventario.keys())
             if self.er.cantidad(pid) > 0
-            and puede_usar_powerup_en_pregunta(pid, self.er.powerups_usados_en_pregunta)
-            is None
         ]
         if not items:
             return
@@ -522,14 +620,19 @@ class PartidaResistencia(Pantalla):
             etiqueta_btn = prefijar_emoji(f"{nombre} ({cant})", emoji_powerup(pid))
             ancho = min(156, max(96, medir_etiqueta_boton(etiqueta_btn, self.fuentes["pequena"])[0] + 28))
             rect = pygame.Rect(x, y, ancho, 32)
-            self.botones_powerup.append(
-                Boton(
-                    etiqueta_btn,
-                    rect,
-                    capturar(self._usar_powerup, pid),
-                    tooltip=descripcion_powerup(pid),
-                )
+            boton = Boton(
+                etiqueta_btn,
+                rect,
+                capturar(self._usar_powerup, pid),
+                tooltip=descripcion_powerup(pid),
             )
+            boton.activo = not objetos_bloqueados and (
+                puede_usar_powerup_en_pregunta(pid, self.er.powerups_usados_en_pregunta)
+                is None
+            )
+            if objetos_bloqueados:
+                boton.tooltip = "Maldición activa: no puedes usar objetos."
+            self.botones_powerup.append(boton)
             x += ancho + 8
             if x > ANCHO - MARGEN - 80:
                 x = MARGEN
@@ -576,7 +679,11 @@ class PartidaResistencia(Pantalla):
             self.inicio_feedback = marcar_inicio_feedback()
             return
         if powerup_id == "skip":
-            self.er.registrar_fallo()
+            if self.er.skip_sin_cortar_racha > 0:
+                self.er.skip_sin_cortar_racha -= 1
+            else:
+                self.er.registrar_fallo()
+            consumir_bloque_filtro(self.er)
             self.indice_global += 1
             if not self._cargar_siguiente_pregunta():
                 self._fin_partida()
@@ -613,7 +720,7 @@ class PartidaResistencia(Pantalla):
             self._reconstruir_opciones()
             self._reconstruir_powerups()
             return
-        if powerup_id in {"fifty_fifty", "bomba"}:
+        if powerup_id in {"fifty_fifty", "bomba", "comodin", "descarte_inteligente"}:
             self._reconstruir_opciones()
         self._reconstruir_powerups()
 
@@ -631,6 +738,8 @@ class PartidaResistencia(Pantalla):
         )
 
     def _ajustar_multiplicador(self, resultado: ResultadoRespuesta, puntos_prev: int, mult_apuesta: int) -> None:
+        from Comun.maldiciones_partida import multiplicador_puntos_maldicion
+
         aplicar_bonificaciones_puntos_resistencia(
             self.estado,
             puntos_prev=puntos_prev,
@@ -640,6 +749,7 @@ class PartidaResistencia(Pantalla):
             acierto=resultado.acierto,
             tiempo_agotado=resultado.tiempo_agotado,
             mult_apuesta=mult_apuesta,
+            mult_maldicion=multiplicador_puntos_maldicion(self.er.maldicion),
         )
 
     def _fin_partida(self, *, abandonado: bool = False) -> None:
@@ -669,15 +779,18 @@ class PartidaResistencia(Pantalla):
                 titulo=titulo_txt,
                 total_previsto=self.estado.respondidas,
                 prefijo="resistencia",
-                meta=meta_cierre_historia(
-                    preset_id=self.preset.id,
-                    preset_nombre=self.preset.nombre,
-                    perfil=self.preset.perfil,
-                    materias=[],
-                    n_preguntas=self.estado.respondidas,
-                    modo_resistencia=True,
-                    racha=self.er.mejor_racha,
-                ),
+                meta={
+                    **meta_cierre_historia(
+                        preset_id=self.preset.id,
+                        preset_nombre=self.preset.nombre,
+                        perfil=self.preset.perfil,
+                        materias=[],
+                        n_preguntas=self.estado.respondidas,
+                        modo_resistencia=True,
+                        racha=self.er.mejor_racha,
+                    ),
+                    "resistencia_variedad_vista": sorted(self.er.variedad_vista),
+                },
                 stats_historicas=stats,
                 abandonado=abandonado,
             )
@@ -791,6 +904,7 @@ class PartidaResistencia(Pantalla):
         )
 
     def _pasar_a_siguiente_pregunta(self) -> None:
+        consumir_bloque_filtro(self.er)
         self.indice_global += 1
         if not self._cargar_siguiente_pregunta():
             self._fin_partida()
@@ -799,6 +913,16 @@ class PartidaResistencia(Pantalla):
         self.feedback_solucion = None
         self.feedback_ok = False
         self._entrar_pregunta_o_avisos()
+
+    def _procesar_aviso_listo(self) -> None:
+        self.indice_aviso += 1
+        if self.indice_aviso < len(self.avisos_cola):
+            self.inicio_aviso = marcar_inicio_aviso()
+        elif self.aviso_es_recompensa:
+            self.aviso_es_recompensa = False
+            self._pasar_a_siguiente_pregunta()
+        else:
+            self._iniciar_fase_pregunta()
 
     def _continuar(self) -> None:
         if self.fase != "feedback":
@@ -827,19 +951,13 @@ class PartidaResistencia(Pantalla):
         self._pasar_a_siguiente_pregunta()
 
     def actualizar(self) -> Pantalla | None:
+        self._sincronizar_pausa_timers()
         if self._comprobar_desafio_bloque_expirado():
             self._fin_partida()
             return None
         if self.fase == "aviso":
             if aviso_debe_avanzar(self.inicio_aviso):
-                self.indice_aviso += 1
-                if self.indice_aviso < len(self.avisos_cola):
-                    self.inicio_aviso = marcar_inicio_aviso()
-                elif self.aviso_es_recompensa:
-                    self.aviso_es_recompensa = False
-                    self._pasar_a_siguiente_pregunta()
-                else:
-                    self._iniciar_fase_pregunta()
+                self._procesar_aviso_listo()
             return None
         if self.fase == "feedback":
             if feedback_debe_avanzar(
@@ -852,12 +970,17 @@ class PartidaResistencia(Pantalla):
         if self.fase != "pregunta":
             return None
         lim = self._limite_tiempo_pregunta()
-        if lim and _segundos_pregunta_restantes(self.inicio_pregunta, lim) == 0:
+        if lim and tiempo_pregunta_agotado(
+            self.inicio_pregunta,
+            lim,
+            factor_velocidad=self.er.factor_velocidad_tiempo,
+            pausa_seg=self._pausa_timer_pregunta_seg(),
+        ):
             self._responder_timeout()
         return None
 
     def titulo_pausa(self) -> str:
-        return f"{self.preset.nombre} · {self._linea_estado_actual()}"
+        return f"{self.preset.nombre}  {self._linea_estado_actual()}"
 
     def popup_bloqueante(self) -> bool:
         return self.fase in ("aviso", "evento_si_no")
@@ -877,21 +1000,12 @@ class PartidaResistencia(Pantalla):
                 self.boton_evento_si.dibujar(superficie, fuente)
             if self.boton_evento_no:
                 self.boton_evento_no.dibujar(superficie, fuente)
-            if (
-                self.boton_evento_si
-                and self.boton_evento_si.hover
-                and self.boton_evento_si.tooltip
-            ):
-                dibujar_tooltip(
-                    superficie,
-                    self.fuentes["pequena"],
-                    self.boton_evento_si.rect,
-                    self.boton_evento_si.tooltip,
-                )
-            if self.boton_evento_no and self.boton_evento_no.activo:
-                dibujar_tooltips_botones(
-                    superficie, self.fuentes["pequena"], [self.boton_evento_no]
-                )
+            tips_evento = [
+                b
+                for b in (self.boton_evento_si, self.boton_evento_no)
+                if b is not None
+            ]
+            dibujar_tooltips_botones(superficie, self.fuentes["pequena"], tips_evento)
             return
         if self.fase == "aviso" and self.avisos_cola:
             dibujar_contenido_aviso_resistencia(
@@ -907,9 +1021,9 @@ class PartidaResistencia(Pantalla):
         return self._texto_extra_barra()
 
     def _texto_extra_barra(self) -> str:
-        if self.fase != "pregunta":
+        if not self._barra_muestra_estado_pregunta():
             return ""
-        partes = self._partes_texto_extra_layout()
+        partes = self._partes_texto_extra_contenido()
         if not partes:
             return ""
         return unir_partes_cabientes(
@@ -934,11 +1048,8 @@ class PartidaResistencia(Pantalla):
         texto_extra = self._texto_extra_barra()
         y_estado = (ALTURA_BARRA_PARTIDA - altura_fuente) // 2
         seg_preg = None
-        if self.fase == "pregunta":
-            seg_preg = _segundos_pregunta_restantes(
-                self.inicio_pregunta,
-                self._limite_tiempo_pregunta(),
-            )
+        if self._barra_muestra_estado_pregunta():
+            seg_preg = self._segundos_restantes_pregunta()
         numero = self._numero_pregunta()
         dibujar_estado_partida_en_barra(
             superficie,
@@ -953,14 +1064,22 @@ class PartidaResistencia(Pantalla):
             numero_pregunta=numero,
             racha=self.er.racha,
             desafio_bloque_texto=self._texto_desafio_bloque_barra(),
+            **self._kwargs_bloque_filtro_barra(),
         )
         if texto_extra:
             ancho_extra = self._ancho_texto_extra()
-            extra = fuente.render(preparar_texto_ui(texto_extra), True, COLOR_AVISO)
+            texto_dibujo = texto_extra
+            if not emojis_habilitados():
+                _, texto_dibujo = separar_emoji_mensaje(texto_extra)
+            ancho_texto, _ = medir_texto_mixto(texto_dibujo, TAMANO_FUENTE_PEQUENA)
+            x_extra = x_centro_min + max(0, (ancho_extra - ancho_texto) // 2)
             y_extra = ALTURA_BARRA_PARTIDA + 10
-            superficie.blit(
-                extra,
-                extra.get_rect(midtop=(x_centro_min + ancho_extra // 2, y_extra)),
+            renderizar_texto_mixto(
+                superficie,
+                texto_dibujo,
+                (x_extra, y_extra),
+                COLOR_AVISO,
+                TAMANO_FUENTE_PEQUENA,
             )
         pygame.draw.line(
             superficie,
@@ -975,7 +1094,7 @@ class PartidaResistencia(Pantalla):
         self.boton_abandonar.actualizar_hover(pos)
         if self.fase == "evento_si_no":
             if self.boton_evento_si:
-                self.boton_evento_si.hover = self.boton_evento_si.rect.collidepoint(pos)
+                self.boton_evento_si.actualizar_hover(pos)
             if self.boton_evento_no:
                 self.boton_evento_no.actualizar_hover(pos)
             return
@@ -1002,6 +1121,12 @@ class PartidaResistencia(Pantalla):
     def _manejar_clic_resistencia(self, pos: tuple[int, int], boton: int) -> bool:
         if self.boton_abandonar.manejar_clic(pos, boton):
             return True
+        if self.fase == "feedback":
+            self._continuar()
+            return True
+        if self.fase == "aviso":
+            self._procesar_aviso_listo()
+            return True
         if self.fase == "evento_si_no":
             return self._manejar_clic_evento_si_no(pos, boton)
         if self.fase == "pregunta":
@@ -1009,6 +1134,19 @@ class PartidaResistencia(Pantalla):
         return False
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
+        if self.fase == "aviso" and (
+            evento_tecla_salta_espera(evento) or evento_clic_salta_espera(evento)
+        ):
+            self._procesar_aviso_listo()
+            return None
+        if self.fase in ("pregunta", "feedback") and manejar_teclado_partida(
+            evento,
+            fase=self.fase,
+            botones_opcion=self.botones_opcion,
+            on_responder=self._responder,
+            on_continuar=self._continuar,
+        ):
+            return None
         if evento.type == pygame.MOUSEMOTION:
             self._actualizar_hover_resistencia(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
@@ -1042,7 +1180,7 @@ class PartidaResistencia(Pantalla):
         mostrar_meta = bool(meta_partes)
         if mostrar_meta:
             meta = self.fuentes["pequena"].render(
-                " · ".join(meta_partes),
+                "  ".join(meta_partes),
                 True,
                 COLOR_AVISO if p.exclusiva_resistencia else COLOR_ACENTO,
             )

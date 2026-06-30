@@ -37,7 +37,7 @@ Todos los módulos de pantalla usan el prefijo **`pantallas_`** más un área (`
 
 ## Estado
 
-La migración «solo pygame» está completada: el dominio vive en [`Comun/`](../Comun/README.md) y la única interfaz de juego es esta carpeta `Grafico/` con el lanzador [`juego_grafico.py`](../juego_grafico.py).
+La interfaz gráfica es la única interfaz de juego: dominio en [`Comun/`](../Comun/README.md), UI en `Grafico/` y lanzador [`juego_grafico.py`](../juego_grafico.py) (**v1.0.0**).
 
 ## Principio de controles
 
@@ -63,7 +63,7 @@ python Juego/juego_grafico.py
 | **Historia** | Implementado | Carrusel de 5 presets (`Juego/presets.json`) |
 | **Resistencia** | Implementado | Eventos, objetos, récords en estadísticas; `RngPartida` por sesión |
 | **Escape room** | Implementado | 30 salas, tienda, botín, inventario; `RngPartida` por sesión |
-| **Feedback** | Implementado | Icono 📣 en barra; envío SMTP si hay config en `Data/Banco/creador_privado.json` |
+| **Feedback** | Implementado | Icono 📣 en barra; envío SMTP si hay config en `Data/Privado/creador_privado.json` |
 | **Info** | Implementado | Icono ℹ️: estadísticas, contacto del creador, changelog del juego |
 
 ## Barra superior fija (fuera de partida y en pausa)

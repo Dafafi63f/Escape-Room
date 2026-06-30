@@ -62,6 +62,10 @@ from Comun.eventos_partida import (  # noqa: E402
     prob_puerta_especial_con_pity,
     RASGOS_BOTIN_ESCAPE,
     RASGOS_BOTIN_POWERUP_ESCAPE,
+    RASGOS_MALDICION_ESCAPE,
+    SALA_MIN_MALDICION_ESCAPE,
+    SALAS_HARD_PITY_MALDICION_ESCAPE,
+    debe_garantizar_maldicion_escape,
 )
 from Comun.presets_historia import aplicar_preset, buscar_preset  # noqa: E402
 from Comun.motor_nucleo import EstadoPartida  # noqa: E402
@@ -93,6 +97,9 @@ class TestEscapeRoom(unittest.TestCase):
         self.assertIn("tienda", puerta_ids)
         self.assertIn("puerta_materia", contenido_ids)
         self.assertIn("puerta_grupo", contenido_ids)
+        self.assertIn("puerta_curso", contenido_ids)
+        self.assertIn("puerta_semestre", contenido_ids)
+        self.assertIn("puerta_periodo", contenido_ids)
         self.assertNotIn("relampago", puerta_ids)
         self.assertNotIn("relampago", contenido_ids)
         self.assertNotIn("puerta_materia", puerta_ids)
@@ -317,6 +324,79 @@ class TestEscapeRoom(unittest.TestCase):
         self.assertIn("materia concreta", iconos[2].tooltip)
         self.assertIn("fáciles", iconos[3].tooltip)
         self.assertNotIn("fácil", iconos[2].tooltip.lower())
+
+    def test_icono_bloque_puerta_tres_o_cinco(self) -> None:
+        from Comun.emojis_escape import EMOJI_BLOQUE_PUERTA, CapaIconoEscape
+        from Comun.eventos_partida import iconos_efecto_puerta
+
+        materia = self.materias_pool[0]
+        evento_materia = EventoContenidoInstanciado(
+            definicion=evento_por_id("solo_facil"),
+            materia=materia,
+            perfil_id="facil",
+        )
+        mods = combinar_modificadores_puerta((), numero_sala=5)
+        iconos_materia = iconos_efecto_puerta(
+            evento=evento_materia,
+            modificadores=mods,
+            n_preguntas=3,
+            rng=_rng(1),
+        )
+        self.assertEqual(
+            [ic.emoji for ic in iconos_materia if ic.capa == CapaIconoEscape.BLOQUE],
+            [],
+        )
+
+        grupo = next(p.grupo for p in self.pool if p.grupo)
+        evento_grupo = EventoContenidoInstanciado(
+            definicion=evento_por_id("puerta_grupo"),
+            grupo=grupo,
+            perfil_id="facil",
+        )
+        iconos_grupo = iconos_efecto_puerta(
+            evento=evento_grupo,
+            modificadores=mods,
+            n_preguntas=3,
+            rng=_rng(1),
+        )
+        bloques = [ic for ic in iconos_grupo if ic.capa == CapaIconoEscape.BLOQUE]
+        self.assertEqual(len(bloques), 1)
+        self.assertEqual(bloques[0].emoji, EMOJI_BLOQUE_PUERTA)
+        self.assertIn("3 preguntas", bloques[0].tooltip)
+
+        iconos_jefe = iconos_efecto_puerta(
+            evento=evento_grupo,
+            modificadores=mods,
+            n_preguntas=10,
+            delta_jefe=2,
+            rng=_rng(2),
+        )
+        self.assertEqual(
+            [ic.emoji for ic in iconos_jefe if ic.capa == CapaIconoEscape.BLOQUE],
+            [],
+        )
+
+    def test_icono_bloque_puerta_curso(self) -> None:
+        from Comun.emojis_escape import EMOJI_BLOQUE_PUERTA, EMOJI_PUERTA_CURSO, CapaIconoEscape
+        from Comun.eventos_partida import iconos_efecto_puerta
+
+        curso = next(p.curso for p in self.pool if p.curso)
+        evento = EventoContenidoInstanciado(
+            definicion=evento_por_id("puerta_curso"),
+            curso=curso,
+        )
+        mods = combinar_modificadores_puerta((), numero_sala=12)
+        iconos = iconos_efecto_puerta(
+            evento=evento,
+            modificadores=mods,
+            n_preguntas=5,
+            rng=_rng(3),
+        )
+        emojis = [ic.emoji for ic in iconos]
+        self.assertIn(EMOJI_BLOQUE_PUERTA, emojis)
+        self.assertIn(EMOJI_PUERTA_CURSO, emojis)
+        bloque = next(ic for ic in iconos if ic.capa == CapaIconoEscape.BLOQUE)
+        self.assertIn("5 preguntas", bloque.tooltip)
 
     def test_iconos_efecto_puerta_maximo_cinco(self) -> None:
         from Comun.emojis_escape import CapaIconoEscape
@@ -883,10 +963,95 @@ class TestEscapeRoom(unittest.TestCase):
             n_preguntas=10,
             modificadores=ModificadoresPuerta(),
             evento=evento,
+            es_jefe=True,
         )
         self.assertTrue(puerta_es_jefe(puerta))
         bonus = bonificacion_completar_escape(puerta)
         self.assertEqual(bonus.delta_vidas, 2)
+
+    def test_vidas_fallo_puerta_normal_y_jefe(self) -> None:
+        from Comun.escape_partida import (
+            aplicar_penalizacion_extra_fallo_puerta,
+            vidas_perdidas_fallo_puerta,
+        )
+
+        evento = EventoContenidoInstanciado(
+            definicion=evento_por_id("puerta_materia"),
+            materia=self.materias_pool[0],
+        )
+        normal = PuertaEscape(
+            indice=0,
+            n_preguntas=3,
+            modificadores=ModificadoresPuerta(),
+            evento=evento,
+        )
+        jefe = PuertaEscape(
+            indice=1,
+            n_preguntas=10,
+            modificadores=ModificadoresPuerta(),
+            evento=evento,
+            es_jefe=True,
+        )
+        self.assertEqual(vidas_perdidas_fallo_puerta(normal), 1)
+        self.assertEqual(vidas_perdidas_fallo_puerta(jefe), 2)
+        estado = EstadoPartida(
+            nombre="t",
+            reglas=preset_escape(),
+            vidas_restantes=2,
+        )
+        self.assertEqual(aplicar_penalizacion_extra_fallo_puerta(estado, normal), 0)
+        self.assertEqual(estado.vidas_restantes, 2)
+        self.assertEqual(aplicar_penalizacion_extra_fallo_puerta(estado, jefe), 1)
+        self.assertEqual(estado.vidas_restantes, 1)
+
+    def test_abandonar_puerta_si_pierdes_vida(self) -> None:
+        from Comun.escape_partida import debe_abandonar_puerta_por_perdida_vida
+
+        evento = EventoContenidoInstanciado(
+            definicion=evento_por_id("puerta_materia"),
+            materia=self.materias_pool[0],
+        )
+        puerta = PuertaEscape(
+            indice=0,
+            n_preguntas=3,
+            modificadores=ModificadoresPuerta(),
+            evento=evento,
+        )
+        self.assertTrue(
+            debe_abandonar_puerta_por_perdida_vida(
+                puerta, vidas_antes=3, vidas_despues=2, reintentar=False
+            )
+        )
+        self.assertTrue(
+            debe_abandonar_puerta_por_perdida_vida(
+                PuertaEscape(
+                    indice=1,
+                    n_preguntas=10,
+                    modificadores=ModificadoresPuerta(),
+                    evento=evento,
+                    es_jefe=True,
+                ),
+                vidas_antes=3,
+                vidas_despues=1,
+                reintentar=False,
+            )
+        )
+        self.assertFalse(
+            debe_abandonar_puerta_por_perdida_vida(
+                puerta, vidas_antes=3, vidas_despues=2, reintentar=True
+            )
+        )
+        descanso = PuertaEscape(
+            indice=2,
+            n_preguntas=0,
+            modificadores=combinar_modificadores_puerta((evento_por_id("descanso"),)),
+            evento=evento,
+        )
+        self.assertFalse(
+            debe_abandonar_puerta_por_perdida_vida(
+                descanso, vidas_antes=3, vidas_despues=2, reintentar=False
+            )
+        )
 
     def test_bonificacion_botin_corazon_max(self) -> None:
         from Comun.eventos_partida import iconos_efecto_puerta, lineas_botin_puerta
@@ -911,7 +1076,7 @@ class TestEscapeRoom(unittest.TestCase):
             n_preguntas=puerta.n_preguntas,
             rng=_rng(0),
         )
-        self.assertEqual(iconos[-1].emoji, "🎁")
+        self.assertEqual(iconos[-1].emoji, "💰")
         from Comun.emojis_escape import TOOLTIP_BOTIN
 
         self.assertEqual(iconos[-1].tooltip, TOOLTIP_BOTIN)
@@ -1139,11 +1304,11 @@ class TestEscapeRoom(unittest.TestCase):
         arts = seleccionar_articulos_tienda_visita(10, rng=_rng(42))
         self.assertEqual(len(arts), ARTICULOS_POR_VISITA_TIENDA)
         presentes = [a for a in arts if a is not None]
-        self.assertEqual(len({a.id for a in presentes}), len(presentes))
+        self.assertEqual(len({a.articulo.id for a in presentes}), len(presentes))
         otra = seleccionar_articulos_tienda_visita(10, rng=_rng(99))
         self.assertNotEqual(
-            [a.id if a else None for a in arts],
-            [a.id if a else None for a in otra],
+            [a.articulo.id if a else None for a in arts],
+            [a.articulo.id if a else None for a in otra],
         )
 
     def test_tienda_visita_garantiza_articulo_asequible(self) -> None:
@@ -1164,7 +1329,9 @@ class TestEscapeRoom(unittest.TestCase):
                 estado=estado,
                 vidas_max=3,
             )
-            asequibles = [a for a in arts if a is not None and a.precio <= 15]
+            asequibles = [
+                a for a in arts if a is not None and a.precio_efectivo <= 15
+            ]
             self.assertTrue(asequibles, msg=f"semilla={semilla}")
 
     def test_tienda_no_visitable_sin_puntos(self) -> None:
@@ -1258,10 +1425,11 @@ class TestEscapeRoom(unittest.TestCase):
             vidas_restantes=3,
             puntos_arcade=min_precio,
         )
+        sala_11 = self.config.salas[10]
         for intento in range(100):
             puertas, _ = generar_puertas_sala(
-                sala,
-                9,
+                sala_11,
+                10,
                 materias_pool=self.materias_pool,
                 pool_preguntas=self.pool,
                 rng=_rng(8000 + intento),
@@ -1272,7 +1440,7 @@ class TestEscapeRoom(unittest.TestCase):
             )
             if any(puerta_es_tienda(p) for p in puertas):
                 return
-        self.fail("Hard pity no insertó tienda cuando el jugador tenía puntos")
+        self.fail("Hard pity no insertó tienda en sala 11 cuando el jugador tenía puntos")
 
     def test_tienda_powerups_mas_probables_que_bonificaciones(self) -> None:
         from collections import Counter
@@ -1294,9 +1462,9 @@ class TestEscapeRoom(unittest.TestCase):
 
         contador: Counter[str] = Counter()
         for semilla in range(500):
-            for art in seleccionar_articulos_tienda_visita(10, rng=_rng(semilla)):
-                if art is not None:
-                    contador[art.id] += 1
+            for oferta in seleccionar_articulos_tienda_visita(10, rng=_rng(semilla)):
+                if oferta is not None:
+                    contador[oferta.articulo.id] += 1
         powerups = sum(contador[i] for i in IDS_POWERUP)
         bonifs = sum(contador[i] for i in IDS_BONIFICACION)
         self.assertGreater(powerups, bonifs)
@@ -1399,10 +1567,15 @@ class TestEscapeRoom(unittest.TestCase):
         )
         self.assertEqual(estado.vidas_restantes, 3)
         self.assertEqual(inv.cantidad("vida_refuerzo"), 0)
+        from Comun.economia_partida import bonus_amuleto_tras_compra
+
         self.assertIsNone(
-            comprar_articulo(estado, inv, "amuleto_puntos")
+            comprar_articulo(estado, inv, "amuleto_puntos", numero_sala=1)
         )
-        self.assertEqual(inv.bonus_proximo_acierto, 20)
+        self.assertEqual(
+            inv.bonus_proximo_acierto,
+            bonus_amuleto_tras_compra(35, numero_sala=1),
+        )
         self.assertEqual(inv.cantidad("amuleto_puntos"), 0)
 
         lleno = EstadoPartida(
@@ -1424,10 +1597,10 @@ class TestEscapeRoom(unittest.TestCase):
             for art in arts:
                 if art is None:
                     continue
-                self.assertNotEqual(art.id, "vida_refuerzo")
+                self.assertNotEqual(art.articulo.id, "vida_refuerzo")
                 self.assertIsNone(
                     articulo_comprable_tienda_escape(
-                        art.id, lleno, vidas_max=3
+                        art.articulo.id, lleno, vidas_max=3
                     )
                 )
 
@@ -1571,13 +1744,13 @@ class TestEscapeRoom(unittest.TestCase):
                 return
         self.fail("Hard pity no insertó descanso en sala 5")
 
-    def test_hard_pity_garantiza_tienda_sala_10(self) -> None:
-        sala = self.config.salas[9]
+    def test_hard_pity_garantiza_tienda_sala_11_tras_milestone(self) -> None:
+        sala = self.config.salas[10]
         pity = PityPuertasEspecialesEscape(salas_sin_tienda=8)
         for intento in range(200):
             puertas, _ = generar_puertas_sala(
                 sala,
-                9,
+                10,
                 materias_pool=self.materias_pool,
                 pool_preguntas=self.pool,
                 rng=_rng(9000 + intento * 31),
@@ -1586,7 +1759,7 @@ class TestEscapeRoom(unittest.TestCase):
             )
             if any("tienda" in p.modificadores.eventos_ids for p in puertas):
                 return
-        self.fail("Hard pity no insertó tienda en sala 10")
+        self.fail("Hard pity no insertó tienda en sala 11 (pity acumulado tras milestone)")
 
     def test_hard_pity_umbral_botin(self) -> None:
         pity_corto = PityPuertasEspecialesEscape(salas_sin_botin=1)
@@ -1594,6 +1767,98 @@ class TestEscapeRoom(unittest.TestCase):
         pity_ok = PityPuertasEspecialesEscape(salas_sin_botin=2)
         self.assertTrue(debe_garantizar_botin_escape(pity_ok, 3))
         self.assertEqual(SALAS_HARD_PITY_BOTIN_ESCAPE, 3)
+
+    def test_sin_maldicion_escape_antes_sala_min(self) -> None:
+        for intento in range(80):
+            mods = generar_modificadores_puerta(
+                numero_sala=SALA_MIN_MALDICION_ESCAPE - 1,
+                rng=_rng(4100 + intento),
+                indice_puerta=0,
+            )
+            self.assertFalse(
+                any(eid in RASGOS_MALDICION_ESCAPE for eid in mods.eventos_ids),
+                mods.eventos_ids,
+            )
+
+    def test_hard_pity_maldicion_escape(self) -> None:
+        pity_corto = PityPuertasEspecialesEscape(
+            salas_sin_maldicion=SALAS_HARD_PITY_MALDICION_ESCAPE - 2,
+        )
+        self.assertFalse(
+            debe_garantizar_maldicion_escape(
+                pity_corto, SALA_MIN_MALDICION_ESCAPE
+            )
+        )
+        pity_ok = PityPuertasEspecialesEscape(
+            salas_sin_maldicion=SALAS_HARD_PITY_MALDICION_ESCAPE - 1,
+        )
+        self.assertTrue(
+            debe_garantizar_maldicion_escape(pity_ok, SALA_MIN_MALDICION_ESCAPE)
+        )
+        desafios = [
+            e
+            for e in eventos_puerta_escape_para_sala(SALA_MIN_MALDICION_ESCAPE)
+            if not e.exclusivo_puerta_escape
+            and e.id not in RASGOS_BOTIN_ESCAPE
+        ]
+        self.assertTrue(
+            any(e.id in RASGOS_MALDICION_ESCAPE for e in desafios),
+            "Pool de desafíos sin rasgos de maldición elegibles",
+        )
+        for intento in range(120):
+            mods = generar_modificadores_puerta(
+                numero_sala=SALA_MIN_MALDICION_ESCAPE,
+                rng=_rng(4200 + intento * 17),
+                indice_puerta=0,
+                pity=pity_ok,
+            )
+            if any(eid in RASGOS_MALDICION_ESCAPE for eid in mods.eventos_ids):
+                return
+        self.fail("Hard pity no insertó maldición en sala elegible")
+
+    def test_pity_maldicion_escape_actualiza_contadores(self) -> None:
+        pity = PityPuertasEspecialesEscape(salas_sin_maldicion=3)
+        puertas_solo_crono = (
+            PuertaEscape(
+                indice=0,
+                n_preguntas=3,
+                modificadores=combinar_modificadores_puerta(
+                    (evento_por_id("cronometro_bloque"),),
+                    numero_sala=12,
+                ),
+                evento=instanciar_evento_contenido(
+                    evento_por_id("puerta_materia"),
+                    materias_pool=self.materias_pool,
+                    grupos_pool=(),
+                    rng=_rng(1),
+                    indice_puerta=0,
+                ),
+            ),
+        )
+        sin_maldicion = actualizar_pity_tras_sala(pity, puertas_solo_crono, numero_sala=12)
+        self.assertEqual(sin_maldicion.salas_sin_maldicion, 4)
+        self.assertGreater(sin_maldicion.maldiciones_sin_por_id.get("puerta_maldita", 0), 0)
+
+        puertas_maldita = (
+            PuertaEscape(
+                indice=0,
+                n_preguntas=3,
+                modificadores=combinar_modificadores_puerta(
+                    (evento_por_id("puerta_maldita"), evento_por_id("cronometro_bloque")),
+                    numero_sala=12,
+                ),
+                evento=instanciar_evento_contenido(
+                    evento_por_id("puerta_materia"),
+                    materias_pool=self.materias_pool,
+                    grupos_pool=(),
+                    rng=_rng(2),
+                    indice_puerta=0,
+                ),
+            ),
+        )
+        nuevo = actualizar_pity_tras_sala(pity, puertas_maldita, numero_sala=12)
+        self.assertEqual(nuevo.salas_sin_maldicion, 0)
+        self.assertEqual(nuevo.maldiciones_sin_por_id.get("puerta_maldita"), 0)
 
     def test_hard_pity_garantiza_botin_sala_3(self) -> None:
         sala = self.config.salas[2]
@@ -1614,6 +1879,98 @@ class TestEscapeRoom(unittest.TestCase):
             ):
                 return
         self.fail("Hard pity no insertó botín en sala 3")
+
+    def test_hard_pity_botin_nunca_en_tienda(self) -> None:
+        import random
+
+        from Comun.escape_room import _insertar_botin_en_puerta_escape
+        from Comun.tienda_escape import puerta_es_tienda
+
+        evento = instanciar_evento_contenido(
+            evento_por_id("puerta_materia"),
+            materias_pool=self.materias_pool,
+            grupos_pool=(),
+            rng=_rng(1),
+            indice_puerta=0,
+        )
+        puertas = [
+            PuertaEscape(
+                indice=0,
+                n_preguntas=3,
+                modificadores=combinar_modificadores_puerta((), numero_sala=10),
+                evento=evento,
+            ),
+            PuertaEscape(
+                indice=1,
+                n_preguntas=0,
+                modificadores=combinar_modificadores_puerta(
+                    (evento_por_id("descanso"),), numero_sala=10
+                ),
+                evento=evento,
+            ),
+            PuertaEscape(
+                indice=2,
+                n_preguntas=0,
+                modificadores=combinar_modificadores_puerta(
+                    (evento_por_id("tienda"),), numero_sala=10
+                ),
+                evento=evento,
+            ),
+        ]
+        _insertar_botin_en_puerta_escape(
+            puertas, numero_sala=10, rng=random.Random(0), sala_idx=9
+        )
+        self.assertTrue(puerta_es_tienda(puertas[2]))
+        self.assertFalse(
+            any(eid in RASGOS_BOTIN_ESCAPE for eid in puertas[2].modificadores.eventos_ids)
+        )
+        con_botin = [
+            p
+            for p in puertas
+            if any(eid in RASGOS_BOTIN_ESCAPE for eid in p.modificadores.eventos_ids)
+        ]
+        self.assertEqual(len(con_botin), 1)
+        self.assertIn(con_botin[0].indice, (0, 1))
+
+    def test_hard_pity_botin_puede_caer_en_descanso(self) -> None:
+        import random
+
+        from Comun.escape_room import _insertar_botin_en_puerta_escape
+
+        evento = instanciar_evento_contenido(
+            evento_por_id("puerta_materia"),
+            materias_pool=self.materias_pool,
+            grupos_pool=(),
+            rng=_rng(2),
+            indice_puerta=0,
+        )
+        for semilla in range(80):
+            puertas = [
+                PuertaEscape(
+                    indice=0,
+                    n_preguntas=3,
+                    modificadores=combinar_modificadores_puerta((), numero_sala=8),
+                    evento=evento,
+                ),
+                PuertaEscape(
+                    indice=1,
+                    n_preguntas=0,
+                    modificadores=combinar_modificadores_puerta(
+                        (evento_por_id("descanso"),), numero_sala=8
+                    ),
+                    evento=evento,
+                ),
+            ]
+            _insertar_botin_en_puerta_escape(
+                puertas, numero_sala=8, rng=random.Random(semilla), sala_idx=7
+            )
+            descanso = puertas[1]
+            if any(
+                eid in RASGOS_BOTIN_ESCAPE for eid in descanso.modificadores.eventos_ids
+            ):
+                self.assertIn("descanso", descanso.modificadores.eventos_ids)
+                return
+        self.fail("Hard pity no insertó botín en puerta de descanso en ningún intento")
 
     def test_pity_botin_incrementa_y_resetea(self) -> None:
         import random
@@ -1714,7 +2071,7 @@ class TestEscapeRoom(unittest.TestCase):
         inv.reiniciar_slot_pregunta()
         self.assertIsNone(usar_objeto("fifty_fifty", inv, p))
 
-    def test_bomba_y_tiempo_extra_compatibles_escape(self) -> None:
+    def test_bomba_y_tiempo_extra_un_solo_slot_escape(self) -> None:
         from Comun.modelos import Pregunta
         from Comun.tienda_escape import EstadoInventarioEscape, usar_objeto
 
@@ -1735,8 +2092,340 @@ class TestEscapeRoom(unittest.TestCase):
             correcta="B",
         )
         self.assertIsNone(usar_objeto("bomba", inv, p))
-        self.assertIsNone(usar_objeto("tiempo_extra", inv, p))
-        self.assertEqual(inv.tiempo_extra_seg, 20)
+        self.assertIsNotNone(usar_objeto("tiempo_extra", inv, p))
+        self.assertEqual(inv.tiempo_extra_seg, 0)
+
+    def test_puerta_maldita_modificadores_y_compatibilidad(self) -> None:
+        from Comun.eventos_partida import (
+            RASGO_PUERTA_MALDITA,
+            RASGOS_MALDICION_ESCAPE,
+            _compatible_con_rasgos_puerta,
+            combinar_modificadores_puerta,
+            evento_por_id,
+        )
+
+        self.assertEqual(
+            RASGOS_MALDICION_ESCAPE,
+            frozenset({"puerta_maldita"}),
+        )
+        self.assertNotIn("niebla_opciones", RASGOS_MALDICION_ESCAPE)
+        self.assertNotIn("relampago", RASGOS_MALDICION_ESCAPE)
+        self.assertNotIn("cronometro_bloque", RASGOS_MALDICION_ESCAPE)
+        self.assertNotIn("cronometro_doble", RASGOS_MALDICION_ESCAPE)
+
+        maldita = evento_por_id(RASGO_PUERTA_MALDITA)
+        cronometro_bloque = evento_por_id("cronometro_bloque")
+        cronometro_pregunta = evento_por_id("cronometro_pregunta")
+        cronometro_doble = evento_por_id("cronometro_doble")
+        self.assertTrue(
+            _compatible_con_rasgos_puerta(cronometro_bloque, (maldita,)),
+            "Maldición mortal y cronómetro de puerta deben poder combinarse",
+        )
+        self.assertTrue(
+            _compatible_con_rasgos_puerta(cronometro_pregunta, (maldita,)),
+            "Maldición mortal y cronómetro por pregunta deben poder combinarse",
+        )
+        self.assertTrue(
+            _compatible_con_rasgos_puerta(cronometro_doble, (maldita,)),
+            "Maldición mortal y cronómetro doble deben poder combinarse",
+        )
+        mods_combo = combinar_modificadores_puerta(
+            (maldita, cronometro_bloque), numero_sala=15
+        )
+        self.assertTrue(mods_combo.fin_partida_si_fallo)
+        self.assertIsNotNone(mods_combo.tiempo_puerta_seg)
+        mods_combo_preg = combinar_modificadores_puerta(
+            (maldita, cronometro_pregunta), numero_sala=15
+        )
+        self.assertTrue(mods_combo_preg.fin_partida_si_fallo)
+        self.assertIsNotNone(mods_combo_preg.tiempo_pregunta_seg)
+        mods_combo_doble = combinar_modificadores_puerta(
+            (maldita, cronometro_doble), numero_sala=15
+        )
+        self.assertTrue(mods_combo_doble.fin_partida_si_fallo)
+        self.assertIsNotNone(mods_combo_doble.tiempo_puerta_seg)
+        self.assertIsNotNone(mods_combo_doble.tiempo_pregunta_seg)
+
+        mods = combinar_modificadores_puerta((maldita,), numero_sala=15)
+        self.assertTrue(mods.fin_partida_si_fallo)
+        self.assertIn(RASGO_PUERTA_MALDITA, mods.eventos_ids)
+
+        descanso = evento_por_id("descanso")
+        mods_pausa = combinar_modificadores_puerta((descanso,), numero_sala=10)
+        self.assertFalse(mods_pausa.fin_partida_si_fallo)
+        self.assertTrue(mods_pausa.sin_pregunta)
+
+        mods_mix = combinar_modificadores_puerta(
+            (descanso, maldita), numero_sala=10
+        )
+        self.assertTrue(mods_mix.sin_pregunta)
+        self.assertFalse(mods_mix.fin_partida_si_fallo)
+
+    def test_fallo_puerta_maldita_sin_sello(self) -> None:
+        from Comun.escape_partida import (
+            procesar_fallo_puerta_maldita,
+            puerta_es_maldita,
+        )
+        from Comun.escape_room import PuertaEscape
+        from Comun.eventos_partida import (
+            combinar_modificadores_puerta,
+            evento_por_id,
+            instanciar_evento_contenido,
+        )
+
+        mods = combinar_modificadores_puerta(
+            (evento_por_id("puerta_maldita"),), numero_sala=12
+        )
+        evento = instanciar_evento_contenido(
+            evento_por_id("puerta_materia"),
+            materias_pool=self.materias_pool[:1],
+            grupos_pool=(),
+            rng=_rng(3),
+            indice_puerta=0,
+        )
+        puerta = PuertaEscape(
+            indice=0,
+            n_preguntas=3,
+            modificadores=mods,
+            evento=evento,
+        )
+        self.assertTrue(puerta_es_maldita(puerta))
+
+        mortal = procesar_fallo_puerta_maldita(puerta, proteccion_activa=False)
+        self.assertIsNotNone(mortal)
+        assert mortal is not None
+        self.assertTrue(mortal.fin_partida)
+
+    def test_alcance_powerup_sala_no_gasta_slot_pregunta(self) -> None:
+        from Comun.escape_room import PuertaEscape
+        from Comun.eventos_partida import (
+            combinar_modificadores_puerta,
+            evento_por_id,
+            instanciar_evento_contenido,
+        )
+        from Comun.objetos_partida import MENSAJE_POWERUP_YA_USADO
+        from Comun.powerups_puerta_escape import (
+            AlcancePowerupEscape,
+            alcance_powerup_escape,
+            puede_usar_powerup_escape,
+            registrar_uso_powerup_escape,
+        )
+        from Comun.tienda_escape import EstadoInventarioEscape
+
+        self.assertEqual(
+            alcance_powerup_escape("reroll_puertas"), AlcancePowerupEscape.SALA
+        )
+        self.assertEqual(
+            alcance_powerup_escape("bomba"), AlcancePowerupEscape.PREGUNTA
+        )
+
+        inv = EstadoInventarioEscape()
+        inv.agregar("reroll_puertas")
+        inv.agregar("bomba")
+        inv.agregar("tiempo_extra")
+
+        puerta = PuertaEscape(
+            indice=0,
+            n_preguntas=3,
+            modificadores=combinar_modificadores_puerta((), numero_sala=5),
+            evento=instanciar_evento_contenido(
+                evento_por_id("puerta_materia"),
+                materias_pool=self.materias_pool[:1],
+                grupos_pool=(),
+                rng=_rng(4),
+                indice_puerta=0,
+            ),
+        )
+
+        self.assertIsNone(
+            puede_usar_powerup_escape(
+                "reroll_puertas",
+                inv,
+                puerta,
+                pregunta_idx=0,
+                modo="sala",
+                puertas_sala=(puerta,),
+            )
+        )
+        self.assertIsNone(
+            puede_usar_powerup_escape("bomba", inv, puerta, pregunta_idx=0, modo="pregunta")
+        )
+        registrar_uso_powerup_escape(inv, "bomba")
+        self.assertEqual(
+            puede_usar_powerup_escape(
+                "tiempo_extra", inv, puerta, pregunta_idx=0, modo="pregunta"
+            ),
+            MENSAJE_POWERUP_YA_USADO,
+        )
+        self.assertEqual(
+            puede_usar_powerup_escape(
+                "reroll_puertas",
+                inv,
+                puerta,
+                pregunta_idx=0,
+                modo="pregunta",
+            ),
+            "Este objeto es del inventario de sala (úsalo al elegir puerta).",
+        )
+
+    def test_dos_inventarios_separados(self) -> None:
+        from Comun.objetos_partida import POWERUPS_SOLO_RESISTENCIA
+        from Comun.powerups_puerta_escape import es_powerup_inventario_puerta_escape
+        from Comun.tienda_escape import EstadoInventarioEscape
+
+        inv = EstadoInventarioEscape()
+        inv.agregar("bomba", 2)
+        inv.agregar("limpieza_maldiciones", 1)
+        inv.agregar("sello_purga", 1)
+        self.assertEqual(inv.cantidad_pregunta("bomba"), 2)
+        self.assertEqual(inv.cantidad_puerta("limpieza_maldiciones"), 1)
+        self.assertEqual(inv.cantidad_pregunta("limpieza_maldiciones"), 0)
+        self.assertEqual(inv.cantidad_pregunta("sello_purga"), 1)
+        self.assertEqual(inv.cantidad_puerta("sello_purga"), 0)
+        self.assertTrue(es_powerup_inventario_puerta_escape("limpieza_maldiciones"))
+        self.assertFalse(es_powerup_inventario_puerta_escape("bomba"))
+        self.assertFalse(es_powerup_inventario_puerta_escape("sello_purga"))
+        self.assertIn("sello_purga", POWERUPS_SOLO_RESISTENCIA)
+        self.assertTrue(inv.tiene_items_puerta())
+        inv.consumir("limpieza_maldiciones")
+        self.assertFalse(inv.tiene_items_puerta())
+        self.assertEqual(inv.cantidad_pregunta("bomba"), 2)
+
+    def test_powerups_sala_ids_distintos_y_routing(self) -> None:
+        from Comun.objetos_partida import (
+            POWERUPS_LOOT_ESCAPE,
+            POWERUPS_PREGUNTA,
+            POWERUPS_SOLO_RESISTENCIA,
+            POWERUPS_SOLO_SALA_ESCAPE,
+        )
+        from Comun.powerups_puerta_escape import es_powerup_sala_escape
+        from Comun.tienda_escape import EstadoInventarioEscape
+
+        self.assertFalse(POWERUPS_PREGUNTA.keys() & POWERUPS_SOLO_SALA_ESCAPE)
+        self.assertFalse(POWERUPS_SOLO_RESISTENCIA & POWERUPS_SOLO_SALA_ESCAPE)
+        self.assertNotIn("sello_purga", POWERUPS_LOOT_ESCAPE)
+        self.assertIn("skip", POWERUPS_PREGUNTA)
+        self.assertIn("salto_sala", POWERUPS_SOLO_SALA_ESCAPE)
+        self.assertTrue(es_powerup_sala_escape("reroll_puertas"))
+
+        inv = EstadoInventarioEscape()
+        inv.agregar("reroll_puertas", 1)
+        self.assertTrue(inv.tiene_items_puerta())
+        self.assertFalse(inv.tiene_items_preparacion_puerta())
+
+    def test_limpieza_maldiciones_y_reroll_puertas(self) -> None:
+        from Comun.escape_room import (
+            PuertaEscape,
+            quitar_maldicion_puertas_sala,
+            regenerar_puertas_sala_escape,
+        )
+        from Comun.eventos_partida import (
+            combinar_modificadores_puerta,
+            evento_por_id,
+            instanciar_evento_contenido,
+        )
+        from Comun.powerups_puerta_escape import puede_usar_powerup_escape
+        from Comun.tienda_escape import EstadoInventarioEscape
+
+        mods = combinar_modificadores_puerta(
+            (evento_por_id("puerta_maldita"),), numero_sala=12
+        )
+        evento = instanciar_evento_contenido(
+            evento_por_id("puerta_materia"),
+            materias_pool=self.materias_pool[:1],
+            grupos_pool=(),
+            rng=_rng(7),
+            indice_puerta=0,
+        )
+        puerta = PuertaEscape(
+            indice=0,
+            n_preguntas=3,
+            modificadores=mods,
+            evento=evento,
+        )
+        limpias = quitar_maldicion_puertas_sala((puerta,), numero_sala=12)
+        self.assertFalse(limpias[0].modificadores.fin_partida_si_fallo)
+
+        inv = EstadoInventarioEscape()
+        inv.agregar("limpieza_maldiciones")
+        self.assertIsNone(
+            puede_usar_powerup_escape(
+                "limpieza_maldiciones",
+                inv,
+                None,
+                pregunta_idx=0,
+                modo="sala",
+                puertas_sala=(puerta,),
+            )
+        )
+        mods_ok = combinar_modificadores_puerta((), numero_sala=5)
+        puerta_ok = PuertaEscape(
+            indice=0,
+            n_preguntas=2,
+            modificadores=mods_ok,
+            evento=evento,
+        )
+        self.assertEqual(
+            puede_usar_powerup_escape(
+                "limpieza_maldiciones",
+                inv,
+                None,
+                pregunta_idx=0,
+                modo="sala",
+                puertas_sala=(puerta_ok,),
+            ),
+            "No hay puertas malditas en esta sala.",
+        )
+
+        cfg = config_escape_room(n_salas=3)
+        sala = cfg.salas[0]
+        antes = regenerar_puertas_sala_escape(
+            sala,
+            0,
+            materias_pool=self.materias_pool,
+            pool_preguntas=self.pool,
+            rng=_rng(11),
+            puertas_por_sala=cfg.puertas_por_sala,
+            n_salas=cfg.n_salas,
+        )
+        despues = regenerar_puertas_sala_escape(
+            sala,
+            0,
+            materias_pool=self.materias_pool,
+            pool_preguntas=self.pool,
+            rng=_rng(12),
+            puertas_por_sala=cfg.puertas_por_sala,
+            n_salas=cfg.n_salas,
+        )
+        self.assertEqual(len(antes), len(despues))
+        self.assertEqual(len(antes), cfg.puertas_por_sala)
+
+    def test_salto_sala_modo_sala(self) -> None:
+        from Comun.powerups_puerta_escape import puede_usar_powerup_escape
+        from Comun.tienda_escape import EstadoInventarioEscape
+
+        inv = EstadoInventarioEscape()
+        inv.agregar("salto_sala")
+        self.assertIsNone(
+            puede_usar_powerup_escape(
+                "salto_sala",
+                inv,
+                None,
+                pregunta_idx=0,
+                modo="sala",
+                puertas_sala=(),
+            )
+        )
+        self.assertEqual(
+            puede_usar_powerup_escape(
+                "salto_sala",
+                inv,
+                None,
+                pregunta_idx=0,
+                modo="pregunta",
+            ),
+            "Este objeto es del inventario de sala (úsalo al elegir puerta).",
+        )
 
 
 class TestLayoutInventarioEscape(unittest.TestCase):
@@ -1763,7 +2452,7 @@ class TestLayoutInventarioEscape(unittest.TestCase):
             self.assertLessEqual(ancho_fila, ancho_disp)
 
     def test_botones_inventario_no_salen_de_pantalla(self) -> None:
-        from Comun.objetos_partida import POWERUPS
+        from Comun.objetos_partida import POWERUPS_LOOT_ESCAPE
         from Comun.presets_historia import aplicar_preset, buscar_preset
         from Grafico.pantallas_escape import PartidaEscapeRoom
         from Grafico.tema import ANCHO, MARGEN
@@ -1786,7 +2475,7 @@ class TestLayoutInventarioEscape(unittest.TestCase):
             salir_app=lambda: None,
         )
         partida._elegir_puerta(1)
-        for pid in POWERUPS:
+        for pid in POWERUPS_LOOT_ESCAPE:
             partida.inventario_escape.agregar(pid)
         partida._reconstruir_inventario_botones()
         self.assertGreaterEqual(len(partida.botones_inventario), 6)

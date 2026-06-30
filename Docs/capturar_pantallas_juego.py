@@ -188,13 +188,13 @@ def _indice_puerta_contenido(partida) -> int:
 
 
 def _preparar_fase_pregunta_inventario(partida) -> None:
-    from Comun.objetos_partida import POWERUPS
+    from Comun.objetos_partida import POWERUPS_LOOT_ESCAPE
 
     idx = _indice_puerta_contenido(partida)
     partida._elegir_puerta(idx)
     if partida.fase != "pregunta":
         raise RuntimeError(f"Se esperaba fase pregunta, obtuvo {partida.fase!r}.")
-    for pid in POWERUPS:
+    for pid in POWERUPS_LOOT_ESCAPE:
         partida.inventario_escape.agregar(pid)
     partida._reconstruir_inventario_botones()
 

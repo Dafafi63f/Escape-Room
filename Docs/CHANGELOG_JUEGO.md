@@ -2,9 +2,24 @@
 
 Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygame. El historial técnico del TFG está en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
 
-**Última actualización:** 2026-06-28
+**Última actualización:** 2026-06-29
 
 ---
+
+## 2026-06-29 — Versión 1.0.0 (entrega TFG)
+
+Versión **jugable y cerrada** para la entrega del TFG. El desarrollo de nuevas ideas queda en pausa; lo pendiente está listado en [`Docs/RELEASE_1.0.md`](RELEASE_1.0.md) y en [`CHECKLIST.md`](CHECKLIST.md) (sección futuro).
+
+- **Menú principal** e **Info (ℹ️)** muestran la versión `v1.0.0`.
+- **Modo libre / escape:** por defecto banco **480 revisadas**; el banco ampliado (960) es opcional y está etiquetado como extras sin revisión completa.
+- **Apuestas (resistencia):** el botín aleatorio ya no incluye Tiempo lento, +Tiempo ni Doble o nada; las compras en popup se titulan «Oferta — …».
+- **578 tests** pasando; zip portable regenerable con `python Docs/utilidades_tfg.py --solo-zip`.
+
+## 2026-06-29 (atajos, examen dirigido, estadísticas)
+
+- **Mis estadísticas:** nueva sección «Sigue por aquí» con consejos según tu actividad (materias débiles, días sin jugar, evolución semanal).
+- **Atajos en partida y menús:** **1–4** para responder; **Enter** para avanzar (en pregunta = 1ª opción); **Supr** para retroceder (menú principal = salir); **Esc** abre pausa (otra vez en pausa = salir); **H** = información; **F** = feedback.
+- **Modo historia / examen fijo:** al terminar un examen, botón **«Otro examen dirigido»** que genera un test nuevo priorizando las materias en las que fallaste en esa sesión.
 
 ## 2026-06-28 (estadísticas locales)
 
@@ -34,7 +49,7 @@ Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygam
 
 - Eliminada la versión en terminal; **único lanzador:** `python Juego/juego_grafico.py`.
 - Informes, feedback y generador de historia viven en `Juego/Comun/`.
-- Suite de tests reorientada al backend gráfico (**424** tests: 416 en `Tests/` + 8 en `Files/`). *Conteo histórico (junio 2026); suite actual del juego: 468 en `Tests/`.*
+- Suite de tests reorientada al backend gráfico (**424** tests: 416 en `Tests/` + 8 en `Files/`). *Conteo histórico (junio 2026); suite actual: **578** tests en `Tests/`.*
 
 ## 2026-06-19 (interfaz gráfica)
 

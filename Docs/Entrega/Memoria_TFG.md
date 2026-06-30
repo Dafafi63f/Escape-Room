@@ -211,7 +211,7 @@ El lanzador acepta `python Juego/juego_grafico.py --csv ruta/Preguntas.csv`. Al 
 | Revisión manual del contenido | 480/480 ítems revisados; validación automatizada |
 | Auditoría de distractores | `mantenimiento.py auditar-distractores` (terminal; `--json` opcional) |
 | Duplicados semánticos | `duplicados.py revisar` (0 pares similares en CSV y plantillas intra-materia, 2026-06-15) |
-| Pruebas de regresión | `python -m unittest discover -s Tests -v` (**468** tests) |
+| Pruebas de regresión | `python -m unittest discover -s Tests -v` (**578** tests) |
 | Integración continua | GitHub Actions: tests, mypy (`Comun/` + `Grafico/`), empaquetado zip Windows |
 | Revisión con profesorado | Identificación de solapamiento temático y prerrequisitos (véase §6.2) |
 | Simulación Monte Carlo | `Files/simulacion_evaluacion_azar.py` (véase §5.7) |
@@ -238,9 +238,9 @@ Se obtuvo un banco cerrado de **480 preguntas** con las siguientes propiedades v
 - **40 materias** alineadas con el listado del grado.
 - **12 preguntas por materia** siguiendo el patrón 2FT 2MT 2DT 2FC 2MC 2DC.
 - **Revisión manual 480/480** completada en cinco tramos temporales.
-- **Auditorías de calidad** ejecutadas (`mantenimiento.py auditar-distractores`, `duplicados.py revisar`): **0 pares similares** en CSV y plantillas intra-materia tras sustituciones y deduplicación (junio 2026). Pool de plantillas beta: **1411** entradas (480 copias alineadas con el dataset).
+- **Auditorías de calidad** ejecutadas (`mantenimiento.py auditar-distractores`, `duplicados.py revisar`): **0 pares similares** en CSV y plantillas intra-materia tras sustituciones y deduplicación (junio 2026). Pool del banco ampliado: **1411** entradas (480 copias alineadas con el dataset).
 
-El banco distingue **modo seguro** (solo dataset revisado) y **modo beta** (pool ampliado con plantillas no revisadas, hasta 1440 ítems jugables), dejando clara la trazabilidad para evaluación formal del TFG.
+El banco distingue **banco revisado** (solo dataset validado) y **banco ampliado** (pool con plantillas no revisadas, hasta 1440 ítems jugables), dejando clara la trazabilidad para evaluación formal del TFG.
 
 ## Aplicación de juego
 
@@ -260,7 +260,7 @@ El código se organiza en `Juego/Comun/` (dominio) e `Juego/Grafico/` (interfaz)
 | Modo feedback | Guardado local + envío SMTP opcional |
 | Modos diarios | Examen del día (semilla UTC `DDMMYYYY`), aleatorio y semilla manual vía preset `examen_fijo` |
 | Estadísticas locales | `estadisticas_jugador.json` + pantalla «Mis estadísticas» (totales, récords, días activos) |
-| Pruebas | **468** tests + CI (mypy, zip Windows) |
+| Pruebas | **578** tests + CI (mypy, zip Windows) |
 
 ### Modos diarios y semillas
 
@@ -302,7 +302,7 @@ Diagrama detallado (40 materias con posición curricular): [`Data/README.md`](..
 
 ## Herramientas de mantenimiento
 
-Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en `Juego/Comun/utils_plantillas_core.py` (reexportada desde `Files/` para los scripts de mantenimiento). Los datos del juego se organizan en `Data/Banco/` (banco y catálogos) y `Data/Juego/` (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de **468** tests con CI en GitHub Actions. Catálogo de comandos: [`Files/README.md`](../../Files/README.md).
+Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado (`mantenimiento.py`): validación, revisión, pipeline de plantillas, auditorías (salida por terminal), deduplicación y estadísticas del histórico de qualificacions. La lógica de claves de contenido y expansión de plantillas se centralizó en `Juego/Comun/utils_plantillas_core.py` (reexportada desde `Files/` para los scripts de mantenimiento). Los datos del juego se organizan en `Data/Banco/` (banco y catálogos) y `Data/Juego/` (estado local del jugador). Tras el cierre del banco (2026-06), los scripts de regeneración masiva del CSV se eliminaron del repositorio. Suite de **578** tests con CI en GitHub Actions. Catálogo de comandos: [`Files/README.md`](../../Files/README.md).
 
 ## Síntesis cuantitativa
 
@@ -312,7 +312,7 @@ Se desarrolló un conjunto de scripts en `Files/` con punto de entrada unificado
 | Materias cubiertas | 40 |
 | Módulos Python del juego (`Comun/` + `Grafico/`) | ~35 |
 | Modos de juego operativos | 5 |
-| Pruebas automatizadas | 468 |
+| Pruebas automatizadas | 578 |
 | Grupos temáticos modelados | 10 |
 
 ## Validación del modo historia (H3)
@@ -426,7 +426,7 @@ El **objetivo general** se cumple de forma parcial: existe un juego educativo in
 | OE2 | Retos por materias | **Cumplido** | Banco 480 ítems, Teoría/Cálculo, tres dificultades |
 | OE3 | Validación de respuestas | **Cumplido** | Motor A–D, puntuación, vidas, informes |
 | OE4 | Interfaz gráfica | **Cumplido** | `juego_grafico.py` (pygame-ce) con libre, historia, resistencia, escape room y feedback |
-| OE5 | Valor formativo | **Parcial** | Banco validado, 468 tests + CI + simulaciones; sin estudio con usuarios |
+| OE5 | Valor formativo | **Parcial** | Banco validado, 578 tests + CI + simulaciones; sin estudio con usuarios |
 
 Los **objetivos específicos** OE2, OE3 y OE4 están cumplidos. OE1 queda parcial en la **capa narrativa visual**, no en la progresión ludificada del escape room. OE5 queda parcial por la ausencia de piloto con estudiantes, aunque el valor formativo se apoya en revisión del banco, auditorías, Monte Carlo (§5.7) y paquete mínimo demostrable (§4.3).
 
@@ -461,7 +461,7 @@ La hipótesis **H1** queda apoyada por la operatividad de los filtros curricular
 
 ## Limitaciones del estudio
 
-El estudio no incluye **evaluación con usuarios**: no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes. La **interfaz gráfica** cubre menús y partida, incluido un **modo escape room** con salas, tienda y botín, pero sin la narrativa gráfica completa del documento inicial. El **modelo de datos** asigna una sola materia por pregunta y aún no modela prerrequisitos explícitos (véase §6.2). El **idioma del banco** mezcla castellano y catalán según la asignatura, con coherencia terminológica revisada pero mejorable. Por último, el **modo beta** amplía el pool con plantillas no revisadas y debe distinguirse del banco de producción en cualquier evaluación formal.
+El estudio no incluye **evaluación con usuarios**: no se recogieron datos de usabilidad ni de aprendizaje con una muestra de estudiantes. La **interfaz gráfica** cubre menús y partida, incluido un **modo escape room** con salas, tienda y botín, pero sin la narrativa gráfica completa del documento inicial. El **modelo de datos** asigna una sola materia por pregunta y aún no modela prerrequisitos explícitos (véase §6.2). El **idioma del banco** mezcla castellano y catalán según la asignatura, con coherencia terminológica revisada pero mejorable. Por último, el **banco ampliado** extiende el pool con plantillas no revisadas y debe distinguirse del banco de producción en cualquier evaluación formal.
 
 ## Trabajo futuro
 

@@ -19,7 +19,7 @@ _RAIZ = Path(__file__).resolve().parents[2]
 _JUEGO = _RAIZ / "Juego"
 if str(_JUEGO) not in sys.path:
     sys.path.insert(0, str(_JUEGO))
-_CSV_ORIGEN = _RAIZ / "Tests" / "Fixtures" / "Preguntas_minimal.csv"
+_CSV_ORIGEN = _RAIZ / "Data" / "Privado" / "Preguntas_minimal.csv"
 _PRESETS_ORIGEN = _JUEGO / "presets.json"
 _SALIDA_DEFECTO = _JUEGO / "Distribucion" / "MATCAD_juego_minimal.zip"
 _BANCO_ORIGEN = _RAIZ / "Data" / "Banco" / "Preguntas.csv"
@@ -216,7 +216,7 @@ def main() -> int:
     print("  Raíz del zip: Juego/ (código + CHANGELOG_JUEGO.md), Preguntas.csv, Jugar.bat")
     print(f"  CSV: Preguntas.csv ({n_csv} preguntas)")
     print("\nPrueba local (sin descomprimir el zip):")
-    print("  python Juego/juego_grafico.py --csv Tests/Fixtures/Preguntas_minimal.csv")
+    print("  python Juego/juego_grafico.py --csv Data/Privado/Preguntas_minimal.csv")
     return 0
 
 

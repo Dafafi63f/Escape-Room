@@ -21,6 +21,7 @@ from Comun.textos_ui import (
     BTN_GUARDAR_INFORME,
     BTN_REPETIR_PARTIDA,
     BTN_CAMBIAR_OPCIONES,
+    BTN_EXAMEN_DIRIGIDO,
     BTN_PANTALLA_TITULO,
     BTN_SALIR_PROGRAMA,
     BTN_SIGUIENTE,
@@ -54,6 +55,7 @@ __all__ = [
     "BTN_GUARDAR_INFORME",
     "BTN_REPETIR_PARTIDA",
     "BTN_CAMBIAR_OPCIONES",
+    "BTN_EXAMEN_DIRIGIDO",
     "BTN_PANTALLA_TITULO",
     "BTN_SALIR_PROGRAMA",
     "BTN_SIGUIENTE",
@@ -74,6 +76,7 @@ __all__ = [
     "subtitulo",
     "titulo",
     "titulo_pantalla",
+    "texto_controles_juego_grafico",
 ]
 
 
@@ -134,7 +137,32 @@ def etiqueta_campo(_clave: str, texto: str) -> str:
 
 
 def info_dataset(num_preguntas: int, num_materias: int) -> str:
-    return f"{num_preguntas} preguntas · {num_materias} materias"
+    return f"{num_preguntas} preguntas  {num_materias} materias"
+
+
+def texto_controles_juego_grafico() -> str:
+    """Texto informativo de ratón y atajos de teclado (pantalla Info)."""
+    return (
+        "Ratón: navegar, pulsar botones y elegir respuestas.\n"
+        "\n"
+        "Teclado en partida y menús:\n"
+        "· Durante una partida: solo Esc (pausa) y 1–4 para responder; "
+        "el resto de la barra y atajos D/H/F/O/retroceso quedan bloqueados hasta pausar.\n"
+        "· En menús y configuración: barra completa y atajos D, H, F, O, retroceso, 1–9.\n"
+        "· Barra fija (solo si el icono está activo/blanco; pulsar otra vez cierra ese menú):\n"
+        "  Esc — pausa (otra vez en pausa: salir del programa)  D — diarios  H — info  "
+        "F — feedback  O — opciones.\n"
+        "· Con opciones abiertas: Esc abre la pausa (guarda antes los cambios).\n"
+        "· 1–4 — responder (opción 1 a 4 en pantalla).\n"
+        "· Enter — avanzar (en pregunta: primera opción); en pausa: continuar.\n"
+        "· Retroceso (tecla de borrar texto) — volver atrás; en menú principal: salir del juego; "
+        "en pausa: menú principal.\n"
+        "· En el menú de pausa, Esc o el icono de pausa otra vez — salir del programa.\n"
+        "· 1–9 — elegir la opción numerada en menús con lista.\n"
+        "\n"
+        "En campos de texto (nombre, feedback…): la misma tecla borra caracteres; "
+        "no retrocede de pantalla mientras el campo tiene el foco."
+    )
 
 
 def mensaje_feedback(mensaje: str) -> str:

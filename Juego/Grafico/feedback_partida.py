@@ -17,6 +17,20 @@ SEGUNDOS_FEEDBACK_ACIERTO = 1.6
 SEGUNDOS_FEEDBACK_FALLO = 2.2
 SEGUNDOS_FEEDBACK_CON_SOLUCION = 3.2
 
+_TECLAS_SALTAR_ESPERA = (
+    pygame.K_RETURN,
+    pygame.K_SPACE,
+    pygame.K_KP_ENTER,
+)
+
+
+def evento_tecla_salta_espera(evento: pygame.event.Event) -> bool:
+    return evento.type == pygame.KEYDOWN and evento.key in _TECLAS_SALTAR_ESPERA
+
+
+def evento_clic_salta_espera(evento: pygame.event.Event) -> bool:
+    return evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1
+
 
 def solucion_feedback_grafico(_solucion: str | None) -> str | None:
     """En gráfico las opciones A–D ya se colorean; no repetir la solución en texto."""

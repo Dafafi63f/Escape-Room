@@ -11,7 +11,7 @@ import pygame
 
 from Comun.preferencias_grafico import nombre_jugador_efectivo
 from Grafico.fuentes import FamiliaFuente, crear_fuente
-from Grafico.tema import ALTO, ANCHO, COLOR_ACENTO, COLOR_PANEL, COLOR_TEXTO, COLOR_TITULO
+from Grafico.tema import ALTO, ANCHO, COLOR_ACENTO, COLOR_PANEL, COLOR_TEXTO, COLOR_TITULO, MARGEN
 from Grafico.texto import (
     medir_texto_mixto,
     preparar_texto_ui,
@@ -23,6 +23,13 @@ COLOR_BOTON = (255, 255, 255)
 COLOR_BOTON_HOVER = (245, 247, 250)
 COLOR_BOTON_SELECCION = (230, 236, 248)
 COLOR_BOTON_BORDE = (180, 190, 205)
+COLOR_BOTON_INACTIVO = (40, 40, 40)
+COLOR_BOTON_INACTIVO_TEXTO = (120, 120, 120)
+COLOR_BOTON_INACTIVO_BORDE = (70, 70, 70)
+# Alias de la barra fija (misma paleta activo/inactivo que el resto de botones)
+COLOR_BARRA_FIJA_INACTIVO = COLOR_BOTON_INACTIVO
+COLOR_BARRA_FIJA_INACTIVO_TEXTO = COLOR_BOTON_INACTIVO_TEXTO
+COLOR_BARRA_FIJA_INACTIVO_BORDE = COLOR_BOTON_INACTIVO_BORDE
 COLOR_BOTON_TEXTO = (25, 25, 30)
 COLOR_BOTON_TEXTO_HOVER = (0, 0, 0)
 COLOR_CAMPO_FONDO = (24, 36, 58)
@@ -35,6 +42,29 @@ COLOR_MARCA_ON_TEXTO = (255, 255, 255)
 COLOR_MARCA_OFF_FONDO = (255, 255, 255)
 COLOR_MARCA_OFF_BORDE = (160, 175, 195)
 COLOR_MARCA_CASILLA_BORDE = (110, 130, 160)
+
+
+def colores_boton(
+    *,
+    activo: bool = True,
+    hover: bool = False,
+    seleccionado: bool = False,
+    fondo: tuple[int, int, int] | None = None,
+    fondo_hover: tuple[int, int, int] | None = None,
+) -> tuple[tuple[int, int, int], tuple[int, int, int], tuple[int, int, int]]:
+    """Paleta única (fondo, texto, borde): blanco activo, gris oscuro inactivo."""
+    if not activo:
+        return COLOR_BOTON_INACTIVO, COLOR_BOTON_INACTIVO_TEXTO, COLOR_BOTON_INACTIVO_BORDE
+    if seleccionado:
+        fondo_sel = fondo or COLOR_BOTON_SELECCION
+        return fondo_sel, COLOR_BOTON_TEXTO_HOVER, COLOR_ACENTO
+    fondo_btn = (fondo_hover if hover else fondo) or (
+        COLOR_BOTON_HOVER if hover else COLOR_BOTON
+    )
+    texto = COLOR_BOTON_TEXTO_HOVER if hover else COLOR_BOTON_TEXTO
+    borde = COLOR_ACENTO if hover else COLOR_BOTON_BORDE
+    return fondo_btn, texto, borde
+
 
 PADDING_BOTON_X = 14
 PADDING_BOTON_Y = 8
@@ -80,6 +110,34 @@ def clamp_y_boton(
     )
 
 
+def empaquetar_indices_en_filas(
+    anchos: list[int],
+    *,
+    ancho_disponible: int,
+    gap: int,
+) -> list[list[int]]:
+    """Agrupa índices de botones en filas que no superen ``ancho_disponible``."""
+    if not anchos:
+        return []
+    filas: list[list[int]] = []
+    fila: list[int] = []
+    ancho_fila = 0
+    for indice, ancho in enumerate(anchos):
+        extra = gap if fila else 0
+        if fila and ancho_fila + extra + ancho > ancho_disponible:
+            filas.append(fila)
+            fila = []
+            ancho_fila = 0
+            extra = 0
+        if extra:
+            ancho_fila += extra
+        fila.append(indice)
+        ancho_fila += ancho
+    if fila:
+        filas.append(fila)
+    return filas
+
+
 def posicionar_botones_apilados(
     botones: list[Boton],
     y_preferido: int,
@@ -115,23 +173,34 @@ def posicionar_botones_fila(
     gap: int,
     alto_pantalla: int = ALTO,
     margen_inferior: int = MARGEN_INFERIOR_BOTONES,
+    ancho_max: int | None = None,
+    gap_fila: int = 10,
 ) -> None:
-    """Coloca botones en horizontal (p. ej. Atrás | Siguiente)."""
+    """Coloca botones en horizontal; si no caben, reparte en varias filas centradas."""
     if not botones:
         return
+    if ancho_max is None:
+        ancho_max = ANCHO - 2 * MARGEN
     alto = max(boton.rect.height for boton in botones)
     anchos = [boton.rect.width for boton in botones]
-    total_w = sum(anchos) + gap * (len(botones) - 1)
-    y = clamp_y_boton(
+    filas = empaquetar_indices_en_filas(anchos, ancho_disponible=ancho_max, gap=gap)
+    y0 = clamp_y_apilado(
         y_preferido,
-        alto,
+        alto_boton=alto,
+        num_botones=len(filas),
+        gap=gap_fila,
         alto_pantalla=alto_pantalla,
         margen_inferior=margen_inferior,
     )
-    x = x_centro - total_w // 2
-    for boton, ancho in zip(botones, anchos, strict=True):
-        boton.rect.topleft = (x, y + (alto - boton.rect.height) // 2)
-        x += ancho + gap
+    for fila_idx, indices in enumerate(filas):
+        fila_anchos = [anchos[i] for i in indices]
+        total_w = sum(fila_anchos) + gap * (len(fila_anchos) - 1)
+        x = x_centro - total_w // 2
+        y = y0 + fila_idx * (alto + gap_fila)
+        for i in indices:
+            boton = botones[i]
+            boton.rect.topleft = (x, y + (alto - boton.rect.height) // 2)
+            x += boton.rect.width + gap
 
 
 def posicionar_pila_inferior(
@@ -289,7 +358,7 @@ def unir_partes_cabientes(
     fuente: pygame.font.Font,
     ancho_max: int,
     *,
-    separador: str = " · ",
+    separador: str = "  ",
 ) -> str:
     """Une fragmentos completos mientras quepan; omite el resto sin truncar."""
     partes_limpias = [preparar_texto_ui(p.strip()) for p in partes if p and p.strip()]
@@ -576,16 +645,13 @@ class Boton:
         return False
 
     def _colores_dibujo(self) -> tuple[tuple[int, int, int], tuple[int, int, int], tuple[int, int, int]]:
-        if not self.activo:
-            return (40, 40, 40), (120, 120, 120), (70, 70, 70)
-        if self.seleccionado:
-            fondo = self.fondo or COLOR_BOTON_SELECCION
-            return fondo, COLOR_BOTON_TEXTO_HOVER, COLOR_ACENTO
-        fondo = (self.fondo_hover if self.hover else self.fondo) or (
-            COLOR_BOTON_HOVER if self.hover else COLOR_BOTON
+        return colores_boton(
+            activo=self.activo,
+            hover=self.hover,
+            seleccionado=self.seleccionado,
+            fondo=self.fondo,
+            fondo_hover=self.fondo_hover,
         )
-        texto_color = COLOR_BOTON_TEXTO_HOVER if self.hover else COLOR_BOTON_TEXTO
-        return fondo, texto_color, COLOR_BOTON_BORDE
 
     def _dibujar_etiqueta_centro(
         self,
@@ -640,23 +706,15 @@ class BotonMarcable(Boton):
 
     def dibujar(self, pantalla: pygame.Surface, fuente: pygame.font.Font) -> None:
         if not self.activo:
-            fondo = (40, 40, 40)
-            texto_color = (120, 120, 120)
-            borde = (70, 70, 70)
-            marca = (90, 90, 90)
+            fondo, texto_color, borde = colores_boton(activo=False)
+            marca = COLOR_BOTON_INACTIVO_TEXTO
         elif self.seleccionado:
             fondo = COLOR_MARCA_ON_FONDO
             texto_color = COLOR_MARCA_ON_TEXTO
             borde = COLOR_MARCA_ON_BORDE
             marca = COLOR_MARCA_ON_TEXTO
         else:
-            if self.hover:
-                fondo = COLOR_BOTON_HOVER
-                borde = COLOR_BOTON_BORDE
-            else:
-                fondo = COLOR_MARCA_OFF_FONDO
-                borde = COLOR_MARCA_OFF_BORDE
-            texto_color = COLOR_BOTON_TEXTO
+            fondo, texto_color, borde = colores_boton(activo=True, hover=self.hover)
             marca = COLOR_MARCA_CASILLA_BORDE
 
         pygame.draw.rect(pantalla, fondo, self.rect, border_radius=8)
@@ -739,15 +797,11 @@ class BotonOpcion(Boton):
         elif self.marcar_incorrecta:
             fondo, borde = COLOR_ERROR_FONDO, (220, 120, 120)
             texto_color = (255, 255, 255)
-        elif not self.activo:
-            fondo, borde = (40, 40, 40), (70, 70, 70)
-            texto_color = (120, 120, 120)
-        elif self.hover:
-            fondo, borde = COLOR_BOTON_HOVER, COLOR_BOTON_BORDE
-            texto_color = COLOR_BOTON_TEXTO_HOVER
         else:
-            fondo, borde = COLOR_BOTON, COLOR_BOTON_BORDE
-            texto_color = COLOR_BOTON_TEXTO
+            fondo, texto_color, borde = colores_boton(
+                activo=self.activo,
+                hover=self.hover,
+            )
         pygame.draw.rect(pantalla, fondo, self.rect, border_radius=8)
         pygame.draw.rect(pantalla, borde, self.rect, width=2, border_radius=8)
         etiqueta = f"{self.letra}) {self.texto_opcion}"
@@ -863,6 +917,11 @@ def dibujar_tooltip(
 from Comun.preferencias_grafico import tooltips_habilitados
 
 
+def boton_muestra_tooltip(boton: Boton) -> bool:
+    """Solo botones activos (blancos) muestran tooltip al pasar el ratón."""
+    return bool(boton.activo and boton.hover and boton.tooltip)
+
+
 def dibujar_tooltips_botones(
     pantalla: pygame.Surface,
     fuente: pygame.font.Font,
@@ -871,7 +930,7 @@ def dibujar_tooltips_botones(
     if not tooltips_habilitados():
         return
     for boton in botones:
-        if boton.activo and boton.hover and boton.tooltip:
+        if boton_muestra_tooltip(boton):
             dibujar_tooltip(pantalla, fuente, boton.rect, boton.tooltip)
             return
 
@@ -901,6 +960,8 @@ class CampoTexto:
             return False
         if evento.key == pygame.K_BACKSPACE:
             self.texto = self.texto[:-1]
+            return True
+        if evento.key == pygame.K_DELETE:
             return True
         if evento.key in (pygame.K_RETURN, pygame.K_ESCAPE):
             self.activo = False
@@ -970,6 +1031,8 @@ class CampoEntero:
         if evento.key == pygame.K_BACKSPACE:
             self.texto = self.texto[:-1]
             return True
+        if evento.key == pygame.K_DELETE:
+            return True
         if evento.key in (pygame.K_RETURN, pygame.K_ESCAPE):
             self.activo = False
             return True
@@ -1002,9 +1065,7 @@ class CampoEntero:
 
     def dibujar(self, pantalla: pygame.Surface, fuente: pygame.font.Font) -> None:
         if not self.habilitado:
-            fondo = (40, 40, 40)
-            borde = (70, 70, 70)
-            color_texto = (120, 120, 120)
+            fondo, color_texto, borde = colores_boton(activo=False)
         elif self.activo:
             fondo = COLOR_CAMPO_ACTIVO
             borde = COLOR_ACENTO
@@ -1036,7 +1097,7 @@ def dibujar_overlay_atenuacion(
     *,
     alpha: int | None = None,
 ) -> None:
-    """Oscurece pantalla e iconos fijos bajo un popup modal."""
+    """Oscurece el contenido bajo un popup modal (la barra fija se redibuja encima)."""
     from Grafico.tema import ALPHA_OVERLAY_POPUP
 
     if alpha is None:

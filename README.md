@@ -35,7 +35,7 @@ No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 | [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
 | [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
 | [`Docs/`](Docs/README.md) | Changelogs, `Entrega/` (memoria md/tex/docx), `Figuras/` |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias del juego (**468** tests) y CI |
+| [`Tests/`](Tests/README.md) | Pruebas unitarias del juego (**578** tests) y CI |
 | [`Docs/utilidades_tfg.py`](Docs/utilidades_tfg.py) | Regeneración (memoria) + limpieza final + zips de distribución |
 | [`Juego/requirements.txt`](Juego/requirements.txt) | Solo jugar (pygame-ce) |
 | [`requirements.txt`](requirements.txt) | Desarrollo completo (incluye el del juego) |
@@ -91,7 +91,7 @@ Ver [`Data/README.md`](Data/README.md) y [`Data/Plantillas/README.md`](Data/Plan
 - **Juego completo** (autor): `MATCAD_juego_portable.zip` o repo con `Data/` completo.
 - **Datos propios** (usuario): solo CSV mínimo — `MATCAD_juego_minimal.zip` o `--csv` (versión intermedia futura). 
 
-Configuración privada del creador (SMTP, GitHub, etc.): `Data/Banco/creador_privado.json` (local; plantilla en [`Juego/Comun/feedback.py`](Juego/Comun/feedback.py)).
+Configuración privada del creador (SMTP, GitHub, etc.): `Data/Privado/creador_privado.json` (local; plantilla en [`Juego/Comun/feedback.py`](Juego/Comun/feedback.py)).
 
 ## Pruebas
 

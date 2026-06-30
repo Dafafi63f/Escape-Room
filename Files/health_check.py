@@ -36,6 +36,13 @@ def _bootstrap() -> None:
 def paso_datos() -> int:
     _bootstrap()
     from Comun.contenido import cargar_contenido_juego, construir_datos_juego
+    from Comun.persistencia import auditar_carpetas_data
+
+    problemas = auditar_carpetas_data(ROOT)
+    if problemas:
+        for aviso in problemas:
+            print(f"ERROR datos: {aviso}", file=sys.stderr)
+        return 1
 
     contenido = cargar_contenido_juego()
     datos = construir_datos_juego(contenido)

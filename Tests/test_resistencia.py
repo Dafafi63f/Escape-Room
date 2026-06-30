@@ -107,7 +107,7 @@ class TestResistenciaPartida(unittest.TestCase):
 
     def test_banco_dinamico_solo_revisado_al_inicio(self) -> None:
         if not self.banco.plantillas:
-            self.skipTest("Sin plantillas beta fuera del dataset")
+            self.skipTest("Sin plantillas del banco ampliado fuera del dataset")
         er = EstadoResistencia()
         er.banco_resistencia = self.banco
         sel = crear_seleccion_resistencia(self.pool)
@@ -122,7 +122,7 @@ class TestResistenciaPartida(unittest.TestCase):
 
     def test_banco_dinamico_desbloquea_plantillas(self) -> None:
         if not self.banco.plantillas:
-            self.skipTest("Sin plantillas beta fuera del dataset")
+            self.skipTest("Sin plantillas del banco ampliado fuera del dataset")
         er = EstadoResistencia()
         er.banco_resistencia = self.banco
         sel = crear_seleccion_resistencia(self.pool)
@@ -239,43 +239,89 @@ class TestResistenciaPartida(unittest.TestCase):
         self.assertLessEqual(len(elegidos), 2)
 
     def test_desafio_bloque_completa_y_limpia_estado(self) -> None:
+        from Comun.maldiciones_partida import DesafioMaldicionTiempo, ModoFinMaldicion
         from Comun.resistencia_motor import (
-            DesafioBloqueTiempoResistencia,
+            MaldicionActiva,
             procesar_post_turno_resistencia,
         )
 
         er = EstadoResistencia()
-        er.desafio_bloque = DesafioBloqueTiempoResistencia(
-            aciertos_objetivo=2,
-            tiempo_limite_seg=60,
+        er.maldicion = MaldicionActiva(
+            id="desafio_tiempo",
+            etiqueta="Maldición: desafío de tiempo",
+            modo_fin=ModoFinMaldicion.DESAFIO,
+            desafio=DesafioMaldicionTiempo(
+                aciertos_objetivo=2,
+                tiempo_limite_seg=60,
+            ),
         )
         avisos = procesar_post_turno_resistencia(er, acierto=True, numero_pregunta=150)
-        self.assertEqual(er.desafio_bloque.aciertos_logrados, 1)
+        assert er.maldicion is not None and er.maldicion.desafio is not None
+        self.assertEqual(er.maldicion.desafio.aciertos_logrados, 1)
         self.assertEqual(avisos, [])
         avisos = procesar_post_turno_resistencia(er, acierto=True, numero_pregunta=151)
-        self.assertIsNone(er.desafio_bloque)
+        self.assertIsNone(er.maldicion)
         self.assertTrue(any("superado" in a for a in avisos))
 
     def test_desafio_bloque_expirado_finaliza_partida(self) -> None:
         import time
+        from Comun.maldiciones_partida import DesafioMaldicionTiempo, ModoFinMaldicion
         from Comun.resistencia_motor import (
-            DesafioBloqueTiempoResistencia,
+            MaldicionActiva,
             desafio_bloque_expirado,
             finalizar_partida_por_desafio_bloque,
         )
 
         er = EstadoResistencia()
         estado = EstadoPartida(nombre="T", reglas=preset_resistencia(), vidas_restantes=3)
-        er.desafio_bloque = DesafioBloqueTiempoResistencia(
-            aciertos_objetivo=3,
-            tiempo_limite_seg=1,
-            inicio_monotonic=time.monotonic() - 5,
+        er.maldicion = MaldicionActiva(
+            id="desafio_tiempo",
+            etiqueta="Maldición: desafío de tiempo",
+            modo_fin=ModoFinMaldicion.DESAFIO,
+            desafio=DesafioMaldicionTiempo(
+                aciertos_objetivo=3,
+                tiempo_limite_seg=1,
+                inicio_monotonic=time.monotonic() - 5,
+            ),
         )
         self.assertTrue(desafio_bloque_expirado(er))
         msg = finalizar_partida_por_desafio_bloque(estado, er)
         self.assertIn("tiempo agotado", msg.lower())
         self.assertEqual(estado.vidas_restantes, 0)
-        self.assertIsNone(er.desafio_bloque)
+        self.assertIsNone(er.maldicion)
+
+    def test_desafio_bloque_pausa_durante_popups(self) -> None:
+        from Comun.maldiciones_partida import DesafioMaldicionTiempo
+
+        desafio = DesafioMaldicionTiempo(
+            aciertos_objetivo=3,
+            tiempo_limite_seg=30,
+            inicio_monotonic=100.0,
+        )
+        with patch("Comun.maldiciones_partida.time.monotonic", return_value=110.0):
+            self.assertEqual(desafio.tiempo_restante_seg(), 20)
+            desafio.pausar()
+        with patch("Comun.maldiciones_partida.time.monotonic", return_value=125.0):
+            self.assertEqual(desafio.tiempo_restante_seg(), 20)
+            desafio.reanudar()
+        with patch("Comun.maldiciones_partida.time.monotonic", return_value=125.0):
+            self.assertEqual(desafio.tiempo_restante_seg(), 20)
+
+    def test_segundos_pregunta_restantes_respeta_pausa(self) -> None:
+        from Comun.objetos_partida import (
+            segundos_pregunta_restantes,
+            tiempo_pregunta_agotado,
+        )
+
+        inicio = 100.0
+        with patch("Comun.objetos_partida.time.monotonic", return_value=108.0):
+            self.assertEqual(
+                segundos_pregunta_restantes(inicio, 10, pausa_seg=5),
+                7,
+            )
+            self.assertFalse(tiempo_pregunta_agotado(inicio, 10, pausa_seg=5))
+        with patch("Comun.objetos_partida.time.monotonic", return_value=118.0):
+            self.assertTrue(tiempo_pregunta_agotado(inicio, 10, pausa_seg=8))
 
     def test_sin_eventos_redundantes_de_dificultad(self) -> None:
         etiquetas = set()
@@ -413,7 +459,7 @@ class TestResistenciaPartida(unittest.TestCase):
         self.assertGreater(len(beta), len(self.preguntas))
         self.assertFalse(
             any("Pregunta de ampliación" in p.texto for p in beta),
-            "pool_extra no debe entrar al modo beta",
+            "pool_extra no debe entrar al banco ampliado",
         )
 
     def test_resistencia_inicio_solo_revisadas(self) -> None:
@@ -433,7 +479,7 @@ class TestMecanicasResistencia(unittest.TestCase):
     def test_texto_progreso_resistencia(self) -> None:
         er = EstadoResistencia(racha=3)
         txt = texto_progreso_resistencia(er, 10)
-        self.assertEqual(txt, "#10 · Racha 3")
+        self.assertEqual(txt, "10  Racha 3")
 
     def test_bloque_grupo_usa_nombre_tematico(self) -> None:
         from Comun.resistencia_motor import _descripcion_grupo_tematico
@@ -571,6 +617,101 @@ class TestMecanicasResistencia(unittest.TestCase):
                 bloque_gen = candidato
                 break
         self.assertIsNone(bloque_gen)
+
+    def test_bloque_filtro_solo_tamanos_3_o_5(self) -> None:
+        from Comun.jefe_partida import TAMANOS_BLOQUE_NORMAL
+        from Comun.modelos import Pregunta
+        from Comun.resistencia_motor import (
+            BloqueFiltroActivo,
+            EstadoResistencia,
+            _bloque_viable_en_pool,
+            _generar_bloque_filtro,
+        )
+
+        pool = [
+            Pregunta(
+                texto=f"P{i}",
+                materia="Algebra",
+                tematica="",
+                dificultad="Facil",
+                tipo="Teoria",
+                grupo="1",
+                nivel="1",
+                curso="1",
+                semestre="1",
+                opciones={"A": "1", "B": "2", "C": "3", "D": "4"},
+                correcta="A",
+                fuente="dataset",
+            )
+            for i in range(12)
+        ]
+        bloque_invalido = BloqueFiltroActivo(
+            etiqueta="Bloque: 4 preguntas de Algebra",
+            preguntas_restantes=4,
+            preguntas_totales=4,
+            materia="Algebra",
+        )
+        self.assertFalse(_bloque_viable_en_pool(pool, bloque_invalido, minimo=4))
+
+        er = EstadoResistencia(semilla_partida=777)
+        tamanos: set[int] = set()
+        for n in range(20, 200):
+            bloque = _generar_bloque_filtro(pool, n, er)
+            if bloque is not None and not bloque.es_jefe:
+                tamanos.add(bloque.preguntas_totales or bloque.preguntas_restantes)
+        self.assertTrue(tamanos)
+        self.assertLessEqual(tamanos, set(TAMANOS_BLOQUE_NORMAL))
+
+    def test_bloque_filtro_semestre_solo(self) -> None:
+        from Comun.filtros_bloque import TipoFiltroBloque, clasificar_filtro_bloque
+        from Comun.modelos import Pregunta
+        from Comun.resistencia_motor import (
+            BloqueFiltroActivo,
+            EstadoResistencia,
+            _bloque_viable_en_pool,
+            _generar_bloque_filtro,
+        )
+
+        pool = [
+            Pregunta(
+                texto=f"P{i}",
+                materia=f"M{i % 2}",
+                tematica="",
+                dificultad="Facil",
+                tipo="Teoria",
+                grupo="1",
+                nivel="1",
+                curso=str(1 + i % 2),
+                semestre="1",
+                opciones={"A": "1", "B": "2", "C": "3", "D": "4"},
+                correcta="A",
+                fuente="dataset",
+            )
+            for i in range(12)
+        ]
+        er = EstadoResistencia(semilla_partida=991)
+        bloque_sem: BloqueFiltroActivo | None = None
+        for n in range(30, 250):
+            candidato = _generar_bloque_filtro(pool, n, er)
+            if (
+                candidato
+                and candidato.semestre == "1"
+                and not candidato.curso
+                and not candidato.materia
+            ):
+                bloque_sem = candidato
+                break
+        self.assertIsNotNone(bloque_sem)
+        assert bloque_sem is not None
+        self.assertEqual(
+            clasificar_filtro_bloque(
+                semestre=bloque_sem.semestre,
+                curso=bloque_sem.curso,
+                materia=bloque_sem.materia,
+            ),
+            TipoFiltroBloque.SEMESTRE,
+        )
+        self.assertTrue(_bloque_viable_en_pool(pool, bloque_sem, minimo=3))
 
     def test_apuestas_variedad_riesgo_recompensa(self) -> None:
         from Comun.eventos_partida import (
@@ -945,7 +1086,48 @@ class TestMotorResistenciaComun(unittest.TestCase):
             any("fin de partida" in a.lower() for a in turno.avisos_extra)
         )
 
+    def test_apuesta_loot_no_incluye_tiempo_lento_ni_doble_o_nada(self) -> None:
+        from Comun.eventos_partida import (
+            ApuestaRiesgo,
+            CosteApuesta,
+            RecompensaApuesta,
+        )
+        from Comun.motor_nucleo import ResultadoRespuesta
+        from Comun.objetos_partida import POWERUPS_LOOT_APUESTA
+
+        self.assertNotIn("tiempo_lento", POWERUPS_LOOT_APUESTA)
+        self.assertNotIn("tiempo_extra", POWERUPS_LOOT_APUESTA)
+        self.assertNotIn("doble_o_nada", POWERUPS_LOOT_APUESTA)
+
+        er = EstadoResistencia(semilla_partida=99)
+        estado = EstadoPartida(
+            nombre="T",
+            reglas=preset_resistencia(),
+            vidas_restantes=3,
+            puntos_arcade=50,
+        )
+        objetos: set[str] = set()
+        for n in range(8, 40):
+            er.apuesta_activa = ApuestaRiesgo(
+                "Botín seguro",
+                RecompensaApuesta(powerup_aleatorio=True),
+                CosteApuesta(vidas_fallo=1),
+            )
+            turno = procesar_turno_resistencia(
+                estado,
+                er,
+                _pregunta(),
+                ResultadoRespuesta(acierto=True, respuesta="B"),
+                indice_pregunta=n,
+            )
+            for aviso in turno.avisos_extra:
+                if aviso.startswith("Recompensa de apuesta:"):
+                    objetos.add(aviso.removeprefix("Recompensa de apuesta: ").strip())
+        self.assertTrue(objetos)
+        self.assertFalse(objetos & {"Tiempo lento", "+Tiempo", "Doble o nada"})
+
     def test_apuesta_objeto_al_acertar_y_puntos_al_fallar(self) -> None:
+        from Comun.economia_partida import puntos_penalizacion_escalados
         from Comun.eventos_partida import (
             ApuestaRiesgo,
             CosteApuesta,
@@ -989,8 +1171,9 @@ class TestMotorResistenciaComun(unittest.TestCase):
             indice_pregunta=12,
         )
         self.assertLess(estado.puntos_arcade, 80)
+        penal = puntos_penalizacion_escalados(35, 12)
         self.assertTrue(
-            any("-35 puntos" in a for a in turno_ko.avisos_extra)
+            any(f"Apuesta: -{penal} puntos" in a for a in turno_ko.avisos_extra)
         )
 
     def test_escudo_evita_perder_vida_y_racha(self) -> None:
@@ -1014,6 +1197,20 @@ class TestMotorResistenciaComun(unittest.TestCase):
         self.assertEqual(estado.vidas_restantes, 2)
         self.assertFalse(er.escudo_activo)
 
+    def test_sello_purga_elimina_maldicion_resistencia(self) -> None:
+        from Comun.resistencia_motor import MaldicionActiva, usar_powerup
+
+        er = EstadoResistencia()
+        er.agregar_powerup("sello_purga")
+        er.maldicion = MaldicionActiva(
+            id="puntos_mitad",
+            etiqueta="Maldición: puntos al 50 %",
+            preguntas_restantes=3,
+            multiplicador_puntos=0.5,
+        )
+        self.assertIsNone(usar_powerup("sello_purga", er, _pregunta()))
+        self.assertIsNone(er.maldicion)
+
     def test_fifty_fifty_oculta_dos_incorrectas(self) -> None:
         p = _pregunta()
         ocultas = letras_ocultas_fifty_fifty(p)
@@ -1035,7 +1232,18 @@ class TestMotorResistenciaComun(unittest.TestCase):
         p = _pregunta()
         self.assertIsNone(usar_powerup("skip", er, p))
         self.assertEqual(er.cantidad("skip"), 1)
-        self.assertIn("skip", er.powerups_usados_en_pregunta)
+        self.assertNotIn("skip", er.powerups_usados_en_pregunta)
+
+    def test_tres_skip_y_luego_bomba(self) -> None:
+        er = EstadoResistencia()
+        er.agregar_powerup("skip", 3)
+        er.agregar_powerup("bomba", 1)
+        p = _pregunta()
+        for _ in range(3):
+            self.assertIsNone(usar_powerup("skip", er, p))
+        self.assertIsNone(usar_powerup("bomba", er, p))
+        self.assertIn("bomba", er.powerups_usados_en_pregunta)
+        self.assertIsNotNone(usar_powerup("fifty_fifty", er, p))
 
     def test_bomba_y_fifty_incompatibles_misma_pregunta(self) -> None:
         er = EstadoResistencia()
@@ -1047,14 +1255,14 @@ class TestMotorResistenciaComun(unittest.TestCase):
         er.reiniciar_slot_pregunta()
         self.assertIsNone(usar_powerup("fifty_fifty", er, p))
 
-    def test_bomba_y_tiempo_extra_compatibles(self) -> None:
+    def test_bomba_y_tiempo_extra_un_solo_slot(self) -> None:
         er = EstadoResistencia()
         er.agregar_powerup("bomba", 1)
         er.agregar_powerup("tiempo_extra", 1)
         p = _pregunta()
         self.assertIsNone(usar_powerup("bomba", er, p))
-        self.assertIsNone(usar_powerup("tiempo_extra", er, p))
-        self.assertEqual(er.tiempo_extra_seg, 20)
+        self.assertIsNotNone(usar_powerup("tiempo_extra", er, p))
+        self.assertEqual(er.tiempo_extra_seg, 0)
 
     def test_recompensas_no_dependen_de_racha_ni_pregunta(self) -> None:
         from Comun.resistencia_motor import tirar_recompensas_tras_acierto
@@ -1099,7 +1307,15 @@ class TestMotorResistenciaComun(unittest.TestCase):
             patch("Comun.resistencia_motor.FACTOR_TIRADA_RECOMPENSA", 1.0),
         ):
             recs = tirar_recompensas_tras_acierto(er, estado, numero_pregunta=10)
-        self.assertEqual(len(recs), MAX_TIRADAS_RECOMPENSA_ACIERTO)
+        self.assertGreater(len(recs), 0)
+        self.assertLessEqual(len(recs), MAX_TIRADAS_RECOMPENSA_ACIERTO)
+        familias = set()
+        for rec in recs:
+            from Comun.resistencia_motor import _familia_recompensa_resistencia
+
+            familia = _familia_recompensa_resistencia(rec)
+            self.assertNotIn(familia, familias)
+            familias.add(familia)
 
         er2 = EstadoResistencia(semilla_partida=7)
         with patch("Comun.resistencia_motor.probabilidad_buena_resistencia", return_value=0.0):
@@ -1107,6 +1323,52 @@ class TestMotorResistenciaComun(unittest.TestCase):
                 tirar_recompensas_tras_acierto(er2, estado, numero_pregunta=10),
                 [],
             )
+
+    def test_no_recompensa_vida_duplicada_ni_inutil(self) -> None:
+        from unittest.mock import patch
+
+        from Comun.resistencia_motor import (
+            EventoRecompensaResistencia,
+            tirar_recompensas_tras_acierto,
+        )
+
+        er = EstadoResistencia(semilla_partida=99)
+        er.vidas_max = 4
+        estado = EstadoPartida(
+            nombre="T",
+            reglas=preset_resistencia(),
+            vidas_restantes=4,
+        )
+        with patch(
+            "Comun.resistencia_motor._generar_recompensa_aleatoria",
+            return_value=EventoRecompensaResistencia("¡Vida extra!", delta_vidas=1),
+        ):
+            recs = tirar_recompensas_tras_acierto(er, estado, numero_pregunta=10)
+        self.assertEqual(recs, [])
+
+        er2 = EstadoResistencia(semilla_partida=100)
+        er2.vidas_max = 4
+        estado2 = EstadoPartida(
+            nombre="T",
+            reglas=preset_resistencia(),
+            vidas_restantes=3,
+        )
+        vida = EventoRecompensaResistencia("¡Vida extra!", delta_vidas=1)
+        objeto = EventoRecompensaResistencia("Objeto: bomba", powerup_id="bomba")
+        llamadas = iter([vida, vida, objeto])
+
+        def _mock_generar(*args, **kwargs):
+            return next(llamadas)
+
+        with (
+            patch("Comun.resistencia_motor.probabilidad_buena_resistencia", return_value=1.0),
+            patch("Comun.resistencia_motor.FACTOR_TIRADA_RECOMPENSA", 1.0),
+            patch("Comun.resistencia_motor._generar_recompensa_aleatoria", side_effect=_mock_generar),
+        ):
+            recs = tirar_recompensas_tras_acierto(er2, estado2, numero_pregunta=10)
+        self.assertEqual(len(recs), 2)
+        self.assertEqual(recs[0].delta_vidas, 1)
+        self.assertEqual(recs[1].powerup_id, "bomba")
 
     def test_acierto_propaga_avisos_recompensa(self) -> None:
         from unittest.mock import patch
@@ -1302,6 +1564,7 @@ class TestIconosResistencia(unittest.TestCase):
         self.assertEqual(emoji_powerup("bomba"), "💣")
         self.assertEqual(emoji_powerup("escudo"), "🛡️")
         self.assertEqual(emoji_powerup("skip"), "⏭️")
+        self.assertEqual(emoji_powerup("descarte_inteligente"), "🧠")
 
     def test_prefijar_y_separar(self) -> None:
         mensaje = prefijar_emoji("Bomba", "💣")
@@ -1393,7 +1656,7 @@ class TestIconosResistencia(unittest.TestCase):
             emoji_evento_si_no(
                 EventoSiNo(tipo="sorpresa", titulo="Caja", descripcion_si="azar")
             ),
-            "🎲",
+            "🎁",
         )
 
     def test_eventos_si_no_variedad_y_puntos(self) -> None:
@@ -1444,7 +1707,7 @@ class TestIconosResistencia(unittest.TestCase):
         self.assertIn("12 pts", texto_compra)
         self.assertIn("bomba", texto_compra.lower())
         self.assertIn("💣", texto_compra)
-        self.assertEqual(titulo_popup_evento_si_no(compra), "Bomba")
+        self.assertEqual(titulo_popup_evento_si_no(compra), "Oferta — Bomba")
 
         from Comun.eventos_partida import (
             ApuestaRiesgo,
@@ -1527,6 +1790,8 @@ class TestIconosResistencia(unittest.TestCase):
             puntos_arcade=100,
         )
         er = EstadoResistencia()
+        from Comun.economia_partida import bonus_amuleto_tras_compra
+
         evento = EventoSiNo(
             tipo="amuleto",
             titulo="Amuleto arcade",
@@ -1534,7 +1799,7 @@ class TestIconosResistencia(unittest.TestCase):
             precio=35,
         )
         self.assertIsNone(aceptar_evento_si_no(evento, estado, er, numero_pregunta=10))
-        self.assertEqual(er.bonus_proximo_acierto, 20)
+        self.assertEqual(er.bonus_proximo_acierto, bonus_amuleto_tras_compra(35, numero_pregunta=10))
         self.assertEqual(er.cantidad("amuleto_puntos"), 0)
         turno = procesar_turno_resistencia(
             estado,
@@ -1546,6 +1811,25 @@ class TestIconosResistencia(unittest.TestCase):
         self.assertTrue(turno.feedback.mensaje.startswith("Correcto"))
         self.assertGreaterEqual(estado.puntos_arcade, 30)
         self.assertEqual(er.bonus_proximo_acierto, 0)
+
+    def test_escalada_bonus_amuleto_rentable_y_crece(self) -> None:
+        from Comun.economia_partida import (
+            bonus_amuleto_arcade,
+            bonus_amuleto_tras_compra,
+        )
+        from Comun.tienda_escape import precio_resistencia_articulo
+
+        precio_q10 = precio_resistencia_articulo("amuleto_puntos", 10)
+        bonus_compra = bonus_amuleto_tras_compra(precio_q10, numero_pregunta=10)
+        self.assertGreaterEqual(bonus_compra, int(round(precio_q10 * 1.3)))
+
+        bonus_temprano = bonus_amuleto_arcade(numero_pregunta=5)
+        bonus_tarde = bonus_amuleto_arcade(numero_pregunta=80)
+        self.assertGreater(bonus_tarde, bonus_temprano)
+
+        bonus_escape_tarde = bonus_amuleto_arcade(numero_sala=25)
+        bonus_escape_inicio = bonus_amuleto_arcade(numero_sala=1)
+        self.assertGreater(bonus_escape_tarde, bonus_escape_inicio)
 
     def test_oferta_vida_no_sale_con_tope_lleno(self) -> None:
         from Comun.eventos_partida import _candidatos_evento_si_no
@@ -1750,6 +2034,108 @@ class TestResistenciaSoloEventos(unittest.TestCase):
         mock_desafio.assert_not_called()
         self.assertIsNone(er.bloque_filtro)
         self.assertFalse(any("Bloque" in a for a in avisos))
+
+
+class TestBarraResistenciaSinSpoiler(unittest.TestCase):
+    def test_barra_oculta_indicadores_durante_popups(self) -> None:
+        from Grafico.pantallas_resistencia_partida import PartidaResistencia
+        from Comun.maldiciones_partida import instanciar_maldicion_desafio_tiempo
+        from Comun.resistencia_motor import (
+            BloqueFiltroActivo,
+            EstadoResistencia,
+        )
+
+        partida = object.__new__(PartidaResistencia)
+        partida.er = EstadoResistencia()
+        partida.er.maldicion = instanciar_maldicion_desafio_tiempo(150)
+        partida.er.bloque_filtro = BloqueFiltroActivo(
+            etiqueta="Bloque: 3 preguntas de Mat",
+            preguntas_restantes=3,
+            preguntas_totales=3,
+            materia="Mat",
+        )
+
+        for fase in ("aviso", "evento_si_no"):
+            partida.fase = fase
+            self.assertIsNone(partida._texto_desafio_bloque_barra())
+            self.assertEqual(partida._texto_extra_barra(), "")
+            self.assertEqual(partida._kwargs_bloque_filtro_barra(), {})
+
+        partida.fase = "feedback"
+        self.assertIsNone(partida._texto_desafio_bloque_barra())
+        self.assertEqual(
+            partida._kwargs_bloque_filtro_barra()["bloque_filtro_texto"],
+            "1/3",
+        )
+
+        partida.fase = "pregunta"
+        self.assertIsNotNone(partida._texto_desafio_bloque_barra())
+        bloque = partida._kwargs_bloque_filtro_barra()
+        self.assertEqual(bloque["bloque_filtro_texto"], "1/3")
+
+    def test_bloque_no_consume_al_cargar_primera_pregunta(self) -> None:
+        """El contador 1/x debe mostrarse en la 1.ª pregunta del bloque (no al cargarla)."""
+        from Comun.resistencia_motor import (
+            BloqueFiltroActivo,
+            EstadoResistencia,
+            consumir_bloque_filtro,
+            segmento_bloque_filtro_barra,
+        )
+
+        er = EstadoResistencia()
+        er.bloque_filtro = BloqueFiltroActivo(
+            etiqueta="Bloque: 5 preguntas de Mat",
+            preguntas_restantes=5,
+            preguntas_totales=5,
+            materia="Mat",
+        )
+        self.assertEqual(segmento_bloque_filtro_barra(er), "1/5")
+        consumir_bloque_filtro(er)
+        self.assertEqual(segmento_bloque_filtro_barra(er), "2/5")
+
+    def test_segmento_bloque_filtro_desaparece_al_terminar(self) -> None:
+        from Comun.resistencia_motor import (
+            BloqueFiltroActivo,
+            EstadoResistencia,
+            consumir_bloque_filtro,
+            segmento_bloque_filtro_barra,
+        )
+
+        er = EstadoResistencia()
+        er.bloque_filtro = BloqueFiltroActivo(
+            etiqueta="Bloque: 3 preguntas de tipo Teoría (cualquier materia)",
+            preguntas_restantes=3,
+            preguntas_totales=3,
+            tipo="Teoria",
+        )
+        self.assertEqual(segmento_bloque_filtro_barra(er), "1/3")
+        consumir_bloque_filtro(er)
+        self.assertEqual(segmento_bloque_filtro_barra(er), "2/3")
+        consumir_bloque_filtro(er)
+        self.assertEqual(segmento_bloque_filtro_barra(er), "3/3")
+        consumir_bloque_filtro(er)
+        self.assertIsNone(er.bloque_filtro)
+        self.assertIsNone(segmento_bloque_filtro_barra(er))
+
+    def test_segmento_bloque_filtro_en_linea_estado(self) -> None:
+        from Comun.linea_estado_ui import segmentos_linea_estado
+        from Comun.motor_nucleo import EstadoPartida
+        from Comun.reglas import preset_resistencia
+
+        estado = EstadoPartida(nombre="T", reglas=preset_resistencia(), vidas_restantes=3)
+        segs = segmentos_linea_estado(
+            estado,
+            "",
+            numero_pregunta=12,
+            racha=4,
+            bloque_filtro_texto="2/5",
+        )
+        ids = [s.id for s in segs]
+        self.assertEqual(ids[:3], ["progreso", "racha", "pregunta_puerta"])
+        self.assertEqual(segs[0].emoji, "❓")
+        self.assertEqual(segs[0].texto, "12")
+        self.assertEqual(segs[2].emoji, "📝")
+        self.assertEqual(segs[2].texto, "2/5")
 
 
 if __name__ == "__main__":

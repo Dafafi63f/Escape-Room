@@ -1,5 +1,5 @@
-CUESTIONARIO MATCAD — Cómo jugar (zip completo)
-================================================
+CUESTIONARIO MATCAD — Cómo jugar (zip completo) — v1.0.0
+=======================================================
 
 Paquete completo: Data\ con banco curricular, plantillas y presets.
 No mezcles esta carpeta con MATCAD_minimal\ (son paquetes distintos).

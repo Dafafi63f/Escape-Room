@@ -63,7 +63,8 @@ class TestRutasPaquete(unittest.TestCase):
         self.assertIsNone(path)
         self.assertLess(elapsed, 0.25)
 
-    def test_creador_privado_en_data_banco(self) -> None:
+    def test_creador_privado_en_data_banco_legacy(self) -> None:
+        """Compatibilidad: si solo existe en Banco/, sigue leyéndose."""
         with tempfile.TemporaryDirectory() as tmp:
             raiz = Path(tmp) / "MATCAD_minimal"
             juego = raiz / "Juego"
@@ -75,6 +76,24 @@ class TestRutasPaquete(unittest.TestCase):
             with patch.object(rutas, "_JUEGO_DIR", juego):
                 path = rutas.resolver_config_creador_privado()
         self.assertEqual(path.resolve(), privado.resolve())
+
+    def test_creador_privado_preferido_en_data_privado(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp) / "MATCAD_minimal"
+            juego = raiz / "Juego"
+            banco = raiz / "Data" / "Banco"
+            carpeta = raiz / "Data" / "Privado"
+            banco.mkdir(parents=True)
+            carpeta.mkdir(parents=True)
+            (banco / "creador_privado.json").write_text('{"legacy": true}', encoding="utf-8")
+            canonico = carpeta / "creador_privado.json"
+            canonico.write_text('{"canonico": true}', encoding="utf-8")
+            self._reiniciar_cache_creador()
+            with patch.object(rutas, "_JUEGO_DIR", juego):
+                path = rutas.resolver_config_creador_privado()
+                defecto = rutas.resolver_ruta_creador_privado_defecto()
+        self.assertEqual(path.resolve(), canonico.resolve())
+        self.assertEqual(defecto.resolve(), canonico.resolve())
 
     def test_buscar_archivo_ausente_usa_cache_negativo(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

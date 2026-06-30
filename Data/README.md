@@ -12,6 +12,7 @@ Ficheros que usa el juego y las herramientas de mantenimiento.
 Data/
 ├── Banco/        # Banco de preguntas y catálogos (.csv, .json de producción)
 ├── Juego/        # Estado local del jugador (.json runtime, informes .txt)
+├── Privado/      # Config del autor y fuentes locales (no se versiona ni empaqueta)
 └── README.md
 ```
 
@@ -21,13 +22,26 @@ Data/
 |---------|-----|
 | `Preguntas.csv` | Banco principal (**480** preguntas cerradas) — **único imprescindible** para jugar |
 | `listado_materias.csv` | Metadatos de **40** materias (juego completo) |
-| `plantillas.json` | **Opcional (autor):** 480 revisadas + 480 extras sin revisar; activa modo beta y pool resistencia ampliado. **No se incluye en el zip portable.** |
+| `plantillas.json` | **Opcional (autor):** 480 revisadas + 480 extras sin revisar; activa el **banco ampliado** y el pool de resistencia. **No se incluye en el zip portable.** |
 
 | `criterios_clasificacion_materia.csv` | Palabras clave por materia |
 | `Historic_qualificacions_MatCAD_completo.csv` | Histórico — modo historia |
-| `creador_privado.json` | Datos personales y SMTP del creador (local, no se versiona) |
+
+### `Data/Privado/` (autor: no versionar ni empaquetar)
+
+Todo lo **privado o local del mantenimiento** en un solo sitio (no va al zip portable).
+
+| Fichero | Uso |
+|---------|-----|
+| `creador_privado.json` | Datos personales, SMTP del feedback, secretos GitHub |
+| `Preguntas_minimal.csv` | Exportación mínima del banco (tests y zip mínimo; ver `Tests/Fixtures/generar_preguntas_minimal.py`) |
+| `*.xlsx` | Fuentes de mantenimiento (p. ej. histórico antes de exportar a CSV en `Banco/`) |
+
+Plantilla del JSON: `cd Juego && python -m Comun.feedback`. Ver [`Privado/README.md`](Privado/README.md).
 
 ### `Data/Juego/` (solo datos locales del jugador)
+
+Se crea al jugar; **no debe contener catálogos ni banco** (ni versionarse copias de `presets.json`, `preguntas_resistencia.json`, etc.).
 
 | Fichero | Uso |
 |---------|-----|
@@ -35,11 +49,13 @@ Data/
 | `estadisticas_jugador.json` | Totales, récords, evolución agregada |
 | `*.txt` | Informes de partida y copias de feedback |
 
+Auditoría: `python Files/health_check.py --solo-datos` (o `Comun.persistencia.auditar_carpetas_data`).
+
 Catálogo de modos: [`Juego/presets.json`](../Juego/presets.json) (viaja con el código, no en `Data/Juego/`).
 
 El juego resuelve rutas con [`Juego/Comun/rutas.py`](../Juego/Comun/rutas.py): banco en `Data/Banco/`, estado local en `Data/Juego/` (con compatibilidad hacia rutas legadas).
 
-Plantillas de ejemplo para datos propios: [`Plantillas/Preguntas.csv`](Plantillas/Preguntas.csv) (ver [`Plantillas/README.md`](Plantillas/README.md)).
+Plantilla de ejemplo para datos propios: [`Plantillas/Preguntas.csv`](Plantillas/Preguntas.csv) (ver [`Plantillas/README.md`](Plantillas/README.md)).
 
 ### Catálogo `Juego/presets.json`
 
@@ -68,7 +84,7 @@ Modos activos en el carrusel de historia (`contexto_reglas`: `historia_*`):
 | `examen_aleatorio_historia` | `examen_fijo` con `origen_semilla: aleatorio` (atajo en Retos del día 📅) |
 | `repaso_historico`, `repaso_integral`, `vuelta_grado`, `repaso_express` | Unificados en `repaso` |
 | `semana_examenes`, `simulacro_curso` | Unificados en `simulacro` |
-| `ranking_resistencia` | `resistencia` (sin ranking local; récords en estadísticas) |
+| `ranking_resistencia` | *(retirado)* — usar preset `resistencia`; récords en estadísticas |
 
 Semilla diaria compartida (`DDMMYYYY`, p. ej. `22062026`; en UI siempre 8 dígitos) **solo** fija el **contenido** del **Examen del día** (`examen_fijo` con `origen_semilla: diario`). Al iniciar cada partida se asigna una semilla de sesión (`semilla_partida_aleatoria()` si el orden varía); un único `RngPartida` ([`semillas.py`](../Juego/Comun/semillas.py), `resolver_semillas_partida`) consume todo el azar de la partida (orden, opciones A–D, salas, eventos, etc.): la semilla identifica la sesión y cada operación aleatoria avanza el generador, sin sub-semillas ni reinicios a mitad de juego.
 
@@ -116,9 +132,9 @@ Definidos en [`Files/objetivos_balanceo.py`](../Files/objetivos_balanceo.py):
 
 `plantillas.json` está **cerrado** (960 filas = 480 dataset + 480 extra, sin `variaciones`, 2026-06-27). No regenerar salvo `TFG_PERMITIR_PLANTILLAS=1`.
 
-En el juego: **modo seguro** = 480 (CSV); **modo beta** = 960 (solo si existe `plantillas.json` en el repo del autor); **resistencia** = 480 + 40 exclusivas (520) o **1000** con plantillas, desbloqueo progresivo por capas.
+En el juego: **banco revisado** = 480 (CSV); **banco ampliado** = 960 (solo si existe `plantillas.json` en el repo del autor); **resistencia** = 480 + 40 exclusivas (520) o **1000** con plantillas, desbloqueo progresivo por capas.
 
-Auditoría: `python Files/mantenimiento.py auditar-distractores` (beta) o `--solo-dataset` (base). Cobertura: `auditar-plantillas`. Estado del TFG: [`CHANGELOG_PROYECTO.md`](../Docs/CHANGELOG_PROYECTO.md) y [`CHECKLIST.md`](../Docs/CHECKLIST.md).
+Auditoría: `python Files/mantenimiento.py auditar-distractores` (banco ampliado) o `--solo-dataset` (base). Cobertura: `auditar-plantillas`. Estado del TFG: [`CHANGELOG_PROYECTO.md`](../Docs/CHANGELOG_PROYECTO.md), [`RELEASE_1.0.md`](../Docs/RELEASE_1.0.md) y [`CHECKLIST.md`](../Docs/CHECKLIST.md).
 
 ## Evolución futura del modelo de datos
 
@@ -263,7 +279,7 @@ flowchart LR
 
 ## Fichero privado del creador (no se sube a git)
 
-`Data/Banco/creador_privado.json` guarda en un solo sitio:
+`Data/Privado/creador_privado.json` guarda en un solo sitio:
 
 - Datos personales (`creador`: nombre, correo, tutor, notas).
 - Secretos de GitHub (`github`: usuario, repo, token).

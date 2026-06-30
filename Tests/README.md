@@ -2,7 +2,7 @@
 
 Pruebas unitarias del juego en directorio plano `Tests/` (dominio `Comun/`, interfaz `Grafico/` y flujos integrados).
 
-**Suite actual:** **468** tests.
+**Suite actual:** **578** tests.
 
 ## Ejecutar
 
@@ -58,5 +58,4 @@ Utilidades y fixtures usados por los `test_*.py` de la raíz. `unittest discover
 | `support.py` | Bootstrap de `sys.path` |
 | `adaptador_juego.py` | Adaptador de dominio para tests |
 | `helpers_navegacion_grafico.py` | Utilidades para tests gráficos |
-| `generar_preguntas_minimal.py` | Regenera `Preguntas_minimal.csv` desde el banco |
-| `Preguntas_minimal.csv` | CSV mínimo para tests y zip mínimo |
+| `generar_preguntas_minimal.py` | Regenera `Data/Privado/Preguntas_minimal.csv` desde el banco |

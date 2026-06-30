@@ -7,13 +7,38 @@ from __future__ import annotations
 # --- esquemas ---
 
 
+from pathlib import Path
 from typing import Any
 
 __all__ = [
+    "auditar_carpetas_data",
+    "es_fichero_runtime_juego",
     "estadisticas_jugador_vacio",
     "preferencias_grafico_vacio",
     "texto_referencia_datos_juego",
 ]
+
+# Ficheros de catálogo / banco que no deben aparecer en Data/Juego/.
+_FICHEROS_PROHIBIDOS_EN_JUEGO = frozenset({
+    "presets.json",
+    "preguntas_resistencia.json",
+    "plantillas.json",
+    "Preguntas.csv",
+    "listado_materias.csv",
+    "criterios_clasificacion_materia.csv",
+    "Historic_qualificacions_MatCAD_completo.csv",
+    "creador_privado.json",
+})
+
+_CARPETAS_PROHIBIDAS_EN_JUEGO = frozenset({"defaults", "Banco"})
+
+# Runtime del jugador: no deben versionarse ni empaquetarse en el zip portable.
+_PATRONES_RUNTIME_JUEGO = (
+    "preferencias_grafico.json",
+    "estadisticas_jugador.json",
+    "ranking_*.json",
+    "*.txt",
+)  # documentación; ver es_fichero_runtime_juego()
 
 CAMPOS_ESTADISTICAS = {
     "totales": "partidas, preguntas, aciertos, fallos, segundos_jugados (enteros >= 0)",
@@ -23,6 +48,10 @@ CAMPOS_ESTADISTICAS = {
     "records": (
         "resistencia_racha, resistencia_puntos, resistencia_preguntas, "
         "escape_salas, escape_puntos_arcade, mejor_porcentaje_sesion"
+    ),
+    "resistencia_variedad": (
+        "pity entre partidas cortas: partidas, sin_por_categoria "
+        "(escalada_hostil, escalada_buena, bloque, jefe, maldicion, evento_si_no)"
     ),
     "sesiones": "lista interna ({duracion_seg, ...}; evolución semanal)",
     "dias_activos": "fechas ISO locales con actividad",
@@ -69,7 +98,112 @@ def estadisticas_jugador_vacio() -> dict[str, Any]:
         },
         "sesiones": [],
         "dias_activos": [],
+        "resistencia_variedad": {
+            "partidas": 0,
+            "sin_por_categoria": {},
+        },
     }
+
+
+def es_fichero_runtime_juego(nombre: str) -> bool:
+    """True si el fichero es estado local del jugador (no empaquetar en zip)."""
+    bajo = nombre.lower()
+    if bajo.endswith(".txt"):
+        return True
+    if bajo == "estadisticas_jugador.json":
+        return True
+    if bajo.startswith("preferencias_") and bajo.endswith(".json"):
+        return True
+    return bajo.startswith("ranking_") and bajo.endswith(".json")
+
+
+def auditar_carpetas_data(raiz: Path | None = None) -> list[str]:
+    """Detecta ficheros fuera de sitio en ``Data/Banco/``, ``Data/Juego/`` y ``Data/Privado/``."""
+    from Comun.rutas import juego_dir
+
+    base = (raiz or juego_dir().parent) / "Data"
+    problemas: list[str] = []
+    banco = base / "Banco"
+    juego = base / "Juego"
+
+    if banco.is_dir():
+        for fichero in sorted(banco.iterdir()):
+            if not fichero.is_file():
+                continue
+            nombre = fichero.name
+            if nombre.endswith(".txt") or nombre.startswith("preferencias_"):
+                problemas.append(
+                    f"Data/Banco/{nombre}: informe o preferencias del jugador "
+                    "(debe estar en Data/Juego/)"
+                )
+            elif nombre in ("estadisticas_jugador.json",) or nombre.startswith("ranking_"):
+                problemas.append(
+                    f"Data/Banco/{nombre}: estadísticas locales "
+                    "(debe estar en Data/Juego/)"
+                )
+            elif nombre == "presets.json":
+                problemas.append(
+                    f"Data/Banco/{nombre}: catálogo de modos "
+                    "(debe estar en Juego/presets.json)"
+                )
+            elif nombre == "creador_privado.json":
+                problemas.append(
+                    f"Data/Banco/{nombre}: configuración privada del autor "
+                    "(mover a Data/Privado/)"
+                )
+            elif fichero.suffix.lower() == ".xlsx":
+                problemas.append(
+                    f"Data/Banco/{nombre}: fuente de mantenimiento "
+                    "(mover a Data/Privado/)"
+                )
+
+    if juego.is_dir():
+        for entrada in sorted(juego.rglob("*")):
+            if not entrada.is_file():
+                continue
+            rel = entrada.relative_to(juego)
+            partes = rel.parts
+            if partes and partes[0] in _CARPETAS_PROHIBIDAS_EN_JUEGO:
+                problemas.append(
+                    f"Data/Juego/{rel.as_posix()}: carpeta obsoleta "
+                    "(los valores por defecto están en Comun/persistencia.py)"
+                )
+                continue
+            nombre = entrada.name
+            if nombre in _FICHEROS_PROHIBIDOS_EN_JUEGO:
+                destino = (
+                    "Juego/presets.json"
+                    if nombre == "presets.json"
+                    else "Juego/Comun/preguntas_resistencia_exclusivas_datos.py"
+                    if nombre == "preguntas_resistencia.json"
+                    else "Data/Privado/"
+                    if nombre == "creador_privado.json"
+                    else "Data/Banco/"
+                )
+                problemas.append(
+                    f"Data/Juego/{rel.as_posix()}: catálogo o banco fuera de sitio "
+                    f"(usar {destino})"
+                )
+
+    for fichero in sorted(base.glob("*.xlsx")):
+        problemas.append(
+            f"Data/{fichero.name}: fuente de mantenimiento "
+            "(mover a Data/Privado/)"
+        )
+
+    fuentes_legacy = (raiz or juego_dir().parent) / "Files" / "fuentes"
+    if fuentes_legacy.is_dir() and any(fuentes_legacy.iterdir()):
+        problemas.append(
+            "Files/fuentes/: carpeta obsoleta (mover su contenido a Data/Privado/)"
+        )
+
+    fixture_csv = (raiz or juego_dir().parent) / "Tests" / "Fixtures" / "Preguntas_minimal.csv"
+    if fixture_csv.is_file():
+        problemas.append(
+            "Tests/Fixtures/Preguntas_minimal.csv: obsoleto (usar Data/Privado/Preguntas_minimal.csv)"
+        )
+
+    return problemas
 
 
 def texto_referencia_datos_juego() -> str:
@@ -96,13 +230,14 @@ def texto_referencia_datos_juego() -> str:
 
 
 from dataclasses import dataclass
-from pathlib import Path
 
 from Comun.rutas import resolver_dir_informes
 
 __all__ = [
     "ResumenBorradoTxt",
+    "auditar_carpetas_data",
     "borrar_txt_informes_feedback",
+    "es_fichero_runtime_juego",
     "inicializar_datos_locales_juego",
     "listar_txt_informes_feedback",
     "vaciar_contenido_json_locales",

@@ -2,7 +2,7 @@
 
 Registro **vivo** del proyecto: snapshot de estado, feedback del tutor y changelog por sesiones. Las tareas abiertas están en [`CHECKLIST.md`](CHECKLIST.md).
 
-**Última actualización:** 2026-06-28
+**Última actualización:** 2026-06-29
 **Alumno:** Daniel Fageda Figueredo · **Tutor:** Víctor Navas Portella
 
 En [`Docs/`](README.md): changelogs, checklist y memoria borrador. El repositorio no versiona PDFs.
@@ -15,9 +15,23 @@ En [`Docs/`](README.md): changelogs, checklist y memoria borrador. El repositori
 | [`Memoria_TFG.md`](Entrega/Memoria_TFG.md) | Borrador Markdown (`Docs/Entrega/`) |
 | [`Entrega/`](Entrega/) | LaTeX y Word de la memoria (`Docs/Entrega/`) |
 | [`Figuras/`](Figuras/) | Imágenes de la memoria |
-| [`Data/README.md`](Data/README.md) | Banco 480 ítems, plantillas beta, esquema curricular |
+| [`Data/README.md`](Data/README.md) | Banco 480 ítems, banco ampliado, esquema curricular |
 
 Regenerar figuras: `python Docs/generar_figuras_memoria.py` · Word: `python Docs/utilidades_tfg.py --solo-memoria`
+
+---
+
+## 2026-06-29 — Versión 1.0.0 (entrega TFG)
+
+Versión **jugable cerrada** para la entrega. Desarrollo en pausa; detalle en [`RELEASE_1.0.md`](RELEASE_1.0.md).
+
+| Cambio | Notas |
+|--------|-------|
+| Versión en menú e Info | `Juego/Comun/version.py` → `v1.0.0` |
+| Terminología banco | UI y docs: **480 revisadas** / **banco ampliado** (antes «modo seguro/beta») |
+| Limpieza docs y código | Changelogs unificados; referencias a consola/terminal retiradas del juego |
+| Tests | **578** tests; `Files/health_check.py` |
+| Zips | Regenerables con `utilidades_tfg.py --solo-zip --forzar-zip` |
 
 ---
 
@@ -29,7 +43,7 @@ Regenerar figuras: `python Docs/generar_figuras_memoria.py` · Word: `python Doc
 | **Banco de preguntas** | Cerrado | 480/480 revisadas; `Preguntas.csv` protegido (`TFG_PERMITIR_CSV=1` para escribir) |
 | **Juego (pygame)** | Operativo | 5 modos: libre, historia, resistencia, escape room, feedback |
 | **Scripts mantenimiento** | Operativo | `Files/mantenimiento.py` (scripts en `Files/`) |
-| **CI / pruebas** | Operativo | GitHub Actions; **468** tests en `Tests/` |
+| **CI / pruebas** | Operativo | GitHub Actions; **578** tests en `Tests/` |
 | **Interfaz gráfica / narrativa** | Parcial | Escape room jugable (mecánicas); narrativa gráfica completa pendiente |
 | **Piloto con usuarios** | No realizado | Ver [`CHECKLIST.md`](CHECKLIST.md) |
 

@@ -26,6 +26,7 @@ from Comun.generador_examen_historia import (
 )
 
 if TYPE_CHECKING:
+    from Comun.cadena_examen_dirigido import CadenaExamenDirigido
     from Grafico.app import DatosJuego
 
 
@@ -62,6 +63,91 @@ def _kwargs_generador_examen(
                 materia,
             )
     return kwargs
+
+
+def preparar_examen_dirigido_sesion(
+    datos: DatosJuego,
+    preset: PresetHistoria,
+    config: ConfigPresetHistoria,
+    registros_sesion: list,
+    *,
+    cadena: CadenaExamenDirigido | None = None,
+    semilla: int | None = None,
+) -> tuple[PlanExamen, ReglasPartida, CadenaExamenDirigido]:
+    """Genera un examen nuevo con memoria acumulada de la cadena de dirigidos."""
+    from Comun.cadena_examen_dirigido import (
+        CadenaExamenDirigido,
+        extender_cadena,
+        perfiles_fallo_desde_registros,
+    )
+    from Comun.config_historia import sanitizar_estrategia_config
+    from Comun.semillas import semilla_partida_aleatoria
+
+    cadena_actualizada = extender_cadena(cadena, registros_sesion)
+    registros_acum = list(cadena_actualizada.registros)
+    if not registros_acum:
+        raise ValueError("No hay respuestas en la sesión para orientar el examen.")
+
+    orden = orden_materias_juego(datos)
+    cfg = config
+    sanitizar_estrategia_config(cfg, datos.perfil)
+    perfiles = perfiles_fallo_desde_registros(registros_acum)
+    kwargs = _kwargs_generador_examen(datos, preset, cfg)
+    kwargs["usar_analisis_historico"] = False
+    plantillas_materia = None
+    if kwargs.get("usar_plantillas_materia"):
+        materia = kwargs.get("materia_fija")
+        if materia and datos.path_plantillas_json and datos.perfil.tiene_plantillas:
+            plantillas_materia = cargar_plantillas_materia(
+                datos.path_plantillas_json,
+                materia,
+            )
+    cfg = validar_config(
+        preset.opciones,
+        cfg,
+        materias_meta=datos.materias_meta,
+        preset_id=preset.id,
+        plantillas_materia=plantillas_materia,
+    )
+    orden_preguntas = resolver_orden_preguntas(preset, cfg)
+    kwargs["orden_preguntas"] = orden_preguntas
+    preguntas_excluir = cadena_actualizada.preguntas_en_ventana_exclusion()
+    preguntas_ultima = [r.pregunta for r in registros_sesion]
+
+    plan: PlanExamen | None = None
+    ultimo_error: str | None = None
+    estrategias: tuple[tuple[list | None, dict | None, bool], ...] = (
+        (preguntas_excluir, perfiles, False),
+        (preguntas_excluir, None, True),
+        (preguntas_ultima, None, True),
+    )
+    for excluir, perfiles_intento, nueva_semilla in estrategias:
+        semilla_intento = (
+            semilla_partida_aleatoria() if nueva_semilla or semilla is None else semilla
+        )
+        try:
+            plan = generar_examen(
+                datos.preguntas,
+                materias_orden=orden,
+                materias_meta=datos.materias_meta,
+                stats={},
+                semilla=semilla_intento,
+                registros_dirigido=registros_acum,
+                preguntas_excluir=excluir,
+                perfiles_fallo=perfiles_intento,
+                **kwargs,
+            )
+            break
+        except ValueError as exc:
+            ultimo_error = str(exc)
+
+    if plan is None:
+        raise ValueError(
+            ultimo_error
+            or "No se pudo montar otro examen dirigido con el banco disponible."
+        )
+    reglas = aplicar_preset(preset, cfg)
+    return plan, reglas, cadena_actualizada
 
 
 def preparar_partida_historia(

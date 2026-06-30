@@ -127,6 +127,8 @@ class TestEstadisticasJugador(unittest.TestCase):
 
     def test_panel_vacio_muestra_secciones_sin_historial_ni_ranking(self) -> None:
         texto = formatear_panel_estadisticas()
+        self.assertIn("--- SIGUE POR AQUI ---", texto)
+        self.assertIn("primera partida", texto)
         self.assertIn("--- RESUMEN GLOBAL ---", texto)
         self.assertIn("--- RECORDS ---", texto)
         self.assertIn("max preguntas: 0", texto)
@@ -199,6 +201,36 @@ class TestEstadisticasJugador(unittest.TestCase):
         texto = formatear_panel_estadisticas(perfil)
         self.assertIn("Examen fijo: 1 partidas", texto)
         self.assertNotIn("Historia:", texto)
+
+
+    def test_tarjeta_sigue_por_aqui_materia_debil(self) -> None:
+        from Comun.informe_examen import RegistroRespuesta, meta_cierre_libre
+
+        algebra = _pregunta("Algebra Lineal")
+        calculo = _pregunta("Calculo", tipo="Calculo")
+        registros = [
+            RegistroRespuesta(1, algebra, "A", False),
+            RegistroRespuesta(2, algebra, "A", False),
+            RegistroRespuesta(3, algebra, "A", True),
+            RegistroRespuesta(4, calculo, "A", True),
+            RegistroRespuesta(5, calculo, "A", True),
+            RegistroRespuesta(6, calculo, "A", True),
+        ]
+        cierre = CierreInformePartida(
+            registros=registros,
+            titulo="FIN",
+            total_previsto=6,
+            prefijo="partida_libre",
+            meta=meta_cierre_libre(
+                banco="dataset",
+                filtro="todas",
+                infinito=False,
+                n_preguntas=6,
+            ),
+        )
+        registrar_cierre_partida(_estado(), cierre)
+        texto = formatear_panel_estadisticas()
+        self.assertIn("Refuerza Algebra Lineal", texto)
 
 
 if __name__ == "__main__":

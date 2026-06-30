@@ -2305,11 +2305,11 @@
       "uso": "general"
     },
     {
-      "pregunta": "∂/∂x de x^1 en el punto (1,1)?",
+      "pregunta": "∂/∂x de x en el punto (1,1)?",
       "A": "1",
       "B": "0",
-      "C": "1",
-      "D": "0",
+      "C": "2",
+      "D": "x",
       "correcta": "A",
       "dificultad": "Facil",
       "tipo": "Calculo",
@@ -7924,11 +7924,11 @@
       "uso": "internet"
     },
     {
-      "pregunta": "¿Cuántos procesos pueden estar listos con 1 CPUs?",
+      "pregunta": "¿Cuántos procesos pueden estar listos con 1 CPU?",
       "A": "Cualquier número",
       "B": "1",
       "C": "2",
-      "D": "1",
+      "D": "Solo el que está en ejecución",
       "correcta": "A",
       "dificultad": "Facil",
       "tipo": "Teoria",

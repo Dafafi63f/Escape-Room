@@ -26,12 +26,23 @@ TOOLTIP_N_PREGUNTAS_INFINITO = (
     "Partida sin tope: continúa hasta que termines, pierdas las vidas o abandones."
 )
 
-TOOLTIP_PAUSA = "Menú de pausa: continuar, ir al título o salir del juego."
+TOOLTIP_PAUSA = "Menú de pausa (Esc): continuar, ir al título o salir del juego."
+TOOLTIP_BARRA_DURANTE_PARTIDA = (
+    "No disponible durante la partida. Usa pausa (Esc) y luego D, H, F u O."
+)
+TOOLTIP_BARRA_DURANTE_PAUSA = (
+    "No disponible con el menú de pausa abierto. Usa Continuar, F (feedback) o Esc (salir)."
+)
+TOOLTIP_BARRA_DURANTE_OPCIONES = (
+    "No disponible con opciones abiertas. Usa Esc (pausa) u O para cerrar."
+)
+TOOLTIP_BARRA_BIENVENIDA = "Disponible después de introducir tu nombre y continuar."
 TOOLTIP_DIARIOS = (
-    "Examen del día (semilla diaria) y examen aleatorio (semilla nueva cada vez)."
+    "Examen del día y examen aleatorio (D). "
+    "Semilla diaria o nueva cada vez."
 )
 TOOLTIP_OPCIONES = (
-    "Opciones globales: nombre por defecto, ayudas al ratón, emojis y borrado de datos locales."
+    "Opciones globales (O): nombre por defecto, ayudas al ratón, emojis y borrado de datos locales."
 )
 
 TOOLTIP_PAUSA_CONTINUAR = "Cierra el menú de pausa y vuelve a la pantalla actual."
@@ -47,7 +58,7 @@ TOOLTIP_CONTINUAR = (
 )
 
 TOOLTIP_FEEDBACK = (
-    "Formulario rápido de avisos al creador (bugs, sugerencias)."
+    "Formulario rápido de avisos al creador (F)."
 )
 
 TOOLTIP_MENU_PRINCIPAL: dict[str, str] = {
@@ -120,11 +131,9 @@ TOOLTIP_GUARDAR_INFORME = (
     "aciertos y corrección pregunta a pregunta."
 )
 
-from Comun.textos_ui import emoji_icono
-
 TOOLTIP_RANKING = (
-    "Estadísticas locales y récords de partida. "
-    f"Borrado local desde Opciones ({emoji_icono('opciones', contexto='grafico')})."
+    "Estadísticas locales, controles y contacto (H). "
+    "Borrado local desde Opciones (O)."
 )
 TOOLTIP_VER_RANKING = TOOLTIP_RANKING
 
@@ -201,7 +210,7 @@ def tooltip_modo_especial(preset_id: str, perfil=None) -> str | None:
     if perfil is not None and perfil.modo_minimo and preset_id == "resistencia":
         return (
             "Partida infinita con eventos aleatorios. Sin escalada por dificultad "
-            "ni banco beta."
+            "ni banco ampliado."
         )
     return TOOLTIP_MODOS_ESPECIALES.get(preset_id)
 

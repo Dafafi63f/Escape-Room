@@ -8,11 +8,14 @@ import sys
 from dataclasses import dataclass
 
 from Comun.motor_nucleo import EstadoPartida
-from Comun.reglas import SistemaPuntuacion, nota_sobre_diez, porcentaje_aciertos
+from Comun.reglas import SistemaPuntuacion
 
 __all__ = [
     "EMOJI_TIEMPO_PREG",
     "EMOJI_TIEMPO_TOTAL",
+    "EMOJI_ID_PREGUNTA",
+    "EMOJI_ID_PREGUNTA_RESISTENCIA",
+    "EMOJI_PROGRESO_EXAMEN",
     "EMOJI_PROGRESO_PREGUNTA_ESCAPE",
     "EMOJI_SALA_ESCAPE",
     "SegmentoEstado",
@@ -21,21 +24,26 @@ __all__ = [
     "emoji_candidatos_segmento",
     "formatear_linea_estado",
     "segmentos_linea_estado",
+    "texto_progreso_examen_cerrado",
 ]
 
-_SEPARADOR_TEXTO = " · "
+_SEPARADOR_TEXTO = "  "
 
 # Iconos de la barra: tiempo activo de partida vs temporizador por pregunta.
 EMOJI_TIEMPO_TOTAL = "⏰"
 EMOJI_TIEMPO_PREG = "⏱️"
-EMOJI_PROGRESO_PREGUNTA_ESCAPE = "📝"
+EMOJI_ID_PREGUNTA = "❓"
+EMOJI_ID_PREGUNTA_RESISTENCIA = EMOJI_ID_PREGUNTA
+EMOJI_PROGRESO_EXAMEN = "📝"
+EMOJI_PROGRESO_PREGUNTA_ESCAPE = EMOJI_PROGRESO_EXAMEN
 EMOJI_SALA_ESCAPE = "🗺️"
 _ASCII_TIEMPO_TOTAL = "T·"
 _ASCII_TIEMPO_PREG = "P·"
 
 _EMOJI_ALTERNATIVOS: dict[str, tuple[str, ...]] = {
-    "progreso": ("📝", "📋"),
+    "progreso": ("❓", "📝", "📋"),
     "pregunta_puerta": ("📝", "📋"),
+    "jefe_resistencia": ("👑", "♔"),
     "sala_escape": ("🗺️", "🏠", "📍"),
     "racha": ("🔥", "💥"),
     "vidas": ("❤️", "❤", "🧡"),
@@ -76,17 +84,60 @@ def stdout_soporta_emoji() -> bool:
     return enc in {"utf-8", "utf8", "cp65001", "cp_utf8"}
 
 
+def texto_progreso_examen_cerrado(indice_actual: int, total: int) -> str:
+    """Progreso x/y para exámenes cerrados o partidas con tope fijo (icono 📝 en barra)."""
+    return f"{indice_actual}/{total}"
+
+
 def _progreso_visible(progreso: str) -> str:
     return progreso.replace("/inf", "/∞").replace(" inf", " ∞")
 
 
-def _segmento_tiempo_activo(estado: EstadoPartida) -> SegmentoEstado:
-    """Tiempo activo de partida: cuenta atrás global o transcurrido (independiente del temporizador)."""
+def _es_total_infinito(total_txt: str) -> bool:
+    return total_txt.strip().lower().replace("∞", "inf") in {"inf", "infinity"}
+
+
+def _normalizar_entrada_progreso(
+    progreso: str,
+    numero_pregunta: int | None,
+) -> tuple[str, int | None]:
+    """Convierte textos legacy («Pregunta N/inf») al formato de barra unificado."""
+    if numero_pregunta is not None:
+        return progreso, numero_pregunta
+    prog = progreso.strip()
+    if not prog:
+        return progreso, None
+    if prog.lower().startswith("pregunta "):
+        rest = prog[len("Pregunta ") :].strip()
+        if "/" in rest:
+            actual_txt, total_txt = (p.strip() for p in rest.split("/", 1))
+            try:
+                actual = int(actual_txt)
+            except ValueError:
+                return progreso, None
+            if _es_total_infinito(total_txt):
+                return "", actual
+            try:
+                total = int(total_txt)
+            except ValueError:
+                return progreso, None
+            return texto_progreso_examen_cerrado(actual, total), None
+    if "/" in prog:
+        _actual_txt, total_txt = (p.strip() for p in prog.split("/", 1))
+        if _es_total_infinito(total_txt):
+            try:
+                return "", int(_actual_txt)
+            except ValueError:
+                return progreso, None
+    return progreso, None
+
+
+def _segmento_tiempo_activo(estado: EstadoPartida) -> SegmentoEstado | None:
+    """Cuenta atrás global solo si hay límite; el transcurrido no se muestra en partida."""
     rest = estado.tiempo_total_restante()
-    if rest is not None:
-        return SegmentoEstado("tiempo_total", EMOJI_TIEMPO_TOTAL, f"{rest}s")
-    transcurrido = estado.tiempo_transcurrido_seg()
-    return SegmentoEstado("tiempo_total", EMOJI_TIEMPO_TOTAL, f"{transcurrido}s")
+    if rest is None:
+        return None
+    return SegmentoEstado("tiempo_total", EMOJI_TIEMPO_TOTAL, f"{rest}s")
 
 
 def _segmento_temporizador_pregunta(segundos_restantes: int) -> SegmentoEstado:
@@ -97,14 +148,41 @@ def _segmento_temporizador_pregunta(segundos_restantes: int) -> SegmentoEstado:
     )
 
 
-def _segmentos_progreso_resistencia(
+def _segmento_id_pregunta(numero_pregunta: int) -> SegmentoEstado:
+    return SegmentoEstado("progreso", EMOJI_ID_PREGUNTA, str(numero_pregunta))
+
+
+def _segmento_progreso_examen(texto: str) -> SegmentoEstado:
+    return SegmentoEstado(
+        "progreso",
+        EMOJI_PROGRESO_EXAMEN,
+        _progreso_visible(texto),
+    )
+
+
+def _segmentos_id_pregunta(
     numero_pregunta: int,
-    racha: int,
+    *,
+    racha: int | None = None,
+    bloque_filtro_texto: str | None = None,
 ) -> list[SegmentoEstado]:
-    return [
-        SegmentoEstado("progreso", "📝", f"#{numero_pregunta}"),
-        SegmentoEstado("racha", "🔥", str(racha)),
-    ]
+    """ID de pregunta (❓) en modos sin tope: resistencia, libre infinito, etc."""
+    segmentos = [_segmento_id_pregunta(numero_pregunta)]
+    if racha is not None:
+        segmentos.append(SegmentoEstado("racha", "🔥", str(racha)))
+    if bloque_filtro_texto:
+        from Comun.emojis_escape import EMOJI_JEFE
+
+        es_jefe = bloque_filtro_texto.startswith("Jefe ")
+        emoji_progreso = EMOJI_JEFE if es_jefe else EMOJI_PROGRESO_PREGUNTA_ESCAPE
+        segmentos.append(
+            SegmentoEstado(
+                "pregunta_puerta",
+                emoji_progreso,
+                bloque_filtro_texto,
+            )
+        )
+    return segmentos
 
 
 def segmentos_linea_estado(
@@ -119,14 +197,21 @@ def segmentos_linea_estado(
     progreso_sala: str | None = None,
     mostrar_tiempo_activo: bool = True,
     desafio_bloque_texto: str | None = None,
+    bloque_filtro_texto: str | None = None,
+    efectos_puerta: tuple[str, ...] = (),
 ) -> list[SegmentoEstado]:
     """Construye los chips de la barra; cada bloque depende solo de sus reglas.
 
-    Orden fijo: sala (escape) → pregunta en puerta → progreso genérico → racha → vidas → tiempo → puntuación.
-    En resistencia, pregunta y racha van en chips separados.
+    Orden fijo: sala (escape) → pregunta en puerta → progreso → racha → vidas → tiempo → puntuación.
+    Sin tope (resistencia, libre infinito): ❓ + id. Examen cerrado / finito: 📝 + x/y.
     """
-    if numero_pregunta is not None and racha is not None:
-        segmentos = _segmentos_progreso_resistencia(numero_pregunta, racha)
+    progreso, numero_pregunta = _normalizar_entrada_progreso(progreso, numero_pregunta)
+    if numero_pregunta is not None:
+        segmentos = _segmentos_id_pregunta(
+            numero_pregunta,
+            racha=racha,
+            bloque_filtro_texto=bloque_filtro_texto,
+        )
     else:
         segmentos: list[SegmentoEstado] = []
         if progreso_sala:
@@ -142,13 +227,10 @@ def segmentos_linea_estado(
                 )
             )
         if progreso:
-            prog = _progreso_visible(progreso)
-            emoji_prog = (
-                "🔥"
-                if prog.lower().startswith("racha") or "racha" in prog.lower()
-                else "📝"
-            )
-            segmentos.append(SegmentoEstado("progreso", emoji_prog, prog))
+            segmentos.append(_segmento_progreso_examen(progreso))
+
+    for etiqueta in efectos_puerta:
+        segmentos.append(SegmentoEstado("efecto_puerta", "", etiqueta))
 
     if estado.reglas.tiene_vidas():
         n = estado.vidas_restantes or 0
@@ -157,7 +239,9 @@ def segmentos_linea_estado(
         segmentos.append(SegmentoEstado("vidas", "❤️", texto_vidas))
 
     if mostrar_tiempo_activo:
-        segmentos.append(_segmento_tiempo_activo(estado))
+        seg_tiempo = _segmento_tiempo_activo(estado)
+        if seg_tiempo is not None:
+            segmentos.append(seg_tiempo)
 
     if segundos_pregunta_restantes is not None:
         segmentos.append(_segmento_temporizador_pregunta(segundos_pregunta_restantes))
@@ -170,18 +254,6 @@ def segmentos_linea_estado(
     sis = estado.reglas.sistema_puntuacion
     if sis == SistemaPuntuacion.ARCADE:
         segmentos.append(SegmentoEstado("puntos", "⭐", f"{estado.puntos_arcade}"))
-    elif estado.respondidas > 0:
-        if sis == SistemaPuntuacion.NOTA:
-            segmentos.append(
-                SegmentoEstado(
-                    "nota",
-                    "📊",
-                    f"{nota_sobre_diez(estado.aciertos, estado.respondidas)}",
-                )
-            )
-        elif sis == SistemaPuntuacion.PORCENTAJE:
-            pct = porcentaje_aciertos(estado.aciertos, estado.respondidas)
-            segmentos.append(SegmentoEstado("aciertos", "✅", f"{pct}%"))
     return segmentos
 
 
@@ -211,7 +283,7 @@ def formatear_linea_estado(
     *,
     usar_emojis: bool = True,
 ) -> str:
-    """Texto de la barra: ``📝 Pregunta 1/∞ · ❤️ 3/3 · ⭐ 0``."""
+    """Texto de la barra: ``❓ 12  🔥 4  ❤️ 3/3`` o ``📝 3/10  ❤️ 3/3``."""
     if not segmentos:
         return ""
     partes = [
@@ -233,6 +305,8 @@ def linea_estado_con_iconos(
     progreso_sala: str | None = None,
     mostrar_tiempo_activo: bool = True,
     desafio_bloque_texto: str | None = None,
+    bloque_filtro_texto: str | None = None,
+    efectos_puerta: tuple[str, ...] = (),
 ) -> str:
     """Atajo: segmentos + formato textual."""
     return formatear_linea_estado(
@@ -247,6 +321,8 @@ def linea_estado_con_iconos(
             progreso_sala=progreso_sala,
             mostrar_tiempo_activo=mostrar_tiempo_activo,
             desafio_bloque_texto=desafio_bloque_texto,
+            bloque_filtro_texto=bloque_filtro_texto,
+            efectos_puerta=efectos_puerta,
         ),
         usar_emojis=usar_emojis,
     )

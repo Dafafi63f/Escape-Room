@@ -19,18 +19,18 @@ OPCIONES_BANCO_JUEGO: tuple[BancoPreguntas, ...] = (
 )
 
 ETIQUETAS_BANCO_CORTAS: dict[BancoPreguntas, str] = {
-    BancoPreguntas.DATASET: "Modo seguro",
-    BancoPreguntas.PLANTILLAS_TODO: "Modo beta",
+    BancoPreguntas.DATASET: "480 revisadas",
+    BancoPreguntas.PLANTILLAS_TODO: "Banco ampliado",
 }
 
 ETIQUETA_BANCO: dict[BancoPreguntas, tuple[str, str]] = {
     BancoPreguntas.DATASET: (
-        "MODO SEGURO",
-        "480 preguntas revisadas (Preguntas.csv)",
+        "BANCO REVISADO",
+        "480 preguntas del dataset (Preguntas.csv), listas para estudio.",
     ),
     BancoPreguntas.PLANTILLAS_TODO: (
-        "MODO BETA",
-        "960 preguntas reales (480 revisadas + 480 extras JSON)",
+        "BANCO AMPLIADO",
+        "960 preguntas reales: 480 revisadas + 480 extras JSON (opcional; sin revisión completa).",
     ),
 }
 

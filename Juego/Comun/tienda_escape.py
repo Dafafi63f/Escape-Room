@@ -37,12 +37,15 @@ from Comun.economia_partida import (
     precio_minimo_tienda_escape,
     puede_visitar_tienda_escape,
     seleccionar_articulos_tienda_visita,
+    variar_precio_tienda,
+    oferta_desde_articulo,
 )
 from Comun.objetos_partida import (
     ArticuloTienda,
     CATALOGO_ARTICULOS,
     IDS_BONIFICACION,
     IDS_POWERUP,
+    OfertaTienda,
     EstadoInventarioEscape,
     aplicar_bonificacion,
     aplicar_loot,

@@ -129,6 +129,31 @@ _IDS_PRESET_SIMULACROS: frozenset[str] = frozenset({
     "examen_fijo",
 })
 
+_IDS_PRESET_EXAMEN_DIRIGIDO: frozenset[str] = frozenset({
+    "simulacro",
+    "examen_fijo",
+})
+
+
+def materias_unicas_en_registros(registros: list) -> set[str]:
+    """Asignaturas distintas presentes en los registros de una sesión."""
+    out: set[str] = set()
+    for registro in registros:
+        materia = (getattr(registro.pregunta, "materia", "") or "").strip()
+        if materia:
+            out.add(materia)
+    return out
+
+
+def preset_permite_examen_dirigido(preset_id: str, registros: list | None = None) -> bool:
+    """«Otro examen dirigido»: simulacros multi-materia y examen fijo; no repasos ni una sola asignatura."""
+    if preset_id not in _IDS_PRESET_EXAMEN_DIRIGIDO:
+        return False
+    if registros is not None and len(materias_unicas_en_registros(registros)) < 2:
+        return False
+    return True
+
+
 # IDs retirados del cat?logo activo (documentaci?n, tests y tabla en Data/README.md).
 PRESETS_HISTORIA_RETIRADOS = frozenset({
     "examen_dia_historia",
@@ -139,6 +164,7 @@ PRESETS_HISTORIA_RETIRADOS = frozenset({
     "vuelta_grado",
     "semana_examenes",
     "simulacro_curso",
+    "ranking_resistencia",
 })
 
 # Paquete m?nimo: sin carrusel de historia (examen fijo v?a barra superior).

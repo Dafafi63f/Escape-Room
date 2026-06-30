@@ -10,6 +10,7 @@ PROYECTO = Path(__file__).resolve().parents[1]
 DATA = PROYECTO / "Data"
 DATA_BANCO = DATA / "Banco"
 DATA_JUEGO = DATA / "Juego"
+DATA_PRIVADO = DATA / "Privado"
 
 # Alias de compatibilidad (mantenimiento del banco cerrado)
 DATA_CSV = DATA_BANCO
@@ -63,4 +64,5 @@ PATH_HISTORICO_QUALIFICACIONS = ruta_banco("Historic_qualificacions_MatCAD_compl
 PATH_PLANTILLAS = ruta_banco("plantillas.json")
 PATH_PRESETS = PROYECTO / "Juego" / "presets.json"
 PATH_PRESETS_HISTORIA = PATH_PRESETS
-PATH_CREADOR_PRIVADO = ruta_banco("creador_privado.json")
+PATH_CREADOR_PRIVADO = DATA_PRIVADO / "creador_privado.json"
+PATH_PREGUNTAS_MINIMAL = DATA_PRIVADO / "Preguntas_minimal.csv"

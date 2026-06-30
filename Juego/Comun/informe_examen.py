@@ -90,7 +90,7 @@ def meta_cierre_historia(
         "preset": preset_id,
         "perfil": perfil,
         "materias": ", ".join(materias),
-        "banco": "dataset revisado (modo seguro)",
+        "banco": "dataset revisado (480 preguntas)",
         "n_preguntas": n_preguntas,
     }
     if modo_resistencia and racha is not None:
@@ -247,7 +247,7 @@ def _lineas_cabecera_informe(
     lineas = [
         "INFORME — CUESTIONARIO MATCAD",
         "=" * 50,
-        f"ID: {meta.get('id_sesion', '?')}  ·  {generado}  ·  {estado.nombre}",
+        f"ID: {meta.get('id_sesion', '?')}  {generado}  {estado.nombre}",
         f"{ctx}",
         f"Reglas: {estado.reglas.describe()}",
     ]
@@ -285,7 +285,7 @@ def _lineas_resumen(
         "RESUMEN",
         "-" * 40,
         resultado,
-        f"Preguntas: {prev} · Aciertos: {estado.aciertos}/{total}",
+        f"Preguntas: {prev}  Aciertos: {estado.aciertos}/{total}",
         f"Duración: {formatear_duracion_seg(estado.duracion_partida_seg())}",
     ]
     limite = estado.reglas.tiempo_total_seg
@@ -306,7 +306,7 @@ def _estadisticas_por_materia(registros: list[RegistroRespuesta]) -> list[str]:
         ok = sum(1 for v in vals if v)
         n = len(vals)
         pct = porcentaje_aciertos(ok, n)
-        lineas.append(f"  · {materia}: {ok}/{n} aciertos ({pct}%)")
+        lineas.append(f"  - {materia}: {ok}/{n} aciertos ({pct}%)")
     return lineas
 
 
@@ -363,7 +363,7 @@ def formatear_informe_examen(
             if stats_historicas and materia in stats_historicas:
                 st = stats_historicas[materia]
                 extra = f" — histórico: media {st.media:.2f}"
-            lineas.append(f"  · {materia}: {n} error(es){extra}")
+            lineas.append(f"  - {materia}: {n} error(es){extra}")
 
     lineas.append("")
     lineas.append("Fin del informe.")

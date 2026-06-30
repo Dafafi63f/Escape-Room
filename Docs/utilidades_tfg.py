@@ -701,6 +701,12 @@ def _excluir_del_zip_portable(ruta: Path, base: Path) -> bool:
         return True
     if ruta.name in _ZIP_EXCLUIR_FICHEROS:
         return True
+    if base == DATA:
+        rel = ruta.relative_to(DATA)
+        if rel.parts and rel.parts[0] in ("Juego", "Privado"):
+            return True
+        if ruta.suffix.lower() == ".xlsx":
+            return True
     if base == JUEGO:
         rel = ruta.relative_to(JUEGO)
         if rel.parts and rel.parts[0] in _ZIP_JUEGO_EXCLUIR_DIRNAMES:
