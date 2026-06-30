@@ -691,7 +691,7 @@ class TestTooltipsUi(unittest.TestCase):
             TOOLTIP_CONTINUAR,
             TOOLTIP_DIFICULTAD_PROGRESIVA,
             TOOLTIP_EMPEZAR,
-            TOOLTIP_GUARDAR_INFORME,
+            tooltip_guardar_informe,
             TOOLTIP_SIGUIENTE,
             TOOLTIP_VER_RANKING,
         )
@@ -705,7 +705,7 @@ class TestTooltipsUi(unittest.TestCase):
             TOOLTIP_ABANDONAR_LIBRE,
             TOOLTIP_ABANDONAR_HISTORIA,
             TOOLTIP_ABANDONAR_RESISTENCIA,
-            TOOLTIP_GUARDAR_INFORME,
+            tooltip_guardar_informe(),
             TOOLTIP_VER_RANKING,
         ):
             self.assertGreater(len(texto), 15, msg=texto[:30])

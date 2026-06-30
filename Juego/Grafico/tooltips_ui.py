@@ -126,10 +126,13 @@ TOOLTIP_EVENTO_SI_NO_SI_RIESGO = (
 )
 TOOLTIP_EVENTO_SI_NO_NO = "Rechazar: no pasa nada y sigues a la pregunta."
 
-TOOLTIP_GUARDAR_INFORME = (
-    "Guarda un archivo .txt en Data/Juego/ con tus respuestas, "
-    "aciertos y corrección pregunta a pregunta."
-)
+def tooltip_guardar_informe() -> str:
+    from Comun.rutas import etiqueta_dir_datos_jugador
+
+    return (
+        f"Guarda un archivo .txt en {etiqueta_dir_datos_jugador()}/ con tus respuestas, "
+        "aciertos y corrección pregunta a pregunta."
+    )
 
 TOOLTIP_RANKING = (
     "Estadísticas locales, controles y contacto (H). "

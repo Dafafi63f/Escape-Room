@@ -35,6 +35,21 @@ _ETIQUETAS_REF_ICONO_FIJO = ("II", "DI", "IN", "FB", "OP")
 _GAP_TRAS_BARRA_ICONOS = 34
 Y_INICIO_TITULO = Y_ICONOS_FIJOS + ALTO_MIN_ICONO_FIJO + _GAP_TRAS_BARRA_ICONOS
 
+# Panel modal global (opciones / pausa): no solapar iconos fijos ni pie de pantalla.
+_GAP_PANEL_DEBAJO_ICONOS = 16
+_MARGEN_PANEL_SOBRE_PIE = 84
+
+
+def zona_segura_panel_modal(
+    fuente_menu: pygame.font.Font | None = None,
+) -> tuple[int, int]:
+    """``(y_superior, y_inferior)`` del área blanca de opciones/pausa."""
+    if fuente_menu is None:
+        fuente_menu = crear_fuentes()["menu"]
+    y_superior = Y_ICONOS_FIJOS + alto_icono_fijo(fuente_menu) + _GAP_PANEL_DEBAJO_ICONOS
+    y_inferior = ALTO - _MARGEN_PANEL_SOBRE_PIE
+    return y_superior, y_inferior
+
 
 def ancho_icono_fijo(fuente_menu: pygame.font.Font) -> int:
     """Mismo criterio que ``AplicacionGrafica._crear_botones_fijos``."""

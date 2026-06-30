@@ -3,6 +3,12 @@ Data/Juego/preferencias_*.json
 Data/Juego/estadisticas_jugador.json
 Data/Juego/ranking_*.json
 Data/Juego/*.txt
+# Paquete mínimo: estado local plano en Data/ (sin subcarpeta Juego/)
+Data/preferencias_*.json
+Data/estadisticas_jugador.json
+Data/metadatos_inferidos.json
+Data/ranking_*.json
+Data/*.txt
 # Obsoletos en Data/Juego/ (catálogo en Juego/; exclusivas resistencia en .py)
 Data/Juego/presets.json
 Data/Juego/preguntas_resistencia.json

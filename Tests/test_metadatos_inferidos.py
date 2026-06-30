@@ -22,6 +22,7 @@ from Comun.metadatos_inferidos import (  # noqa: E402
     exportar_listado_materias_intermedio,
     huella_pregunta,
     inferir_dificultad_desde_tasa,
+    inferir_tematica_desde_enunciado,
     inferir_tipo_desde_enunciado,
     vaciar_metadatos_inferidos,
 )
@@ -89,6 +90,30 @@ class TestMetadatosInferidos(unittest.TestCase):
         self.assertEqual(inferir_dificultad_desde_tasa(8, 10), "Facil")
         self.assertEqual(inferir_dificultad_desde_tasa(5, 10), "Media")
         self.assertEqual(inferir_dificultad_desde_tasa(2, 10), "Dificil")
+
+    def test_tematica_prefiere_palabra_larga(self) -> None:
+        self.assertEqual(
+            inferir_tematica_desde_enunciado(
+                "Un sistema distribuido coordina componentes sin reloj global"
+            ),
+            "distribuido",
+        )
+        self.assertEqual(
+            inferir_tematica_desde_enunciado("Capacidad reservada en DynamoDB reduce:"),
+            "dynamodb",
+        )
+
+    def test_dificultad_parcial_con_un_intento(self) -> None:
+        p = _pregunta("Pregunta única redis cluster")
+        actualizar_desde_registros([RegistroRespuesta(1, p, "A", False)])
+        enriquecer_preguntas_minimal([p])
+        self.assertEqual(p.dificultad, "Dificil")
+
+    def test_catalogo_agrupa_mas_en_variado(self) -> None:
+        pool = [_pregunta(f"Pregunta única número {i} sobre cloud") for i in range(20)]
+        enriquecer_preguntas_minimal(pool, aplicar_catalogo=True)
+        materias = {p.materia for p in pool if p.materia}
+        self.assertLessEqual(len(materias), 4)
 
     def test_actualizar_y_enriquecer(self) -> None:
         p = _pregunta("Pregunta de prueba algebra lineal")

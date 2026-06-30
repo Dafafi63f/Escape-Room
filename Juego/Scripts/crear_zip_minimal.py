@@ -82,7 +82,7 @@ Linux / macOS: mismos comandos con barras normales.
 
 NOTAS
 -----
-- Los datos locales (preferencias, estadísticas) se crean al jugar en Data/Juego/
+- Los datos locales (preferencias, estadísticas, informes .txt) se crean al jugar en Data/
   dentro de la carpeta descomprimida (se generan solos).
 - Para el juego completo (40 materias, escape room…) usa
   MATCAD_juego_portable.zip (paquete distinto; puedes tener ambos instalados).

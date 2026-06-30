@@ -117,6 +117,22 @@ class TestRutasPaquete(unittest.TestCase):
                 os.chdir(cwd_prev)
         self.assertLess(elapsed, 0.05)
 
+    def test_layout_plano_paquete_minimo(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp) / "MATCAD_minimal"
+            juego = raiz / "Juego"
+            juego.mkdir(parents=True)
+            (raiz / "Preguntas.csv").write_text("id;materia\n", encoding="utf-8")
+            (juego / "presets.json").write_text("{}", encoding="utf-8")
+            rutas.configurar_layout_datos_jugador(plano=True)
+            with patch.object(rutas, "_JUEGO_DIR", juego):
+                carpeta = rutas._dir_juego_datos()
+                prefs = rutas._ruta_json_escritura("preferencias_grafico.json")
+            self.assertEqual(carpeta.resolve(), (raiz / "Data").resolve())
+            self.assertEqual(prefs.resolve(), (raiz / "Data" / "preferencias_grafico.json").resolve())
+            self.assertEqual(rutas.etiqueta_dir_datos_jugador(), "Data")
+            rutas.configurar_layout_datos_jugador(plano=False)
+
 
 if __name__ == "__main__":
     unittest.main()

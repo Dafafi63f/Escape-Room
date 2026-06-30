@@ -124,12 +124,24 @@ def es_fichero_runtime_juego(nombre: str) -> bool:
 
 def auditar_carpetas_data(raiz: Path | None = None) -> list[str]:
     """Detecta ficheros fuera de sitio en ``Data/Banco/``, ``Data/Juego/`` y ``Data/Privado/``."""
-    from Comun.rutas import juego_dir
+    from Comun.rutas import etiqueta_dir_datos_jugador, juego_dir, layout_datos_jugador_plano
 
     base = (raiz or juego_dir().parent) / "Data"
     problemas: list[str] = []
     banco = base / "Banco"
     juego = base / "Juego"
+    destino_runtime = etiqueta_dir_datos_jugador()
+
+    if not layout_datos_jugador_plano():
+        for fichero in sorted(base.iterdir()) if base.is_dir() else []:
+            if not fichero.is_file():
+                continue
+            nombre = fichero.name
+            if es_fichero_runtime_juego(nombre):
+                problemas.append(
+                    f"Data/{nombre}: estado local del jugador "
+                    f"(debe estar en {destino_runtime}/)"
+                )
 
     if banco.is_dir():
         for fichero in sorted(banco.iterdir()):
@@ -139,12 +151,12 @@ def auditar_carpetas_data(raiz: Path | None = None) -> list[str]:
             if nombre.endswith(".txt") or nombre.startswith("preferencias_"):
                 problemas.append(
                     f"Data/Banco/{nombre}: informe o preferencias del jugador "
-                    "(debe estar en Data/Juego/)"
+                    f"(debe estar en {destino_runtime}/)"
                 )
             elif nombre in ("estadisticas_jugador.json",) or nombre.startswith("ranking_"):
                 problemas.append(
                     f"Data/Banco/{nombre}: estadísticas locales "
-                    "(debe estar en Data/Juego/)"
+                    f"(debe estar en {destino_runtime}/)"
                 )
             elif nombre == "presets.json":
                 problemas.append(

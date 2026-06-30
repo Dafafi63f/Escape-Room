@@ -145,8 +145,32 @@ def _dir_banco() -> Path:
     return _asegurar_directorio(_data_root() / "Banco")
 
 
+_layout_datos_plano: bool | None = None
+
+
+def configurar_layout_datos_jugador(*, plano: bool) -> None:
+    """En el zip mínimo el estado local va en ``Data/``; en el completo, en ``Data/Juego/``."""
+    global _layout_datos_plano
+    _layout_datos_plano = plano
+
+
+def layout_datos_jugador_plano() -> bool:
+    if _layout_datos_plano is not None:
+        return _layout_datos_plano
+    raiz = _raiz_paquete()
+    if (raiz / "Data" / "Banco").is_dir():
+        return False
+    return (raiz / "Preguntas.csv").is_file() and (raiz / "Juego" / "presets.json").is_file()
+
+
+def etiqueta_dir_datos_jugador() -> str:
+    return "Data" if layout_datos_jugador_plano() else "Data/Juego"
+
+
 def _dir_juego_datos() -> Path:
-    """Directorio plano ``Data/Juego/`` (estado local del jugador)."""
+    """Directorio de estado local del jugador (``Data/`` plano o ``Data/Juego/``)."""
+    if layout_datos_jugador_plano():
+        return _asegurar_directorio(_data_root())
     return _asegurar_directorio(_data_root() / "Juego")
 
 
@@ -241,11 +265,20 @@ def _buscar_archivo(
 
 
 def _ruta_juego_escritura(nombre: str) -> Path:
-    return _dir_juego_datos() / nombre
+    dir_datos = _dir_juego_datos()
+    destino = dir_datos / nombre
+    if layout_datos_jugador_plano() and not destino.is_file():
+        legado = _data_root() / "Juego" / nombre
+        if legado.is_file():
+            try:
+                legado.rename(destino)
+            except OSError:
+                return legado
+    return destino
 
 
 def _ruta_json_escritura(nombre: str) -> Path:
-    """Alias: JSON de estado local del jugador en ``Data/Juego/``."""
+    """JSON de estado local del jugador (``Data/`` o ``Data/Juego/`` según paquete)."""
     return _ruta_juego_escritura(nombre)
 
 
@@ -329,7 +362,7 @@ def resolver_dir_informes() -> Path:
 
 def ruta_informe_para_usuario(archivo: Path) -> str:
     """Ruta corta sin caracteres problemáticos para la terminal de Windows."""
-    return f"Data/Juego/{archivo.name}"
+    return f"{etiqueta_dir_datos_jugador()}/{archivo.name}"
 
 
 def resolver_dir_feedback() -> Path:
@@ -338,7 +371,7 @@ def resolver_dir_feedback() -> Path:
 
 
 def ruta_feedback_para_usuario(archivo: Path) -> str:
-    return f"Data/Juego/{archivo.name}"
+    return f"{etiqueta_dir_datos_jugador()}/{archivo.name}"
 
 
 _path_preguntas: Path | None = None

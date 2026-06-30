@@ -378,6 +378,10 @@ def _construir_contenido(
     modo_minimo: bool,
     avisos: tuple[str, ...],
 ) -> ContenidoJuego:
+    from Comun.rutas import configurar_layout_datos_jugador
+
+    configurar_layout_datos_jugador(plano=(tipo_paquete == "minimo"))
+
     cabeceras = leer_cabeceras_csv(path_preguntas)
     csv_minimal = es_csv_minimal(cabeceras)
     csv_intermedio = es_csv_intermedio(cabeceras)

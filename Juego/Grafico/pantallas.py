@@ -65,7 +65,6 @@ from Comun.textos_ui import OPCIONES_MENU_PRINCIPAL
 from Grafico.textos_grafico import etiqueta_opcion_menu
 from Grafico.tooltips_ui import (
     TOOLTIP_ABANDONAR_LIBRE,
-    TOOLTIP_GUARDAR_INFORME,
     tooltip_menu_principal,
 )
 from Grafico.atajos_teclado import manejar_teclado_partida

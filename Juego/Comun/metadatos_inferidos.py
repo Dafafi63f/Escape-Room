@@ -33,13 +33,17 @@ __all__ = [
 ]
 
 _VERSION = 2
-_MIN_PREGUNTAS_POR_MATERIA = 2
+_MIN_PREGUNTAS_POR_MATERIA = 3
 _MAX_GRUPOS_ARTIFICIALES = 10
 _PREFIJO_MATERIA = "Tema "
 _MIN_INTENTOS_DIFICULTAD = 3
+_MIN_INTENTOS_DIFICULTAD_PARCIAL = 1
 _MIN_INTENTOS_TIPO = 3
 _MIN_PREGUNTAS_COBERTURA = 8
 _FRACCION_COBERTURA_DATASET = 0.12
+_UMBRAL_TOKENS_PARA_VARIADO = 6
+_VARIADO_PREGUNTAS_POR_LOTE = 15
+_FUENTES_DIFICULTAD_VALIDAS = frozenset({"estadisticas", "estadisticas_parcial"})
 
 _COLUMNAS_MINIMAS = frozenset({"Pregunta", "A", "B", "C", "D", "Correcta"})
 _COLUMNAS_INTERMEDIO = (
@@ -140,12 +144,32 @@ def inferir_tematica_desde_enunciado(texto: str) -> str:
 
     from Comun.cadena_examen_dirigido import tokens_enunciado
 
-    tokens = sorted(tokens_enunciado(SimpleNamespace(texto=texto)))
-    for token in tokens:
-        if not token.startswith("#"):
-            return token
-    if tokens:
-        return tokens[0].lstrip("#")
+    todos = tokens_enunciado(SimpleNamespace(texto=texto))
+    palabras = [t for t in todos if not t.startswith("#")]
+    if palabras:
+        largas = [t for t in palabras if len(t) >= 5]
+        if largas:
+            palabras = largas
+        texto_raw = texto or ""
+
+        def _puntaje(token: str) -> tuple[int, int, str]:
+            idx = texto_raw.lower().find(token.lower())
+            fragmento = texto_raw[idx : idx + len(token)] if idx >= 0 else token
+            mayus = sum(1 for c in fragmento if c.isupper())
+            if any(c.isdigit() for c in token):
+                destacado = 2
+            elif mayus >= 2:
+                destacado = 2
+            elif mayus == 1 and len(token) <= 4:
+                destacado = 1
+            else:
+                destacado = 0
+            return (destacado, len(token), token)
+
+        return max(palabras, key=_puntaje)
+    numeros = sorted(t for t in todos if t.startswith("#"))
+    if numeros:
+        return numeros[0].lstrip("#")
     return ""
 
 
@@ -191,9 +215,13 @@ def reconstruir_catalogo_artificial(
 
     for token in tokens_ordenados:
         bloque = por_token[token]
-        if len(bloque) < _MIN_PREGUNTAS_POR_MATERIA and len(por_token) > 4:
+        if (
+            len(bloque) < _MIN_PREGUNTAS_POR_MATERIA
+            and len(por_token) > _UMBRAL_TOKENS_PARA_VARIADO
+        ):
             variado_lote += 1
-            materia = f"{_PREFIJO_MATERIA}variado {(variado_lote - 1) // 5 + 1}"
+            lote = (variado_lote - 1) // _VARIADO_PREGUNTAS_POR_LOTE + 1
+            materia = f"{_PREFIJO_MATERIA}variado {lote}"
             tematica = token
         else:
             materia = _nombre_materia_artificial(token)
@@ -273,6 +301,9 @@ def _entrada_desde_bucket(
     if intentos >= _MIN_INTENTOS_DIFICULTAD:
         dificultad = inferir_dificultad_desde_tasa(aciertos, intentos)
         dificultad_fuente = "estadisticas"
+    elif intentos >= _MIN_INTENTOS_DIFICULTAD_PARCIAL:
+        dificultad = inferir_dificultad_desde_tasa(aciertos, intentos)
+        dificultad_fuente = "estadisticas_parcial"
 
     tipo_heur = inferir_tipo_desde_enunciado(texto)
     tipo = tipo_heur
@@ -290,11 +321,8 @@ def _entrada_desde_bucket(
             tipo = mejor_tipo
             tipo_fuente = "estadisticas"
 
-    tematica = (bucket.get("tematica") or "").strip()
-    tematica_fuente = (bucket.get("tematica_fuente") or "").strip()
-    if not tematica:
-        tematica = inferir_tematica_desde_enunciado(texto)
-        tematica_fuente = "heuristica" if tematica else ""
+    tematica = inferir_tematica_desde_enunciado(texto)
+    tematica_fuente = "heuristica" if tematica else ""
 
     return EntradaMetadatosInferidos(
         huella=huella,
@@ -326,7 +354,7 @@ def _fusionar_bucket(bucket: dict[str, Any], registro: RegistroRespuesta) -> Non
         tipos_obs[tipo_obs] = int(tipos_obs.get(tipo_obs) or 0) + 1
 
     tematica = inferir_tematica_desde_enunciado(registro.pregunta.texto)
-    if tematica and not bucket.get("tematica"):
+    if tematica:
         bucket["tematica"] = tematica
         bucket["tematica_fuente"] = "heuristica"
 
@@ -442,7 +470,7 @@ def cobertura_metadatos_inferidos(
         entrada = _entrada_para_pregunta(pregunta, datos)
         if entrada is None:
             continue
-        if entrada.dificultad and entrada.dificultad_fuente == "estadisticas":
+        if entrada.dificultad and entrada.dificultad_fuente in _FUENTES_DIFICULTAD_VALIDAS:
             con_dificultad += 1
             dificultades.add(entrada.dificultad)
         if entrada.tipo:

@@ -412,12 +412,12 @@ class AplicacionGrafica:
         export_dataset = None
         perfil = self.datos.perfil
         if perfil.modo_minimo and perfil.csv_minimal:
-            from Comun.rutas import path_preguntas
+            from Comun.rutas import resolver_dir_informes
             from Grafico.menu_opciones import ExportDatasetOpciones
 
             export_dataset = ExportDatasetOpciones(
                 preguntas=tuple(self.datos.preguntas),
-                carpeta=path_preguntas().parent,
+                carpeta=resolver_dir_informes(),
             )
         self._overlay_opciones = OverlayOpcionesGrafico(
             on_cerrar=self._cerrar_menu_opciones,
