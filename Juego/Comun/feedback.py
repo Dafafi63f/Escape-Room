@@ -135,6 +135,73 @@ def mensaje_crear_creador_privado() -> str:
     )
 
 
+RUTA_REL_CREADOR_PRIVADO_ZIP = "Data/Privado/creador_privado.json"
+
+
+def creador_privado_para_distribucion() -> dict | None:
+    """Solo ``feedback_smtp`` del fichero local del autor (para empaquetar en zips)."""
+    path_privado = resolver_config_creador_privado()
+    if path_privado is None:
+        return None
+    privado = _leer_json(path_privado)
+    smtp = privado.get("feedback_smtp")
+    if not isinstance(smtp, dict) or not smtp:
+        return None
+    return {"feedback_smtp": dict(smtp)}
+
+
+def smtp_distribucion_listo() -> tuple[bool, str]:
+    """Comprueba si el SMTP del autor puede empaquetarse en zips de distribución."""
+    datos = creador_privado_para_distribucion()
+    if datos is None:
+        return False, "No hay Data/Privado/creador_privado.json con seccion feedback_smtp."
+    smtp = datos["feedback_smtp"]
+    password = (smtp.get("smtp_password") or "").strip()
+    destino = _correo_destino(smtp)
+    servidor = (smtp.get("smtp_servidor") or "").strip()
+    usuario = (smtp.get("smtp_usuario") or "").strip()
+    if not all((servidor, usuario, password, destino)):
+        return (
+            False,
+            "feedback_smtp incompleto (servidor, usuario, smtp_password, destino).",
+        )
+    return True, destino
+
+
+def texto_creador_privado_distribucion() -> str | None:
+    listo, _ = smtp_distribucion_listo()
+    if not listo:
+        return None
+    datos = creador_privado_para_distribucion()
+    if datos is None:
+        return None
+    return json.dumps(datos, indent=2, ensure_ascii=False) + "\n"
+
+
+def escribir_creador_privado_en_zip(
+    zf,
+    *,
+    arcname: str = RUTA_REL_CREADOR_PRIVADO_ZIP,
+) -> bool:
+    """Incluye SMTP de feedback en un zip (solo al generar la distribución)."""
+    texto = texto_creador_privado_distribucion()
+    if texto is None:
+        return False
+    zf.writestr(arcname, texto)
+    return True
+
+
+def mensaje_aviso_smtp_zip() -> str | None:
+    """Texto de aviso al generar zips si el correo automatico no se empaquetara."""
+    listo, detalle = smtp_distribucion_listo()
+    if listo:
+        return None
+    return (
+        "Aviso: el zip NO incluira envio automatico de feedback por correo "
+        f"({detalle})"
+    )
+
+
 # --- Contacto público del creador (estático; pantalla Info ℹ️) ---
 
 CORREO_CONTACTO_CREADOR = "dafafi63@gmail.com"

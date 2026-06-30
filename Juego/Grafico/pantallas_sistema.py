@@ -444,7 +444,7 @@ import pygame
 
 from Comun.feedback import AREAS_FEEDBACK, CATEGORIAS_FEEDBACK, indice_area_defecto
 from Comun.preferencias_grafico import nombre_jugador_grafico
-from Comun.rutas import resolver_config_creador_privado
+from Comun.rutas import etiqueta_dir_datos_jugador, resolver_config_creador_privado
 from Comun.feedback import (
     CategoriaFeedback,
     ReporteFeedback,
@@ -680,7 +680,10 @@ class PantallaFeedback(Pantalla):
                 alto_min=48,
             ),
             self._enviar,
-            tooltip="Guarda el aviso en Data/Juego/ e intenta enviarlo por correo.",
+            tooltip=(
+                f"Guarda el aviso en {etiqueta_dir_datos_jugador()}/ "
+                "e intenta enviarlo por correo."
+            ),
         )
         self.boton_volver = Boton(
             etiqueta(*BTN_VOLVER),
@@ -812,7 +815,7 @@ class PantallaFeedback(Pantalla):
         der.dibujar(superficie, self.fuentes["menu"])
 
     def _lineas_pie_formulario(self) -> list[str]:
-        lineas = ["Siempre se guarda una copia local en Data/Juego/."]
+        lineas = [f"Siempre se guarda una copia local en {etiqueta_dir_datos_jugador()}/."]
         if resolver_config_creador_privado() is not None:
             lineas.append(
                 "Config detectada: se intentará enviar el aviso por correo (SMTP)."

@@ -24,7 +24,9 @@ _PRESETS_ORIGEN = _JUEGO / "presets.json"
 _SALIDA_DEFECTO = _JUEGO / "Distribucion" / "MATCAD_juego_minimal.zip"
 _BANCO_ORIGEN = _RAIZ / "Data" / "Banco" / "Preguntas.csv"
 _CHANGELOG_JUEGO = _RAIZ / "Docs" / "CHANGELOG_JUEGO.md"
+from Comun.feedback import escribir_creador_privado_en_zip, mensaje_aviso_smtp_zip
 from Comun.presets_historia import PRESETS_JSON_MINIMO
+from Comun.rutas import resolver_config_creador_privado
 
 # Módulos que NO van en el zip mínimo (rutas relativas a Juego/).
 # Mantener alineado con Juego/Scripts/auditar_contenido_minimo.py
@@ -152,6 +154,9 @@ def entradas_zip_minimal() -> list[Path]:
         _RAIZ / "Tests" / "Fixtures" / "generar_preguntas_minimal.py",
     ]
     entradas.extend(ruta for ruta, _ in _iter_codigo_juego())
+    privado = resolver_config_creador_privado()
+    if privado is not None:
+        entradas.append(privado)
     return entradas
 
 
@@ -186,6 +191,12 @@ def crear_zip_minimal(destino: Path = _SALIDA_DEFECTO) -> tuple[Path, int]:
         zf.write(_CHANGELOG_JUEGO, _ruta_en_zip("Juego", "CHANGELOG_JUEGO.md"))
         for ruta, nombre in ficheros:
             zf.write(ruta, nombre)
+        if escribir_creador_privado_en_zip(zf):
+            print("  SMTP feedback: incluido (Data/Privado/creador_privado.json)")
+        else:
+            aviso = mensaje_aviso_smtp_zip()
+            if aviso:
+                print(f"  {aviso}")
 
     return destino, n_csv
 

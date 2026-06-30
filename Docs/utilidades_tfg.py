@@ -208,10 +208,15 @@ def _escribir_entradas_raiz_zip_portable(zf: zipfile.ZipFile) -> None:
 
 def _entradas_regeneracion_zip_portable() -> list[Path]:
     """Fuentes del zip portable (árbol + textos de la raíz)."""
+    from Comun.rutas import resolver_config_creador_privado
+
     entradas = [ruta for ruta, _ in _iterar_ficheros_zip_portable()]
     entradas.extend(
         p for p in (JUEGO / "LEEME.txt", JUEGO / "COMO_JUGAR.md", CHANGELOG_JUEGO) if p.is_file()
     )
+    privado = resolver_config_creador_privado()
+    if privado is not None:
+        entradas.append(privado)
     entradas.append(Path(__file__).resolve())
     return entradas
 
@@ -830,11 +835,19 @@ def crear_zip_juego_portable(destino: Path = ZIP_PORTABLE) -> Path:
         destino.unlink()
     ficheros = _iterar_ficheros_zip_portable()
     destino.parent.mkdir(parents=True, exist_ok=True)
+    from Comun.feedback import escribir_creador_privado_en_zip, mensaje_aviso_smtp_zip
+
     with zipfile.ZipFile(destino, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr(".matcad-paquete-completo", "MATCAD paquete completo\n")
         _escribir_entradas_raiz_zip_portable(zf)
         for ruta, arcname in ficheros:
             zf.write(ruta, arcname)
+        if escribir_creador_privado_en_zip(zf):
+            print("  SMTP feedback: incluido (Data/Privado/creador_privado.json)")
+        else:
+            aviso = mensaje_aviso_smtp_zip()
+            if aviso:
+                print(f"  {aviso}")
     return destino
 
 
