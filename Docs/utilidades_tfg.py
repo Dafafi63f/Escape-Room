@@ -797,8 +797,12 @@ def _excluir_del_zip_portable(ruta: Path, base: Path) -> bool:
     if ruta.name in _ZIP_EXCLUIR_FICHEROS:
         return True
     if base == DATA:
+        from Comun.persistencia import es_fichero_runtime_juego
+
         rel = ruta.relative_to(DATA)
         if rel.parts and rel.parts[0] in ("Juego", "Privado"):
+            return True
+        if es_fichero_runtime_juego(ruta.name):
             return True
         if ruta.suffix.lower() == ".xlsx":
             return True
@@ -854,7 +858,7 @@ def crear_zip_juego_portable(destino: Path = ZIP_PORTABLE) -> Path:
 def ejecutar_zip_portable(destino: Path = ZIP_PORTABLE, *, force: bool = False) -> int:
     print("=== Zip portable (Python) ===\n")
     print("  Contenido: Data/, Juego/Comun/, Juego/Grafico/, raíz de Juego/, LEEME.txt, COMO_JUGAR.md, CHANGELOG_JUEGO.md y Jugar.bat en la raíz")
-    print("  Excluye: Juego/Scripts/, Juego/Distribucion/, creador_privado.json, .ps1, .spec, build/, dist/, __pycache__, zip previo, .exe")
+    print("  Excluye: Juego/Scripts/, Juego/Distribucion/, Data/Juego/, Data/Privado/, runtime del jugador en Data/, .ps1, .spec, build/, dist/, __pycache__, zip previo, .exe")
     print("  Requisito: Python 3.10+ en el PC destino (ver LEEME.txt en la raíz del zip)")
     try:
         motivo = ""

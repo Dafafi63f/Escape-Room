@@ -459,7 +459,7 @@ class TestCargaContenidoPortable(unittest.TestCase):
         self.assertIn("Juego/Grafico/pantallas_escape.py", actuales)
         self.assertIn("Juego/Comun/rutas.py", actuales)
         self.assertNotIn("Data/Banco/creador_privado.json", actuales)
-        self.assertNotIn("Data/Privado/creador_privado.json", actuales)
+        # creador_privado.json en Data/Privado/ solo si el autor empaqueta SMTP al generar el zip.
         self.assertNotIn("Docs/CHANGELOG_JUEGO.md", actuales)
         self.assertNotIn("Juego/LEEME.txt", actuales)
         self.assertNotIn("Juego/Distribucion/Jugar.bat", actuales)
@@ -469,7 +469,21 @@ class TestCargaContenidoPortable(unittest.TestCase):
             any(n.startswith("Data/Juego/") for n in actuales),
             "El zip portable no debe incluir runtime ni catálogos en Data/Juego/",
         )
-        self.assertFalse(any(n.startswith("Data/Privado/") for n in actuales))
+        privado = [n for n in actuales if n.startswith("Data/Privado/")]
+        self.assertTrue(
+            all(n == "Data/Privado/creador_privado.json" for n in privado),
+            f"Solo creador_privado.json puede ir en Data/Privado/: {privado}",
+        )
+        for ruta in (
+            "Data/preferencias_grafico.json",
+            "Data/estadisticas_jugador.json",
+            "Data/metadatos_inferidos.json",
+        ):
+            self.assertNotIn(ruta, actuales, f"Runtime en zip portable: {ruta}")
+        self.assertFalse(
+            any(n.startswith("Data/") and n.endswith(".txt") for n in actuales),
+            "Informes/feedback .txt no deben ir en el zip portable",
+        )
 
     def test_auditar_carpetas_data_sin_problemas_en_repo(self) -> None:
         from Comun.persistencia import auditar_carpetas_data
@@ -484,6 +498,19 @@ class TestCargaContenidoPortable(unittest.TestCase):
         archivos = {arc for _, arc in _iterar_ficheros_zip_portable()}
         self.assertFalse(any(a.startswith("Data/Juego/") for a in archivos))
         self.assertFalse(any(a.startswith("Data/Privado/") for a in archivos))
+
+    def test_zip_portable_excluye_runtime_en_data(self) -> None:
+        from Docs.utilidades_tfg import _iterar_ficheros_zip_portable
+
+        archivos = {arc for _, arc in _iterar_ficheros_zip_portable()}
+        prohibidos = (
+            "Data/preferencias_grafico.json",
+            "Data/estadisticas_jugador.json",
+            "Data/metadatos_inferidos.json",
+        )
+        for ruta in prohibidos:
+            self.assertNotIn(ruta, archivos, f"Runtime del jugador no debe empaquetarse: {ruta}")
+        self.assertFalse(any(a.endswith(".txt") and a.startswith("Data/") for a in archivos))
 
     def test_auditoria_contenido_minimo_coherente(self) -> None:
         """Las exclusiones no deben romper el cierre de imports del flujo mínimo."""
