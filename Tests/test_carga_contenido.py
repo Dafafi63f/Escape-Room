@@ -340,7 +340,9 @@ class TestCargaContenidoPortable(unittest.TestCase):
             raiz = Path(tmp) / "MATCAD_minimal"
             raiz.mkdir()
             (raiz / ".matcad-paquete-minimo").write_text("ok\n", encoding="utf-8")
-            shutil.copy(_FIXTURE, raiz / "Preguntas.csv")
+            data = raiz / "Data"
+            data.mkdir()
+            shutil.copy(_FIXTURE, data / "Preguntas.csv")
             cwd_prev = Path.cwd()
             try:
                 import os
@@ -368,7 +370,9 @@ class TestCargaContenidoPortable(unittest.TestCase):
             raiz = Path(tmp) / "MATCAD_minimal"
             juego = raiz / "Juego"
             juego.mkdir(parents=True)
-            shutil.copy(_FIXTURE, raiz / "Preguntas.csv")
+            data = raiz / "Data"
+            data.mkdir(parents=True)
+            shutil.copy(_FIXTURE, data / "Preguntas.csv")
             shutil.copy(presets_origen, juego / "presets.json")
             cwd_prev = Path.cwd()
             try:
@@ -405,7 +409,11 @@ class TestCargaContenidoPortable(unittest.TestCase):
         raices = {n.split("/")[0] for n in nombres}
         self.assertIn("Jugar.bat", nombres)
         self.assertIn("Juego", raices)
-        self.assertIn("Preguntas.csv", nombres)
+        self.assertIn("Data/Preguntas.csv", nombres)
+        self.assertNotIn("Preguntas.csv", nombres)
+        self.assertFalse(any(n.startswith("Data/Banco/") for n in nombres))
+        self.assertFalse(any(n.startswith("Data/Juego/") for n in nombres))
+        self.assertFalse(any(n.startswith("Data/Privado/") for n in nombres))
         self.assertIn("Juego/CHANGELOG_JUEGO.md", nombres)
         self.assertFalse(any(n.startswith("Docs/") for n in nombres))
         from Comun.contenido import MODULOS_EXCLUIDOS_MINIMO

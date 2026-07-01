@@ -141,7 +141,9 @@ def _asegurar_directorio(carpeta: Path) -> Path:
 
 
 def _dir_banco() -> Path:
-    """Directorio plano ``Data/Banco/`` (banco de preguntas y catálogos)."""
+    """Banco de preguntas: ``Data/`` plano (mínimo) o ``Data/Banco/`` (completo)."""
+    if layout_datos_jugador_plano():
+        return _asegurar_directorio(_data_root())
     return _asegurar_directorio(_data_root() / "Banco")
 
 
@@ -149,7 +151,7 @@ _layout_datos_plano: bool | None = None
 
 
 def configurar_layout_datos_jugador(*, plano: bool) -> None:
-    """En el zip mínimo el estado local va en ``Data/``; en el completo, en ``Data/Juego/``."""
+    """En el paquete mínimo todo ``Data/`` es plano; en el completo usa ``Data/Banco/``, ``Data/Juego/``…"""
     global _layout_datos_plano
     _layout_datos_plano = plano
 
@@ -160,7 +162,12 @@ def layout_datos_jugador_plano() -> bool:
     raiz = _raiz_paquete()
     if (raiz / "Data" / "Banco").is_dir():
         return False
-    return (raiz / "Preguntas.csv").is_file() and (raiz / "Juego" / "presets.json").is_file()
+    if (raiz / ".matcad-paquete-minimo").is_file():
+        return True
+    tiene_presets = (raiz / "Juego" / "presets.json").is_file()
+    if (raiz / "Data" / "Preguntas.csv").is_file() and tiene_presets:
+        return True
+    return False
 
 
 def etiqueta_dir_datos_jugador() -> str:
@@ -175,7 +182,9 @@ def _dir_juego_datos() -> Path:
 
 
 def _dir_privado() -> Path:
-    """Directorio ``Data/Privado/`` (config del autor y fuentes locales; no se versiona)."""
+    """Config privada del autor: ``Data/`` plano (mínimo) o ``Data/Privado/`` (completo)."""
+    if layout_datos_jugador_plano():
+        return _asegurar_directorio(_data_root())
     return _asegurar_directorio(_data_root() / "Privado")
 
 
@@ -197,9 +206,11 @@ def _candidatos_bajo_data(raiz: Path, nombre: str, *, zona: _ZonaDatos) -> list[
     data = raiz / "Data"
     if not data.is_dir():
         return []
+    if layout_datos_jugador_plano():
+        return [data / nombre]
     principal = "Banco" if zona == "banco" else "Juego"
     secundario = "Juego" if zona == "banco" else "Banco"
-    orden: list[Path] = [
+    orden = [
         data / principal / nombre,
         data / secundario / nombre,
     ]
@@ -265,16 +276,7 @@ def _buscar_archivo(
 
 
 def _ruta_juego_escritura(nombre: str) -> Path:
-    dir_datos = _dir_juego_datos()
-    destino = dir_datos / nombre
-    if layout_datos_jugador_plano() and not destino.is_file():
-        legado = _data_root() / "Juego" / nombre
-        if legado.is_file():
-            try:
-                legado.rename(destino)
-            except OSError:
-                return legado
-    return destino
+    return _dir_juego_datos() / nombre
 
 
 def _ruta_json_escritura(nombre: str) -> Path:
@@ -335,7 +337,10 @@ def resolver_config_creador_privado() -> Path | None:
     if canonico.is_file():
         _path_creador_privado = canonico
         return canonico
-    legado = _dir_banco() / "creador_privado.json"
+    if layout_datos_jugador_plano():
+        _path_creador_privado = None
+        return None
+    legado = _data_root() / "Banco" / "creador_privado.json"
     if legado.is_file():
         _path_creador_privado = legado
         return legado

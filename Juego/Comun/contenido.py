@@ -112,12 +112,14 @@ def detectar_tipo_paquete() -> TipoPaquete:
 
 
 def _detectar_minimo_por_layout() -> TipoPaquete | None:
-    """Layout típico del zip mínimo sin marcador (``Preguntas.csv`` mínimo + motor ``Juego/``)."""
+    """Layout típico del zip mínimo sin marcador (``Data/Preguntas.csv`` + motor ``Juego/``)."""
     for base in _bases_busqueda_marcador():
         if (base / _MARCADOR_COMPLETO).is_file():
             continue
-        csv = base / "Preguntas.csv"
-        if not csv.is_file() or not (base / "Juego" / "presets.json").is_file():
+        if not (base / "Juego" / "presets.json").is_file():
+            continue
+        csv = base / "Data" / "Preguntas.csv"
+        if not csv.is_file():
             continue
         try:
             if es_csv_minimal(leer_cabeceras_csv(csv)):
@@ -127,20 +129,14 @@ def _detectar_minimo_por_layout() -> TipoPaquete | None:
     return None
 
 
-def resolver_csv_paquete_minimo(path_csv: Path | None = None) -> Path:
-    """Ruta al CSV del paquete mínimo (explícita o ``Preguntas.csv`` junto al marcador)."""
-    if path_csv is not None:
-        ruta = path_csv.resolve()
-        if not ruta.is_file():
-            raise FileNotFoundError(f"No se encontró el CSV: {ruta}")
-        return ruta
+def resolver_csv_paquete_minimo() -> Path:
+    """Ruta al CSV del paquete mínimo (``Data/Preguntas.csv`` junto al marcador)."""
     for base in _bases_busqueda_marcador():
-        candidato = base / "Preguntas.csv"
+        candidato = base / "Data" / "Preguntas.csv"
         if candidato.is_file():
             return candidato.resolve()
     raise FileNotFoundError(
-        "No se encontró Preguntas.csv junto al paquete mínimo. "
-        "Usa: python Juego/juego_grafico.py --csv Preguntas.csv"
+        "No se encontró Data/Preguntas.csv en el paquete mínimo."
     )
 
 # --- validacion_contenido ---
@@ -345,12 +341,18 @@ def _archivo_junto(path_csv: Path, nombre: str) -> Path | None:
 
 
 def _presets_en_carpeta_paquete(path_csv: Path) -> bool:
-    raiz = path_csv.parent
-    return (raiz / "Juego" / "presets.json").is_file() or (raiz / "presets.json").is_file()
+    paquete = path_csv.parent
+    candidatos = [paquete / "Juego" / "presets.json", paquete / "presets.json"]
+    if paquete.name == "Data":
+        candidatos[:0] = [
+            paquete.parent / "Juego" / "presets.json",
+            paquete.parent / "presets.json",
+        ]
+    return any(p.is_file() for p in candidatos)
 
 
 def _presets_juego_minimo(path_csv: Path, *, paquete_zip: bool) -> bool:
-    """Presets del zip mínimo (junto al CSV) o del motor ``Juego/`` en desarrollo con ``--csv``."""
+    """Presets del zip mínimo (``Juego/presets.json`` junto a ``Data/Preguntas.csv``)."""
     if _presets_en_carpeta_paquete(path_csv):
         return True
     if paquete_zip:
@@ -486,7 +488,7 @@ def _cargar_paquete_completo() -> ContenidoJuego:
             "Paquete MATCAD completo incompleto. Faltan:\n"
             f"{faltas}\n\n"
             "Reinstala MATCAD_juego_portable.zip (juego del autor) "
-            "o usa tu CSV con MATCAD_juego_minimal.zip / --csv."
+            "o usa MATCAD_juego_minimal.zip."
         )
     path_preguntas = validacion.path_preguntas or resolver_dataset()
     path_plantillas = _resolver_opcional(resolver_plantillas)
@@ -543,7 +545,7 @@ def _cargar_paquete_desarrollo() -> ContenidoJuego:
 def cargar_contenido_juego(*, path_csv: Path | None = None) -> ContenidoJuego:
     """Carga preguntas y deduce capacidades del motor.
 
-    **Usuario (datos propios):** ``--csv`` o zip mínimo → solo CSV con columnas mínimas;
+    **Usuario (datos propios):** zip mínimo → solo ``Data/Preguntas.csv`` con columnas mínimas;
     juego mínimo (libre simplificado, historia acotada, resistencia con eventos).
 
     **Autor:** zip completo (``.matcad-paquete-completo``) o repo de desarrollo con ``Data/``
@@ -557,7 +559,7 @@ def cargar_contenido_juego(*, path_csv: Path | None = None) -> ContenidoJuego:
         return _cargar_paquete_completo()
     if tipo == "minimo":
         return _cargar_juego_minimo(
-            resolver_csv_paquete_minimo(None),
+            resolver_csv_paquete_minimo(),
             paquete_zip=True,
         )
     return _cargar_paquete_desarrollo()

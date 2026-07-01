@@ -887,7 +887,7 @@ def ejecutar_zip_portable(destino: Path = ZIP_PORTABLE, *, force: bool = False) 
 
 def ejecutar_zip_minimal(destino: Path = ZIP_MINIMAL, *, force: bool = False) -> int:
     print("=== Zip mínimo (Python) ===\n")
-    print("  Contenido: Juego/ (código + CHANGELOG_JUEGO.md), Preguntas.csv, Jugar.bat, LEEME.txt")
+    print("  Contenido: Juego/ (código + CHANGELOG_JUEGO.md), Data/Preguntas.csv, Jugar.bat, LEEME.txt")
     print("  Excluye: Data/, Scripts/, Distribucion/, escape room, presets completos")
     print("  Requisito: Python 3.10+ en el PC destino (ver LEEME.txt dentro del zip)")
     try:
@@ -911,7 +911,7 @@ def ejecutar_zip_minimal(destino: Path = ZIP_MINIMAL, *, force: bool = False) ->
         return 1
     tam_kb = salida.stat().st_size / 1024
     print(f"  Módulos Python: {n_py}")
-    print(f"  CSV: Preguntas.csv ({n_csv} preguntas)")
+    print(f"  CSV: Data/Preguntas.csv ({n_csv} preguntas)")
     print(f"  ZIP: {_rel(salida)} ({tam_kb:.0f} KiB)")
     print()
     print("  En el PC destino:")

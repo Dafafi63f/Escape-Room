@@ -60,7 +60,7 @@ _LEEME = """\
 MATCAD — paquete mínimo (solo CSV de preguntas)
 ===============================================
 
-Contenido: motor del juego (pygame) + Preguntas.csv (columnas mínimas).
+Contenido: motor del juego (pygame) + Data/Preguntas.csv (columnas mínimas).
 Modo libre simplificado; resistencia con eventos. Modo historia no incluido.
 Examen fijo en la barra superior (📕): del día, aleatorio o semilla numérica.
 Paquete aislado del MATCAD completo.
@@ -84,8 +84,9 @@ Linux / macOS: mismos comandos con barras normales.
 
 NOTAS
 -----
-- Los datos locales (preferencias, estadísticas, informes .txt) se crean al jugar en Data/
-  dentro de la carpeta descomprimida (se generan solos).
+- Los datos locales (preferencias, estadísticas, informes .txt, metadatos inferidos…)
+  se crean al jugar en Data/ (carpeta plana, sin subdirectorios).
+- Para sustituir el banco, edita Data/Preguntas.csv.
 - Para el juego completo (40 materias, escape room…) usa
   MATCAD_juego_portable.zip (paquete distinto; puedes tener ambos instalados).
 """
@@ -186,13 +187,15 @@ def crear_zip_minimal(destino: Path = _SALIDA_DEFECTO) -> tuple[Path, int]:
         zf.writestr(_ruta_en_zip("LEEME.txt"), _LEEME)
         zf.writestr(_ruta_en_zip("Jugar.bat"), _JUGAR_BAT)
         zf.writestr(_ruta_en_zip(".matcad-paquete-minimo"), "MATCAD paquete mínimo\n")
-        zf.write(_CSV_ORIGEN, _ruta_en_zip("Preguntas.csv"))
+        zf.write(_CSV_ORIGEN, _ruta_en_zip("Data", "Preguntas.csv"))
         zf.writestr(_ruta_en_zip("Juego", "presets.json"), _presets_minimal_bytes())
         zf.write(_CHANGELOG_JUEGO, _ruta_en_zip("Juego", "CHANGELOG_JUEGO.md"))
         for ruta, nombre in ficheros:
             zf.write(ruta, nombre)
-        if escribir_creador_privado_en_zip(zf):
-            print("  SMTP feedback: incluido (Data/Privado/creador_privado.json)")
+        if escribir_creador_privado_en_zip(
+            zf, arcname=_ruta_en_zip("Data", "creador_privado.json")
+        ):
+            print("  SMTP feedback: incluido (Data/creador_privado.json)")
         else:
             aviso = mensaje_aviso_smtp_zip()
             if aviso:
@@ -224,10 +227,9 @@ def main() -> int:
     print(f"  Tamaño: {tam_kb:.0f} KiB")
     print(f"  Módulos Python: {n_py}")
     print(f"  Excluidos: {len(_MODULOS_EXCLUIDOS_MINIMO)} módulos (escape room, carrusel historia)")
-    print("  Raíz del zip: Juego/ (código + CHANGELOG_JUEGO.md), Preguntas.csv, Jugar.bat")
-    print(f"  CSV: Preguntas.csv ({n_csv} preguntas)")
-    print("\nPrueba local (sin descomprimir el zip):")
-    print("  python Juego/juego_grafico.py --csv Data/Privado/Preguntas_minimal.csv")
+    print("  Raíz del zip: Juego/ (código + CHANGELOG_JUEGO.md), Data/Preguntas.csv, Jugar.bat")
+    print(f"  CSV: Data/Preguntas.csv ({n_csv} preguntas)")
+    print("\nPrueba local: descomprime el zip o coloca el CSV en Data/Preguntas.csv")
     return 0
 
 

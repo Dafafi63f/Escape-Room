@@ -142,9 +142,17 @@ def auditar_carpetas_data(raiz: Path | None = None) -> list[str]:
                     f"Data/{nombre}: estado local del jugador "
                     f"(debe estar en {destino_runtime}/)"
                 )
+    else:
+        for subdir in ("Banco", "Juego", "Privado"):
+            ruta = base / subdir
+            if ruta.is_dir():
+                problemas.append(
+                    f"Data/{subdir}/: subdirectorio no usado en paquete mínimo "
+                    "(todos los ficheros van en Data/ plano)"
+                )
 
-    if banco.is_dir():
-        for fichero in sorted(banco.iterdir()):
+    if not layout_datos_jugador_plano():
+        for fichero in sorted(banco.iterdir()) if banco.is_dir() else []:
             if not fichero.is_file():
                 continue
             nombre = fichero.name
@@ -174,7 +182,7 @@ def auditar_carpetas_data(raiz: Path | None = None) -> list[str]:
                     "(mover a Data/Privado/)"
                 )
 
-    if juego.is_dir():
+    if not layout_datos_jugador_plano() and juego.is_dir():
         for entrada in sorted(juego.rglob("*")):
             if not entrada.is_file():
                 continue

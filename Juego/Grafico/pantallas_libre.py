@@ -130,10 +130,6 @@ PRESETS_PREGUNTAS = (5, 10, 15, 20, 25, 30, 40, 50, 75, 100)
 PRESETS_TIEMPO_PREG = (30, 45, 60, 90, 120, 180, 300)
 PRESETS_TIEMPO_TOTAL = (300, 600, 900, 1200, 1800, 3600)
 
-_PASO_CICLO_LIBRE: dict[str, int] = {
-    "vidas": 2,
-}
-
 ETIQUETAS_FILA_PASO1: dict[str, str] = {
     "banco": "Banco de datos",
     "n_preguntas": "Preguntas en la partida",
@@ -716,8 +712,7 @@ class ConfigOpcionesLibre(Pantalla):
             idx = claves.index(self._clave_actual(op_id))
         except ValueError:
             idx = 0
-        paso = _PASO_CICLO_LIBRE.get(op_id, 1)
-        self._asignar_clave(op_id, claves[(idx + delta * paso) % len(claves)])
+        self._asignar_clave(op_id, claves[(idx + delta) % len(claves)])
         self.mensaje = ""
         self._reconstruir_layout()
 

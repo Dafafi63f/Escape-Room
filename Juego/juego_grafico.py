@@ -9,12 +9,10 @@ Controles: ratón para navegar; teclado para atajos (1–4, Enter, retroceso, Es
 Uso:
   pip install -r Juego/requirements.txt
   python Juego/juego_grafico.py
-  python Juego/juego_grafico.py --csv ruta/Preguntas.csv
 """
 
 from __future__ import annotations
 
-import argparse
 import sys
 from pathlib import Path
 
@@ -28,20 +26,8 @@ from Comun.util import configurar_stdio_utf8
 from Grafico.app import AplicacionGrafica
 
 
-def _parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="MATCAD — cuestionario gráfico")
-    parser.add_argument(
-        "--csv",
-        type=Path,
-        default=None,
-        help="Ruta al CSV de preguntas (por defecto: Data/Banco/Preguntas.csv)",
-    )
-    return parser.parse_args(argv)
-
-
 def main(argv: list[str] | None = None) -> None:
     configurar_stdio_utf8()
-    args = _parse_args([] if argv is None else argv)
     try:
         import pygame  # noqa: F401 — comprobación temprana de dependencia
     except ImportError:
@@ -51,7 +37,7 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     try:
-        contenido = cargar_contenido_juego(path_csv=args.csv)
+        contenido = cargar_contenido_juego()
     except FileNotFoundError as e:
         print(str(e))
         return

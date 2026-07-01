@@ -136,6 +136,7 @@ def mensaje_crear_creador_privado() -> str:
 
 
 RUTA_REL_CREADOR_PRIVADO_ZIP = "Data/Privado/creador_privado.json"
+RUTA_REL_CREADOR_PRIVADO_ZIP_MINIMO = "Data/creador_privado.json"
 
 
 def creador_privado_para_distribucion() -> dict | None:

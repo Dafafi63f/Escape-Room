@@ -122,7 +122,8 @@ class TestRutasPaquete(unittest.TestCase):
             raiz = Path(tmp) / "MATCAD_minimal"
             juego = raiz / "Juego"
             juego.mkdir(parents=True)
-            (raiz / "Preguntas.csv").write_text("id;materia\n", encoding="utf-8")
+            (raiz / "Data").mkdir()
+            (raiz / "Data" / "Preguntas.csv").write_text("id;materia\n", encoding="utf-8")
             (juego / "presets.json").write_text("{}", encoding="utf-8")
             rutas.configurar_layout_datos_jugador(plano=True)
             with patch.object(rutas, "_JUEGO_DIR", juego):
