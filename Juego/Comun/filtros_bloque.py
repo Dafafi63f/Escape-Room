@@ -172,4 +172,3 @@ def kind_filtro_bloque(tipo: TipoFiltroBloque) -> str:
     if tipo == TipoFiltroBloque.TIPO_CALCULO:
         return "tipo:Calculo"
     return tipo.value
-
