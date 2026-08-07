@@ -312,17 +312,20 @@ def _elegir_slot_tienda(
         pesos = [peso_articulo(a.id) for a in disponibles]
         candidato = rng.choices(disponibles, weights=pesos, k=1)[0]
 
-        if es_bonificacion(candidato.id) and estado is not None:
-            if not bonificacion_aplicable(
+        if (
+            es_bonificacion(candidato.id)
+            and estado is not None
+            and not bonificacion_aplicable(
                 candidato.id, estado, vidas_max=vidas_max
-            ):
-                if vacios < MAX_SLOTS_VACIOS_TIENDA:
-                    return None, vacios + 1
-                solo_pw = [a for a in disponibles if es_powerup(a.id)]
-                if not solo_pw:
-                    return None, vacios
-                disponibles = solo_pw
-                continue
+            )
+        ):
+            if vacios < MAX_SLOTS_VACIOS_TIENDA:
+                return None, vacios + 1
+            solo_pw = [a for a in disponibles if es_powerup(a.id)]
+            if not solo_pw:
+                return None, vacios
+            disponibles = solo_pw
+            continue
 
         usados_ids.add(candidato.id)
         return candidato, vacios
@@ -334,7 +337,6 @@ def seleccionar_articulos_tienda_visita(
     numero_sala: int,
     *,
     rng: random.Random,
-    indice_visita: int = 0,
     estado: EstadoPartida | None = None,
     vidas_max: int | None = None,
 ) -> tuple[OfertaTienda | None, ...]:

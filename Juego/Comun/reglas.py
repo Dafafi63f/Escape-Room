@@ -578,7 +578,12 @@ def sanitizar_reglas_libre(
         sin_vidas=sin,
         sistema=sis,
     )
-    vidas = None if sin else (reglas.vidas if reglas.vidas and reglas.vidas > 0 else 3)
+    if sin:
+        vidas = None
+    elif reglas.vidas and reglas.vidas > 0:
+        vidas = reglas.vidas
+    else:
+        vidas = 3
     dif = reglas.dificultad_progresiva if opts.permitir_dificultad_progresiva else False
     return ReglasPartida(
         vidas=vidas,

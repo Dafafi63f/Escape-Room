@@ -18,6 +18,7 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 
+import math
 import re
 import unicodedata
 from difflib import SequenceMatcher
@@ -56,7 +57,7 @@ _RESPUESTAS_TRIVIALES = frozenset(
 )
 
 _RE_COMPLEJIDAD = re.compile(
-    r"(^o\s*\(?|log\s*n|n\s*log|n\s*\^?\s*2|polinom|exponencial|constante|lineal)"
+    r"(?:^o\s*\(?)|(?:log\s*n)|(?:n\s*log)|(?:n\s*\^?\s*2)|(?:polinom)|(?:exponencial)|(?:constante)|(?:lineal)"
 )
 _RE_NUMERO = re.compile(r"\d+(?:[.,]\d+)?")
 
@@ -339,6 +340,7 @@ def clave_respuesta_sustantiva(fila: dict) -> str | None:
 def _motivo_equivalencia_semantica(
     a: dict, b: dict, qa: str, qb: str, ta: set[str], tb: set[str], oa: set[str], ob: set[str]
 ) -> str | None:
+    del ta, tb  # firma alineada con el caller; la semántica usa tokens_contenido.
     ra, rb = texto_respuesta_correcta(a), texto_respuesta_correcta(b)
     if not ra or ra != rb or not respuesta_es_sustantiva(ra):
         return None
@@ -421,7 +423,7 @@ def motivo_duplicado(a: dict, b: dict) -> str | None:
         return "misma_idea_y_opciones_parecidas"
     if jo >= 0.85 and seq >= 0.92 and jq >= 0.78:
         return "opciones_iguales_enunciado_parecido"
-    if jo == 1.0 and seq >= 0.85:
+    if math.isclose(jo, 1.0) and seq >= 0.85:
         return "mismas_opciones_enunciado_parecido"
 
     num = _motivo_variante_numerica(a, b, qa, qb)

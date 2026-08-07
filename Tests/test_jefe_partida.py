@@ -155,7 +155,6 @@ class TestJefePartida(unittest.TestCase):
             puerta,
             numero_sala=10,
             n_salas=30,
-            indice_puerta=0,
             materias_pool=(),
             rng=random.Random(3),
             pools_bloque={"grupos_pool": (), "cursos_pool": ("1",), "semestres_pool": ("1",), "periodos_pool": (("1", "1"),)},

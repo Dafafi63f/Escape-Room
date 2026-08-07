@@ -37,6 +37,8 @@ def configurar_stdio_utf8() -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
+    del argv
+
     configurar_stdio_utf8()
     try:
         import pygame  # noqa: F401 — comprobación temprana de dependencia

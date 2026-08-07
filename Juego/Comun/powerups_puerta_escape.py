@@ -58,6 +58,7 @@ def es_powerup_inventario_puerta_escape(articulo_id: str) -> bool:
 
 
 def es_powerup_preparacion_puerta_escape(articulo_id: str) -> bool:
+    del articulo_id
     return False
 
 

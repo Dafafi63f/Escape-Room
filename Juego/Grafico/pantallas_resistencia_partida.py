@@ -1058,7 +1058,6 @@ class PartidaResistencia(Pantalla):
         )
         x_centro_min = x_min_centro_barra_partida(self.fuentes["menu"])
         x_centro_max = self.boton_abandonar.rect.x - 12
-        ancho_centro = max(80, x_centro_max - x_centro_min)
         altura_fuente = fuente.get_height()
         texto_extra = self._texto_extra_barra()
         y_estado = (ALTURA_BARRA_PARTIDA - altura_fuente) // 2

@@ -336,6 +336,7 @@ def formatear_informe_examen(
     fallos_por_materia: dict[str, int] | None = None,
 ) -> str:
     meta = meta or {}
+    del titulo  # el título visible sale de meta/estado; param conservado por compat.
     total = estado.respondidas
     incompleto = total_previsto > total
     ahora = datetime.now().strftime("%Y-%m-%d %H:%M")

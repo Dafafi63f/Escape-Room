@@ -235,6 +235,7 @@ def _buscar_archivo(
     bajo_data: bool = True,
     zona: _ZonaDatos = "banco",
 ) -> Path:
+    del preferidas  # reserva de API; la búsqueda usa candidatos bajo Data/.
     try:
         paquete_key = str(_raiz_paquete().resolve())
     except OSError:

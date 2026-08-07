@@ -1003,16 +1003,11 @@ def _evento_es_materia(evento: EventoContenidoInstanciado) -> bool:
 
 
 def _evento_balanceado_desde(evento: EventoContenidoInstanciado) -> EventoContenidoInstanciado:
-    from Comun.eventos_partida import (
-        perfil_materia_por_id,
-        tipo_filtro_evento,
-    )
+    from Comun.eventos_partida import tipo_filtro_evento
     from Comun.filtros_bloque import TipoFiltroBloque
 
     if evento.id == _PLANTILLA_BALANCEADA and evento.perfil_id == "balanceado":
         return evento
-    opts = evento.contenido_escape
-    balanceado = perfil_materia_por_id("balanceado")
     if tipo_filtro_evento(evento) == TipoFiltroBloque.GRUPO:
         return EventoContenidoInstanciado(
             definicion=evento_por_id("puerta_grupo"),
@@ -1185,7 +1180,6 @@ def _jefe_regenerar_modificadores(
     mods = generar_modificadores_puerta(
         numero_sala=numero_sala,
         rng=rng,
-        indice_puerta=puerta.indice,
         pausas_usadas=frozenset(),
         pity=None,
         permitir_pausas=False,
@@ -1299,7 +1293,6 @@ def asegurar_puerta_viable(
     *,
     numero_sala: int,
     n_salas: int,
-    indice_puerta: int,
     materias_pool: tuple[str, ...],
     grupos_pool: tuple[str, ...] = (),
     rng: random.Random | None = None,
@@ -1365,8 +1358,6 @@ def asegurar_puerta_viable(
             return mejor
 
     if materias_pool:
-        from Comun.escape_room import PuertaEscape
-
         mejor = None
         mejor_n = 0
         for materia in materias_pool:

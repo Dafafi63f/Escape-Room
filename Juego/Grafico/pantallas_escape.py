@@ -1747,15 +1747,15 @@ class PartidaEscapeRoom(Pantalla):
             (not resultado.acierto or resultado.tiempo_agotado)
             and not self.reintentar_pregunta
             and self.puerta_actual is not None
-        ):
-            if aplicar_penalizacion_extra_fallo_puerta(
+            and aplicar_penalizacion_extra_fallo_puerta(
                 self.estado, self.puerta_actual
-            ) > 0:
-                sufijo = sufijo_mensaje_fallo_puerta(self.puerta_actual)
-                if sufijo:
-                    feedback = replace(
-                        feedback, mensaje=f"{feedback.mensaje}{sufijo}"
-                    )
+            ) > 0
+        ):
+            sufijo = sufijo_mensaje_fallo_puerta(self.puerta_actual)
+            if sufijo:
+                feedback = replace(
+                    feedback, mensaje=f"{feedback.mensaje}{sufijo}"
+                )
         fin_partida_maldita = False
         if (not resultado.acierto or resultado.tiempo_agotado) and not self.reintentar_pregunta:
             fallo_maldita = procesar_fallo_puerta_maldita(
@@ -2336,16 +2336,13 @@ class PartidaEscapeRoom(Pantalla):
                 for boton in self.botones_tienda:
                     if boton.manejar_clic(evento.pos, evento.button):
                         break
-                if self.boton_salir_tienda and self.boton_salir_tienda.manejar_clic(
-                    evento.pos, evento.button
-                ):
-                    pass
+                if self.boton_salir_tienda:
+                    self.boton_salir_tienda.manejar_clic(evento.pos, evento.button)
             elif self.fase == "preparacion_puerta":
-                if self.boton_empezar_puerta and self.boton_empezar_puerta.manejar_clic(
-                    evento.pos, evento.button
+                if not (
+                    self.boton_empezar_puerta
+                    and self.boton_empezar_puerta.manejar_clic(evento.pos, evento.button)
                 ):
-                    pass
-                else:
                     for boton in self.botones_inventario:
                         if boton.manejar_clic(evento.pos, evento.button):
                             break

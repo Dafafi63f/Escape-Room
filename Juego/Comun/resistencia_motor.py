@@ -1600,7 +1600,7 @@ def aplicar_modificadores_visuales_escalada(
         )
         er.letras_niebla = er.letras_niebla | ocultas
     aplicar_presion_racha_modificadores(er, p, numero_pregunta)
-    aplicar_efectos_maldicion(er, p, numero_pregunta=numero_pregunta)
+    aplicar_efectos_maldicion(er)
 
 
 def tiempo_pregunta_efectivo(reglas_seg: int | None, er: EstadoResistencia) -> int | None:
@@ -1678,11 +1678,7 @@ def usar_powerup(
         er.doble_o_nada_activo = True
     elif powerup_id == "racha_congelada":
         er.skip_sin_cortar_racha += 1
-    elif powerup_id == "skip":
-        pass
-    elif powerup_id == "cambio":
-        pass
-    else:
+    elif powerup_id not in {"skip", "cambio"}:
         er.agregar_powerup(powerup_id)
         return f"Objeto desconocido: {powerup_id}"
     from Comun.objetos_partida import POWERUPS_MULTI_USO_PREGUNTA
@@ -1739,28 +1735,25 @@ def aplicar_bonificaciones_puntos_resistencia(
 def _aplicar_recompensa_apuesta_exito(
     estado: EstadoPartida,
     er: EstadoResistencia,
-    *,
-    numero_pregunta: int,
 ) -> list[str]:
     if not er.apuesta_activa:
         return []
     recompensa = er.apuesta_activa.recompensa
     avisos: list[str] = []
-    if recompensa.delta_vidas:
-        if (
-            estado.vidas_restantes is not None
-            and estado.vidas_restantes < er.vidas_max
-        ):
-            aplicar_recompensa(
-                estado,
-                er,
-                EventoRecompensaResistencia(
-                    "Apuesta: vida extra",
-                    delta_vidas=recompensa.delta_vidas,
-                ),
-            )
-            n = recompensa.delta_vidas
-            avisos.append(f"Apuesta: +{n} vida" + ("s" if n > 1 else ""))
+    if recompensa.delta_vidas and (
+        estado.vidas_restantes is not None
+        and estado.vidas_restantes < er.vidas_max
+    ):
+        aplicar_recompensa(
+            estado,
+            er,
+            EventoRecompensaResistencia(
+                "Apuesta: vida extra",
+                delta_vidas=recompensa.delta_vidas,
+            ),
+        )
+        n = recompensa.delta_vidas
+        avisos.append(f"Apuesta: +{n} vida" + ("s" if n > 1 else ""))
     if recompensa.powerup_id:
         er.agregar_powerup(recompensa.powerup_id, recompensa.cantidad_powerup)
         nom = etiqueta_powerup(recompensa.powerup_id)
@@ -1923,9 +1916,7 @@ def procesar_turno_resistencia(
     familias_recompensa: set[str] = set()
     if acierto:
         er.registrar_acierto()
-        for aviso in _aplicar_recompensa_apuesta_exito(
-            estado, er, numero_pregunta=indice_pregunta
-        ):
+        for aviso in _aplicar_recompensa_apuesta_exito(estado, er):
             avisos_post.append(aviso)
             if "vida" in aviso.lower():
                 familias_recompensa.add("vida")

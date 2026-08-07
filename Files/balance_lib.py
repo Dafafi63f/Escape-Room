@@ -226,7 +226,12 @@ def ejecutar_reordenar(
         raise SystemExit("Post-condición orden canónico:\n" + "\n".join(errs))
 
     guardar_filas_csv(list(COLUMNAS_PREGUNTAS), nuevas, PATH_CSV)
-    modo = "solo metadatos" if solo_metadatos else ("sin permutar A-D" if sin_permutar else "ABCD cíclico")
+    if solo_metadatos:
+        modo = "solo metadatos"
+    elif sin_permutar:
+        modo = "sin permutar A-D"
+    else:
+        modo = "ABCD cíclico"
     print(f"OK: orden canónico, Id 1..{TARGET_TOTAL_PREGUNTAS} ({modo})")
     return 0
 

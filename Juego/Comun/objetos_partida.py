@@ -736,9 +736,7 @@ def usar_objeto(
         inventario.doble_o_nada_activo = True
     elif articulo_id == "racha_congelada":
         inventario.skip_sin_cortar_racha += 1
-    elif articulo_id in {"skip", "cambio"}:
-        pass
-    else:
+    elif articulo_id not in {"skip", "cambio"}:
         return f"Objeto desconocido: {articulo_id}"
     if escape:
         from Comun.powerups_puerta_escape import registrar_uso_powerup_escape

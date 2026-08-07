@@ -323,7 +323,7 @@ def eventos_aleatorios_para_pregunta(
 
     if baseline is None:
         baseline = baseline_escalada_resistencia(numero_pregunta)
-    prob_buena, prob_mala, max_malos, max_buenos, intensidad = parametros_eventos_aleatorios(
+    _, prob_mala, max_malos, max_buenos, intensidad = parametros_eventos_aleatorios(
         numero_pregunta
     )
     t_presion = intensidad_presion_racha(racha)
@@ -559,7 +559,12 @@ def escalada_para_pregunta(
     efectos = list(base.efectos)
     rng = rng_partida(er) if er is not None else None
     racha = er.racha if er is not None else 0
-    pity_eff = pity if pity is not None else (er.pity_eventos if er is not None else None)
+    if pity is not None:
+        pity_eff = pity
+    elif er is not None:
+        pity_eff = er.pity_eventos
+    else:
+        pity_eff = None
     pity_variedad = er.pity_variedad if er is not None else None
 
     eventos_turno = eventos_aleatorios_para_pregunta(

@@ -278,11 +278,14 @@ def comparar_con_asignacion(
         else 0.0
     )
 
-    if inferido.materia and materia_asig and inferido.materia != materia_asig:
-        if sc_mejor >= min_score_materia and (
-            sc_actual == 0 or sc_mejor >= sc_actual + margen_materia
-        ):
-            incoherentes.append("Materia")
+    if (
+        inferido.materia
+        and materia_asig
+        and inferido.materia != materia_asig
+        and sc_mejor >= min_score_materia
+        and (sc_actual == 0 or sc_mejor >= sc_actual + margen_materia)
+    ):
+        incoherentes.append("Materia")
 
     if tipo_asig in TIPOS_VALIDOS and inferido.tipo != tipo_asig:
         if _margen(inferido.scores_tipo, inferido.tipo) >= margen_tipo:

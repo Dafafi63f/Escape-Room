@@ -281,7 +281,6 @@ def _inferir_capacidades_datos(
     materias_meta: dict[str, dict[str, str]],
     cabeceras: set[str],
     *,
-    csv_minimal: bool = False,
     dataset_intermedio: bool = False,
     cobertura: dict | None = None,
 ) -> dict[str, bool]:
@@ -396,7 +395,6 @@ def _construir_contenido(
         preguntas,
         materias_meta,
         cabeceras,
-        csv_minimal=csv_minimal,
         dataset_intermedio=dataset_intermedio,
         cobertura=cobertura,
     )

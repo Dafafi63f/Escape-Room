@@ -299,7 +299,6 @@ class TestEscapeRoom(unittest.TestCase):
                     mods = generar_modificadores_puerta(
                         numero_sala=sala,
                         rng=_rng(semilla),
-                        indice_puerta=indice,
                     )
                     ids = set(mods.eventos_ids)
                     for familia in familias:
@@ -346,7 +345,7 @@ class TestEscapeRoom(unittest.TestCase):
             1
             for i in range(30)
             if generar_modificadores_puerta(
-                numero_sala=25, rng=_rng(7), indice_puerta=i
+                numero_sala=25, rng=_rng(7)
             ).rasgos == ("Clásica",)
         )
         self.assertLess(clasicas, 20)
@@ -1235,7 +1234,6 @@ class TestEscapeRoom(unittest.TestCase):
                     mods = generar_modificadores_puerta(
                         numero_sala=sala,
                         rng=_rng(semilla),
-                        indice_puerta=indice,
                     )
                     if not mods.sin_pregunta:
                         continue
@@ -1763,7 +1761,6 @@ class TestEscapeRoom(unittest.TestCase):
             mods = generar_modificadores_puerta(
                 numero_sala=10,
                 rng=_rng(semilla),
-                indice_puerta=0,
             )
             if "tienda" not in mods.eventos_ids:
                 continue
@@ -1814,7 +1811,6 @@ class TestEscapeRoom(unittest.TestCase):
             mods = generar_modificadores_puerta(
                 numero_sala=10,
                 rng=_rng(semilla),
-                indice_puerta=0,
                 pity=pity,
             )
             if "tienda" in mods.eventos_ids:
@@ -1895,7 +1891,6 @@ class TestEscapeRoom(unittest.TestCase):
             mods = generar_modificadores_puerta(
                 numero_sala=SALA_MIN_MALDICION_ESCAPE - 1,
                 rng=_rng(4100 + intento),
-                indice_puerta=0,
             )
             self.assertFalse(
                 any(eid in RASGOS_MALDICION_ESCAPE for eid in mods.eventos_ids),
@@ -1931,7 +1926,6 @@ class TestEscapeRoom(unittest.TestCase):
             mods = generar_modificadores_puerta(
                 numero_sala=SALA_MIN_MALDICION_ESCAPE,
                 rng=_rng(4200 + intento * 17),
-                indice_puerta=0,
                 pity=pity_ok,
             )
             if any(eid in RASGOS_MALDICION_ESCAPE for eid in mods.eventos_ids):
@@ -2161,7 +2155,6 @@ class TestEscapeRoom(unittest.TestCase):
             mods = generar_modificadores_puerta(
                 numero_sala=10,
                 rng=_rng(semilla),
-                indice_puerta=0,
             )
             if "tienda" in mods.eventos_ids:
                 visto = True

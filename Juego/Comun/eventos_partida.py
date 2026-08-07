@@ -1158,10 +1158,6 @@ def _ambitos_amplio_disponibles(numero_sala: int) -> list[str]:
 
 def _plantilla_filtro_amplio(
     ambito: str,
-    *,
-    perfiles: list[PerfilContenidoMateria],
-    numero_sala: int,
-    rng: random.Random,
 ) -> tuple[DefinicionEvento, str | None]:
     if ambito == "grupo":
         return evento_por_id("puerta_grupo"), None
@@ -1193,12 +1189,7 @@ def elegir_plantillas_contenido_escape(
         if usar_amplio:
             ambito = rng.choice(ambitos_amplio)
             elegidas.append(
-                _plantilla_filtro_amplio(
-                    ambito,
-                    perfiles=perfiles,
-                    numero_sala=numero_sala,
-                    rng=rng,
-                )
+                _plantilla_filtro_amplio(ambito)
             )
             amplio_asignado = True
             continue
@@ -1253,7 +1244,6 @@ def ajustar_plantillas_milestone_escape(
         ambitos = list(ambitos_permitidos)
     else:
         ambitos = _ambitos_amplio_disponibles(numero_sala) or ["grupo"]
-    perfiles = list(perfiles_materia_escape_para_sala(numero_sala))
     if faltan > 0 and ambitos:
         materias_idx = [
             i for i, (p, _) in enumerate(resultado) if plantilla_lleva_perfil_materia(p)
@@ -1261,24 +1251,14 @@ def ajustar_plantillas_milestone_escape(
         rng.shuffle(materias_idx)
         for idx in materias_idx[:faltan]:
             ambito = rng.choice(ambitos)
-            resultado[idx] = _plantilla_filtro_amplio(
-                ambito,
-                perfiles=perfiles,
-                numero_sala=numero_sala,
-                rng=rng,
-            )
+            resultado[idx] = _plantilla_filtro_amplio(ambito)
     if pool is not None and ambitos:
         for i, (plantilla, _) in enumerate(resultado):
             if plantilla_lleva_perfil_materia(plantilla):
                 continue
             if _bloque_admite_jefe(plantilla):
                 continue
-            resultado[i] = _plantilla_filtro_amplio(
-                rng.choice(ambitos),
-                perfiles=perfiles,
-                numero_sala=numero_sala,
-                rng=rng,
-            )
+            resultado[i] = _plantilla_filtro_amplio(rng.choice(ambitos))
     return tuple(resultado)
 
 
@@ -1578,7 +1558,6 @@ def generar_modificadores_puerta(
     *,
     numero_sala: int,
     rng: random.Random,
-    indice_puerta: int,
     pausas_usadas: frozenset[str] = frozenset(),
     pity: PityPuertasEspecialesEscape | None = None,
     estado=None,
@@ -2879,11 +2858,13 @@ def puede_aceptar_evento_si_no(
         if not evento.articulo_id:
             return "Evento no válido."
         objetos = _objetos()
-        if objetos.es_bonificacion(evento.articulo_id):
-            if not objetos.bonificacion_aplicable(
+        if (
+            objetos.es_bonificacion(evento.articulo_id)
+            and not objetos.bonificacion_aplicable(
                 evento.articulo_id, estado, vidas_max=er.vidas_max
-            ):
-                return "Esta bonificación no aplica ahora."
+            )
+        ):
+            return "Esta bonificación no aplica ahora."
         return None
 
     if evento.tipo == "vida":

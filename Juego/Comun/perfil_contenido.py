@@ -118,12 +118,10 @@ class PerfilContenido:
                 return "Falta el catálogo de presets (Juego/presets.json)."
             if not self.tiene_listado_materias:
                 return "Falta el listado de materias."
-        if modo == "especiales":
-            if not self.tiene_presets:
-                return "Falta el catálogo de presets (Juego/presets.json)."
-        if modo == "diarios":
-            if not self.tiene_presets:
-                return "Falta el catálogo de presets (Juego/presets.json)."
+        if modo == "especiales" and not self.tiene_presets:
+            return "Falta el catálogo de presets (Juego/presets.json)."
+        if modo == "diarios" and not self.tiene_presets:
+            return "Falta el catálogo de presets (Juego/presets.json)."
         return "Modo no disponible con el contenido cargado."
 
     def modo_especial_disponible(self, preset_id: str) -> bool:

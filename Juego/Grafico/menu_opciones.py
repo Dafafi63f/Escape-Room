@@ -185,16 +185,16 @@ class OverlayOpcionesGrafico:
     def _margen_inferior_panel(self) -> int:
         return self._gap(self._MARGEN_PANEL_INFERIOR, compacto=12)
 
-    def _gap_seccion_dataset(self) -> int:
+    def _leer_gap_seccion_dataset(self) -> int:
         return self._gap(self._GAP_SECCION_DATASET, compacto=10)
 
-    def _gap_hint_borrado(self) -> int:
+    def _valor_gap_hint_borrado(self) -> int:
         return self._gap(self._GAP_HINT_BORRADO, compacto=12)
 
-    def _gap_zona_borrado(self) -> int:
+    def _leer_gap_zona_borrado(self) -> int:
         return self._gap(self._GAP_ZONA_BORRADO, compacto=8)
 
-    def _gap_dataset_hint(self) -> int:
+    def _valor_gap_dataset_hint(self) -> int:
         return self._gap(self._GAP_DATASET_HINT, compacto=10)
 
     def _ajustar_altura_panel(self) -> None:
@@ -314,7 +314,7 @@ class OverlayOpcionesGrafico:
             self.panel.y
             + self._off["informes_fila"]
             + self.ALTO_CTRL
-            + max(self._GAP_TRAS_INFORMES, self._gap_seccion_dataset())
+            + max(self._GAP_TRAS_INFORMES, self._leer_gap_seccion_dataset())
         )
 
     def _y_inferior_fila_informes(self) -> int:
@@ -371,11 +371,9 @@ class OverlayOpcionesGrafico:
         self,
         *,
         gap_listo: int,
-        gap_zona: int,
         gap_hint: int,
         gap_seccion: int,
         lbl_borrado: pygame.Surface,
-        hint_borrado: pygame.Surface,
     ) -> int:
         y = self._y_inferior_seguro - self._margen_inferior_panel()
         self.boton_listo.rect.midbottom = (ANCHO // 2, y)
@@ -415,21 +413,17 @@ class OverlayOpcionesGrafico:
         """Ancla «Listo» al pie seguro y apila export/borrado hacia arriba."""
         fuente_peq = self.fuentes["pequena"]
         lbl_borrado = fuente_peq.render(_LBL_DATOS_COMPACTO, True, _COLOR_ETIQUETA_PANEL)
-        hint_borrado = fuente_peq.render("", True, _COLOR_ETIQUETA_PANEL)
         min_y = self._y_minima_seccion_inferior()
         escalas = (1.0, 0.82, 0.66) if self._modo_minimo else (1.0, 0.88, 0.72)
         for escala in escalas:
-            gap_listo = max(self._GAP_MIN_INFERIOR, int(self._gap_zona_borrado() * escala))
-            gap_zona = max(self._GAP_MIN_INFERIOR, int(self._gap_zona_borrado() * escala))
-            gap_hint = max(self._GAP_MIN_INFERIOR, int(self._gap_hint_borrado() * escala))
-            gap_seccion = max(self._GAP_MIN_INFERIOR, int(self._gap_seccion_dataset() * escala))
+            gap_listo = max(self._GAP_MIN_INFERIOR, int(self._leer_gap_zona_borrado() * escala))
+            gap_hint = max(self._GAP_MIN_INFERIOR, int(self._valor_gap_hint_borrado() * escala))
+            gap_seccion = max(self._GAP_MIN_INFERIOR, int(self._leer_gap_seccion_dataset() * escala))
             y_fila_datos = self._layout_inferior_con_gaps(
                 gap_listo=gap_listo,
-                gap_zona=gap_zona,
                 gap_hint=gap_hint,
                 gap_seccion=gap_seccion,
                 lbl_borrado=lbl_borrado,
-                hint_borrado=hint_borrado,
             )
             if y_fila_datos >= min_y:
                 break

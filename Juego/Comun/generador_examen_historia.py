@@ -66,7 +66,6 @@ PREGUNTAS_POR_MATERIA_DEFECTO = 4
 def preguntas_por_materia_defecto(
     *,
     perfil: PerfilPedagogico,
-    materia_fija: str | None,
 ) -> int:
     if perfil == PerfilPedagogico.SIMULACRO:
         return 1
@@ -843,7 +842,6 @@ def generar_examen(
     if preguntas_por_materia is None:
         preguntas_por_materia = preguntas_por_materia_defecto(
             perfil=perfil,
-            materia_fija=materia_fija,
         )
     if preguntas_por_materia <= 0:
         raise ValueError("preguntas_por_materia debe ser positivo.")
@@ -934,7 +932,6 @@ def generar_examen(
     if not pool_materias:
         raise ValueError("No hay materias en el pool del examen.")
 
-    n_preguntas = len(pool_materias) * preguntas_por_materia
     reparto_equitativo = exigir_balance_completo or not usar_analisis_historico
 
     pool_idx = _indice_pool(preguntas)

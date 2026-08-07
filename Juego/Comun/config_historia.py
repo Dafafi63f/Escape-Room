@@ -182,11 +182,12 @@ def tooltip_valor_estrategia_practica(estrategia: str) -> str | None:
 
 
 def tooltip_valor_estrategia_materias(estrategia: str, perfil=None) -> str | None:
-    _ = perfil
+    del perfil
     return tooltip_valor_estrategia_practica(estrategia)
 
 
 def preset_usa_prioridad_materias(preset, perfil=None) -> bool:
+    del perfil
     return getattr(preset, "contexto_reglas", "").startswith("historia_")
 
 
@@ -496,19 +497,14 @@ def filtro_ambito_bloqueado(
             if op_id in ("periodo", "semestre"):
                 return True
         return False
-    if not tiene_exclusion_periodo_curso_semestre(opciones):
-        pass
-    elif op_id in _IDS_FILTRO_AMBITO:
+    if tiene_exclusion_periodo_curso_semestre(opciones) and op_id in _IDS_FILTRO_AMBITO:
         modo = modo_filtro_ambito(valores)
-        if modo == "periodo":
-            if op_id in ("curso", "semestre"):
-                return True
-        elif modo == "curso_semestre":
-            if op_id == "periodo":
-                return True
-    if valores.get("grupo"):
-        if op_id in _IDS_FILTRO_AMBITO:
+        if modo == "periodo" and op_id in ("curso", "semestre"):
             return True
+        if modo == "curso_semestre" and op_id == "periodo":
+            return True
+    if valores.get("grupo") and op_id in _IDS_FILTRO_AMBITO:
+        return True
     if _tiene_filtro_curricular(valores) and op_id == "grupo":
         return True
     if preset_id == "simulacro" and _simulacro_ambito_curso_completo(valores):
@@ -555,8 +551,6 @@ def aplicar_exclusion_al_cambiar_ambito(
 def validar_coherencia_filtros_ambito(
     opciones: tuple[OpcionPreset, ...],
     valores: dict[str, Any],
-    *,
-    preset_id: str | None = None,
 ) -> None:
     ids = ids_filtro_ambito(opciones)
     if not ids:
@@ -930,7 +924,7 @@ def validar_config(
                 raise ValueError(f"Opción no válida para {op.etiqueta}.")
             else:
                 valores[op.id] = str(raw)
-    validar_coherencia_filtros_ambito(opciones, valores, preset_id=preset_id)
+    validar_coherencia_filtros_ambito(opciones, valores)
     return ConfigPresetHistoria(valores=valores)
 
 

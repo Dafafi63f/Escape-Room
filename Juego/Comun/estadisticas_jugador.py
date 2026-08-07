@@ -570,7 +570,7 @@ def formatear_tarjeta_sigue_por_aqui(perfil=None) -> list[str]:
             f"  Refuerza {materia}: {pct:.0f}% de acierto ({intentos} preguntas)."
         )
 
-    p_act, a_act, p_prev, a_prev, delta_pp = _evolucion_semanal(sesiones)
+    p_act, _, p_prev, _, delta_pp = _evolucion_semanal(sesiones)
     if p_act >= 5 and p_prev >= 5:
         if delta_pp <= -5:
             lineas.append(

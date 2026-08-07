@@ -419,7 +419,11 @@ def auditar_plantillas_global() -> int:
     print("  python Files/duplicados.py revisar")
     print("=" * 72)
 
-    return 1 if faltan_ds or exact_global else (1 if huecos_balance else 0)
+    if faltan_ds or exact_global:
+        return 1
+    if huecos_balance:
+        return 1
+    return 0
 
 
 def main_distractores(*, json_path: str = "", solo_dataset: bool = False) -> int:

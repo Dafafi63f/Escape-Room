@@ -195,15 +195,14 @@ def auditar_carpetas_data(raiz: Path | None = None) -> list[str]:
                 continue
             nombre = entrada.name
             if nombre in _FICHEROS_PROHIBIDOS_EN_JUEGO:
-                destino = (
-                    "Juego/presets.json"
-                    if nombre == "presets.json"
-                    else "Juego/Comun/preguntas_resistencia_exclusivas_datos.py"
-                    if nombre == "preguntas_resistencia.json"
-                    else "Data/Privado/"
-                    if nombre == "creador_privado.json"
-                    else "Data/Banco/"
-                )
+                if nombre == "presets.json":
+                    destino = "Juego/presets.json"
+                elif nombre == "preguntas_resistencia.json":
+                    destino = "Juego/Comun/preguntas_resistencia_exclusivas_datos.py"
+                elif nombre == "creador_privado.json":
+                    destino = "Data/Privado/"
+                else:
+                    destino = "Data/Banco/"
                 problemas.append(
                     f"Data/Juego/{rel.as_posix()}: catálogo o banco fuera de sitio "
                     f"(usar {destino})"

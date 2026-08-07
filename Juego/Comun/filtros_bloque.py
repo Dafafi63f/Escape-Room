@@ -123,6 +123,7 @@ def clasificar_filtro_evento_escape(
     ambito: str = "materia",
 ) -> TipoFiltroBloque:
     """Clasifica el filtro de contenido de una puerta escape (materia o bloque)."""
+    del tipos_permitidos  # reserva de API; hoy el filtro no discrimina por tipo.
     if definicion_id == "puerta_grupo" or ambito == "grupo":
         return TipoFiltroBloque.GRUPO
     if definicion_id == "puerta_materia" or ambito == "materia":

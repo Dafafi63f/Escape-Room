@@ -309,7 +309,7 @@ def generar_puertas_sala(
 
     estado_pity = pity or PityPuertasEspecialesEscape()
     puertas: tuple[PuertaEscape, ...] = ()
-    for intento in range(64):
+    for _ in range(64):
         puertas = _construir_puertas_sala(
             sala,
             sala_idx,
@@ -381,7 +381,6 @@ def _reconstruir_puerta_con_preguntas(
     mods = generar_modificadores_puerta(
         numero_sala=numero_sala,
         rng=rng,
-        indice_puerta=indice,
         pausas_usadas=frozenset(RASGOS_PUERTA_SIN_PREGUNTA_ESCAPE),
         pity=None if es_jefe else pity,
         estado=estado,
@@ -430,7 +429,6 @@ def _reconstruir_puerta_con_preguntas(
         puerta,
         numero_sala=numero_sala,
         n_salas=n_salas,
-        indice_puerta=indice,
         materias_pool=materias_base,
         grupos_pool=grupos_base or grupos_pool,
         rng=rng,
@@ -773,7 +771,6 @@ def _construir_puertas_sala(
         mods = generar_modificadores_puerta(
             numero_sala=numero_sala,
             rng=rng,
-            indice_puerta=i,
             pausas_usadas=frozenset(pausas_usadas),
             pity=pity,
             estado=estado,
@@ -816,7 +813,6 @@ def _construir_puertas_sala(
             puerta,
             numero_sala=numero_sala,
             n_salas=n_salas,
-            indice_puerta=i,
             materias_pool=materias_base,
             grupos_pool=grupos_base,
         )
