@@ -2325,18 +2325,18 @@ class PartidaEscapeRoom(Pantalla):
                     boton.actualizar_hover(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
             if self.boton_abandonar.manejar_clic(evento.pos, evento.button):
-                        return None
+                return None
             if self.fase == "puertas":
-                for boton in self.botones_inventario:
-                    if boton.manejar_clic(evento.pos, evento.button):
+                for boton_inv in self.botones_inventario:
+                    if boton_inv.manejar_clic(evento.pos, evento.button):
                         break
                 else:
-                    for boton in self.botones_puerta:
-                        if boton.manejar_clic(evento.pos, evento.button):
+                    for boton_puerta in self.botones_puerta:
+                        if boton_puerta.manejar_clic(evento.pos, evento.button):
                             break
             elif self.fase == "tienda":
-                for boton in self.botones_tienda:
-                    if boton.manejar_clic(evento.pos, evento.button):
+                for boton_tienda in self.botones_tienda:
+                    if boton_tienda.manejar_clic(evento.pos, evento.button):
                         break
                 if self.boton_salir_tienda:
                     self.boton_salir_tienda.manejar_clic(evento.pos, evento.button)
@@ -2345,18 +2345,18 @@ class PartidaEscapeRoom(Pantalla):
                     self.boton_empezar_puerta
                     and self.boton_empezar_puerta.manejar_clic(evento.pos, evento.button)
                 ):
-                    for boton in self.botones_inventario:
-                        if boton.manejar_clic(evento.pos, evento.button):
+                    for boton_inv in self.botones_inventario:
+                        if boton_inv.manejar_clic(evento.pos, evento.button):
                             break
             elif self.fase == "feedback":
                 self._continuar_tras_feedback()
             elif self.fase == "pregunta":
-                for boton in self.botones_inventario:
-                    if boton.manejar_clic(evento.pos, evento.button):
+                for boton_inv in self.botones_inventario:
+                    if boton_inv.manejar_clic(evento.pos, evento.button):
                         break
                 else:
-                    for boton in self.botones_opcion:
-                        if boton.manejar_clic(evento.pos, evento.button):
+                    for boton_opcion in self.botones_opcion:
+                        if boton_opcion.manejar_clic(evento.pos, evento.button):
                             break
         return None
 

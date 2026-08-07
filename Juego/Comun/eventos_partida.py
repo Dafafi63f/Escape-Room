@@ -40,7 +40,6 @@ from Comun.emojis_escape import (
     EMOJI_DIF_MEDIA,
     EMOJI_DOBLE_PUNTOS,
     EMOJI_JEFE,
-    EMOJI_BLOQUE_PUERTA,
     EMOJI_MIX_MATERIA,
     EMOJI_NIEBLA_OPCIONES,
     EMOJI_PUERTA_CURSO,
@@ -1799,23 +1798,23 @@ def lineas_botin_puerta(
     return tuple(lineas)
 
 
-def _iconos_botin_puerta(modificadores: ModificadoresPuerta) -> tuple[IconoEfectoPuerta, ...]:
+def _iconos_botin_puerta(modificadores: ModificadoresPuerta) -> list[IconoEfectoPuerta]:
     """Un solo icono de botín; el pie de la carta detalla cada premio."""
     tiene_botin = any(eid in RASGOS_BOTIN_ESCAPE for eid in modificadores.eventos_ids)
     if not tiene_botin:
-        return ()
+        return []
     tooltip = (
         TOOLTIP_BOTIN_DESCANSO
         if modificadores.sin_pregunta
         else TOOLTIP_BOTIN
     )
-    return (
+    return [
         IconoEfectoPuerta(
             emoji=EMOJI_BOTIN_ESCAPE,
             tooltip=tooltip,
             capa=CapaIconoEscape.BOTIN,
         ),
-    )
+    ]
 
 
 def _icono_bloque_diez_puerta(n_preguntas: int) -> IconoEfectoPuerta | None:
@@ -1827,24 +1826,6 @@ def _icono_bloque_diez_puerta(n_preguntas: int) -> IconoEfectoPuerta | None:
         emoji=EMOJI_JEFE,
         tooltip=linea_bloque_preguntas_puerta(n_preguntas),
         capa=CapaIconoEscape.JEFE,
-    )
-
-
-def _icono_bloque_puerta(
-    evento: EventoContenidoInstanciado,
-    n_preguntas: int,
-) -> IconoEfectoPuerta | None:
-    from Comun.filtros_bloque import requiere_icono_bloque_escape
-    from Comun.jefe_partida import tamano_coherente_bloque_o_jefe
-
-    if not tamano_coherente_bloque_o_jefe(n_preguntas, es_jefe=False):
-        return None
-    if not requiere_icono_bloque_escape(tipo_filtro_evento(evento)):
-        return None
-    return IconoEfectoPuerta(
-        emoji=EMOJI_BLOQUE_PUERTA,
-        tooltip=linea_bloque_preguntas_puerta(n_preguntas),
-        capa=CapaIconoEscape.BLOQUE,
     )
 
 
@@ -2298,10 +2279,6 @@ def iconos_efecto_puerta(
     bloque_diez = _icono_bloque_diez_puerta(n_preguntas)
     if bloque_diez is not None:
         iconos.append(bloque_diez)
-
-    bloque = _icono_bloque_puerta(evento, n_preguntas)
-    if bloque is not None:
-        iconos.append(bloque)
 
     if not modificadores.sin_pregunta and n_preguntas > 0:
         iconos.extend(iconos_contenido_puerta(evento))

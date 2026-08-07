@@ -112,7 +112,7 @@ def indices_dificultad_ambito(
     lo = min(brutos.values())
     hi = max(brutos.values())
     if hi <= lo:
-        return {m: 0.5 for m in candidatas}
+        return dict.fromkeys(candidatas, 0.5)
     escala = hi - lo
     return {m: (brutos[m] - lo) / escala for m in candidatas}
 

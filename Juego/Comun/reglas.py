@@ -498,16 +498,16 @@ def sistemas_disponibles(
     modo_infinito: bool,
     n_preguntas: int,
     sin_vidas: bool,
-) -> tuple[SistemaPuntuacion, ...]:
+) -> list[SistemaPuntuacion]:
     if modo_infinito or not sin_vidas:
-        return (SistemaPuntuacion.ARCADE,)
+        return [SistemaPuntuacion.ARCADE]
     if not _calificacion_viable(modo_infinito=modo_infinito, n_preguntas=n_preguntas):
-        return (SistemaPuntuacion.ARCADE,)
-    return (
+        return [SistemaPuntuacion.ARCADE]
+    return [
         SistemaPuntuacion.ARCADE,
         SistemaPuntuacion.NOTA,
         SistemaPuntuacion.PORCENTAJE,
-    )
+    ]
 
 
 def normalizar_vidas_y_sistema(
@@ -552,7 +552,7 @@ def opciones_reglas_libre(
         and (modo_infinito or n_preguntas >= MIN_PREGUNTAS_PARTIDA)
     )
     return OpcionesReglasLibre(
-        sistemas=sistemas,
+        sistemas=tuple(sistemas),
         permitir_sin_vidas=True,
         permitir_con_vidas=sis == SistemaPuntuacion.ARCADE,
         permitir_dificultad_progresiva=progresiva,

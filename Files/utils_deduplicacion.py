@@ -58,8 +58,10 @@ _RESPUESTAS_TRIVIALES = frozenset(
     }
 )
 
+# Cuantificadores acotados: evita backtracking superlineal (python:S8786).
 _RE_COMPLEJIDAD = re.compile(
-    r"(?:^o\s*\(?)|(?:log\s*n)|(?:n\s*log)|(?:n\s*\^?\s*2)|(?:polinom)|(?:exponencial)|(?:constante)|(?:lineal)"
+    r"(?:^o\s{0,8}\(?)|(?:log\s{0,8}n)|(?:n\s{0,8}log)"
+    r"|(?:n\s{0,8}\^?\s{0,8}2)|(?:polinom)|(?:exponencial)|(?:constante)|(?:lineal)"
 )
 _RE_NUMERO = re.compile(r"\d+(?:[.,]\d+)?")
 

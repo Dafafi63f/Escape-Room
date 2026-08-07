@@ -88,7 +88,7 @@ class PityEventosResistencia:
     preguntas_sin_malo: int = 0
     preguntas_sin_bueno: int = 0
     preguntas_sin_por_kind: dict[str, int] = field(
-        default_factory=lambda: {k: 0 for k in _KINDS_PITY_RESISTENCIA}
+        default_factory=lambda: dict.fromkeys(_KINDS_PITY_RESISTENCIA, 0)
     )
     ultima_pregunta_actualizada: int = 0
     _cache_pregunta: int = 0

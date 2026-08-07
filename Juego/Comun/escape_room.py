@@ -143,16 +143,16 @@ class PuertaEscape:
         return "\n".join(partes)
 
 
-def firma_puerta_escape(puerta: PuertaEscape) -> tuple[str, ...]:
+def firma_puerta_escape(puerta: PuertaEscape) -> tuple[str, str, str, str]:
     """Identidad visible de la puerta para evitar duplicados en la misma sala."""
     if puerta.es_jefe:
         foco = puerta.evento.etiqueta_foco or puerta.evento.grupo or ""
-        return ("jefe", foco)
+        return ("jefe", foco, "", "")
     if puerta.modificadores.sin_pregunta:
         for eid in puerta.modificadores.eventos_ids:
             if eid in RASGOS_PUERTA_SIN_PREGUNTA_ESCAPE:
-                return (eid,)
-        return ("descanso",)
+                return (eid, "", "", "")
+        return ("descanso", "", "", "")
     foco = puerta.evento.etiqueta_foco or ""
     perfil = puerta.evento.perfil_id or ""
     return ("contenido", puerta.evento.id, perfil, foco)

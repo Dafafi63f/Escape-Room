@@ -29,7 +29,6 @@ __all__ = [
     "es_filtro_subtipo_bloque",
     "familia_puerta_contenido_escape",
     "kind_filtro_bloque",
-    "requiere_icono_bloque_escape",
     "tipos_filtro_resistencia",
 ]
 
@@ -174,8 +173,3 @@ def kind_filtro_bloque(tipo: TipoFiltroBloque) -> str:
         return "tipo:Calculo"
     return tipo.value
 
-
-def requiere_icono_bloque_escape(tipo: TipoFiltroBloque) -> bool:
-    """Sin icono de tamaño en barra: 3/5/10 van en el pie de la carta (👑 solo para 10)."""
-    del tipo
-    return False
