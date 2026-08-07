@@ -434,7 +434,8 @@ class TestPoliticaBarraPartida(unittest.TestCase):
         self.app._actualizar_estado_barra_fija()
         feedback = self.app._boton_barra_por_tipo("feedback")
         info = self.app._boton_barra_por_tipo("ranking")
-        assert feedback is not None and info is not None
+        assert feedback is not None
+        assert info is not None
         self.assertTrue(feedback.activo)
         self.assertFalse(info.activo)
 

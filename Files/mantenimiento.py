@@ -96,7 +96,8 @@ def cmd_plantillas(args: argparse.Namespace) -> int:
         old_argv = sys.argv
         try:
             sys.argv = ["reclasificar_plantillas.py", *argv]
-            return rp.main()
+            rp.main()
+            return 0
         finally:
             sys.argv = old_argv
     return 2

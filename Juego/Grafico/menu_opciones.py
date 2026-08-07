@@ -471,7 +471,6 @@ class OverlayOpcionesGrafico:
             return
         if accion == "estadisticas":
             vaciar_estadisticas_locales()
-            return
 
     def _texto_valor(self, clave: str) -> str:
         if clave == "tooltips":

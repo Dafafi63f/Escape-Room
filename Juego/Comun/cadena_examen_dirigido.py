@@ -30,7 +30,7 @@ _STOPWORDS_ES = frozenset({
     "esa", "the", "and", "hay", "más", "mas", "menos", "todo", "toda", "cada",
     "donde", "dónde", "cuando", "cuándo", "sobre", "entre", "desde", "hasta",
     "ante", "bajo", "tras", "pero", "porque", "puede", "pueden", "debe", "deben",
-    "ser", "está", "esta", "están", "fue", "era", "han", "has", "hemos",
+    "ser", "están", "fue", "era", "han", "has", "hemos",
 })
 
 _RE_PALABRA = re.compile(r"[a-záéíóúüñ]+", re.IGNORECASE)

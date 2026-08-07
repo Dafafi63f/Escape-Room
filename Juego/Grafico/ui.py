@@ -498,13 +498,13 @@ def partir_texto_con_sangria(
 ) -> list[str]:
     """Parte en líneas manteniendo la sangría inicial en los saltos."""
     texto = preparar_texto_ui(texto)
-    coincidencia_viñeta = _RE_VIÑETA_UI.match(texto)
-    if coincidencia_viñeta:
+    coincidencia_vineta = _RE_VIÑETA_UI.match(texto)
+    if coincidencia_vineta:
         return _partir_lista_marcada(
             fuente,
-            coincidencia_viñeta.group(1),
+            coincidencia_vineta.group(1),
             "•",
-            coincidencia_viñeta.group(2),
+            coincidencia_vineta.group(2),
             ancho_max,
             tamano_pt=tamano_pt,
         )

@@ -153,7 +153,7 @@ def comprobar_orden_canonico_df(df) -> list[str]:
                 errs.append(f"{tema!r}: ladder Cálculo roto en pos. {i}: {difs_c}")
                 break
         slots = list(zip(sub["Tipo"], sub["Dificultad"]))
-        if list(slots) != list(SLOTS_CANONICOS_12):
+        if slots != list(SLOTS_CANONICOS_12):
             errs.append(f"{tema!r}: estructura distinta de 2FT 2MT 2DT 2FC 2MC 2DC")
     return errs
 
@@ -162,7 +162,7 @@ def ejecutar_reordenar(
     solo_metadatos: bool = False,
     explicar: bool = False,
     sin_permutar_respuestas: bool = False,
-) -> int:
+) -> None:
     from utils_banco_cerrado import rechazar_mutacion_dataset
 
     rechazar_mutacion_dataset("balance_lib.ejecutar_reordenar")
@@ -170,14 +170,14 @@ def ejecutar_reordenar(
 
     if explicar:
         print(__doc__ if __doc__ else "Orden canónico: listado_materias + ladder TF..TD/CF..CD")
-        return 0
+        return
 
     sin_permutar = sin_permutar_respuestas or solo_metadatos
     df = pd.read_csv(PATH_CSV, sep=";", encoding="utf-8")
     temas, _ = cargar_orden_temas()
     faltan = set(df["Materia"].unique()) - set(temas)
     if faltan:
-        raise SystemExit(f"Materias no listadas: {faltan}")
+        raise ValueError(f"Materias no listadas: {faltan}")
 
     por_materia: dict[str, list[dict]] = {t: [] for t in temas}
     for _, r in df.iterrows():
@@ -188,11 +188,11 @@ def ejecutar_reordenar(
         bloque = por_materia[tema]
         ppm = preguntas_por_materia()
         if len(bloque) != ppm:
-            raise SystemExit(f"{tema!r}: se esperaban {ppm} filas, hay {len(bloque)}")
+            raise ValueError(f"{tema!r}: se esperaban {ppm} filas, hay {len(bloque)}")
         teo = [x for x in bloque if str(x.get("Tipo", "")).strip() == "Teoria"]
         cal = [x for x in bloque if str(x.get("Tipo", "")).strip() == "Calculo"]
         if len(teo) != TEORIA_POR_MATERIA or len(cal) != CALCULO_POR_MATERIA:
-            raise SystemExit(f"{tema!r}: tipo {len(teo)} Teoria / {len(cal)} Calculo")
+            raise ValueError(f"{tema!r}: tipo {len(teo)} Teoria / {len(cal)} Calculo")
         teo.sort(key=lambda x: (ord_diff(x.get("Dificultad")), int(x["Id"])))
         cal.sort(key=lambda x: (ord_diff(x.get("Dificultad")), int(x["Id"])))
         ordenados = teo + cal
@@ -223,7 +223,7 @@ def ejecutar_reordenar(
     if sin_permutar:
         errs = [e for e in errs if not e.startswith("Correcta ") and "Ciclo Correcta" not in e]
     if errs:
-        raise SystemExit("Post-condición orden canónico:\n" + "\n".join(errs))
+        raise ValueError("Post-condición orden canónico:\n" + "\n".join(errs))
 
     guardar_filas_csv(list(COLUMNAS_PREGUNTAS), nuevas, PATH_CSV)
     if solo_metadatos:
@@ -233,7 +233,6 @@ def ejecutar_reordenar(
     else:
         modo = "ABCD cíclico"
     print(f"OK: orden canónico, Id 1..{TARGET_TOTAL_PREGUNTAS} ({modo})")
-    return 0
 
 
 def ejecutar_ordenar_ladder() -> int:
@@ -526,8 +525,14 @@ def ajustar_dificultad_global_por_intercambio(rows: list[dict], max_pasos: int =
         ok = all(c.get(d, 0) == tgt[d] for d in ("Facil", "Media", "Dificil"))
         if ok:
             break
-        exc = max(("Facil", "Media", "Dificil"), key=lambda d: c.get(d, 0) - tgt[d])
-        defi = min(("Facil", "Media", "Dificil"), key=lambda d: c.get(d, 0) - tgt[d])
+        exc = max(
+            ("Facil", "Media", "Dificil"),
+            key=lambda d, cont=c: cont.get(d, 0) - tgt[d],
+        )
+        defi = min(
+            ("Facil", "Media", "Dificil"),
+            key=lambda d, cont=c: cont.get(d, 0) - tgt[d],
+        )
         if c.get(exc, 0) <= tgt[exc] or c.get(defi, 0) >= tgt[defi]:
             break
         i = next(i for i, r in enumerate(rows) if r["Dificultad"] == exc)
@@ -882,7 +887,10 @@ def ejecutar_corregir() -> int:
         return r_inj.returncode
 
     print("5) Reordenar (solo metadatos)…")
-    if ejecutar_reordenar(solo_metadatos=True) != 0:
+    try:
+        ejecutar_reordenar(solo_metadatos=True)
+    except ValueError as e:
+        print(f"Error al reordenar: {e}")
         return 1
 
     with PATH_CSV.open(encoding="utf-8", newline="") as f:

@@ -95,11 +95,12 @@ def main(argv: list[str] | None = None) -> int:
 
             if args.inplace:
                 rechazar_mutacion_dataset("duplicados.py enunciado --inplace")
-            return ejecutar_enunciado(
+            ejecutar_enunciado(
                 inplace=args.inplace,
                 output=args.output,
                 seed=args.seed,
             )
+            return 0
         return 2
     finally:
         borrar_pycache_en_proyecto()

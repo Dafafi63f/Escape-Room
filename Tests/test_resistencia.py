@@ -256,7 +256,8 @@ class TestResistenciaPartida(unittest.TestCase):
             ),
         )
         avisos = procesar_post_turno_resistencia(er, acierto=True, numero_pregunta=150)
-        assert er.maldicion is not None and er.maldicion.desafio is not None
+        assert er.maldicion is not None
+        assert er.maldicion.desafio is not None
         self.assertEqual(er.maldicion.desafio.aciertos_logrados, 1)
         self.assertEqual(avisos, [])
         avisos = procesar_post_turno_resistencia(er, acierto=True, numero_pregunta=151)

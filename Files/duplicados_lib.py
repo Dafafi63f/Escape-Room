@@ -423,9 +423,8 @@ def ejecutar_todo(inplace: bool = False, dry_run: bool = False, seed: int = 42) 
     guardar_filas_csv(fieldnames, filas_nuevas, PATH_PREGUNTAS)
 
     try:
-        if ejecutar_reordenar(solo_metadatos=True) != 0:
-            return 1
-    except SystemExit as e:
+        ejecutar_reordenar(solo_metadatos=True)
+    except ValueError as e:
         print(f"AVISO: reordenar omitido ({e})")
     rc_val = ejecutar_validar()
     if rc_val != 0:
@@ -457,7 +456,7 @@ def _cargar_plantillas_exacto() -> dict:
 
 
 
-def ejecutar_exacto() -> int:
+def ejecutar_exacto() -> None:
     plantillas = _cargar_plantillas_exacto()
 
     with PATH_PREGUNTAS.open("r", encoding="utf-8", newline="") as f:
@@ -477,7 +476,7 @@ def ejecutar_exacto() -> int:
 
     if not indices_a_reemplazar:
         print("No hay preguntas duplicadas.")
-        return 0
+        return
 
     claves_existentes = set()
     for idx, fila in enumerate(filas):
@@ -528,7 +527,6 @@ def ejecutar_exacto() -> int:
     if eliminadas > 0:
         print(f"  Eliminados (sin plantilla de reemplazo): {eliminadas}")
     print(f"Total final: {len(filas)} preguntas")
-    return 0
 
 
 def _generar_reemplazo_exacto(tema, plantillas, claves_existentes):
@@ -549,7 +547,7 @@ def normalizar_enunciado(texto: str) -> str:
     return normalizar_basico(texto)
 
 
-def ejecutar_enunciado(inplace: bool = False, output: str | None = None, seed: int = 42) -> int:
+def ejecutar_enunciado(inplace: bool = False, output: str | None = None, seed: int = 42) -> None:
     random.seed(seed)
     plantillas = _cargar_plantillas_enunciado()
 
@@ -566,13 +564,13 @@ def ejecutar_enunciado(inplace: bool = False, output: str | None = None, seed: i
         enunciado_a_indices[normalizar_enunciado(fila.get("Pregunta", ""))].append(idx)
 
     indices_a_reemplazar = []
-    for _, indices in enunciado_a_indices.items():
+    for indices in enunciado_a_indices.values():
         if len(indices) > 1:
             indices_a_reemplazar.extend(indices[1:])
 
     if not indices_a_reemplazar:
         print("No hay duplicados por enunciado.")
-        return 0
+        return
 
     enunciados_existentes = set()
     bloques_existentes = set()
@@ -641,7 +639,6 @@ def ejecutar_enunciado(inplace: bool = False, output: str | None = None, seed: i
         print(f"  Eliminados sin reemplazo: {eliminadas}")
     print(f"Total final: {len(filas)}")
     print(f"Escrito en: {out_path}")
-    return 0
 
 
 def _cargar_plantillas_enunciado() -> dict[str, list[dict]]:

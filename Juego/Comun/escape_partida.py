@@ -1204,6 +1204,7 @@ def _asegurar_puerta_jefe_viable(
     pools_bloque: dict[str, tuple],
 ) -> PuertaEscape:
     """Itera rasgos y foco hasta tener >=10 candidatas; mantiene bloque de jefe."""
+    from Comun.escape_room import PuertaEscape
     from Comun.eventos_partida import (
         RASGOS_BOTIN_ESCAPE,
         eventos_puerta_escape_para_sala,
@@ -1211,10 +1212,13 @@ def _asegurar_puerta_jefe_viable(
     )
     from Comun.jefe_partida import PREGUNTAS_POR_JEFE
 
-    candidata = replace(
-        puerta,
-        n_preguntas=PREGUNTAS_POR_JEFE,
-        es_jefe=True,
+    candidata = cast(
+        PuertaEscape,
+        replace(
+            puerta,
+            n_preguntas=PREGUNTAS_POR_JEFE,
+            es_jefe=True,
+        ),
     )
     if _puerta_cumple(candidata, pool, numero_sala=numero_sala, n_salas=n_salas):
         return candidata
@@ -1244,24 +1248,33 @@ def _asegurar_puerta_jefe_viable(
                 desafios_disp=desafios_disp,
             )
         elif accion == 2 and focos:
-            candidata = replace(candidata, evento=focos[intento % len(focos)])
+            candidata = cast(
+                PuertaEscape,
+                replace(candidata, evento=focos[intento % len(focos)]),
+            )
         elif accion == 3:
             candidata = _jefe_regenerar_modificadores(
                 candidata, numero_sala=numero_sala, rng=rng
             )
         elif accion == 4:
-            candidata = replace(
-                candidata, evento=_evento_balanceado_desde(candidata.evento)
+            candidata = cast(
+                PuertaEscape,
+                replace(
+                    candidata, evento=_evento_balanceado_desde(candidata.evento)
+                ),
             )
 
     mejor: PuertaEscape | None = None
     mejor_n = 0
     for evento in focos:
-        prueba = replace(
-            candidata,
-            n_preguntas=PREGUNTAS_POR_JEFE,
-            es_jefe=True,
-            evento=evento,
+        prueba = cast(
+            PuertaEscape,
+            replace(
+                candidata,
+                n_preguntas=PREGUNTAS_POR_JEFE,
+                es_jefe=True,
+                evento=evento,
+            ),
         )
         disp = contar_candidatas_puerta(
             pool, prueba, numero_sala=numero_sala, n_salas=n_salas
@@ -1278,12 +1291,15 @@ def _asegurar_puerta_jefe_viable(
         rng=rng,
     )
     for evento in focos:
-        prueba = replace(
-            candidata,
-            n_preguntas=PREGUNTAS_POR_JEFE,
-            es_jefe=True,
-            evento=evento,
-            modificadores=mods_min,
+        prueba = cast(
+            PuertaEscape,
+            replace(
+                candidata,
+                n_preguntas=PREGUNTAS_POR_JEFE,
+                es_jefe=True,
+                evento=evento,
+                modificadores=mods_min,
+            ),
         )
         if _puerta_cumple(prueba, pool, numero_sala=numero_sala, n_salas=n_salas):
             return prueba
@@ -1326,15 +1342,18 @@ def asegurar_puerta_viable(
     for n in reversed(_TAMANOS_REDUCCION):
         if n >= candidata.n_preguntas:
             continue
-        prueba = replace(candidata, n_preguntas=n)
+        prueba = cast(PuertaEscape, replace(candidata, n_preguntas=n))
         if _puerta_cumple(prueba, pool, numero_sala=numero_sala, n_salas=n_salas):
-            return cast(PuertaEscape, prueba)
+            return prueba
 
     evento_relajado = _evento_balanceado_desde(candidata.evento)
     for n in reversed(_TAMANOS_REDUCCION):
-        prueba = replace(candidata, n_preguntas=n, evento=evento_relajado)
+        prueba = cast(
+            PuertaEscape,
+            replace(candidata, n_preguntas=n, evento=evento_relajado),
+        )
         if _puerta_cumple(prueba, pool, numero_sala=numero_sala, n_salas=n_salas):
-            return cast(PuertaEscape, prueba)
+            return prueba
 
     if grupos_pool and _evento_es_grupo(candidata.evento):
         from Comun.escape_room import PuertaEscape
@@ -1347,11 +1366,14 @@ def asegurar_puerta_viable(
                 grupo=grupo,
             )
             for n in reversed(_TAMANOS_REDUCCION):
-                prueba = replace(
-                    candidata,
-                    n_preguntas=n,
-                    evento=evento,
-                    modificadores=ModificadoresPuerta(rasgos=(_RASGO_CLASICA,)),
+                prueba = cast(
+                    PuertaEscape,
+                    replace(
+                        candidata,
+                        n_preguntas=n,
+                        evento=evento,
+                        modificadores=ModificadoresPuerta(rasgos=(_RASGO_CLASICA,)),
+                    ),
                 )
                 disp = contar_candidatas_puerta(
                     pool, prueba, numero_sala=numero_sala, n_salas=n_salas
@@ -1371,11 +1393,14 @@ def asegurar_puerta_viable(
                 materia=materia,
             )
             for n in reversed(_TAMANOS_REDUCCION):
-                prueba = replace(
-                    candidata,
-                    n_preguntas=n,
-                    evento=evento,
-                    modificadores=ModificadoresPuerta(rasgos=(_RASGO_CLASICA,)),
+                prueba = cast(
+                    PuertaEscape,
+                    replace(
+                        candidata,
+                        n_preguntas=n,
+                        evento=evento,
+                        modificadores=ModificadoresPuerta(rasgos=(_RASGO_CLASICA,)),
+                    ),
                 )
                 disp = contar_candidatas_puerta(
                     pool, prueba, numero_sala=numero_sala, n_salas=n_salas

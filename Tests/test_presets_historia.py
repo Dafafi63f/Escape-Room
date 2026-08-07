@@ -648,22 +648,18 @@ class TestPresetsHistoria(unittest.TestCase):
         from Comun.reglas import MIN_PREGUNTAS_PARTIDA
 
         repaso = next(p for p in self.presets if p.id == "repaso")
+        cfg_repaso = ConfigPresetHistoria(valores={"n_materias": 1})
         with self.assertRaises(ValueError):
-            self._validar(
-                repaso,
-                ConfigPresetHistoria(valores={"n_materias": 1}),
-            )
+            self._validar(repaso, cfg_repaso)
         examen = next(p for p in self.presets if p.id == "examen_asignatura")
+        cfg_examen = ConfigPresetHistoria(
+            valores={
+                "materia": self.orden[0],
+                "n_preguntas": MIN_PREGUNTAS_PARTIDA - 1,
+            }
+        )
         with self.assertRaises(ValueError):
-            self._validar(
-                examen,
-                ConfigPresetHistoria(
-                    valores={
-                        "materia": self.orden[0],
-                        "n_preguntas": MIN_PREGUNTAS_PARTIDA - 1,
-                    }
-                ),
-            )
+            self._validar(examen, cfg_examen)
 
     def test_examen_asignatura_enfoque_teoria(self) -> None:
         preset = next(p for p in self.presets if p.id == "examen_asignatura")

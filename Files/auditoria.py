@@ -31,7 +31,7 @@ _PLACEHOLDER = re.compile(
     r"todas\s+son\s+correctas)(\b|$)",
     re.I,
 )
-_NUMERIC_OK = re.compile(r"^[\d\s.,+\-*/^()%€$·πeOlogn√]+$", re.I)
+_NUMERIC_OK = re.compile(r"^[\d\s.,+\-*/^()%€$·πeologn√]+$", re.I)
 _GENERICAS = re.compile(
     r"(error de sintaxis|no\s+existe|siempre\s+es\s+0|nunca\s+se\s+puede|"
     r"no\s+tiene\s+sentido|no\s+aplica|no\s+es\s+posible|imposible\s+siempre)",

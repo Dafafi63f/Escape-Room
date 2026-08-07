@@ -275,14 +275,14 @@ def _buscar_archivo(
         except OSError:
             continue
     if coincidencias:
-        elegida = sorted(
+        elegida = min(
             coincidencias,
             key=lambda p: (
                 0 if p.parent.name.lower() in {"data", "banco", "juego", "csv", "json"} else 1,
                 len(p.parts),
                 str(p),
             ),
-        )[0]
+        )
         return elegida
 
     _archivos_no_encontrados.add(clave)

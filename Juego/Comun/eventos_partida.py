@@ -2927,7 +2927,6 @@ def aceptar_evento_si_no(
 def mensaje_exito_evento_si_no(evento: EventoSiNo) -> str | None:
     if evento.es_riesgo_en_pregunta:
         return None
-    motor = _motor_resistencia()
     if evento.tipo == "compra" and evento.articulo_id:
         nom = _objetos().articulo_por_id(evento.articulo_id).nombre
         return f"Compraste {nom}."

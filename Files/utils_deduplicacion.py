@@ -228,7 +228,7 @@ def clave_familia_plantilla(fila: dict) -> str | None:
         return "fam:conversion_bytes"
 
     # Límites tipo lim(x→0) f(x)/g(x)
-    if re.search(r"\blim(ite)?\b", t) and re.search(r"\b(x|t)\b", t):
+    if re.search(r"\blim(ite)?\b", t) and re.search(r"\b[xt]\b", t):
         if re.search(r"\b(0|infinito|infty)\b", t) or "cuando" in t:
             return "fam:limite_indeterminacion"
 

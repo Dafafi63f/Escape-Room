@@ -1892,10 +1892,8 @@ def procesar_turno_resistencia(
             sin_vidas=True,
             mensaje=f"{feedback.mensaje}{mensaje_fallo_maldicion_fatal()}",
         )
-        avisos_fatal = list(
-            procesar_post_turno_resistencia(
-                er, acierto=False, numero_pregunta=indice_pregunta
-            )
+        avisos_fatal = procesar_post_turno_resistencia(
+            er, acierto=False, numero_pregunta=indice_pregunta
         )
         return ResultadoTurnoResistencia(
             feedback=feedback,

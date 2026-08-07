@@ -1237,8 +1237,9 @@ class TestEscapeRoom(unittest.TestCase):
                     )
                     if not mods.sin_pregunta:
                         continue
-                    self.assertTrue(
-                        set(mods.eventos_ids) <= permitidos,
+                    self.assertLessEqual(
+                        set(mods.eventos_ids),
+                        permitidos,
                         msg=f"ids={mods.eventos_ids} sala={sala} semilla={semilla}",
                     )
                     self.assertFalse(

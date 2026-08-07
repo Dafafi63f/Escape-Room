@@ -702,10 +702,10 @@ class AplicacionGrafica:
             return True
         return True
 
-    def _ejecutar_atajo_barra_fija(self, tipo: str) -> bool:
+    def _ejecutar_atajo_barra_fija(self, tipo: str) -> None:
         """Tecla de barra: solo actúa si el icono está permitido (blanco)."""
         if not self._tipo_barra_permitido(tipo):
-            return True
+            return
         if tipo == "pausa":
             self._toggle_pausa()
         elif tipo == "diarios":
@@ -716,7 +716,6 @@ class AplicacionGrafica:
             self._abrir_feedback()
         elif tipo == "opciones":
             self._toggle_opciones()
-        return True
 
     def _manejar_teclado_global(self, evento: pygame.event.Event) -> bool:
         if evento.type != pygame.KEYDOWN:
@@ -728,7 +727,8 @@ class AplicacionGrafica:
 
         tipo_barra = tipo_barra_fija_para_tecla(evento.key)
         if tipo_barra is not None:
-            return self._ejecutar_atajo_barra_fija(tipo_barra)
+            self._ejecutar_atajo_barra_fija(tipo_barra)
+            return True
 
         if tecla_es_retroceso(evento.key):
             if (

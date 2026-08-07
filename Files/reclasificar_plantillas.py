@@ -174,7 +174,7 @@ def aplicar_reclasificacion(
     return nueva, stats
 
 
-def main() -> int:
+def main() -> None:
     parser = argparse.ArgumentParser(description="Reclasificar materia de plantillas por contenido")
     parser.add_argument("--aplicar", action="store_true", help="Escribe plantillas.json")
     parser.add_argument("--solo-internet", action="store_true")
@@ -226,7 +226,7 @@ def main() -> int:
     if not args.aplicar:
         if hallazgos:
             print("\nDry-run. Aplica con: python Files/reclasificar_plantillas.py --aplicar")
-        return 0
+        return
 
     nueva, stats = aplicar_reclasificacion(plantillas, hallazgos)
     orden, _rank = cargar_orden_temas()
@@ -242,8 +242,7 @@ def main() -> int:
     print(f"\nGuardado: {PATH_PLANTILLAS}")
     print(f"Movidas: {stats['movidas']} | Duplicados eliminados: {stats['eliminadas_dup']}")
     borrar_pycache_en_proyecto()
-    return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
