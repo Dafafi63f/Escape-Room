@@ -1779,6 +1779,8 @@ class TestIconosResistencia(unittest.TestCase):
         self.assertEqual(er.cantidad("vida_refuerzo"), 0)
 
     def test_oferta_amuleto_aplica_al_instante(self) -> None:
+        from unittest.mock import patch
+
         from Comun.eventos_partida import EventoSiNo, aceptar_evento_si_no
         from Comun.motor_nucleo import ResultadoRespuesta
         from Comun.reglas import preset_resistencia
@@ -1801,13 +1803,18 @@ class TestIconosResistencia(unittest.TestCase):
         self.assertIsNone(aceptar_evento_si_no(evento, estado, er, numero_pregunta=10))
         self.assertEqual(er.bonus_proximo_acierto, bonus_amuleto_tras_compra(35, numero_pregunta=10))
         self.assertEqual(er.cantidad("amuleto_puntos"), 0)
-        turno = procesar_turno_resistencia(
-            estado,
-            er,
-            _pregunta(),
-            ResultadoRespuesta(acierto=True, respuesta="B"),
-            indice_pregunta=10,
-        )
+        # Sin recompensas aleatorias: un botín podría volver a poner bonus_proximo_acierto.
+        with patch(
+            "Comun.resistencia_motor.tirar_recompensas_tras_acierto",
+            return_value=[],
+        ):
+            turno = procesar_turno_resistencia(
+                estado,
+                er,
+                _pregunta(),
+                ResultadoRespuesta(acierto=True, respuesta="B"),
+                indice_pregunta=10,
+            )
         self.assertTrue(turno.feedback.mensaje.startswith("Correcto"))
         self.assertGreaterEqual(estado.puntos_arcade, 30)
         self.assertEqual(er.bonus_proximo_acierto, 0)
