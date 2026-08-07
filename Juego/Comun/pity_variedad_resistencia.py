@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from Comun.resistencia_motor import EstadoResistencia
+    from Comun.resistencia_partida import EventoAleatorioResistencia
 
 __all__ = [
     "CATEGORIAS_VARIEDAD_RESISTENCIA",
@@ -141,7 +142,7 @@ def registrar_variedad_resistencia(er: EstadoResistencia, categoria: str) -> Non
 
 def registrar_variedad_resistencia_partida(
     er: EstadoResistencia,
-    eventos_escalada: tuple[object, ...] | None = None,
+    eventos_escalada: tuple[EventoAleatorioResistencia, ...] | None = None,
 ) -> None:
     """Actualiza el pity entre partidas con lo visto en la sesión."""
     from Comun.resistencia_partida import kind_de_evento_resistencia

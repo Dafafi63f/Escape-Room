@@ -124,7 +124,7 @@ from Grafico.feedback_partida import (
     marcar_inicio_feedback,
     solucion_feedback_grafico,
 )
-from Grafico.modo_preset import iniciar_pantalla_partida
+from Grafico.arranque_partida import iniciar_pantalla_partida
 from Grafico.pantallas import (
     ALTURA_BARRA_PARTIDA,
     ALTO_OPCION_PARTIDA,
@@ -227,7 +227,7 @@ class ConfigAjustesEscapeRoom(Pantalla):
 
     _FILAS = ("banco", "salas")
     _ETIQUETAS_FILA = {
-        "banco": "Banco de preguntas",
+        "banco": "Dataset",
         "salas": "Número de salas",
     }
 

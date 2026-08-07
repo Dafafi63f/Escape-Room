@@ -6,9 +6,14 @@ import random
 import re
 import time
 from dataclasses import dataclass, field, replace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from Comun.config_historia import GRUPOS_TEMATICOS, descripcion_ambito_curso_semestre, etiqueta_grupo_tematico
+
+if TYPE_CHECKING:
+    from Comun.maldiciones_partida import PityMaldicionesResistencia
+    from Comun.pity_variedad_resistencia import PityVariedadResistencia
+    from Comun.resistencia_partida import EscaladaResistencia, PityEventosResistencia
 from Comun.emojis_escape import EMOJI_NIEBLA_OPCIONES
 from Comun.emojis_partida import EMOJI_BLOQUE_FILTRO_RESISTENCIA
 from Comun.modelos import Pregunta
@@ -309,7 +314,7 @@ class EstadoResistencia:
     tipos_evento_si_no_vistos: set[str] = field(default_factory=set)
     kinds_bloque_vistos: set[str] = field(default_factory=set)
     variedad_vista: set[str] = field(default_factory=set)
-    pity_variedad: object | None = None
+    pity_variedad: PityVariedadResistencia | None = None
     pregunta_final_jefe: bool = False
     maldicion: MaldicionActiva | None = None
     ventana_resultados: list[bool] = field(default_factory=list)
@@ -319,8 +324,10 @@ class EstadoResistencia:
     banco_resistencia: object | None = None
     sin_escalada_dificultad: bool = False
     presion_racha_intensidad: float = 0.0
-    pity_eventos: object = field(default_factory=lambda: _pity_eventos_resistencia_nuevo())
-    pity_maldiciones: object = field(default_factory=lambda: _pity_maldiciones_resistencia_nuevo())
+    pity_eventos: PityEventosResistencia = field(default_factory=lambda: _pity_eventos_resistencia_nuevo())
+    pity_maldiciones: PityMaldicionesResistencia = field(
+        default_factory=lambda: _pity_maldiciones_resistencia_nuevo()
+    )
 
     def reset_pregunta(self) -> None:
         self.letras_ocultas = frozenset()
@@ -880,6 +887,8 @@ def emoji_evento_etiqueta(etiqueta: str) -> str:
         return "💀"
     if "Hito racha" in etiqueta:
         return "🏅"
+
+    from Comun.eventos_partida import APUESTAS_DISPONIBLES
 
     if any(ap.etiqueta == etiqueta for ap in APUESTAS_DISPONIBLES):
         return "🎰"
@@ -1866,14 +1875,14 @@ def procesar_turno_resistencia(
             sin_vidas=True,
             mensaje=f"{feedback.mensaje}{mensaje_fallo_maldicion_fatal()}",
         )
-        avisos_post = list(
+        avisos_fatal = list(
             procesar_post_turno_resistencia(
                 er, acierto=False, numero_pregunta=indice_pregunta
             )
         )
         return ResultadoTurnoResistencia(
             feedback=feedback,
-            avisos_extra=tuple(avisos_post),
+            avisos_extra=tuple(avisos_fatal),
         )
 
     feedback = evaluar_respuesta(p, estado, resultado)

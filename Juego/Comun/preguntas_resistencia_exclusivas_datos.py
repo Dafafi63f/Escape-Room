@@ -652,4 +652,3 @@ PREGUNTAS_EXCLUSIVAS_RESISTENCIA: tuple[dict[str, Any], ...] = (
         },
     },
 )
-

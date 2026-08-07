@@ -288,8 +288,8 @@ def mensaje_feedback_puerta_sin_pregunta(puerta: PuertaEscape) -> str:
     from Comun.tienda_escape import puerta_es_tienda
 
     if puerta_es_tienda(puerta):
-        ev = evento_por_id("tienda")
-        return f"{ev.nombre}: {ev.descripcion}"
+        ev_tienda = evento_por_id("tienda")
+        return f"{ev_tienda.nombre}: {ev_tienda.descripcion}"
     ev = evento_sin_pregunta_escape(puerta.modificadores)
     if ev is None:
         return "💤 Avanzas sin preguntas."

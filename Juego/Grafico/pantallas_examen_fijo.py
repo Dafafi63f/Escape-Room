@@ -124,7 +124,7 @@ from Grafico.feedback_partida import (
     solucion_feedback_grafico,
 )
 from Grafico.barra_estado import dibujar_estado_partida_en_barra
-from Grafico.modo_preset import (
+from Grafico.arranque_partida import (
     construir_navegacion_fin_partida,
     iniciar_pantalla_partida,
 )
@@ -1593,4 +1593,3 @@ class ResumenHistoriaPartida(ResumenPartida):
             salas_superadas=salas_superadas,
             n_salas=n_salas,
         )
-

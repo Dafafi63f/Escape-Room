@@ -12,10 +12,13 @@ import random
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from Comun.emojis_partida import EMOJI_AMULETO_PUNTOS, EMOJI_OBJETO_DESCONOCIDO, EMOJI_PURGA_MALDICION
 from Comun.motor_nucleo import EstadoPartida
+
+if TYPE_CHECKING:
+    from Comun.modelos import Pregunta
 
 LETRAS_OPCION = ("A", "B", "C", "D")
 

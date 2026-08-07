@@ -10,7 +10,7 @@ CLI unificada de mantenimiento (banco cerrado: 480 CSV + pool juego 1000).
   python Files/mantenimiento.py auditar-plantillas
   python Files/mantenimiento.py plantillas {comprobar|reclasificar} ...
   python Files/mantenimiento.py duplicados ...
-  python Docs/utilidades_tfg.py [--solo-limpieza] [--dry-run]   (raíz del TFG)
+  python Docs/utilidades_distribucion.py [--solo-limpieza] [--dry-run]
 
 Bancos cerrados (solo revisión manual; sin altas/bajas):
   Preguntas.csv, plantillas.json (960 filas, sin variaciones),
@@ -110,7 +110,7 @@ def cmd_duplicados(args: argparse.Namespace) -> int:
 def cmd_temporales(args: argparse.Namespace) -> int:
     import subprocess
 
-    cmd = [sys.executable, str(ROOT / "Docs" / "utilidades_tfg.py"), "--solo-limpieza"]
+    cmd = [sys.executable, str(ROOT / "Docs" / "utilidades_distribucion.py"), "--solo-limpieza"]
     if args.dry_run:
         cmd.append("--dry-run")
     if args.solo_pycache:

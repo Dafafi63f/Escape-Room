@@ -16,10 +16,11 @@ from Comun.modos_diarios import (
     config_atajo_diario,
     etiqueta_fecha_examen_dia,
 )
-from Comun.presets_historia import PresetHistoria, buscar_preset
+from Comun.presets_historia import PresetHistoria, buscar_preset, cargar_presets_especiales
 from Comun.preferencias_grafico import nombre_jugador_grafico
+from Comun.rutas import resolver_presets
 from Comun.textos_ui import EmojiPar, _p
-from Grafico.modo_preset import (
+from Grafico.arranque_partida import (
     construir_navegacion_fin_partida,
     iniciar_pantalla_partida,
 )
@@ -28,6 +29,8 @@ from Grafico.textos_grafico import (
     BTN_VOLVER_MENU,
     con_emoji,
     etiqueta,
+    etiqueta_campo,
+    subtitulo,
     titulo_pantalla,
 )
 from Grafico.texto import dibujar_texto_centro
@@ -42,12 +45,19 @@ from Grafico.tema import (
     Y_INICIO_TITULO,
     crear_fuentes,
 )
+from Grafico.tooltips_ui import tooltip_modo_especial
 from Grafico.ui import (
     Boton,
+    capturar,
+    dibujar_caja_valor_ciclo,
+    dibujar_panel,
+    dibujar_tooltip,
     dibujar_tooltips_botones,
+    posicionar_botones_fila,
     posicionar_pila_inferior,
     rect_boton_etiqueta,
     rects_botones_apilados,
+    tamano_grupo_botones,
 )
 
 if TYPE_CHECKING:
@@ -278,66 +288,16 @@ class ConfigModosDiarios(Pantalla):
     def titulo_pausa(self) -> str:
         return "Modos diarios"
 
+
+def cargar_catalogo_especiales(perfil=None) -> list[PresetHistoria]:
+    return cargar_presets_especiales(resolver_presets(), perfil=perfil)
+
+
 # --- Modos especiales ---
 
-from collections.abc import Callable
-from typing import TYPE_CHECKING
-
-import pygame
-
-from Comun.config_historia import ConfigPresetHistoria
-from Comun.presets_historia import PresetHistoria
-from Comun.preferencias_grafico import nombre_jugador_grafico
-from Comun.textos_ui import EmojiPar, _p
-from Grafico.modo_especiales import cargar_catalogo_especiales
-from Grafico.modo_preset import (
-    construir_navegacion_fin_partida,
-    iniciar_pantalla_partida,
-)
-from Grafico.pantallas import MenuPrincipal, Pantalla
-from Grafico.textos_grafico import (
-    BTN_VOLVER_MENU,
-    con_emoji,
-    etiqueta,
-    etiqueta_campo,
-    subtitulo,
-    titulo_pantalla,
-)
-from Grafico.tema import (
-    ALTO,
-    ANCHO,
-    COLOR_AVISO,
-    COLOR_FONDO,
-    COLOR_TEXTO,
-    COLOR_TITULO,
-    MARGEN,
-    Y_INICIO_TITULO,
-    crear_fuentes,
-)
-from Grafico.texto import dibujar_texto_centro
-from Grafico.tooltips_ui import tooltip_modo_especial
-from Grafico.ui import (
-    Boton,
-    capturar,
-    dibujar_caja_valor_ciclo,
-    dibujar_panel,
-    dibujar_tooltip,
-    dibujar_tooltips_botones,
-    posicionar_botones_fila,
-    posicionar_pila_inferior,
-    rect_boton_etiqueta,
-    rects_botones_apilados,
-    tamano_grupo_botones,
-)
-
-if TYPE_CHECKING:
-    from Grafico.app import DatosJuego
-
-Y_TITULO = Y_INICIO_TITULO
 Y_SUBTITULO = Y_TITULO + 32
 Y_MODOS_LBL = Y_SUBTITULO + 36
 Y_BOTONES_MODOS = Y_MODOS_LBL + 32
-MARGEN_INF = 22
 
 _EMOJI_RESISTENCIA = _p("💪")
 _EMOJI_ESPECIAL_DEFECTO = _p("⚡")
@@ -535,5 +495,3 @@ def preparar_etiqueta_modo(preset: PresetHistoria) -> str:
     emoji = _emoji_modo_especial(preset.id)
     texto = preset.nombre
     return preparar_texto_ui(con_emoji(texto, emoji, posicion="inicio"))
-
-

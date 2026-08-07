@@ -206,6 +206,7 @@ def segmentos_linea_estado(
     Sin tope (resistencia, libre infinito): ❓ + id. Examen cerrado / finito: 📝 + x/y.
     """
     progreso, numero_pregunta = _normalizar_entrada_progreso(progreso, numero_pregunta)
+    segmentos: list[SegmentoEstado]
     if numero_pregunta is not None:
         segmentos = _segmentos_id_pregunta(
             numero_pregunta,
@@ -213,7 +214,7 @@ def segmentos_linea_estado(
             bloque_filtro_texto=bloque_filtro_texto,
         )
     else:
-        segmentos: list[SegmentoEstado] = []
+        segmentos = []
         if progreso_sala:
             segmentos.append(
                 SegmentoEstado("sala_escape", EMOJI_SALA_ESCAPE, progreso_sala)

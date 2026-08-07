@@ -2,16 +2,17 @@
 
 Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial detallado está en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
 
-**Última actualización:** 2026-06-29
+**Última actualización:** 2026-08-07
 
-## Versión entregable 1.0.0 (pausa de desarrollo)
+## Versión entregable 1.0.0 (TFG cerrado)
 
 - [x] **Juego v1.0.0** jugable de extremo a extremo (ver [`RELEASE_1.0.md`](RELEASE_1.0.md))
+- [x] Continuación personal: **v1.1.0** (juego educativo independiente; ver `Juego/Comun/version.py`)
 - [x] Etiqueta de versión en menú e Info del juego
 - [x] Banco por defecto: 480 revisadas; ampliado opcional y etiquetado
 - [x] 578 tests + `Files/health_check.py`
 - [x] Regenerar zip portable antes de distribuir (`utilidades_tfg.py --solo-zip --forzar-zip`)
-- [ ] PDF memoria y defensa (fuera del código del juego)
+- [x] PDF memoria y presentación de defensa (`Docs/Entrega/`)
 
 *A partir de aquí: ideas futuras; no son requisito para jugar la v1.0.*
 
@@ -26,7 +27,7 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 
 | Área | Hecho | Pendiente |
 |------|-------|-----------|
-| TFG / memoria | Borrador, figuras, CI docs | PDF final, piloto usuarios |
+| TFG / memoria | Memoria, PDF, presentación defensa | Piloto usuarios (opcional) |
 | Banco y datos | 480 + plantillas + pool 1000 | Revisar banco ampliado, Moodle, prerrequisitos |
 | Juego (5 modos) | Libre, historia, resistencia, escape, feedback | Mapas/UI visual, muchas ideas UX |
 | Estadísticas locales | v1 (panel simplificado + JSON) | Gráficos, repaso, botones acción |
@@ -87,15 +88,16 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 - [x] Limpieza de temporales del repo (`--solo-limpieza`)
 - [x] Merge migración «solo pygame» en `main`
 - [x] Marco teórico, hipótesis H1–H3, cumplimiento objetivos en memoria (feedback tutor)
-- [ ] Editar maquetación en Word y exportar **PDF de entrega**
-- [ ] Releer el PDF final completo antes de entregar
-- [ ] Confirmar con el tutor estructura de memoria antes de pulir redacción
+- [x] Editar maquetación en Word y exportar **PDF de entrega**
+- [x] Releer el PDF final completo antes de entregar
+- [x] Confirmar con el tutor estructura de memoria antes de pulir redacción
 - [ ] Apéndice glosario términos MatCAD
 - [ ] Diagrama de arquitectura (Comun / Grafico / Files / Data)
 - [ ] Tabla comparativa Kahoot / Quizlet / Moodle vs MATCAD
 
 ### Defensa y difusión
 
+- [x] Presentación de defensa (`Docs/Entrega/Presentacion_TFG.pptx`)
 - [ ] Vídeo demo (~3 min): menú → libre → escape → informe
 - [ ] Manual del profesor (1 pág.) en `Docs/`
 - [ ] Badge «reproducible» en README (DOI Zenodo opcional)

@@ -1021,10 +1021,10 @@ def generar_examen(
     reparto_equitativo = exigir_balance_completo or not usar_analisis_historico
 
     pool_idx = _indice_pool(preguntas)
-    usadas: set = set()
+    usadas_examen: set = set()
     if preguntas_excluir:
         for pregunta in preguntas_excluir:
-            usadas.add(pregunta_key(pregunta))
+            usadas_examen.add(pregunta_key(pregunta))
 
     if pesos_materia_sesion is not None and not exigir_balance_completo:
         pesos = {
@@ -1038,7 +1038,7 @@ def generar_examen(
             preguntas_por_materia,
             tipos_permitidos,
             pool_idx,
-            usadas,
+            usadas_examen,
             rng_seleccion,
             pregunta_key,
             exigir_balance_completo=exigir_balance_completo,
@@ -1051,7 +1051,7 @@ def generar_examen(
             tipos_permitidos,
             pesos,
             pool_idx,
-            usadas,
+            usadas_examen,
             rng_seleccion,
             pregunta_key,
             perfiles_fallo=perfiles_fallo,

@@ -1001,7 +1001,7 @@ def dibujar_tooltips_botones(
     if not tooltips_habilitados():
         return
     for boton in botones:
-        if boton_muestra_tooltip(boton):
+        if boton_muestra_tooltip(boton) and boton.tooltip:
             dibujar_tooltip(pantalla, fuente, boton.rect, boton.tooltip)
             return
 

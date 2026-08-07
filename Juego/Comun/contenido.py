@@ -380,9 +380,15 @@ def _construir_contenido(
     modo_minimo: bool,
     avisos: tuple[str, ...],
 ) -> ContenidoJuego:
-    from Comun.rutas import configurar_layout_datos_jugador
+    from Comun.rutas import _raiz_paquete, configurar_layout_datos_jugador
 
-    configurar_layout_datos_jugador(plano=(tipo_paquete == "minimo"))
+    # En el repo completo (con Data/Banco/) no forzar layout plano aunque se
+    # cargue un CSV mínimo de fixture: si no, el estado del jugador acaba en
+    # Data/ en lugar de Data/Juego/ y ensucia el health check.
+    if tipo_paquete == "minimo" and not (_raiz_paquete() / "Data" / "Banco").is_dir():
+        configurar_layout_datos_jugador(plano=True)
+    else:
+        configurar_layout_datos_jugador(plano=None)
 
     cabeceras = leer_cabeceras_csv(path_preguntas)
     csv_minimal = es_csv_minimal(cabeceras)
@@ -603,8 +609,7 @@ RAICES_FLUJO_MINIMO: frozenset[str] = frozenset({
     "Grafico.pantallas_modos",
     "Grafico.pantallas_examen_fijo",
     "Grafico.pantallas_resistencia_partida",
-    "Grafico.modo_preset",
-    "Grafico.modo_especiales",
+    "Grafico.arranque_partida",
     "Grafico.modo_historia",
     "Grafico.pantallas_sistema",
     "Comun.modos_diarios",

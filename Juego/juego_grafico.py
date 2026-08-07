@@ -22,8 +22,18 @@ if str(_JUEGO) not in sys.path:
 
 from Comun.contenido import cargar_contenido_juego, construir_datos_juego
 from Comun.persistencia import inicializar_datos_locales_juego
-from Comun.util import configurar_stdio_utf8
 from Grafico.app import AplicacionGrafica
+
+
+def configurar_stdio_utf8() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if not callable(reconfigure):
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (OSError, ValueError, AttributeError):
+            pass
 
 
 def main(argv: list[str] | None = None) -> None:

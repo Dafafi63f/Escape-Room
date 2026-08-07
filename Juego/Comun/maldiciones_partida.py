@@ -44,6 +44,7 @@ from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
     from Comun.escape_room import PuertaEscape
+    from Comun.pity_variedad_resistencia import PityVariedadResistencia
     from Comun.resistencia_motor import MaldicionActiva
 
 PREGUNTA_MIN_MALDICION_DESAFIO_TIEMPO_RESISTENCIA = 120
@@ -197,7 +198,7 @@ def debe_forzar_maldicion_resistencia(
     pity: PityMaldicionesResistencia,
     numero_pregunta: int,
     *,
-    pity_variedad: object | None = None,
+    pity_variedad: PityVariedadResistencia | None = None,
 ) -> bool:
     if numero_pregunta < PREGUNTA_MIN_MALDICION_RESISTENCIA:
         return False
@@ -220,7 +221,7 @@ def probabilidad_activar_maldicion_fallo_resistencia(
     pity: PityMaldicionesResistencia,
     *,
     prob_base: float,
-    pity_variedad: object | None = None,
+    pity_variedad: PityVariedadResistencia | None = None,
 ) -> float:
     if numero_pregunta < PREGUNTA_MIN_MALDICION_RESISTENCIA:
         return 0.0
@@ -243,7 +244,7 @@ def probabilidad_activar_maldicion_desafio_resistencia(
     pity: PityMaldicionesResistencia,
     *,
     prob_base: float,
-    pity_variedad: object | None = None,
+    pity_variedad: PityVariedadResistencia | None = None,
 ) -> float:
     if numero_pregunta < PREGUNTA_MIN_MALDICION_DESAFIO_TIEMPO_RESISTENCIA:
         return 0.0
@@ -381,9 +382,9 @@ def maldicion_tiene_desafio_tiempo(maldicion: _MaldicionConDuracion | None) -> b
 
 
 def desafio_maldicion_activo(maldicion: _MaldicionConDuracion | None) -> DesafioMaldicionTiempo | None:
-    if maldicion_tiene_desafio_tiempo(maldicion):
-        return maldicion.desafio
-    return None
+    if maldicion is None or not maldicion_tiene_desafio_tiempo(maldicion):
+        return None
+    return maldicion.desafio
 
 
 def maldicion_desafio_expirada(maldicion: _MaldicionConDuracion | None) -> bool:

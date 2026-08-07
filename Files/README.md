@@ -63,7 +63,7 @@ python Files/mantenimiento.py duplicados revisar
 | `duplicados revisar` | Informe de duplicados (sin escribir) |
 | `temporales` | Limpieza de `__pycache__` bajo el proyecto |
 
-**Bloqueados** (plantillas cerradas; requieren `TFG_PERMITIR_PLANTILLAS=1`):  
+**Bloqueados** (plantillas cerradas; requieren `TFG_PERMITIR_PLANTILLAS=1`):
 `plantillas reclasificar --aplicar`, `duplicados plantillas`, `duplicados todo --inplace`, etc.
 
 Los scripts de **regeneración del JSON** (equilibrador, catálogos repuesto/internet, pipeline de inyección) se eliminaron en 2026-06: el banco quedó materializado en `plantillas.json`. Para recuperarlos, usar el historial de git con `TFG_PERMITIR_PLANTILLAS=1`.

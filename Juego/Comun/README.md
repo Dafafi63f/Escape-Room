@@ -37,7 +37,6 @@ Distribución:
 | `preferencias_grafico.py` | Preferencias globales gráficas y nombre de jugador |
 | `textos_ui.py` | Etiquetas, emojis y textos compartidos (UI gráfica) |
 | `informe_examen.py` | Informes `.txt` y metadatos al cerrar partida |
-| `util.py` | UTF-8 en stdout/stderr (Windows) y utilidades transversales |
 | `utils_plantillas_core.py` | Claves de contenido y expansión de plantillas (reexportado desde `Files/`) |
 
 ## Módulos — modo historia, resistencia y especiales
@@ -84,7 +83,7 @@ Detalle en [`semillas.py`](semillas.py) y [`modos_diarios.py`](modos_diarios.py)
 
 | Ubicación | Contenido |
 |-----------|-----------|
-| [`Grafico/`](../Grafico/README.md) | Pantallas pygame, widgets, tema, tooltips, [`modo_preset.py`](../Grafico/modo_preset.py) (`construir_navegacion_fin_partida`), [`changelog_juego.py`](../Grafico/changelog_juego.py) |
+| [`Grafico/`](../Grafico/README.md) | Pantallas pygame, widgets, tema, tooltips, [`arranque_partida.py`](../Grafico/arranque_partida.py) (`construir_navegacion_fin_partida`), [`changelog_juego.py`](../Grafico/changelog_juego.py) |
 | [`Files/borrar_temporales.py`](../../Files/borrar_temporales.py) | Limpieza externa del repo (CLI: [`Docs/utilidades_tfg.py`](../../Docs/utilidades_tfg.py)) |
 
 El gráfico elige banco en [`Grafico/pantallas_libre.py`](../Grafico/pantallas_libre.py).

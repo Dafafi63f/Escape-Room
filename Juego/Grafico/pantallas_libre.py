@@ -27,6 +27,7 @@ from Comun.modelos import BancoPreguntas, ETIQUETAS_BANCO_CORTAS, OPCIONES_BANCO
 from Comun.reglas import ContextoPartida, validar_reglas
 from Comun.preferencias_grafico import nombre_jugador_grafico
 from Comun.pool_libre import (
+    cargar_pool_por_banco,
     filtrar_pool,
     opciones_curso_semestre,
     opciones_tematica,
@@ -48,7 +49,6 @@ from Grafico.textos_grafico import (
     subtitulo,
     titulo_pantalla,
 )
-from Grafico.modo_libre import cargar_pool_banco, etiqueta_subfiltro_visible
 from Grafico.pantallas import MenuPrincipal, Pantalla
 from Grafico.tema import (
     ALTO,
@@ -88,6 +88,57 @@ from Grafico.ui import (
 
 if TYPE_CHECKING:
     from Grafico.app import DatosJuego
+
+# Abreviaturas solo cuando el nombre completo no cabe en el botón.
+ETIQUETAS_TEMATICA_CORTA: dict[str, str] = {
+    "Algoritmia i Teoria de Jocs": "Algoritmia i Jocs",
+    "Intel·ligencia Artificial i Aprenentatge Automatic": "IA i Aprenentatge",
+    "Metodes Numerics i Optimitzacio": "Metodes Numerics",
+    "Modelitzacio Fisica i Informacio": "Fisica i Informacio",
+    "Probabilitat i Ciencia de Dades": "Prob. i Dades",
+    "Programacio de Software": "Programacio",
+    "Sistemes i Seguretat Computacional": "Sistemes i Seguretat",
+}
+
+
+def cargar_pool_banco(datos: DatosJuego, banco: BancoPreguntas) -> list[Pregunta]:
+    return cargar_pool_por_banco(
+        banco,
+        preguntas_dataset=datos.preguntas,
+        path_preguntas_csv=datos.path_preguntas_csv,
+        path_plantillas_json=datos.path_plantillas_json,
+        materias_meta=datos.materias_meta,
+    )
+
+
+def _cabe_texto_en_ancho(texto: str, fuente: pygame.font.Font, ancho_max: int) -> bool:
+    etiqueta_txt = preparar_texto_ui(texto)
+    return fuente.size(etiqueta_txt)[0] <= ancho_max
+
+
+def etiqueta_subfiltro_visible(
+    clave: str,
+    modo_filtro: str,
+    *,
+    ancho_boton: int | None = None,
+    fuente: pygame.font.Font | None = None,
+) -> str:
+    if clave == "__todas__":
+        return "Todas"
+    if modo_filtro == "tematica":
+        corto = ETIQUETAS_TEMATICA_CORTA.get(clave, clave)
+        if (
+            corto != clave
+            and ancho_boton is not None
+            and fuente is not None
+        ):
+            ancho_max = BotonMarcable.ancho_etiqueta(ancho_boton)
+            if _cabe_texto_en_ancho(clave, fuente, ancho_max):
+                return clave
+            return corto
+        return clave
+    return clave
+
 
 GAP_PANEL_BTNS = 24
 GAP_BTNS_NAVEGACION = 12
@@ -131,7 +182,7 @@ PRESETS_TIEMPO_PREG = (30, 45, 60, 90, 120, 180, 300)
 PRESETS_TIEMPO_TOTAL = (300, 600, 900, 1200, 1800, 3600)
 
 ETIQUETAS_FILA_PASO1: dict[str, str] = {
-    "banco": "Banco de datos",
+    "banco": "Dataset",
     "n_preguntas": "Preguntas en la partida",
     "vidas": "Vidas",
     "tiempo_modo": "Límite de tiempo",

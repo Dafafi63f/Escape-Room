@@ -8,17 +8,14 @@ Versión gráfica del juego. Reutiliza [`Comun/`](../Comun/README.md) (datos, re
 | [`app.py`](app.py) | Bucle principal, pausa global, barra fija (pausa · diarios · info · feedback · opciones) |
 | [`pantallas.py`](pantallas.py) | Núcleo: clase `Pantalla`, menú principal, partida libre, resumen |
 | [`pantallas_inicio.py`](pantallas_inicio.py) | Bienvenida y nombre del jugador |
-| [`pantallas_libre.py`](pantallas_libre.py) | Wizard modo libre (paso 1: reglas; paso 2: filtros) |
+| [`pantallas_libre.py`](pantallas_libre.py) | Wizard modo libre (paso 1: reglas; paso 2: filtros) y helpers de etiquetas |
 | [`pantallas_historia.py`](pantallas_historia.py) | Carrusel modo historia (solo paquete completo) |
 | [`pantallas_examen_fijo.py`](pantallas_examen_fijo.py) | Examen fijo: opciones, partida y resumen |
 | [`pantallas_resistencia_partida.py`](pantallas_resistencia_partida.py) | Partida y resumen del modo resistencia |
 | [`pantallas_modos.py`](pantallas_modos.py) | Modos diarios, modos especiales y escape room |
-| [`pantallas_sistema.py`](pantallas_sistema.py) | Info del juego (ℹ️) y formulario de feedback (📣) |
-| [`modo_libre.py`](modo_libre.py) | Utilidades del modo libre gráfico |
+| [`pantallas_sistema.py`](pantallas_sistema.py) | Info del juego (ℹ️), estadísticas y formulario de feedback (📣) |
 | [`modo_historia.py`](modo_historia.py) | Catálogo y preparación de exámenes del carrusel historia |
-| [`modo_preset.py`](modo_preset.py) | Arranque y navegación fin de partida por preset |
-| [`modo_especiales.py`](modo_especiales.py) | Catálogo de modos especiales (resistencia, escape) |
-| [`arranque_partida.py`](arranque_partida.py) | Arranque por preset (historia, resistencia, escape room) |
+| [`arranque_partida.py`](arranque_partida.py) | Arranque por preset y navegación al fin de partida |
 | [`ui.py`](ui.py) | Botones, campos de texto, tooltips, texto multilínea |
 | [`tooltips_ui.py`](tooltips_ui.py) | Textos de ayuda al pasar el ratón |
 | [`texto.py`](texto.py) | Renderizado mixto (texto, matemáticas, emojis) |
@@ -37,7 +34,7 @@ Todos los módulos de pantalla usan el prefijo **`pantallas_`** más un área (`
 
 ## Estado
 
-La interfaz gráfica es la única interfaz de juego: dominio en [`Comun/`](../Comun/README.md), UI en `Grafico/` y lanzador [`juego_grafico.py`](../juego_grafico.py) (**v1.0.0**).
+La interfaz gráfica es la única interfaz de juego: dominio en [`Comun/`](../Comun/README.md), UI en `Grafico/` y lanzador [`juego_grafico.py`](../juego_grafico.py) (**v1.1.0**).
 
 ## Principio de controles
 

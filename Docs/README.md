@@ -9,7 +9,7 @@ Todo lo relacionado con la memoria, el seguimiento del proyecto y los artefactos
 | [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md) | Estado del TFG, feedback del tutor, historial técnico |
 | [`CHANGELOG_JUEGO.md`](CHANGELOG_JUEGO.md) | Novedades visibles para quien juega (hub Info del juego gráfico) |
 | [`CHECKLIST.md`](CHECKLIST.md) | Pendientes e ideas futuras |
-| [`RELEASE_1.0.md`](RELEASE_1.0.md) | Alcance de la versión jugable 1.0.0 |
+| [`RELEASE_1.0.md`](RELEASE_1.0.md) | Alcance de la entrega TFG (v1.0.0); continuación personal en v1.1.0+ |
 | [`../Juego/COMO_JUGAR.md`](../Juego/COMO_JUGAR.md) | Requisitos para jugar (Python, zips, `Jugar.bat`) — ver también [`Juego/`](../Juego/README.md) |
 | [`utilidades_tfg.py`](utilidades_tfg.py) | Memoria Word, limpieza y zips de distribución (incremental: reutiliza si no hay cambios) |
 | [`generar_figuras_memoria.py`](generar_figuras_memoria.py) | Regenera PNG de datos (Monte Carlo, pity, catálogo Inka) |

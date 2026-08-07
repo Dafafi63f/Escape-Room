@@ -1,6 +1,6 @@
 # Juego — cuestionario MATCAD
 
-Interfaz gráfica del juego (pygame) sobre el dominio compartido en [`Comun/`](Comun/README.md). **Versión entregable:** `v1.0.0` (ver [`Docs/RELEASE_1.0.md`](../Docs/RELEASE_1.0.md)).
+Interfaz gráfica del juego (pygame) sobre el dominio compartido en [`Comun/`](Comun/README.md). **Versión actual:** `v1.1.0` (juego educativo / proyecto personal; la entrega TFG fue la `v1.0.0`, ver [`Docs/RELEASE_1.0.md`](../Docs/RELEASE_1.0.md)).
 
 **Requisitos para jugar** (Python, pip, zips, PCs del centro): [`COMO_JUGAR.md`](COMO_JUGAR.md).
 
@@ -20,8 +20,8 @@ Interfaz gráfica del juego (pygame) sobre el dominio compartido en [`Comun/`](C
 | En `Distribucion/` | Descripción |
 |--------------------|-------------|
 | [`Jugar.bat`](Distribucion/Jugar.bat) | Atajo Windows: lanza `python juego_grafico.py` |
-| [`MATCAD_juego_portable.zip`](Distribucion/MATCAD_juego_portable.zip) | Paquete completo (`python Docs/utilidades_tfg.py --solo-zip`) |
-| [`MATCAD_juego_minimal.zip`](Distribucion/MATCAD_juego_minimal.zip) | Paquete mínimo (`python Docs/utilidades_tfg.py --solo-zip`) |
+| [`MATCAD_juego_portable.zip`](Distribucion/MATCAD_juego_portable.zip) | Paquete completo (`python Docs/utilidades_distribucion.py --solo-zip`) |
+| [`MATCAD_juego_minimal.zip`](Distribucion/MATCAD_juego_minimal.zip) | Paquete mínimo (`python Docs/utilidades_distribucion.py --solo-zip`) |
 
 | En `Scripts/` | Descripción |
 |---------------|-------------|

@@ -197,7 +197,7 @@ def main() -> int:
         margen_materia=args.margen,
     )
 
-    por_par = {}
+    por_par: dict[tuple[str, str], int] = {}
     for h in hallazgos:
         par = (h["materia_actual"], h["materia_destino"])
         por_par[par] = por_par.get(par, 0) + 1

@@ -2059,19 +2059,15 @@ class TestBarraResistenciaSinSpoiler(unittest.TestCase):
             partida.fase = fase
             self.assertIsNone(partida._texto_desafio_bloque_barra())
             self.assertEqual(partida._texto_extra_barra(), "")
-            self.assertEqual(partida._kwargs_bloque_filtro_barra(), {})
+            self.assertIsNone(partida._texto_bloque_filtro_barra())
 
         partida.fase = "feedback"
         self.assertIsNone(partida._texto_desafio_bloque_barra())
-        self.assertEqual(
-            partida._kwargs_bloque_filtro_barra()["bloque_filtro_texto"],
-            "1/3",
-        )
+        self.assertEqual(partida._texto_bloque_filtro_barra(), "1/3")
 
         partida.fase = "pregunta"
         self.assertIsNotNone(partida._texto_desafio_bloque_barra())
-        bloque = partida._kwargs_bloque_filtro_barra()
-        self.assertEqual(bloque["bloque_filtro_texto"], "1/3")
+        self.assertEqual(partida._texto_bloque_filtro_barra(), "1/3")
 
     def test_bloque_no_consume_al_cargar_primera_pregunta(self) -> None:
         """El contador 1/x debe mostrarse en la 1.ª pregunta del bloque (no al cargarla)."""

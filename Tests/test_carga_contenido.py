@@ -121,7 +121,7 @@ class TestCargaContenidoPortable(unittest.TestCase):
     def test_especiales_portable_muestra_escape_inactivo(self) -> None:
         from Comun.presets_historia import cargar_presets_especiales
         from Comun.rutas import resolver_presets
-        from Grafico.modo_especiales import cargar_catalogo_especiales
+        from Grafico.pantallas_modos import cargar_catalogo_especiales
         from Grafico.pantallas_modos import ConfigModosEspeciales
 
         contenido = cargar_contenido_juego(path_csv=_FIXTURE)
@@ -428,7 +428,7 @@ class TestCargaContenidoPortable(unittest.TestCase):
         self.assertEqual({p["id"] for p in presets["presets"]}, {"examen_fijo"})
 
     def test_zip_portable_iterador_excluye_scripts_y_distribucion(self) -> None:
-        from Docs.utilidades_tfg import _iterar_ficheros_zip_portable
+        from Docs.utilidades_distribucion import _iterar_ficheros_zip_portable
 
         archivos = {arc for _, arc in _iterar_ficheros_zip_portable()}
         self.assertIn("Juego/juego_grafico.py", archivos)
@@ -441,11 +441,11 @@ class TestCargaContenidoPortable(unittest.TestCase):
         """El zip completo incluye Data/ y Juego/ jugable (sin Scripts/ ni Distribucion/)."""
         import zipfile
 
-        from Docs.utilidades_tfg import _iterar_ficheros_zip_portable
+        from Docs.utilidades_distribucion import _iterar_ficheros_zip_portable
 
         zip_path = Path(__file__).resolve().parents[1] / "Juego" / "Distribucion" / "MATCAD_juego_portable.zip"
         if not zip_path.is_file():
-            self.skipTest(f"No existe {zip_path}; ejecuta utilidades_tfg.py --solo-zip")
+            self.skipTest(f"No existe {zip_path}; ejecuta utilidades_distribucion.py --solo-zip")
 
         esperados = {arc for _, arc in _iterar_ficheros_zip_portable()}
         esperados |= {"Jugar.bat", "LEEME.txt", "COMO_JUGAR.md", "CHANGELOG_JUEGO.md"}
@@ -493,14 +493,14 @@ class TestCargaContenidoPortable(unittest.TestCase):
         self.assertEqual(problemas, [], "\n".join(problemas))
 
     def test_zip_portable_excluye_data_juego_y_privado(self) -> None:
-        from Docs.utilidades_tfg import _iterar_ficheros_zip_portable
+        from Docs.utilidades_distribucion import _iterar_ficheros_zip_portable
 
         archivos = {arc for _, arc in _iterar_ficheros_zip_portable()}
         self.assertFalse(any(a.startswith("Data/Juego/") for a in archivos))
         self.assertFalse(any(a.startswith("Data/Privado/") for a in archivos))
 
     def test_zip_portable_excluye_runtime_en_data(self) -> None:
-        from Docs.utilidades_tfg import _iterar_ficheros_zip_portable
+        from Docs.utilidades_distribucion import _iterar_ficheros_zip_portable
 
         archivos = {arc for _, arc in _iterar_ficheros_zip_portable()}
         prohibidos = (

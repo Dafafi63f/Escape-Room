@@ -26,7 +26,7 @@ from Grafico.textos_grafico import (
     titulo_pantalla,
 )
 from Grafico.modo_historia import cargar_catalogo_historia
-from Grafico.modo_preset import (
+from Grafico.arranque_partida import (
     construir_navegacion_fin_partida,
     iniciar_pantalla_partida,
 )

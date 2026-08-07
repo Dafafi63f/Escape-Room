@@ -42,7 +42,9 @@ class ReglasPartida:
 
     def vidas_iniciales(self) -> int:
         """Vidas al empezar la partida (restantes = máximo en el arranque)."""
-        return self.vidas if self.tiene_vidas() else 3
+        if self.vidas is not None and self.vidas > 0:
+            return self.vidas
+        return 3
 
     def tiene_tiempo(self) -> bool:
         return (self.tiempo_por_pregunta_seg or 0) > 0 or (self.tiempo_total_seg or 0) > 0

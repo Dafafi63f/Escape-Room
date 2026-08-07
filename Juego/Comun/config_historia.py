@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from Comun.reglas import (
@@ -537,13 +538,12 @@ def curso_semestre_desde_valores(valores: dict[str, Any]) -> tuple[str | None, s
     """Resuelve filtros curso/semestre (incl. opción ``periodo`` tipo 3-2)."""
     periodo = valores.get("periodo")
     if periodo:
-        curso, semestre = parse_periodo(str(periodo))
-        return curso, semestre
-    curso = valores.get("curso")
-    semestre = valores.get("semestre")
+        return parse_periodo(str(periodo))
+    curso_v = valores.get("curso")
+    semestre_v = valores.get("semestre")
     return (
-        str(curso) if curso else None,
-        str(semestre) if semestre else None,
+        str(curso_v) if curso_v else None,
+        str(semestre_v) if semestre_v else None,
     )
 
 

@@ -214,7 +214,7 @@ def tooltip_modo_especial(preset_id: str, perfil=None) -> str | None:
     if perfil is not None and perfil.modo_minimo and preset_id == "resistencia":
         return (
             "Partida infinita con eventos aleatorios. Sin escalada por dificultad "
-            "ni banco ampliado."
+            "ni dataset UAB (Completo)."
         )
     return TOOLTIP_MODOS_ESPECIALES.get(preset_id)
 

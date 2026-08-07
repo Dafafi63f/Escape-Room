@@ -1,154 +1,46 @@
-# Cuestionario MATCAD — TFG
+# MATCAD — Escape Room (proyecto personal)
 
-**Título:** Diseño y desarrollo de un juego interactivo educativo basado en contenidos del grado en Matemática Computacional y Análisis de Datos.
+Juego educativo de cuestionarios MatCAD en **pygame** (modos libre, historia, resistencia, escape room y feedback).
 
-**Alumno:** Daniel Fageda Figueredo · **NIU:** 1601846 · **Tutor:** Víctor Navas Portella
+**Versión actual:** `v1.1.0` — juego educativo · proyecto personal  
+**Origen académico:** la entrega TFG v1.0.0 queda archivada en la carpeta hermana `Treball Final de Grau`.
 
-Sistema de cuestionarios académicos con banco de **480 preguntas**, juego en **pygame** (modos libre, historia, resistencia, escape room y feedback), y herramientas de mantenimiento del dataset. La idea original del escape room se inspira en las aventuras point-and-click de [Inka Games](https://www.inkagames.com/); el entregable las adapta al plan MatCAD (véase §1.3 de la memoria).
-
-- **Documentación y entrega del TFG:** [`Docs/`](Docs/README.md) (`Entrega/`, `Figuras/`, changelogs)
+- **Cómo jugar:** [`Juego/COMO_JUGAR.md`](Juego/COMO_JUGAR.md) · lanzador [`Juego/juego_grafico.py`](Juego/juego_grafico.py)
 - **Repositorio:** https://github.com/Dafafi63f/Escape-Room.git
-
-```bash
-git clone https://github.com/Dafafi63f/Escape-Room.git
-```
-
-No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
-
-## Documentación del proyecto
-
-| Tema | Dónde |
-|------|-------|
-| Esquema del banco, materias, diagramas curriculares | [`Data/README.md`](Data/README.md) |
-| Juego, modos y controles | [`Juego/README.md`](Juego/README.md) |
-| Lógica interna (bancos, puntuación, filtros) | [`Juego/Comun/README.md`](Juego/Comun/README.md) · UI gráfica: [`Juego/Grafico/README.md`](Juego/Grafico/README.md) |
-| Scripts de mantenimiento y balanceo | [`Files/README.md`](Files/README.md) |
-| Pruebas unitarias | [`Tests/README.md`](Tests/README.md) |
-| Banco de preguntas (480 ítems) | [`Data/README.md`](Data/README.md) |
-| Documentación y entrega del TFG | [`Docs/README.md`](Docs/README.md) |
-
-## Estructura
-
-| Carpeta / fichero | Rol |
-|------------------|-----|
-| [`Juego/`](Juego/README.md) | Lanzador, [`Comun/`](Juego/Comun/README.md), [`Grafico/`](Juego/Grafico/README.md) |
-| [`Data/`](Data/README.md) | CSV, plantillas, histórico de qualificacions |
-| [`Files/`](Files/README.md) | Mantenimiento del banco (no necesario para jugar) |
-| [`Docs/`](Docs/README.md) | Changelogs, `Entrega/` (memoria md/tex/docx), `Figuras/` |
-| [`Tests/`](Tests/README.md) | Pruebas unitarias del juego (**578** tests) y CI |
-| [`Docs/utilidades_tfg.py`](Docs/utilidades_tfg.py) | Regeneración (memoria) + limpieza final + zips de distribución |
-| [`Juego/requirements.txt`](Juego/requirements.txt) | Solo jugar (pygame-ce) |
-| [`requirements.txt`](requirements.txt) | Desarrollo completo (incluye el del juego) |
-| [`Juego/COMO_JUGAR.md`](Juego/COMO_JUGAR.md) | Requisitos Python, zips y `Jugar.bat` |
-
-## Memoria — exportar Word
-
-El borrador editable está en [`Docs/Entrega/Memoria_TFG.md`](Docs/Entrega/Memoria_TFG.md). LaTeX y Word en el mismo directorio [`Docs/Entrega/`](Docs/README.md); figuras en [`Docs/Figuras/`](Docs/Figuras/README.md):
-
-```bash
-python Docs/generar_figuras_memoria.py
-python Docs/utilidades_tfg.py                 # memoria → limpieza final → zip
-```
-
-Genera los `.docx` en `Docs/Entrega/` (Pandoc). El PDF de entrega lo exportas desde Word tras editar. Detalle en [`Docs/README.md`](Docs/README.md).
-
-Solo una fase: `--solo-memoria`, `--solo-limpieza` o `--solo-zip`.
-
-## Jugar
-
-Guía completa (Python, pip, zips, `Jugar.bat`): [`Juego/COMO_JUGAR.md`](Juego/COMO_JUGAR.md).
 
 ```bash
 pip install -r Juego/requirements.txt
 python Juego/juego_grafico.py
 ```
 
-En Windows también: doble clic en [`Juego/Distribucion/Jugar.bat`](Juego/Distribucion/Jugar.bat). Diagnóstico:
+No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File Juego\Scripts\comprobar_entorno.ps1
-```
+## Documentación
 
-Instalar Python + pygame si hace falta (usa `winget` cuando esté disponible):
+| Tema | Dónde |
+|------|-------|
+| Banco y datos | [`Data/README.md`](Data/README.md) |
+| Juego y modos | [`Juego/README.md`](Juego/README.md) |
+| Dominio / UI | [`Juego/Comun/README.md`](Juego/Comun/README.md) · [`Juego/Grafico/README.md`](Juego/Grafico/README.md) |
+| Mantenimiento del banco | [`Files/README.md`](Files/README.md) |
+| Tests | [`Tests/README.md`](Tests/README.md) |
+| Novedades del jugador | [`Docs/CHANGELOG_JUEGO.md`](Docs/CHANGELOG_JUEGO.md) |
+| Empaquetado zip | [`Docs/utilidades_distribucion.py`](Docs/utilidades_distribucion.py) |
 
-```powershell
-powershell -ExecutionPolicy Bypass -File Juego\Scripts\instalar_entorno.ps1
-```
+## Estructura
 
-### Zip portable (`Juego/Distribucion/MATCAD_juego_portable.zip`)
+| Carpeta | Rol |
+|---------|-----|
+| `Juego/` | Código del juego y zips en `Distribucion/` |
+| `Data/` | Preguntas, listado, plantillas, histórico |
+| `Files/` | Scripts de mantenimiento (no hace falta para jugar) |
+| `Docs/` | Changelog del juego y utilidades de distribución |
+| `Tests/` | Pruebas unitarias y CI |
 
-No incluye Python ni scripts `.ps1`. Tras descomprimir, lee `Juego/LEEME.txt`, instala Python y usa `Jugar.bat`.
-
-```bash
-python Docs/utilidades_tfg.py --solo-zip
-python Juego/Scripts/crear_zip_minimal.py     # zip mínimo
-```
-
-### Datos
-
-Ver [`Data/README.md`](Data/README.md) y [`Data/Plantillas/README.md`](Data/Plantillas/README.md).
-
-- **Juego completo** (autor): `MATCAD_juego_portable.zip` o repo con `Data/` completo.
-- **Datos propios** (usuario): solo CSV mínimo — `MATCAD_juego_minimal.zip` o `--csv` (versión intermedia futura). 
-
-Configuración privada del creador (SMTP, GitHub, etc.): `Data/Privado/creador_privado.json` (local; plantilla en [`Juego/Comun/feedback.py`](Juego/Comun/feedback.py)).
-
-## Pruebas
+## Comandos útiles
 
 ```bash
-python -m unittest discover -s Tests -t . -v
+python -m unittest discover -s Tests -t .
+python Files/health_check.py --solo-datos
+python Docs/utilidades_distribucion.py --solo-zip --forzar-zip
 ```
-
-Ver [`Tests/README.md`](Tests/README.md).
-
-## CI
-
-GitHub Actions:
-
-| Workflow | Jobs |
-|----------|------|
-| **Tests** | Pre-Commits, Unit Tests, Integration Tests, MyPy, tests-summary (Python 3.14) |
-| **PR-Agent** | Revisión automática de PR (requiere `OPENAI_KEY`) |
-| **SonarCloud** | Análisis de calidad (requiere proyecto en [SonarCloud](https://sonarcloud.io) y secreto `SONAR_TOKEN`) |
-
-Ficheros: `.github/workflows/tests.yml`, `pr_agent.yml`, `sonarcloud.yml`, `.pre-commit-config.yaml`, `mypy.ini`, `sonar-project.properties`, `.python-version`.
-
-**SonarCloud (una vez):** inicia sesión en SonarCloud con GitHub → importa `Escape-Room` → copia `sonar.organization` y `sonar.projectKey` a `sonar-project.properties` si difieren → genera un token de organización → añádelo en GitHub como `SONAR_TOKEN`. Sin ese secreto, el job se omite y no bloquea la PR.
-
-```bash
-pre-commit run --all-files
-mypy Juego/Comun Juego/Grafico Files
-```
-
-## Dependencias
-
-| Fichero | Para quién |
-|---------|------------|
-| [`Juego/requirements.txt`](Juego/requirements.txt) | **Jugar** (solo pygame-ce) |
-| [`requirements.txt`](requirements.txt) | Desarrollo, tests y memoria |
-
-Python **3.10+** y `pip`. Pandoc (binario externo) solo para exportar la memoria Word.
-
-## Utilidades locales
-
-Por defecto **regenera la memoria** y **limpia al final**:
-
-```bash
-python Docs/utilidades_tfg.py
-python Docs/utilidades_tfg.py --solo-memoria
-python Docs/utilidades_tfg.py --solo-limpieza
-python Docs/utilidades_tfg.py --dry-run            # listar limpieza sin borrar; luego exporta
-```
-
-Limpieza acotada:
-
-```bash
-python Docs/utilidades_tfg.py --solo-limpieza --solo-pycache
-python Docs/utilidades_tfg.py --solo-limpieza --solo-juego
-python Docs/utilidades_tfg.py --solo-limpieza --solo-txt
-python Docs/utilidades_tfg.py --solo-limpieza --solo-entrega
-```
-
-La limpieza final recorre el proyecto (`__pycache__`, runtime en `Data/Juego/`, intermedios de `Docs/Entrega/`, restos de build en `Juego/`).
-
-Desde el juego: **borrar** `.txt`; **vaciar** preferencias y estadísticas. `Data/Juego/` solo guarda datos de partida.

@@ -11,6 +11,7 @@ import pygame
 
 from Grafico.changelog_juego import cargar_changelog_juego_grafico
 from Comun.feedback import texto_bloque_contacto_alternativo
+from Comun.estadisticas_jugador import formatear_panel_estadisticas
 from Comun.version import texto_version_completo
 from Grafico.pantallas import Pantalla
 from Grafico.tema import (
@@ -236,6 +237,17 @@ class PantallaInfoTexto(Pantalla):
         dibujar_tooltips_botones(superficie, self.fuentes["pequena"], [self.boton_volver])
 
 
+class PantallaEstadisticasJugador(PantallaInfoTexto):
+    """Resumen de evolución, récords y materias débiles."""
+
+    def __init__(self, volver_a: Callable[[], None], *, perfil=None) -> None:
+        super().__init__(
+            "Mis estadísticas",
+            formatear_panel_estadisticas(perfil),
+            volver_a,
+        )
+
+
 class PantallaInfoHub(Pantalla):
     """Menú unificado: estadísticas, contacto y changelog."""
 
@@ -357,8 +369,6 @@ class PantallaInfoHub(Pantalla):
 
     def _al_pulsar(self, seccion_id: str) -> None:
         if seccion_id == "estadisticas":
-            from Grafico.pantallas_estadisticas import PantallaEstadisticasJugador
-
             self._navegar(PantallaEstadisticasJugador(self._volver_al_hub, perfil=self._perfil))
             return
         if seccion_id == "changelog_juego":

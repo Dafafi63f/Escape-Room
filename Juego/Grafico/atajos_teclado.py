@@ -115,9 +115,10 @@ def pulsar_primer_boton(pantalla: object, *nombres: str) -> bool:
 
 
 def pantalla_en_partida_activa(pantalla: object) -> bool:
-    if getattr(pantalla, "en_partida_activa", None):
+    metodo = getattr(pantalla, "en_partida_activa", None)
+    if callable(metodo):
         try:
-            return bool(pantalla.en_partida_activa())
+            return bool(metodo())
         except TypeError:
             pass
     return getattr(pantalla, "fase", None) is not None

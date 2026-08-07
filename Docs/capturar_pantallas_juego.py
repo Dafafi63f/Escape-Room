@@ -37,6 +37,8 @@ ESCAPE_REF_COLOR_SEPARADOR = (200, 210, 225)
 
 CAPTURAS_SALIDA = (
     "tfg_menu_principal.png",
+    "tfg_historia_carrusel.png",
+    "tfg_resistencia_partida.png",
     "tfg_escape_referencia.png",
     "tfg_escape_sala_puertas.png",
     "tfg_escape_pregunta.png",
@@ -56,7 +58,9 @@ _ENTRADAS_CODIGO_CAPTURAS = (
     _JUEGO / "Grafico" / "pantallas_modos.py",
     _JUEGO / "Grafico" / "pantallas.py",
     _JUEGO / "Grafico" / "pantallas_escape.py",
+    _JUEGO / "Grafico" / "pantallas_historia.py",
     _JUEGO / "Grafico" / "pantallas_resistencia_partida.py",
+    _JUEGO / "Grafico" / "arranque_partida.py",
     _JUEGO / "Grafico" / "tema.py",
 )
 
@@ -79,20 +83,9 @@ def _init_pygame() -> None:
 
 
 def _crear_datos_juego():
-    from Comun.datos import cargar_materias, cargar_preguntas
-    from Comun.rutas import PATH_MATERIAS, PATH_PREGUNTAS, resolver_plantillas
-    from Grafico.app import DatosJuego
+    from Comun.contenido import cargar_contenido_juego, construir_datos_juego
 
-    materias_meta = cargar_materias(PATH_MATERIAS)
-    preguntas = cargar_preguntas(PATH_PREGUNTAS, materias_meta)
-    return DatosJuego(
-        num_preguntas=len(preguntas),
-        num_materias=len(materias_meta),
-        preguntas=preguntas,
-        materias_meta=materias_meta,
-        path_preguntas_csv=PATH_PREGUNTAS,
-        path_plantillas_json=resolver_plantillas(),
-    )
+    return construir_datos_juego(cargar_contenido_juego())
 
 
 def _superficie_pantalla_como_app(pantalla):
@@ -159,6 +152,39 @@ def _crear_menu_principal():
 
     datos = _crear_datos_juego()
     return MenuPrincipal(datos, lambda _p: None, lambda: None)
+
+
+def _crear_historia_carrusel():
+    from Grafico.pantallas_historia import ConfigModoHistoria
+
+    datos = _crear_datos_juego()
+    if not datos.perfil.modo_historia_disponible:
+        raise RuntimeError("El modo historia no está disponible en este paquete de datos.")
+    return ConfigModoHistoria(datos, lambda _p: None, lambda: None, indice_inicial=2)
+
+
+def _crear_partida_resistencia(*, semilla: int = SEMILLA_CAPTURA):
+    from Comun.config_historia import ConfigPresetHistoria
+    from Comun.presets_historia import buscar_preset
+    from Grafico.arranque_partida import iniciar_pantalla_preset
+
+    datos = _crear_datos_juego()
+    if not datos.perfil.modo_especial_disponible("resistencia"):
+        raise RuntimeError("El modo resistencia no está disponible en este paquete de datos.")
+    preset = buscar_preset("resistencia")
+    config = ConfigPresetHistoria()
+    with patch(
+        "Comun.resistencia_motor.semilla_partida_aleatoria",
+        return_value=semilla,
+    ):
+        return iniciar_pantalla_preset(
+            datos,
+            preset,
+            config,
+            "Captura memoria",
+            lambda _p: None,
+            lambda: None,
+        )
 
 
 def _crear_partida_escape(*, semilla: int = SEMILLA_CAPTURA):
@@ -266,6 +292,20 @@ def generar_capturas_juego(
         )
     )
 
+    rutas.append(
+        _guardar_pantalla_como_app(
+            _crear_historia_carrusel(),
+            destino_dir / "tfg_historia_carrusel.png",
+        )
+    )
+
+    rutas.append(
+        _guardar_pantalla_como_app(
+            _crear_partida_resistencia(semilla=semilla),
+            destino_dir / "tfg_resistencia_partida.png",
+        )
+    )
+
     with patch("Comun.escape_room.semilla_partida_escape", return_value=semilla):
         partida_puertas = _crear_partida_escape(semilla=semilla)
         superficie_puertas = _superficie_pantalla_como_app(partida_puertas)
@@ -339,7 +379,7 @@ def main(argv: list[str] | None = None) -> int:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Captura pantallas del juego pygame (menús + escape room)."
+        description="Captura pantallas del juego pygame (menú, historia, resistencia, escape)."
     )
     parser.add_argument(
         "--forzar",

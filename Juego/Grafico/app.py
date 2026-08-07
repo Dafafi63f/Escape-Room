@@ -485,7 +485,7 @@ class AplicacionGrafica:
     def _en_flujo_info(self) -> bool:
         if self._pantalla_antes_info is None:
             return False
-        from Grafico.pantallas_estadisticas import PantallaEstadisticasJugador
+        from Grafico.pantallas_sistema import PantallaEstadisticasJugador
         from Grafico.pantallas_sistema import PantallaInfoHub, PantallaInfoTexto
 
         return isinstance(

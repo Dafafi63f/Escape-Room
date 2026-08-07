@@ -132,7 +132,7 @@ class TestRutasPaquete(unittest.TestCase):
             self.assertEqual(carpeta.resolve(), (raiz / "Data").resolve())
             self.assertEqual(prefs.resolve(), (raiz / "Data" / "preferencias_grafico.json").resolve())
             self.assertEqual(rutas.etiqueta_dir_datos_jugador(), "Data")
-            rutas.configurar_layout_datos_jugador(plano=False)
+            rutas.configurar_layout_datos_jugador(plano=None)
 
 
 if __name__ == "__main__":

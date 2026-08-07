@@ -214,6 +214,8 @@ def _slides_data() -> list[dict]:
         },
         {
             "titulo": "Modo historia (validación H3)",
+            "layout": "columna",
+            "frac_imagen": _FRAC_IMAGEN_GRANDE,
             "bullets": [
                 "8 818 registros de calificaciones MatCAD.",
                 "Índice de dificultad por materia.",
@@ -221,21 +223,25 @@ def _slides_data() -> list[dict]:
                 "Examen dirigido tras fallos en la sesión.",
                 "Examen del día: 24 preguntas compartidas (semilla de fecha).",
             ],
+            "imagen": "tfg_historia_carrusel.png",
             "notas": (
+                "Carrusel de presets con prioridad histórica. "
                 "Ejemplo materias exigentes: Càlcul DV, Probabilitat, Anàlisi Complexa."
             ),
         },
         {
             "titulo": "Gamificación: resistencia y escape",
-            "layout": "columna",
-            "frac_imagen": _FRAC_IMAGEN_GRANDE,
+            "layout": "imagenes_lado",
             "bullets": [
                 "Resistencia: escalada, maldiciones, power-ups.",
                 "Escape: 5–50 salas, economía, jefe final.",
                 "Inventario compartido entre modos arcade.",
-                "Estadísticas locales y récords por modo.",
             ],
-            "imagen": "tfg_escape_tienda.png",
+            "imagenes": ["tfg_resistencia_partida.png", "tfg_escape_tienda.png"],
+            "pies_imagen": [
+                "Modo resistencia — partida en curso",
+                "Escape room — tienda entre salas",
+            ],
             "notas": "Mecánicas inspiradas en Inka; contenido siempre del banco MatCAD.",
         },
         {
@@ -255,16 +261,22 @@ def _slides_data() -> list[dict]:
         },
         {
             "titulo": "Simulación Monte Carlo",
-            "layout": "columna",
-            "frac_imagen": _FRAC_IMAGEN_GRANDE,
+            "layout": "imagenes_lado",
             "bullets": [
                 "Respuestas al azar (p = 1/4 por ítem).",
                 "Nota media ≈ 2,5/10 en examen de 20 preguntas.",
                 "Fracción de aciertos ≈ 25 % (50 000 réplicas).",
                 "Aprobar por azar: estadísticamente inviable.",
             ],
-            "imagen": "monte_carlo_histograma_notas.png",
-            "notas": "Valida el motor de corrección; convergencia en memoria §5.7.",
+            "imagenes": [
+                "monte_carlo_histograma_notas.png",
+                "monte_carlo_convergencia.png",
+            ],
+            "pies_imagen": [
+                "Histograma de notas",
+                "Convergencia de la media",
+            ],
+            "notas": "Valida el motor de corrección; detalle en memoria §5.7.",
         },
         {
             "titulo": "Sistema pity (equidad en partidas largas)",
@@ -281,9 +293,12 @@ def _slides_data() -> list[dict]:
                 "Racha p95: 4 salas",
                 "Motivación sostenida",
             ],
-            "imagen": "pity_comparacion_descanso.png",
+            "imagenes": [
+                "pity_comparacion_descanso.png",
+                "pity_distribucion_primer_descanso.png",
+            ],
             "layout_extra": "imagen_pie",
-            "frac_imagen_pie": 0.68,
+            "frac_imagen_pie": 0.62,
             "notas": "10 000 réplicas · 30 salas · simulacion_pity.py (memoria §5.8).",
         },
         {
@@ -654,9 +669,19 @@ def _slide_dos_columnas(slide, data: dict) -> None:
         _marco(body.text_frame)
         _bullets(body.text_frame, data.get(key, []), size=12)
 
-    if extra_img and (img := data.get("imagen")):
-        top = _TOP_CUERPO + h_cols + 0.06
-        _img(slide, img, _MARGEN, top, _ANCHO - 2 * _MARGEN, _FONDO_CUERPO - top)
+    if extra_img:
+        nombres = data.get("imagenes") or (
+            [data["imagen"]] if data.get("imagen") else []
+        )
+        if nombres:
+            top = _TOP_CUERPO + h_cols + 0.06
+            h_pie = _FONDO_CUERPO - top
+            gap = 0.12
+            w_each = (_ANCHO - 2 * _MARGEN - gap * (len(nombres) - 1)) / len(nombres)
+            x = _MARGEN
+            for nombre in nombres:
+                _img(slide, nombre, x, top, w_each, h_pie)
+                x += w_each + gap
 
 
 def _slide_metricas(slide, data: dict) -> None:

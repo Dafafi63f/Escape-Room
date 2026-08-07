@@ -1,6 +1,6 @@
 # Cómo jugar — requisitos y formas de ejecución
 
-Guía para **usuarios finales** (no para desarrollo del TFG). El mantenimiento del banco está en [`Files/README.md`](../Files/README.md).
+Guía para **usuarios finales**. El mantenimiento del banco está en [`Files/README.md`](../Files/README.md).
 
 ## Resumen rápido
 
@@ -97,7 +97,7 @@ winget install --id Python.Python.3.12 -e --accept-source-agreements --accept-pa
 ## Generar los zips (desarrollador)
 
 ```bash
-python Docs/utilidades_tfg.py --solo-zip          # zips completo + mínimo
+python Docs/utilidades_distribucion.py --solo-zip # zips completo + mínimo
 python Juego/Scripts/crear_zip_minimal.py         # zip mínimo
 ```
 

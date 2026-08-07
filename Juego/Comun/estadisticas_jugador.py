@@ -800,8 +800,8 @@ def combinar_stats_examen(historico: dict, local: dict) -> dict:
                 tasa_suspens=round(tasa, 3),
                 indice_dificultad=round(indice, 3),
             )
-        elif h:
+        elif h is not None:
             combinado[clave] = h
-        else:
+        elif l is not None:
             combinado[clave] = l
     return combinado

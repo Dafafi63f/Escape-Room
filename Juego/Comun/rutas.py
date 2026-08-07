@@ -150,8 +150,11 @@ def _dir_banco() -> Path:
 _layout_datos_plano: bool | None = None
 
 
-def configurar_layout_datos_jugador(*, plano: bool) -> None:
-    """En el paquete mínimo todo ``Data/`` es plano; en el completo usa ``Data/Banco/``, ``Data/Juego/``…"""
+def configurar_layout_datos_jugador(*, plano: bool | None) -> None:
+    """En el paquete mínimo todo ``Data/`` es plano; en el completo usa ``Data/Banco/``, ``Data/Juego/``…
+
+    Pasa ``plano=None`` para volver a la autodetección (útil en tests).
+    """
     global _layout_datos_plano
     _layout_datos_plano = plano
 
@@ -203,11 +206,16 @@ def _dir_data_escritura() -> Path:
 
 
 def _candidatos_bajo_data(raiz: Path, nombre: str, *, zona: _ZonaDatos) -> list[Path]:
+    """Candidatos de lectura bajo ``Data/``.
+
+    El layout plano solo afecta a rutas de *escritura* del jugador
+    (``_dir_juego_datos`` / ``_dir_privado``). La búsqueda del banco debe
+    seguir viendo ``Data/Banco/`` si existe (p. ej. tests del repo completo
+    tras cargar un paquete mínimo en el mismo proceso).
+    """
     data = raiz / "Data"
     if not data.is_dir():
         return []
-    if layout_datos_jugador_plano():
-        return [data / nombre]
     principal = "Banco" if zona == "banco" else "Juego"
     secundario = "Juego" if zona == "banco" else "Banco"
     orden = [
@@ -332,7 +340,7 @@ def resolver_config_creador_privado() -> Path | None:
     """JSON local del creador (datos personales y secretos; no se versiona)."""
     global _path_creador_privado
     if _path_creador_privado is not _CREADOR_PRIVADO_SIN_RESOLVER:
-        return _path_creador_privado
+        return _path_creador_privado if isinstance(_path_creador_privado, Path) else None
     canonico = _dir_privado() / "creador_privado.json"
     if canonico.is_file():
         _path_creador_privado = canonico
@@ -381,7 +389,7 @@ def ruta_feedback_para_usuario(archivo: Path) -> str:
 
 _path_preguntas: Path | None = None
 _path_materias: Path | None = None
-_CREADOR_PRIVADO_SIN_RESOLVER = object()
+_CREADOR_PRIVADO_SIN_RESOLVER: object = object()
 _path_creador_privado: Path | None | object = _CREADOR_PRIVADO_SIN_RESOLVER
 _archivos_no_encontrados: set[tuple[str, str, _ZonaDatos, bool]] = set()
 

@@ -107,7 +107,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Build distribution zips
-        run: python Docs/utilidades_tfg.py --solo-zip --forzar-zip
+        run: python Docs/utilidades_distribucion.py --solo-zip --forzar-zip
 
       - name: Verify zips exist
         shell: pwsh

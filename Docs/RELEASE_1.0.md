@@ -1,7 +1,7 @@
 # MATCAD — Versión 1.0.0 (entrega TFG)
 
-**Fecha:** 2026-06-29  
-**Estado:** versión jugable cerrada; desarrollo en pausa.
+**Fecha:** 2026-06-29
+**Estado:** entrega académica cerrada. Continuación del juego: **v1.1.0+** como proyecto personal (ver `Juego/Comun/version.py` y [`CHANGELOG_JUEGO.md`](CHANGELOG_JUEGO.md)).
 
 ## Qué incluye esta versión
 

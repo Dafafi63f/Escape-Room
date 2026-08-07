@@ -607,13 +607,10 @@ class PartidaResistencia(Pantalla):
             return None
         return texto_segmento_desafio_bloque(self.er)
 
-    def _kwargs_bloque_filtro_barra(self) -> dict[str, str]:
+    def _texto_bloque_filtro_barra(self) -> str | None:
         if not self._barra_muestra_bloque_filtro():
-            return {}
-        texto = segmento_bloque_filtro_barra(self.er)
-        if texto is None:
-            return {}
-        return {"bloque_filtro_texto": texto}
+            return None
+        return segmento_bloque_filtro_barra(self.er)
 
     def _comprobar_desafio_bloque_expirado(self) -> bool:
         if not desafio_bloque_expirado(self.er):
@@ -635,7 +632,7 @@ class PartidaResistencia(Pantalla):
             numero_pregunta=self._numero_pregunta(),
             racha=self.er.racha,
             desafio_bloque_texto=self._texto_desafio_bloque_barra(),
-            **self._kwargs_bloque_filtro_barra(),
+            bloque_filtro_texto=self._texto_bloque_filtro_barra(),
         )
 
     def _reconstruir_powerups(self) -> None:
@@ -1097,7 +1094,7 @@ class PartidaResistencia(Pantalla):
             numero_pregunta=numero,
             racha=self.er.racha,
             desafio_bloque_texto=self._texto_desafio_bloque_barra(),
-            **self._kwargs_bloque_filtro_barra(),
+            bloque_filtro_texto=self._texto_bloque_filtro_barra(),
         )
         if texto_extra:
             ancho_extra = self._ancho_texto_extra()

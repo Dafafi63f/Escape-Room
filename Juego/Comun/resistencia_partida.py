@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from Comun.reglas import complejidad_pregunta, max_complejidad_pool
 from Comun.modelos import Pregunta
@@ -18,6 +19,9 @@ from Comun.preguntas_resistencia import (
 )
 from Comun.resistencia_motor import PREGUNTA_MIN_EVENTOS_ALEATORIOS
 from Comun.reglas import ReglasPartida
+
+if TYPE_CHECKING:
+    from Comun.pity_variedad_resistencia import PityVariedadResistencia
 
 __all__ = [
     "BancoResistencia",
@@ -309,7 +313,7 @@ def eventos_aleatorios_para_pregunta(
     racha: int = 0,
     baseline: BaselineEscaladaResistencia | None = None,
     pity: PityEventosResistencia | None = None,
-    pity_variedad: object | None = None,
+    pity_variedad: PityVariedadResistencia | None = None,
 ) -> tuple[EventoAleatorioResistencia, ...]:
     """Efectos de escalada; con racha extrema se apilan hostiles más allá del tope."""
     from Comun.resistencia_motor import exceso_presion_racha, intensidad_presion_racha

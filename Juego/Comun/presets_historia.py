@@ -177,8 +177,8 @@ PRESETS_HISTORIA_RETIRADOS = frozenset({
     "ranking_resistencia",
 })
 
-# Paquete m?nimo: sin carrusel de historia (examen fijo v?a barra superior).
-PRESETS_HISTORIA_PORTABLE = frozenset()
+# Paquete mínimo: sin carrusel de historia (examen fijo vía barra superior).
+PRESETS_HISTORIA_PORTABLE: frozenset[str] = frozenset()
 
 PRESETS_ESPECIALES_PORTABLE = frozenset({
     "resistencia",

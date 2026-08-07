@@ -74,6 +74,7 @@ from Comun.emojis_escape import (
 )
 
 if TYPE_CHECKING:
+    from Comun.filtros_bloque import TipoFiltroBloque
     from Comun.modelos import Pregunta
     from Comun.resistencia_motor import EstadoResistencia
     from Comun.resistencia_partida import EventoAleatorioResistencia

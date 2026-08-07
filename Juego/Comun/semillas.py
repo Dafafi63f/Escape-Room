@@ -13,9 +13,11 @@ from __future__ import annotations
 import hashlib
 import random
 import secrets
-from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from Comun.config_historia import ConfigPresetHistoria
 
 _SEMILLA_MAX = 2**31 - 1
 
@@ -61,30 +63,31 @@ def semilla_partida_aleatoria() -> int:
     return semilla_aleatoria()
 
 
-@dataclass
-class RngPartida:
-    """Generador de partida: una semilla, un ``Random`` que avanza hasta fin de sesión."""
+class RngPartida(random.Random):
+    """Generador de partida: una semilla y un ``Random`` que avanza hasta fin de sesión."""
 
     semilla: int
-    _rng: random.Random = field(repr=False, compare=False)
+
+    def __init__(self, semilla: int, *, _state: Any = None) -> None:
+        super().__init__(semilla)
+        self.semilla = semilla
+        if _state is not None:
+            self.setstate(_state)
 
     @classmethod
     def desde_semilla(cls, semilla: int) -> RngPartida:
         """Crea el único generador de la partida a partir de su semilla."""
-        return cls(semilla=semilla, _rng=random.Random(semilla))
+        return cls(semilla)
 
     @classmethod
     def continuar(cls, semilla: int, rng: random.Random) -> RngPartida:
         """Reutiliza un ``Random`` ya consumido (p. ej. tras ``generar_examen``)."""
-        return cls(semilla=semilla, _rng=rng)
+        return cls(semilla, _state=rng.getstate())
 
     @property
     def interno(self) -> random.Random:
-        """Acceso al ``Random`` subyacente (misma instancia siempre)."""
-        return self._rng
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._rng, name)
+        """Acceso al generador (la propia instancia; compatibilidad con código legacy)."""
+        return self
 
 
 def crear_rng_partida(semilla: int) -> RngPartida:
@@ -95,7 +98,7 @@ def crear_rng_partida(semilla: int) -> RngPartida:
 def resolver_semillas_partida(
     *,
     preset_id: str,
-    cfg: object | None = None,
+    cfg: ConfigPresetHistoria | None = None,
     semilla_override: int | None = None,
     orden_preguntas: str = "aleatorio",
 ) -> int:

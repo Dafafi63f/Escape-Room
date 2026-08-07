@@ -628,7 +628,7 @@ class TestBotonesMenusGrafico(unittest.TestCase):
         self._assert_botones_validos("LibreP2Dif", pantalla._botones_ui())
 
     def test_modo_historia_menus(self) -> None:
-        from Grafico.pantallas_estadisticas import PantallaEstadisticasJugador
+        from Grafico.pantallas_sistema import PantallaEstadisticasJugador
         from Grafico.pantallas_historia import ConfigModoHistoria
         from Grafico.pantallas_examen_fijo import ConfigOpcionesHistoria
 

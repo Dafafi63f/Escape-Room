@@ -744,7 +744,7 @@ def _construir_puertas_sala(
             rng=rng,
             puertas_por_sala=puertas_por_sala,
             n_salas=n_salas,
-            pity=pity,
+            pity=pity or PityPuertasEspecialesEscape(),
         )
 
     plantillas = elegir_plantillas_contenido_escape(puertas_por_sala, numero_sala, rng)
@@ -845,7 +845,7 @@ def _construir_puertas_sala(
         tamanos=tamanos,
         n_salas=n_salas,
         rng=rng,
-        pity=pity,
+        pity=pity or PityPuertasEspecialesEscape(),
         estado=estado,
         vidas_max=vidas_max,
     )

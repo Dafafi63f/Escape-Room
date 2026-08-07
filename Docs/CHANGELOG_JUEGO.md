@@ -2,13 +2,21 @@
 
 Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygame. El historial técnico del TFG está en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
 
-**Última actualización:** 2026-06-29
+**Última actualización:** 2026-08-07
 
 ---
 
+## 2026-08-07 — Versión 1.1.0 (proyecto personal)
+
+El TFG ya está cerrado. A partir de aquí MATCAD sigue como **juego educativo / proyecto personal**: se actualizará cuando haya ganas y tiempo, sin plazos ni dependencias de la universidad.
+
+- **Versión** en menú e Info: `v1.1.0`.
+- **Datasets en la UI:** opciones renombradas a **UAB (Básico)** (480 oficiales) y **UAB (Completo)** (960; extras en beta). Los ficheros en `Data/` conservan sus nombres.
+- Mantenimiento interno (CI, tipados, módulos de UI más compactos) sin cambiar la jugabilidad base de la 1.0.
+
 ## 2026-06-29 — Versión 1.0.0 (entrega TFG)
 
-Versión **jugable y cerrada** para la entrega del TFG. El desarrollo de nuevas ideas queda en pausa; lo pendiente está listado en [`Docs/RELEASE_1.0.md`](RELEASE_1.0.md) y en [`CHECKLIST.md`](CHECKLIST.md) (sección futuro).
+Versión **jugable y cerrada** para la entrega del TFG.
 
 - **Menú principal** e **Info (ℹ️)** muestran la versión `v1.0.0`.
 - **Modo libre / escape:** por defecto banco **480 revisadas**; el banco ampliado (960) es opcional y está etiquetado como extras sin revisión completa.

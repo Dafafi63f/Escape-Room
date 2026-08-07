@@ -2,7 +2,7 @@
 
 Registro **vivo** del proyecto: snapshot de estado, feedback del tutor y changelog por sesiones. Las tareas abiertas están en [`CHECKLIST.md`](CHECKLIST.md).
 
-**Última actualización:** 2026-06-29
+**Última actualización:** 2026-08-07
 **Alumno:** Daniel Fageda Figueredo · **Tutor:** Víctor Navas Portella
 
 En [`Docs/`](README.md): changelogs, checklist y memoria borrador. El repositorio no versiona PDFs.
@@ -21,9 +21,13 @@ Regenerar figuras: `python Docs/generar_figuras_memoria.py` · Word: `python Doc
 
 ---
 
+## 2026-08-07 — Versión 1.1.0 (post-TFG)
+
+TFG cerrado. Continuación como **juego educativo / proyecto personal** (`v1.1.0`): datasets en UI como UAB (Básico/Completo), mantenimiento de CI y módulos; sin plazos universitarios.
+
 ## 2026-06-29 — Versión 1.0.0 (entrega TFG)
 
-Versión **jugable cerrada** para la entrega. Desarrollo en pausa; detalle en [`RELEASE_1.0.md`](RELEASE_1.0.md).
+Versión **jugable cerrada** para la entrega académica (detalle en [`RELEASE_1.0.md`](RELEASE_1.0.md)).
 
 | Cambio | Notas |
 |--------|-------|
@@ -41,13 +45,13 @@ Versión **jugable cerrada** para la entrega. Desarrollo en pausa; detalle en [`
 |------|--------|-------|
 | **Memoria** | En revisión con tutor | Estructura académica; Word desde MD/LaTeX; PDF de entrega manual |
 | **Banco de preguntas** | Cerrado | 480/480 revisadas; `Preguntas.csv` protegido (`TFG_PERMITIR_CSV=1` para escribir) |
-| **Juego (pygame)** | Operativo | 5 modos: libre, historia, resistencia, escape room, feedback |
+| **Juego (pygame)** | Operativo (v1.1.0) | Proyecto personal post-TFG; 5 modos: libre, historia, resistencia, escape room, feedback |
 | **Scripts mantenimiento** | Operativo | `Files/mantenimiento.py` (scripts en `Files/`) |
 | **CI / pruebas** | Operativo | GitHub Actions; **578** tests en `Tests/` |
 | **Interfaz gráfica / narrativa** | Parcial | Escape room jugable (mecánicas); narrativa gráfica completa pendiente |
 | **Piloto con usuarios** | No realizado | Ver [`CHECKLIST.md`](CHECKLIST.md) |
 
-**Entregable actual:** juego pygame + banco 480 preguntas + herramientas de validación.
+**Entrega TFG:** v1.0.0. **Continuación personal:** v1.1.0+ (juego educativo independiente).
 
 ---
 
