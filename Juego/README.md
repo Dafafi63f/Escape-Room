@@ -2,7 +2,7 @@
 
 Interfaz gráfica del juego (pygame) sobre el dominio compartido en [`Comun/`](Comun/README.md). **Versión actual:** `v1.1.0` (juego educativo / proyecto personal; la entrega TFG fue la `v1.0.0`, ver [`Docs/RELEASE_1.0.md`](../Docs/RELEASE_1.0.md)).
 
-**Requisitos para jugar:** [`COMO_JUGAR.md`](COMO_JUGAR.md).  
+**Requisitos para jugar:** [`COMO_JUGAR.md`](COMO_JUGAR.md).
 **Solo el juego (zip):** [descarga desde Releases](https://github.com/Dafafi63f/Escape-Room/releases/download/juego/MATCAD_juego_portable.zip).
 
 ## Estructura

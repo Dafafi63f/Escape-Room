@@ -771,4 +771,3 @@ def cargar_estadisticas_locales(
         if est is not None:
             stats[clave] = est
     return stats
-
