@@ -9,7 +9,7 @@ No es el motor del juego; la lógica está en Juego/Comun/generador_examen_histo
 Ejemplo:
   python Files/cli_examen_historia.py --perfil refuerzo --materias 6
   python Files/cli_examen_historia.py --perfil por_curso --curso 2
-  python Files/cli_examen_historia.py --perfil simulacro --resumen-historico
+  python Files/cli_examen_historia.py --preset repaso
 
 Para guardar la salida: redirige a un .txt (p. ej. ... > plan_examen.txt).
 """
@@ -31,11 +31,7 @@ from Comun.datos import cargar_materias, cargar_orden_materias, cargar_preguntas
 from Comun.generador_examen_historia import PerfilPedagogico, describir_perfil  # noqa: E402
 from Comun.config_historia import validar_config  # noqa: E402
 from Comun.presets_historia import argumentos_generador, cargar_presets_historia, config_defecto  # noqa: E402
-from Comun.generador_examen_historia import (  # noqa: E402
-    cargar_estadisticas_historicas,
-    generar_examen,
-    resumen_estadisticas,
-)
+from Comun.generador_examen_historia import generar_examen  # noqa: E402
 from Comun.modelos import BancoPreguntas  # noqa: E402
 from Comun.rutas import resolver_dataset, resolver_listado_materias, resolver_presets  # noqa: E402
 
@@ -75,11 +71,6 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--curso", type=str, default=None, help="Filtro curso (1-4) para por_curso")
     p.add_argument("--semestre", type=str, default=None, help="Filtro semestre opcional (con --curso)")
     p.add_argument("--semilla", type=int, default=None, help="Semilla aleatoria reproducible")
-    p.add_argument(
-        "--resumen-historico",
-        action="store_true",
-        help="Muestra materias más exigentes según el histórico",
-    )
     args = p.parse_args(argv)
 
     path_materias = resolver_listado_materias()
@@ -87,8 +78,12 @@ def main(argv: list[str] | None = None) -> int:
     materias_meta = cargar_materias(path_materias)
     preguntas = cargar_preguntas(path_csv, materias_meta)
     orden_materias = cargar_orden_materias(path_materias)
-    stats = cargar_estadisticas_historicas(materias_validas=set(materias_meta))
+    # CLI: sin stats locales (ponderación desactivada / reparto uniforme).
+    stats: dict = {}
+    usar_ponderacion = False
 
+    seleccion_det = False
+    materia_fija = None
     if args.preset:
         presets = cargar_presets_historia(resolver_presets())
         preset = next((x for x in presets if x.id == args.preset), None)
@@ -111,6 +106,7 @@ def main(argv: list[str] | None = None) -> int:
         usar_todas = gen_kwargs["usar_todas_materias_ambito"]
         seleccion_det = gen_kwargs["seleccion_determinista"]
         materia_fija = gen_kwargs.get("materia_fija")
+        usar_ponderacion = bool(gen_kwargs.get("usar_analisis_historico", False))
         titulo_perfil = f"{preset.nombre} ({preset.id})"
     else:
         perfil_val = args.perfil or PerfilPedagogico.BALANCEADO.value
@@ -131,10 +127,6 @@ def main(argv: list[str] | None = None) -> int:
         print("--materias debe estar entre 1 y 20.", file=sys.stderr)
         return 2
 
-    if args.resumen_historico:
-        print(_texto_stdout_seguro(resumen_estadisticas(stats, orden_materias)))
-        print()
-
     try:
         plan = generar_examen(
             preguntas,
@@ -151,6 +143,7 @@ def main(argv: list[str] | None = None) -> int:
             usar_todas_materias_ambito=usar_todas,
             seleccion_determinista=seleccion_det,
             materia_fija=materia_fija,
+            usar_analisis_historico=usar_ponderacion,
             semilla=args.semilla,
         )
     except ValueError as e:

@@ -212,7 +212,6 @@ def preparar_partida_historia(
         preset=preset,
         cfg=cfg,
         perfil=datos.perfil,
-        path_historico=datos.path_historico,
         materias_meta=datos.materias_meta,
     )
     plan = generar_examen(

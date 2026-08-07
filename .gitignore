@@ -1,6 +1,7 @@
-﻿# --- Generado al jugar (no versionar; borrar con borrar_temporales.py) ---
+﻿# --- Generado al jugar (no versionar; borrar con Docs/utilidades.py) ---
 Data/Juego/preferencias_*.json
 Data/Juego/estadisticas_jugador.json
+Data/Juego/metadatos_inferidos.json
 Data/Juego/ranking_*.json
 Data/Juego/*.txt
 # Paquete mínimo: estado local plano en Data/ (sin subcarpeta Juego/)
@@ -21,30 +22,18 @@ Data/Privado/*
 Data/Banco/creador_privado.json
 Data/*.xlsx
 Files/fuentes/
-# --- Temporales (limpiar con borrar_temporales.py) ---
+# --- Temporales (limpiar con Docs/utilidades.py) ---
 __pycache__/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
 .scannerwork/
 
-# --- Restos de build legacy (limpiar con borrar_temporales.py / utilidades_tfg.py) ---
+# --- Restos de build legacy (limpiar con Docs/utilidades.py) ---
 Juego/build/
 Juego/dist/
 Juego/*.spec
 Juego/Data/
-
-# --- Compilación LaTeX (si compilas Docs/Entrega/Memoria_TFG.tex a mano) ---
-Docs/Entrega/*.aux
-Docs/Entrega/*.log
-Docs/Entrega/*.out
-Docs/Entrega/*.toc
-Docs/Entrega/*.fls
-Docs/Entrega/*.fdb_latexmk
-Docs/Entrega/*.synctex.gz
-# --- Plantilla Pandoc (regenerable con Docs/utilidades_tfg.py --solo-memoria) ---
-Docs/Entrega/pandoc_reference.docx
-Docs/Entrega/pandoc_reference_default.docx
-Docs/Entrega/pandoc_reference.tmp.docx
-# Exportación local de la presentación (fuente versionada: Presentacion_TFG.pptx)
-Docs/Entrega/Presentacion_TFG.pdf
+# Zip jugable local en la raíz (Docs/utilidades.py / Files/crear_zip_portable.py); Releases tag juego
+MATCAD_juego_portable.zip
+MATCAD_juego_minimal.zip

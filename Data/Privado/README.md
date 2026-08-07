@@ -1,13 +1,12 @@
 # Data/Privado — local del autor
 
-Carpeta **única** para ficheros privados, fuentes de mantenimiento y datos locales del autor que **no** van en el zip portable (salvo excepciones versionadas; ver `.gitignore`).
+Carpeta **única** para ficheros privados, fuentes de mantenimiento y datos locales del autor que **no** se versionan (salvo excepciones; ver `.gitignore`).
 
 | Fichero | Para qué |
 |---------|----------|
 | `creador_privado.json` | SMTP del feedback, datos personales, secretos GitHub |
-| `Preguntas_minimal.csv` | Exportación mínima del banco (480 preguntas; tests y `MATCAD_juego_minimal.zip`) |
-| `Historic_qualificacions_MatCAD.xlsx` | Fuente del histórico (el CSV exportado está en `Data/Banco/`) |
-| Otros `.xlsx` / notas | Fuentes de mantenimiento del banco |
+| `Preguntas_minimal.csv` | Exportación mínima del banco (480 preguntas; tests) |
+| Otros `.xlsx` / notas | Fuentes locales de mantenimiento (opcionales) |
 
 ## Regenerar `Preguntas_minimal.csv`
 

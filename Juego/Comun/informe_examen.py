@@ -46,7 +46,6 @@ class CierreInformePartida:
     total_previsto: int
     prefijo: str
     meta: dict | None = None
-    stats_historicas: dict | None = None
     abandonado: bool = False
 
 
@@ -335,7 +334,6 @@ def formatear_informe_examen(
     meta: dict | None = None,
     total_previsto: int,
     fallos_por_materia: dict[str, int] | None = None,
-    stats_historicas: dict | None = None,
 ) -> str:
     meta = meta or {}
     total = estado.respondidas
@@ -382,11 +380,7 @@ def formatear_informe_examen(
     if fallos_por_materia:
         lineas.extend(["", "MATERIAS A REFORZAR (este intento)", "-" * 40])
         for materia, n in sorted(fallos_por_materia.items(), key=lambda x: -x[1]):
-            extra = ""
-            if stats_historicas and materia in stats_historicas:
-                st = stats_historicas[materia]
-                extra = f" — histórico: media {st.media:.2f}"
-            lineas.append(f"  - {materia}: {n} error(es){extra}")
+            lineas.append(f"  - {materia}: {n} error(es)")
 
     lineas.append("")
     lineas.append("Fin del informe.")
@@ -401,7 +395,6 @@ def publicar_informe_partida(
     total_previsto: int,
     nombre_jugador: str,
     meta: dict | None = None,
-    stats_historicas: dict | None = None,
     prefijo: str = "examen",
     imprimir_aviso_terminal: bool = True,
 ) -> Path | None:
@@ -435,7 +428,6 @@ def publicar_informe_partida(
         meta=meta_completa,
         total_previsto=total_previsto,
         fallos_por_materia=estado.fallos_por_materia or None,
-        stats_historicas=stats_historicas,
     )
     try:
         ruta = guardar_informe_examen(texto, nombre_archivo=nombre_archivo)

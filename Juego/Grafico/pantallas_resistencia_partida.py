@@ -783,22 +783,8 @@ class PartidaResistencia(Pantalla):
         )
 
     def _fin_partida(self, *, abandonado: bool = False) -> None:
-        from Comun.generador_examen_historia import cargar_estadisticas_historicas
-
         cierre = None
         if self.registros:
-            stats: dict = {}
-            if (
-                self.datos.perfil.analisis_historico_disponible
-                and self.datos.path_historico is not None
-            ):
-                try:
-                    stats = cargar_estadisticas_historicas(
-                        self.datos.path_historico,
-                        materias_validas=set(self.datos.materias_meta),
-                    )
-                except FileNotFoundError:
-                    stats = {}
             titulo_txt = (
                 f"ABANDONO — {self.preset.nombre}"
                 if abandonado
@@ -821,7 +807,6 @@ class PartidaResistencia(Pantalla):
                     ),
                     "resistencia_variedad_vista": sorted(self.er.variedad_vista),
                 },
-                stats_historicas=stats,
                 abandonado=abandonado,
             )
         titulo_pantalla = (

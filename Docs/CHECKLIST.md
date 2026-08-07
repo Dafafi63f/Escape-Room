@@ -1,8 +1,8 @@
-# Checklist — TFG MATCAD
+# Checklist — MATCAD (proyecto personal)
 
 Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial detallado está en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
 
-**Última actualización:** 2026-08-07
+**Última actualización:** 2026-08-08
 
 ## Versión entregable 1.0.0 (TFG cerrado)
 
@@ -10,9 +10,9 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 - [x] Continuación personal: **v1.1.0** (juego educativo independiente; ver `Juego/Comun/version.py`)
 - [x] Etiqueta de versión en menú e Info del juego
 - [x] Banco por defecto: 480 revisadas; ampliado opcional y etiquetado
-- [x] 578 tests + `Files/health_check.py`
-- [x] Regenerar zip portable antes de distribuir (`utilidades_tfg.py --solo-zip --forzar-zip`)
-- [x] PDF memoria y presentación de defensa (`Docs/Entrega/`)
+- [x] 615 tests + `Files/health_check.py`
+- [x] Arranque del juego con `python Juego/juego_grafico.py`
+- [x] PDF memoria y presentación de defensa (entrega TFG; fuera de este repo)
 
 *A partir de aquí: ideas futuras; no son requisito para jugar la v1.0.*
 
@@ -31,7 +31,7 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 | Banco y datos | 480 + plantillas + pool 1000 | Revisar banco ampliado, Moodle, prerrequisitos |
 | Juego (5 modos) | Libre, historia, resistencia, escape, feedback | Mapas/UI visual, muchas ideas UX |
 | Estadísticas locales | v1 (panel simplificado + JSON) | Gráficos, repaso, botones acción |
-| Ingeniería | 578 tests, CI, zips, scripts | Docker |
+| Ingeniería | 615 tests, CI, zip jugable | Docker |
 
 ---
 
@@ -41,26 +41,26 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 
 ### Documentación y pipeline
 
-- [x] Memoria Markdown / LaTeX / Word regenerables (`Docs/Entrega/`, `utilidades_tfg.py`)
-- [x] **9 figuras** de memoria + capturas pygame (`Docs/generar_figuras_memoria.py`)
+- [x] Memoria Markdown / LaTeX / Word (entrega TFG; fuera de este repo)
+- [x] **9 figuras** de memoria + capturas pygame (fuera de este repo)
 - [x] README raíz, `Data/`, `Juego/`, `Files/`, `Tests/`, `Docs/`
 - [x] Changelogs proyecto y jugador (`CHANGELOG_PROYECTO.md`, `CHANGELOG_JUEGO.md`)
-- [x] Esquemas JSON locales del jugador (`persistencia.py`, `--esquemas-juego`)
-- [x] Zip portable + `Jugar.bat` + scripts PowerShell de entorno
+- [x] Esquemas JSON locales del jugador (`persistencia.py`)
+- [x] Arranque documentado con Python (`juego_grafico.py`)
 
 ### Banco y mantenimiento
 
 - [x] **480** preguntas revisadas en `Preguntas.csv` (balance, metadatos curriculares)
 - [x] **960** plantillas JSON (480 dataset + 480 extras); pool jugable **1000** ítems
 - [x] `mantenimiento.py validar` / `auditar-distractores` / deduplicación (`duplicados.py`)
-- [x] Histórico qualificaciones MatCAD integrado (modo historia, §5.6 memoria)
-- [x] Simulación Monte Carlo (azar) y simulación pity (escape/resistencia)
+- [x] Histórico qualificaciones MatCAD integrado (modo historia, §5.6 memoria) — **retirado del juego post-TFG (2026-08-07):** ponderación solo con stats locales
+- [x] Simulación Monte Carlo (azar) y pity (escape/resistencia) — **scripts retirados del repo** post-TFG (figuras/memoria fuera de git)
 
 ### Juego pygame — modos y sistemas
 
 - [x] Lanzador único `juego_grafico.py` (migración «solo pygame»)
 - [x] **Modo libre:** filtros curso/semestre/materia, banco revisado/ampliado, informe `.txt` al cerrar
-- [x] **Modo historia:** carrusel presets, examen balanceado por histórico
+- [x] **Modo historia:** carrusel presets, examen balanceado por práctica local (histórico MatCAD retirado post-TFG)
 - [x] **Modo resistencia:** racha, apuestas, maldiciones, bloques temáticos, objetos, eventos sí/no + pity
 - [x] **Modo escape room:** salas 5–50, 3 puertas, tienda/botín/descanso/jefe, inventario, pity, economía arcade
 - [x] **Modo feedback:** formulario en pantalla + copia local + SMTP opcional
@@ -69,14 +69,14 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 - [x] Opciones: nombre jugador, tooltips, emojis, guardar informes `.txt`, restablecer preferencias/estadísticas, limpiar `.txt`
 - [x] Informes `.txt` por partida en `Data/Juego/` (independientes por sesión)
 - [x] **Estadísticas locales v1** (`estadisticas_jugador.json`, pantalla «Mis estadísticas»)
-- [x] Esquemas JSON documentados (`persistencia.py`, `--esquemas-juego`)
+- [x] Esquemas JSON documentados (`persistencia.py`)
 
 ### Ingeniería
 
-- [x] **578** tests unitarios (`Tests/`)
+- [x] **615** tests unitarios (`Tests/`)
 - [x] CI GitHub Actions: pre-commit, tests, integración, mypy, SonarCloud (opcional)
 - [x] `pre-commit`, `mypy.ini`, `.python-version` (3.14 en CI)
-- [x] Zip portable (`MATCAD_juego_portable.zip`) y mínimo (`MATCAD_juego_minimal.zip`)
+- [x] Zip jugable vía Releases (`Docs/utilidades.py` → raíz del repo; CI `paquete-jugable.yml`)
 
 ---
 
@@ -84,8 +84,8 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 
 ### Memoria
 
-- [x] Regenerar figuras y Word (`utilidades_tfg.py --solo-memoria`)
-- [x] Limpieza de temporales del repo (`--solo-limpieza`)
+- [x] Regenerar figuras y Word (entrega TFG; fuera de este repo)
+- [x] Limpieza de temporales del repo (`python Docs/utilidades.py --solo-limpieza`)
 - [x] Merge migración «solo pygame» en `main`
 - [x] Marco teórico, hipótesis H1–H3, cumplimiento objetivos en memoria (feedback tutor)
 - [x] Editar maquetación en Word y exportar **PDF de entrega**
@@ -97,7 +97,7 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 
 ### Defensa y difusión
 
-- [x] Presentación de defensa (`Docs/Entrega/Presentacion_TFG.pptx`)
+- [x] Presentación de defensa (entrega TFG; fuera de este repo)
 - [ ] Vídeo demo (~3 min): menú → libre → escape → informe
 - [ ] Manual del profesor (1 pág.) en `Docs/`
 - [ ] Badge «reproducible» en README (DOI Zenodo opcional)
@@ -218,12 +218,12 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 **Completado**
 
 - [x] Presets configurables (`Juego/presets.json`)
-- [x] Ponderación por histórico qualificacions
+- [x] Ponderación por histórico qualificacions — **retirado (2026-08-07);** sustituido por práctica local
 - [x] Informe examen con nota y materias a reforzar
 
 **Pendiente**
 
-- [x] Tras cerrar un simulacro/examen (historia o examen fijo): botón «Otro examen dirigido» que genera un nuevo test usando los **aciertos y fallos de esa sesión** (materias/temas débiles del jugador), no solo el histórico institucional del grado
+- [x] Tras cerrar un simulacro/examen (historia o examen fijo): botón «Otro examen dirigido» que genera un nuevo test usando los **aciertos y fallos de esa sesión** (materias/temas débiles del jugador)
 
 ### Modo resistencia
 
@@ -298,11 +298,11 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 
 ### Completado
 
-- [x] Suite tests unitarios (578 tests)
+- [x] Suite tests unitarios (615 tests)
 - [x] CI: tests.yml (pre-commit, unit, integration, mypy, summary)
 - [x] CI: sonarcloud.yml, pr_agent.yml (opcionales)
 - [x] mypy en `Juego/Comun` y `Files/`
-- [x] `utilidades_tfg.py` + `crear_zip_minimal.py`
+- [x] `Docs/utilidades.py` (limpieza + zip) y `mantenimiento.py temporales`
 - [x] Tests dominio: libre, historia, resistencia, escape, semillas, eventos, informes
 - [x] Tests UI gráfica parciales (menús, preferencias, estadísticas, lanzador)
 
@@ -310,7 +310,7 @@ Checklist de **hecho** (`[x]`) y **pendiente / futuro** (`[ ]`). El historial de
 
 - [x] Tests UI ampliados (flujos escape/resistencia con semilla fija en navegación)
 - [x] mypy extendido a todo `Juego/Grafico/`
-- [x] CI: job de empaquetado de zips en Windows
+- [x] CI: release `juego` con zip jugable (`paquete-jugable.yml`)
 - [x] Script «health check» único (datos + tests + validar banco)
 - [ ] Docker desarrollo
 - [ ] Benchmark arranque pool 1000 preguntas

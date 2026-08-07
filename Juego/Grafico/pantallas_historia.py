@@ -11,7 +11,6 @@ import pygame
 
 from Comun.config_historia import (
     ConfigPresetHistoria,
-    etiqueta_campo_estrategia_materias,
     etiqueta_campo_estrategia_practica,
     preset_usa_prioridad_materias,
 )
@@ -457,20 +456,6 @@ class ConfigModoHistoria(Pantalla):
         y_nombre = tarjeta.y + 34
         if preset_usa_prioridad_materias(preset, self.datos.perfil):
             y_badge = tarjeta.y + 34
-            if self.datos.perfil.analisis_historico_disponible:
-                badge_hist = self.fuentes["pequena"].render(
-                    etiqueta_campo(
-                        "estrategia_materias",
-                        etiqueta_campo_estrategia_materias(self.datos.perfil),
-                    ),
-                    True,
-                    (20, 110, 70),
-                )
-                superficie.blit(
-                    badge_hist,
-                    badge_hist.get_rect(midtop=(tarjeta.centerx, y_badge)),
-                )
-                y_badge += 22
             badge_pract = self.fuentes["pequena"].render(
                 etiqueta_campo(
                     "estrategia_practica",
@@ -484,14 +469,6 @@ class ConfigModoHistoria(Pantalla):
                 badge_pract.get_rect(midtop=(tarjeta.centerx, y_badge)),
             )
             y_nombre = y_badge + 24
-        elif preset.usa_analisis_historico:
-            aviso = self.fuentes["pequena"].render(
-                "Sin histórico MatCAD: prioridad según tu práctica",
-                True,
-                (120, 90, 40),
-            )
-            superficie.blit(aviso, aviso.get_rect(midtop=(tarjeta.centerx, tarjeta.y + 34)))
-            y_nombre = tarjeta.y + 58
 
         nombre = self.fuentes["subtitulo"].render(
             preparar_texto_ui(preset.nombre),
@@ -547,9 +524,7 @@ class ConfigModoHistoria(Pantalla):
             superficie,
             self.fuentes,
             (
-                "Ajusta la prioridad histórica MatCAD y tu práctica en cada modo (donde aplique)"
-                if self.datos.perfil.analisis_historico_disponible
-                else "Ajusta la prioridad según tu práctica en cada modo (donde aplique)"
+                "Ajusta la prioridad según tu práctica en cada modo (donde aplique)"
             ),
         )
 

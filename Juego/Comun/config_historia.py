@@ -41,34 +41,9 @@ TIPOS_ENFOQUE_MIXTO = frozenset({"Teoria", "Calculo"})
 TIPOS_ENFOQUE_TEORIA = frozenset({"Teoria"})
 TIPOS_ENFOQUE_CALCULO = frozenset({"Calculo"})
 
-ID_ESTRATEGIA_MATERIAS = "estrategia_materias"
+ID_ESTRATEGIA_MATERIAS = "estrategia_materias"  # legacy; solo migración en sanitizar
 ID_ESTRATEGIA_PRACTICA = "estrategia_practica"
-ESTRATEGIA_MATERIAS_DEFECTO = "debilidades"
 ESTRATEGIA_PRACTICA_DEFECTO = "sin_historico"
-
-VALORES_PRIORIDAD_HISTORICA: tuple[tuple[str, str], ...] = (
-    ("debilidades", "Debilidades (más suspensos)"),
-    ("fortalezas", "Fortalezas (mejores medias)"),
-    ("equilibrado", "Histórico suave"),
-    ("curricular", "Orden del plan de estudios"),
-    ("sin_historico", "Sin ponderar histórico"),
-)
-
-_TOOLTIPS_ESTRATEGIA_HISTORICA: dict[str, str] = {
-    "debilidades": (
-        "Prioriza asignaturas con más suspensos en el histórico de qualificacions MatCAD."
-    ),
-    "fortalezas": (
-        "Prioriza asignaturas con mejores medias en el histórico de qualificacions MatCAD."
-    ),
-    "equilibrado": (
-        "Ponderación suave según el índice de dificultad histórico (suspensos y notas)."
-    ),
-    "curricular": "Sigue el orden del plan de estudios, sin ponderar el histórico.",
-    "sin_historico": (
-        "Reparto uniforme entre materias; ignora el histórico de calificaciones."
-    ),
-}
 
 _TOOLTIPS_ESTRATEGIA_PRACTICA: dict[str, str] = {
     "sin_historico": (
@@ -85,8 +60,6 @@ _TOOLTIPS_ESTRATEGIA_PRACTICA: dict[str, str] = {
     ),
 }
 
-VALORES_ESTRATEGIA_MATERIAS = frozenset(v for v, _ in VALORES_PRIORIDAD_HISTORICA)
-
 # Orden fijo de filtros en la UI de configuración (solo entran las opciones del preset).
 ORDEN_OPCIONES_HISTORIA: tuple[str, ...] = (
     "periodo",
@@ -96,7 +69,6 @@ ORDEN_OPCIONES_HISTORIA: tuple[str, ...] = (
     "materia",
     "origen_semilla",
     "semilla",
-    ID_ESTRATEGIA_MATERIAS,
     ID_ESTRATEGIA_PRACTICA,
     "n_materias",
     "enfoque",
@@ -141,15 +113,6 @@ class ConfigPresetHistoria:
         return int(v)
 
 
-_OPCION_PRIORIDAD_HISTORICA = OpcionPreset(
-    id=ID_ESTRATEGIA_MATERIAS,
-    tipo="eleccion",
-    etiqueta="Prioridad histórica",
-    defecto=ESTRATEGIA_MATERIAS_DEFECTO,
-    valores=VALORES_PRIORIDAD_HISTORICA,
-)
-
-
 def _ordenar_opciones_historia(
     opciones: tuple[OpcionPreset, ...],
 ) -> tuple[OpcionPreset, ...]:
@@ -166,12 +129,10 @@ VALORES_ESTRATEGIA_PRACTICA_LOCAL: tuple[tuple[str, str], ...] = (
     ("equilibrado", "Práctica suave"),
 )
 
-VALORES_ESTRATEGIA_CON_HISTORICO = VALORES_PRIORIDAD_HISTORICA
-
 _IDS_OPCION_CURRICULAR = frozenset({"periodo", "curso", "semestre"})
 _IDS_OPCION_GRUPO = frozenset({"grupo"})
 _IDS_OPCION_ENFOQUE = frozenset({"enfoque"})
-_IDS_ESTRATEGIA_HISTORICA = frozenset(
+_IDS_ESTRATEGIA_PONDERACION = frozenset(
     {"debilidades", "fortalezas", "equilibrado"}
 )
 
@@ -186,58 +147,42 @@ def opcion_historia_soportada(op: OpcionPreset, perfil) -> bool:
     return True
 
 
-def valores_estrategia_historica(perfil) -> tuple[tuple[str, str], ...]:
-    if perfil.tiene_metadatos_curriculares:
-        return VALORES_ESTRATEGIA_CON_HISTORICO
-    return tuple(
-        par for par in VALORES_ESTRATEGIA_CON_HISTORICO if par[0] != "curricular"
-    )
-
-
 def valores_estrategia_practica() -> tuple[tuple[str, str], ...]:
     return VALORES_ESTRATEGIA_PRACTICA_LOCAL
 
 
-def valores_estrategia_materias(perfil) -> tuple[tuple[str, str], ...]:
+def valores_estrategia_materias(perfil=None) -> tuple[tuple[str, str], ...]:
     """Alias de práctica local (modo libre y compatibilidad)."""
-    if perfil.analisis_historico_disponible:
-        return valores_estrategia_historica(perfil)
+    _ = perfil
     return valores_estrategia_practica()
 
 
-def etiqueta_campo_estrategia_materias(perfil) -> str:
-    return "Prioridad histórica (MatCAD)"
+def etiqueta_campo_estrategia_materias(perfil=None) -> str:
+    _ = perfil
+    return etiqueta_campo_estrategia_practica()
 
 
 def etiqueta_campo_estrategia_practica() -> str:
     return "Prioridad según tu práctica"
 
 
-def descripcion_campo_estrategia_materias(perfil) -> str:
-    return (
-        "Reparto entre asignaturas según el histórico de qualificacions del grado "
-        "(suspensos y medias)."
-    )
+def descripcion_campo_estrategia_materias(perfil=None) -> str:
+    _ = perfil
+    return descripcion_campo_estrategia_practica()
 
 
 def descripcion_campo_estrategia_practica() -> str:
     return (
-        "Reparto según tus aciertos y fallos en este banco (estadísticas locales). "
-        "Independiente del histórico MatCAD."
+        "Reparto según tus aciertos y fallos en este banco (estadísticas locales)."
     )
-
-
-def tooltip_valor_estrategia_historica(estrategia: str) -> str | None:
-    return _TOOLTIPS_ESTRATEGIA_HISTORICA.get(estrategia)
 
 
 def tooltip_valor_estrategia_practica(estrategia: str) -> str | None:
     return _TOOLTIPS_ESTRATEGIA_PRACTICA.get(estrategia)
 
 
-def tooltip_valor_estrategia_materias(estrategia: str, perfil) -> str | None:
-    if perfil.analisis_historico_disponible:
-        return tooltip_valor_estrategia_historica(estrategia)
+def tooltip_valor_estrategia_materias(estrategia: str, perfil=None) -> str | None:
+    _ = perfil
     return tooltip_valor_estrategia_practica(estrategia)
 
 
@@ -253,24 +198,13 @@ def perfil_pedagogico_estrategia(estrategia: str):
         "fortalezas": PerfilPedagogico.DESAFIO,
         "equilibrado": PerfilPedagogico.BALANCEADO,
         "sin_historico": PerfilPedagogico.BALANCEADO,
-        "curricular": PerfilPedagogico.BALANCEADO,
     }.get(estrategia, PerfilPedagogico.BALANCEADO)
 
 
 def estrategia_activa_ponderacion(estrategia: str | None) -> bool:
     if not estrategia:
         return False
-    return estrategia in _IDS_ESTRATEGIA_HISTORICA
-
-
-def _opcion_prioridad_historica(perfil) -> OpcionPreset:
-    return OpcionPreset(
-        id=ID_ESTRATEGIA_MATERIAS,
-        tipo="eleccion",
-        etiqueta=etiqueta_campo_estrategia_materias(perfil),
-        defecto=ESTRATEGIA_MATERIAS_DEFECTO,
-        valores=valores_estrategia_historica(perfil),
-    )
+    return estrategia in _IDS_ESTRATEGIA_PONDERACION
 
 
 def _opcion_prioridad_practica() -> OpcionPreset:
@@ -284,22 +218,14 @@ def _opcion_prioridad_practica() -> OpcionPreset:
 
 
 def opciones_config_historia(preset, *, perfil=None) -> tuple[OpcionPreset, ...]:
-    """Opciones del preset en orden global; prioridad histórica y/o práctica si aplica."""
+    """Opciones del preset en orden global; prioridad según práctica local si aplica."""
     base = tuple(
         o
         for o in preset.opciones
         if o.id not in (ID_ESTRATEGIA_MATERIAS, ID_ESTRATEGIA_PRACTICA)
     )
     if preset_usa_prioridad_materias(preset, perfil):
-        if perfil is None:
-            base = base + (_OPCION_PRIORIDAD_HISTORICA, _opcion_prioridad_practica())
-        elif perfil.analisis_historico_disponible:
-            base = base + (
-                _opcion_prioridad_historica(perfil),
-                _opcion_prioridad_practica(),
-            )
-        else:
-            base = base + (_opcion_prioridad_practica(),)
+        base = base + (_opcion_prioridad_practica(),)
     if perfil is not None:
         base = tuple(o for o in base if opcion_historia_soportada(o, perfil))
     return _ordenar_opciones_historia(base)
@@ -327,19 +253,7 @@ def _sanitizar_estrategia_campo(
 
 
 def sanitizar_estrategia_config(cfg: ConfigPresetHistoria, perfil) -> None:
-    if perfil.analisis_historico_disponible:
-        _sanitizar_estrategia_campo(
-            cfg,
-            ID_ESTRATEGIA_MATERIAS,
-            valores_estrategia_historica(perfil),
-        )
-        _sanitizar_estrategia_campo(
-            cfg,
-            ID_ESTRATEGIA_PRACTICA,
-            valores_estrategia_practica(),
-        )
-        return
-
+    _ = perfil
     legacy = cfg.get_str(ID_ESTRATEGIA_MATERIAS)
     if legacy and not cfg.get_str(ID_ESTRATEGIA_PRACTICA):
         cfg.valores[ID_ESTRATEGIA_PRACTICA] = legacy
@@ -351,18 +265,11 @@ def sanitizar_estrategia_config(cfg: ConfigPresetHistoria, perfil) -> None:
     )
 
 
-def _estrategia_historica_pondera(cfg: ConfigPresetHistoria) -> bool:
-    estrategia = estrategia_materias_desde_config(cfg) or ESTRATEGIA_MATERIAS_DEFECTO
-    if estrategia in {"sin_historico", "curricular"}:
-        return False
-    return estrategia in _IDS_ESTRATEGIA_HISTORICA
-
-
 def _estrategia_practica_pondera(cfg: ConfigPresetHistoria) -> bool:
     estrategia = estrategia_practica_desde_config(cfg) or ESTRATEGIA_PRACTICA_DEFECTO
     if estrategia == "sin_historico":
         return False
-    return estrategia in _IDS_ESTRATEGIA_HISTORICA
+    return estrategia in _IDS_ESTRATEGIA_PONDERACION
 
 
 def estrategia_efectiva_desde_config(
@@ -371,19 +278,10 @@ def estrategia_efectiva_desde_config(
     perfil=None,
 ) -> str:
     """Estrategia que fija el perfil pedagógico (refuerzo / desafío / balanceado)."""
-    hist = estrategia_materias_desde_config(cfg) or ESTRATEGIA_MATERIAS_DEFECTO
-    if perfil is not None and perfil.analisis_historico_disponible:
-        if hist == "curricular":
-            return hist
-        if _estrategia_historica_pondera(cfg):
-            return hist
+    _ = perfil
     pract = estrategia_practica_desde_config(cfg) or ESTRATEGIA_PRACTICA_DEFECTO
     if _estrategia_practica_pondera(cfg):
         return pract
-    if hist == "curricular":
-        return hist
-    if _estrategia_historica_pondera(cfg):
-        return hist
     return "sin_historico"
 
 
@@ -395,7 +293,7 @@ def usar_ponderacion_desde_config(
 ) -> bool:
     if not preset_usa_prioridad_materias(preset, perfil):
         return False
-    return _estrategia_historica_pondera(cfg) or _estrategia_practica_pondera(cfg)
+    return _estrategia_practica_pondera(cfg)
 
 
 def usar_analisis_local_desde_config(
@@ -407,19 +305,6 @@ def usar_analisis_local_desde_config(
     if not preset_usa_prioridad_materias(preset, perfil):
         return False
     return _estrategia_practica_pondera(cfg)
-
-
-def usar_analisis_historico_desde_config(
-    preset,
-    cfg: ConfigPresetHistoria,
-    *,
-    perfil=None,
-) -> bool:
-    if not preset.usa_analisis_historico:
-        return False
-    if perfil is not None and not perfil.analisis_historico_disponible:
-        return False
-    return _estrategia_historica_pondera(cfg)
 
 
 def _parse_opcion(raw: dict) -> OpcionPreset:

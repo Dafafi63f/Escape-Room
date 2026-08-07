@@ -12,11 +12,9 @@ from pathlib import Path
 from Comun.config_historia import (
     MATERIAS_POR_SEMESTRE,
     ConfigPresetHistoria,
-    ESTRATEGIA_MATERIAS_DEFECTO,
     OpcionPreset,
     curso_semestre_desde_valores,
     defectos_config,
-    estrategia_materias_desde_config,
     estrategia_efectiva_desde_config,
     opciones_config_historia,
     preset_usa_prioridad_materias,
@@ -95,13 +93,11 @@ class PresetHistoria:
     opciones: tuple[OpcionPreset, ...]
     tiempo_por_pregunta_seg: int | None = None
     tiempo_total_seg: int | None = None
-    orden_por_historico: str | None = None
     orden_preguntas: str | None = None
     orden_preguntas_por_dificultad: bool = False
     orden_preguntas_por_materia: bool = False
     variar_orden_cada_partida: bool = False
     exigir_balance_completo: bool = False
-    usa_analisis_historico: bool = True
     usar_plantillas_materia: bool = False
     solo_atajo: bool = False
 
@@ -310,7 +306,7 @@ def modos_especiales_builtin():
             id=ID_MODO_ESCAPE_ROOM,
             nombre="Escape room",
             descripcion=(
-                "30 salas, 3 puertas. Descanso, tienda y bot?n. Inventario de objetos "
+                "30 salas, 3 puertas. Descanso, tienda y botín. Inventario de objetos "
                 "como en resistencia. Tres vidas por partida."
             ),
             categoria="Escape room",
@@ -324,7 +320,6 @@ def modos_especiales_builtin():
             grupo_filtro=None,
             preguntas_por_materia=None,
             opciones=(),
-            usa_analisis_historico=False,
         ),
         PresetHistoria(
             id=ID_MODO_RESISTENCIA,
@@ -344,7 +339,6 @@ def modos_especiales_builtin():
             grupo_filtro=None,
             preguntas_por_materia=None,
             opciones=(),
-            usa_analisis_historico=False,
         ),
     ]
 
@@ -399,8 +393,6 @@ def _parse_preset(item: dict, *, catalogo_historia: bool = False) -> PresetHisto
         or c in (ContextoPartida.RESISTENCIA, ContextoPartida.ESCAPE)
     }:
         raise ValueError(f"contexto_reglas desconocido: {contexto!r}")
-    # Por defecto el cat?logo historia usa MatCAD; un preset puede desactivarlo en JSON.
-    usa_historico = bool(item.get("usa_analisis_historico", catalogo_historia))
     return PresetHistoria(
         id=str(item["id"]),
         nombre=str(item["nombre"]),
@@ -418,13 +410,11 @@ def _parse_preset(item: dict, *, catalogo_historia: bool = False) -> PresetHisto
         opciones=parse_opciones(item.get("opciones")),
         tiempo_por_pregunta_seg=item.get("tiempo_por_pregunta_seg"),
         tiempo_total_seg=item.get("tiempo_total_seg"),
-        orden_por_historico=item.get("orden_por_historico"),
         orden_preguntas=item.get("orden_preguntas"),
         orden_preguntas_por_dificultad=bool(item.get("orden_preguntas_por_dificultad", False)),
         orden_preguntas_por_materia=bool(item.get("orden_preguntas_por_materia", False)),
         variar_orden_cada_partida=bool(item.get("variar_orden_cada_partida", False)),
         exigir_balance_completo=bool(item.get("exigir_balance_completo", False)),
-        usa_analisis_historico=usa_historico,
         usar_plantillas_materia=bool(item.get("usar_plantillas_materia", False)),
         solo_atajo=bool(item.get("solo_atajo", False)),
     )

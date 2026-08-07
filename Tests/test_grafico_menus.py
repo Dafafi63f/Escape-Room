@@ -1012,9 +1012,9 @@ class TestHoverTooltipsGrafico(unittest.TestCase):
         self.assertEqual(config.boton_empezar.tooltip, TOOLTIP_EMPEZAR)
         self.assertEqual(config.boton_atras.tooltip, TOOLTIP_ATRAS)
 
-        op_id = "estrategia_materias"
+        op_id = "estrategia_practica"
         self.assertIn(op_id, config.botones_ciclo)
-        self.assertIn("estrategia_practica", config.botones_ciclo)
+        self.assertNotIn("estrategia_materias", config.botones_ciclo)
         izq, der = config.botones_ciclo[op_id]
         self.assertIsNone(izq.tooltip)
         self.assertIsNone(der.tooltip)

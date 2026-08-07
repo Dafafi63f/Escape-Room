@@ -26,13 +26,12 @@ _FICHEROS_PROHIBIDOS_EN_JUEGO = frozenset({
     "Preguntas.csv",
     "listado_materias.csv",
     "criterios_clasificacion_materia.csv",
-    "Historic_qualificacions_MatCAD_completo.csv",
     "creador_privado.json",
 })
 
 _CARPETAS_PROHIBIDAS_EN_JUEGO = frozenset({"defaults", "Banco"})
 
-# Runtime del jugador: no deben versionarse ni empaquetarse en el zip portable.
+# Runtime del jugador: no deben versionarse ni empaquetarse en el zip jugable.
 _PATRONES_RUNTIME_JUEGO = (
     "preferencias_grafico.json",
     "estadisticas_jugador.json",
@@ -232,7 +231,7 @@ def auditar_carpetas_data(raiz: Path | None = None) -> list[str]:
 
 
 def texto_referencia_datos_juego() -> str:
-    """Texto plano para documentación o consola (``utilidades_tfg.py --esquemas-juego``)."""
+    """Texto plano para documentación o consola (esquemas JSON del jugador)."""
     lineas = [
         "Data/Juego/ — datos locales del jugador (generados al jugar)",
         "",

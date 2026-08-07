@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Bootstrap del juego, CSV, paquete, validación y manifiesto del zip mínimo."""
+"""Bootstrap del juego: CSV, detección de paquete y carga de contenido."""
 
 from __future__ import annotations
 
@@ -112,7 +112,7 @@ def detectar_tipo_paquete() -> TipoPaquete:
 
 
 def _detectar_minimo_por_layout() -> TipoPaquete | None:
-    """Layout típico del zip mínimo sin marcador (``Data/Preguntas.csv`` + motor ``Juego/``)."""
+    """Layout típico del paquete mínimo sin marcador (``Data/Preguntas.csv`` + motor ``Juego/``)."""
     for base in _bases_busqueda_marcador():
         if (base / _MARCADOR_COMPLETO).is_file():
             continue
@@ -230,7 +230,6 @@ from Comun.perfil_contenido import PerfilContenido
 from Comun.rutas import (
     juego_dir,
     resolver_dataset,
-    resolver_historico_qualificacions,
     resolver_listado_materias,
     resolver_plantillas,
     resolver_presets,
@@ -245,7 +244,6 @@ class ContenidoJuego:
     path_plantillas_json: Path | None
     perfil: PerfilContenido
     path_listado_materias: Path | None = None
-    path_historico: Path | None = None
     avisos_carga: tuple[str, ...] = ()
 
 
@@ -278,24 +276,11 @@ def inferir_materias_meta(preguntas: list[Pregunta]) -> dict[str, dict[str, str]
     return meta
 
 
-def _archivo_historico_junto(path_csv: Path) -> Path | None:
-    for nombre in (
-        "Historic_qualificacions_MatCAD_completo.csv",
-        "historico_qualificacions.csv",
-        "historico.csv",
-    ):
-        candidato = _archivo_junto(path_csv, nombre)
-        if candidato:
-            return candidato
-    return None
-
-
 def _inferir_capacidades_datos(
     preguntas: list[Pregunta],
     materias_meta: dict[str, dict[str, str]],
     cabeceras: set[str],
     *,
-    path_historico: Path | None,
     csv_minimal: bool = False,
     dataset_intermedio: bool = False,
     cobertura: dict | None = None,
@@ -312,26 +297,10 @@ def _inferir_capacidades_datos(
         if not tiene_tipos_csv:
             tiene_tipos = bool(cobertura.get("tiene_tipos_pregunta"))
 
-    analisis_historico = False
-    tiene_historico = path_historico is not None and path_historico.is_file()
-    if tiene_historico:
-        try:
-            from Comun.generador_examen_historia import cargar_estadisticas_historicas
-
-            stats = cargar_estadisticas_historicas(
-                path_historico,
-                materias_validas=set(materias_meta),
-            )
-            analisis_historico = len(stats) > 0
-        except (FileNotFoundError, OSError, ValueError, KeyError):
-            analisis_historico = False
-
     return {
-        "tiene_historico": tiene_historico,
         "tiene_metadatos_curriculares": tiene_metadatos_curriculares,
         "tiene_grupos_tematicos": tiene_grupos,
         "tiene_tipos_pregunta": tiene_tipos,
-        "analisis_historico_disponible": analisis_historico,
     }
 
 
@@ -352,7 +321,7 @@ def _presets_en_carpeta_paquete(path_csv: Path) -> bool:
 
 
 def _presets_juego_minimo(path_csv: Path, *, paquete_zip: bool) -> bool:
-    """Presets del zip mínimo (``Juego/presets.json`` junto a ``Data/Preguntas.csv``)."""
+    """Presets del paquete mínimo (``Juego/presets.json`` junto a ``Data/Preguntas.csv``)."""
     if _presets_en_carpeta_paquete(path_csv):
         return True
     if paquete_zip:
@@ -372,7 +341,6 @@ def _construir_contenido(
     path_preguntas: Path,
     path_listado: Path | None,
     path_plantillas: Path | None,
-    path_historico: Path | None,
     tiene_presets: bool,
     tiene_plantillas: bool,
     tipo_paquete: TipoPaquete,
@@ -428,7 +396,6 @@ def _construir_contenido(
         preguntas,
         materias_meta,
         cabeceras,
-        path_historico=path_historico,
         csv_minimal=csv_minimal,
         dataset_intermedio=dataset_intermedio,
         cobertura=cobertura,
@@ -444,12 +411,10 @@ def _construir_contenido(
         tiene_listado_materias=tiene_listado,
         tiene_plantillas=tiene_plantillas,
         tiene_presets=tiene_presets,
-        tiene_historico=caps["tiene_historico"],
         tiene_preguntas_resistencia=tiene_preg_res,
         tiene_metadatos_curriculares=caps["tiene_metadatos_curriculares"],
         tiene_grupos_tematicos=caps["tiene_grupos_tematicos"],
         tiene_tipos_pregunta=caps["tiene_tipos_pregunta"],
-        analisis_historico_disponible=caps["analisis_historico_disponible"],
         dataset_intermedio=dataset_intermedio,
     )
 
@@ -459,14 +424,13 @@ def _construir_contenido(
         path_preguntas_csv=path_preguntas,
         path_plantillas_json=path_plantillas,
         path_listado_materias=path_listado,
-        path_historico=path_historico,
         perfil=perfil,
         avisos_carga=avisos,
     )
 
 
 def _cargar_juego_minimo(path_preguntas: Path, *, paquete_zip: bool) -> ContenidoJuego:
-    """Datos de usuario: solo CSV mínimo; sin listado, plantillas ni histórico externos."""
+    """Datos de usuario: solo CSV mínimo; sin listado ni plantillas externos."""
     path_preguntas = path_preguntas.resolve()
     if not path_preguntas.is_file():
         raise FileNotFoundError(f"No se encontró el CSV: {path_preguntas}")
@@ -476,7 +440,6 @@ def _cargar_juego_minimo(path_preguntas: Path, *, paquete_zip: bool) -> Contenid
         path_preguntas=path_preguntas,
         path_listado=None,
         path_plantillas=None,
-        path_historico=None,
         tiene_presets=_presets_juego_minimo(path_preguntas, paquete_zip=paquete_zip),
         tiene_plantillas=False,
         tipo_paquete="minimo",
@@ -493,8 +456,8 @@ def _cargar_paquete_completo() -> ContenidoJuego:
         raise ValueError(
             "Paquete MATCAD completo incompleto. Faltan:\n"
             f"{faltas}\n\n"
-            "Reinstala MATCAD_juego_portable.zip (juego del autor) "
-            "o usa MATCAD_juego_minimal.zip."
+            "Revisa Data/Banco/ (Preguntas.csv, listado_materias.csv) "
+            "o arranca con --csv para el modo mínimo."
         )
     path_preguntas = validacion.path_preguntas or resolver_dataset()
     path_plantillas = _resolver_opcional(resolver_plantillas)
@@ -502,7 +465,6 @@ def _cargar_paquete_completo() -> ContenidoJuego:
         path_preguntas=path_preguntas,
         path_listado=resolver_listado_materias(),
         path_plantillas=path_plantillas,
-        path_historico=_resolver_opcional(resolver_historico_qualificacions),
         tiene_presets=True,
         tiene_plantillas=path_plantillas is not None,
         tipo_paquete="completo",
@@ -526,19 +488,16 @@ def _cargar_paquete_desarrollo() -> ContenidoJuego:
         path_plantillas = None
         tiene_presets = _presets_juego_minimo(path_preguntas, paquete_zip=False)
         tiene_plantillas = False
-        path_historico = None
     else:
         path_listado = resolver_listado_materias()
         path_plantillas = _resolver_opcional(resolver_plantillas)
         tiene_presets = True
         tiene_plantillas = path_plantillas is not None
-        path_historico = _resolver_opcional(resolver_historico_qualificacions)
 
     return _construir_contenido(
         path_preguntas=path_preguntas,
         path_listado=path_listado,
         path_plantillas=path_plantillas,
-        path_historico=path_historico,
         tiene_presets=tiene_presets,
         tiene_plantillas=tiene_plantillas,
         tipo_paquete="desarrollo",
@@ -551,10 +510,10 @@ def _cargar_paquete_desarrollo() -> ContenidoJuego:
 def cargar_contenido_juego(*, path_csv: Path | None = None) -> ContenidoJuego:
     """Carga preguntas y deduce capacidades del motor.
 
-    **Usuario (datos propios):** zip mínimo → solo ``Data/Preguntas.csv`` con columnas mínimas;
-    juego mínimo (libre simplificado, historia acotada, resistencia con eventos).
+    **Usuario (datos propios):** paquete mínimo → ``Data/Preguntas.csv`` (o marcador
+    ``.matcad-paquete-minimo``) con columnas mínimas; juego acotado.
 
-    **Autor:** zip completo (``.matcad-paquete-completo``) o repo de desarrollo con ``Data/``
+    **Desarrollo / completo:** marcador ``.matcad-paquete-completo`` o repo con ``Data/``
     completo → juego MATCAD completo.
     """
     if path_csv is not None:
@@ -583,40 +542,6 @@ def construir_datos_juego(contenido: ContenidoJuego):
         path_preguntas_csv=contenido.path_preguntas_csv,
         path_plantillas_json=contenido.path_plantillas_json,
         path_listado_materias=contenido.path_listado_materias,
-        path_historico=contenido.path_historico,
         perfil=contenido.perfil,
         avisos_carga=contenido.avisos_carga,
     )
-
-# --- contenido_minimo ---
-
-
-MODULOS_EXCLUIDOS_MINIMO: frozenset[str] = frozenset({
-    "Comun/escape_room.py",
-    "Comun/escape_partida.py",
-    "Comun/tienda_escape.py",
-    "Grafico/pantallas_escape.py",
-    "Grafico/pantallas_historia.py",
-})
-
-RUTAS_EXCLUIDAS_MINIMO = MODULOS_EXCLUIDOS_MINIMO
-
-RAICES_FLUJO_MINIMO: frozenset[str] = frozenset({
-    "Comun.contenido",
-    "Comun.persistencia",
-    "Grafico.app",
-    "Grafico.pantallas_libre",
-    "Grafico.pantallas_modos",
-    "Grafico.pantallas_examen_fijo",
-    "Grafico.pantallas_resistencia_partida",
-    "Grafico.arranque_partida",
-    "Grafico.modo_historia",
-    "Grafico.pantallas_sistema",
-    "Comun.modos_diarios",
-})
-
-__all__ = [
-    "MODULOS_EXCLUIDOS_MINIMO",
-    "RAICES_FLUJO_MINIMO",
-    "RUTAS_EXCLUIDAS_MINIMO",
-]

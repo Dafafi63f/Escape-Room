@@ -1,29 +1,39 @@
-# Changelog del proyecto — TFG MATCAD
+# Changelog del proyecto — MATCAD (post-TFG)
 
-Registro **vivo** del proyecto: snapshot de estado, feedback del tutor y changelog por sesiones. Las tareas abiertas están en [`CHECKLIST.md`](CHECKLIST.md).
+Registro vivo del proyecto: estado, historial técnico y notas de sesión.
+Las tareas abiertas están en [`CHECKLIST.md`](CHECKLIST.md).
 
-**Última actualización:** 2026-08-07
-**Alumno:** Daniel Fageda Figueredo · **Tutor:** Víctor Navas Portella
+**Última actualización:** 2026-08-08
 
-En [`Docs/`](README.md): changelogs, checklist y memoria borrador. El repositorio no versiona PDFs.
+Este repositorio es el juego personal v1.1+. La memoria, figuras y presentación
+del TFG no se versionan aquí. Las secciones §1–6 más abajo son el **diario histórico**
+del TFG: pueden citar herramientas ya retiradas (`utilidades_tfg.py`, zips en
+`Juego/Distribucion/`, etc.). Comandos vigentes: tabla de enlaces y `Docs/utilidades.py`.
 
 | Enlace | Uso |
 |--------|-----|
 | [`CHANGELOG_JUEGO.md`](CHANGELOG_JUEGO.md) | Novedades visibles para el jugador |
 | [`CHECKLIST.md`](CHECKLIST.md) | Checklist de pendientes e ideas futuras |
-| [`persistencia.py`](../Juego/Comun/persistencia.py) | Esquemas JSON en `Data/Juego/` (`--esquemas-juego`) |
-| [`Memoria_TFG.md`](Entrega/Memoria_TFG.md) | Borrador Markdown (`Docs/Entrega/`) |
-| [`Entrega/`](Entrega/) | LaTeX y Word de la memoria (`Docs/Entrega/`) |
-| [`Figuras/`](Figuras/) | Imágenes de la memoria |
-| [`Data/README.md`](Data/README.md) | Banco 480 ítems, banco ampliado, esquema curricular |
+| [`persistencia.py`](../Juego/Comun/persistencia.py) | Esquemas JSON en `Data/Juego/` |
+| [`Data/README.md`](../Data/README.md) | Banco 480 ítems, banco ampliado, mapa curricular |
+| [`utilidades.py`](utilidades.py) | Limpieza + `MATCAD_juego_portable.zip` en la raíz del repo |
 
-Regenerar figuras: `python Docs/generar_figuras_memoria.py` · Word: `python Docs/utilidades_tfg.py --solo-memoria`
+```bash
+python Docs/utilidades.py
+```
 
 ---
 
 ## 2026-08-07 — Versión 1.1.0 (post-TFG)
 
 TFG cerrado. Continuación como **juego educativo / proyecto personal** (`v1.1.0`): datasets en UI como UAB (Básico/Completo), mantenimiento de CI y módulos; sin plazos universitarios.
+
+- Retirado el CSV de histórico institucional MatCAD del motor del juego; la ponderación del modo historia usa solo estadísticas locales del jugador.
+- `Docs/` simplificado: sin memoria/figuras/pipeline TFG; quedan changelogs.
+- Retirados `Juego/Scripts/` y `Docs/utilidades_distribucion.py`.
+- `Docs/utilidades.py`: limpieza de temporales + regeneración del zip jugable (antes `borrar_temporales.py`).
+- Paquete jugable: `Files/crear_zip_portable.py` → `MATCAD_juego_portable.zip` en la raíz; release GitHub `juego` ([descarga](https://github.com/Dafafi63f/Escape-Room/releases/download/juego/MATCAD_juego_portable.zip)).
+- Limpieza post-TFG: campos legacy de presets (`usa_analisis_historico`, `orden_por_historico`), docs alineadas (615 tests, CI `paquete-jugable`).
 
 ## 2026-06-29 — Versión 1.0.0 (entrega TFG)
 
@@ -34,8 +44,8 @@ Versión **jugable cerrada** para la entrega académica (detalle en [`RELEASE_1.
 | Versión en menú e Info | `Juego/Comun/version.py` → `v1.0.0` |
 | Terminología banco | UI y docs: **480 revisadas** / **banco ampliado** (antes «modo seguro/beta») |
 | Limpieza docs y código | Changelogs unificados; referencias a consola/terminal retiradas del juego |
-| Tests | **578** tests; `Files/health_check.py` |
-| Zips | Regenerables con `utilidades_tfg.py --solo-zip --forzar-zip` |
+| Tests | **578** tests en la entrega; `Files/health_check.py` |
+| Zips | Empaquetado TFG (retirado); en v1.1+ el zip jugable va a Releases (`juego`) |
 
 ---
 
@@ -47,7 +57,7 @@ Versión **jugable cerrada** para la entrega académica (detalle en [`RELEASE_1.
 | **Banco de preguntas** | Cerrado | 480/480 revisadas; `Preguntas.csv` protegido (`TFG_PERMITIR_CSV=1` para escribir) |
 | **Juego (pygame)** | Operativo (v1.1.0) | Proyecto personal post-TFG; 5 modos: libre, historia, resistencia, escape room, feedback |
 | **Scripts mantenimiento** | Operativo | `Files/mantenimiento.py` (scripts en `Files/`) |
-| **CI / pruebas** | Operativo | GitHub Actions; **578** tests en `Tests/` |
+| **CI / pruebas** | Operativo | GitHub Actions; **615** tests en `Tests/` |
 | **Interfaz gráfica / narrativa** | Parcial | Escape room jugable (mecánicas); narrativa gráfica completa pendiente |
 | **Piloto con usuarios** | No realizado | Ver [`CHECKLIST.md`](CHECKLIST.md) |
 
@@ -61,9 +71,7 @@ Versión **jugable cerrada** para la entrega académica (detalle en [`RELEASE_1.
 
 | Elemento | Estado | Ubicación |
 |----------|--------|-----------|
-| Memoria Markdown | Actualizada | `Docs/Entrega/Memoria_TFG.md` |
-| Memoria LaTeX / Word | Regenerables | `Docs/Entrega/` |
-| Figuras memoria | Regenerables | `Docs/Figuras/` |
+| Memoria / figuras / presentación TFG | Fuera del repo | Archivo local del autor |
 | Este changelog | **Mantener al día** | `Docs/CHANGELOG_PROYECTO.md` |
 
 ### 2.2 Código — juego
@@ -73,7 +81,7 @@ Versión **jugable cerrada** para la entrega académica (detalle en [`RELEASE_1.
 | Lanzador gráfico | OK | `Juego/juego_grafico.py` + `Juego/Grafico/` |
 | Paquete `Comun/` | OK | Dominio: reglas, datos, informes, feedback, historia, resistencia, escape |
 | Paquete `Grafico/` | OK | UI pygame, cinco modos de juego |
-| Ejecutable Windows | Retirado | Arranque con Python + `Jugar.bat` |
+| Ejecutable Windows | Retirado | Arranque con `python Juego/juego_grafico.py` |
 | Tests + CI | OK | `python -m unittest discover -s Tests -q` |
 
 ### 2.3 Datos y mantenimiento
@@ -83,7 +91,6 @@ Versión **jugable cerrada** para la entrega académica (detalle en [`RELEASE_1.
 | `Data/Banco/` | Cerrado 480 ítems | CSV + JSON de banco y catálogos (`Preguntas.csv`, plantillas, presets…) |
 | `Data/Juego/` | OK | Estado local: preferencias, estadísticas, informes `.txt`; esquemas en `persistencia.py` |
 | `duplicados.py revisar` | OK | 0 pares similares (2026-06-15) |
-| `simulacion_evaluacion_azar.py` | OK | Validación motor ante respuestas al azar |
 
 ---
 
@@ -97,7 +104,7 @@ Leyenda: ✅ aplicado · 🔄 parcial · ⏳ pendiente
 
 | Comentario | Estado | Dónde se reflejó |
 |------------|--------|------------------|
-| Marco teórico en **Introducción** | ✅ | `Docs/Entrega/Memoria_TFG.md` §1.5 |
+| Marco teórico en **Introducción** | ✅ | Memoria TFG §1.5 (archivo local) |
 | Resumen / abstract | ✅ | Inicio memoria + LaTeX |
 | Objetivos: cumplimiento en **Discusión** | ✅ | §6.1 |
 | Título **juego interactivo** | ✅ | Portada MD/LaTeX |
@@ -279,11 +286,8 @@ Síntesis de **41 commits** en git (mayo–junio 2026) más el trabajo reciente 
 ## 5. Comprobaciones rápidas
 
 ```bash
-python Docs/utilidades_tfg.py
-python Docs/utilidades_tfg.py --esquemas-juego
-python Docs/generar_figuras_memoria.py
+python Docs/utilidades.py
 python Files/mantenimiento.py validar
-python Files/simulacion_evaluacion_azar.py
 python -m unittest discover -s Tests -q
 ```
 

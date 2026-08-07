@@ -10,7 +10,8 @@ CLI unificada de mantenimiento (banco cerrado: 480 CSV + pool juego 1000).
   python Files/mantenimiento.py auditar-plantillas
   python Files/mantenimiento.py plantillas {comprobar|reclasificar} ...
   python Files/mantenimiento.py duplicados ...
-  python Docs/utilidades_distribucion.py [--solo-limpieza] [--dry-run]
+  python Files/mantenimiento.py temporales [--dry-run]
+  python Docs/utilidades.py [--solo-limpieza|--solo-zip] [--dry-run]
 
 Bancos cerrados (solo revisión manual; sin altas/bajas):
   Preguntas.csv, plantillas.json (960 filas, sin variaciones),
@@ -110,7 +111,7 @@ def cmd_duplicados(args: argparse.Namespace) -> int:
 def cmd_temporales(args: argparse.Namespace) -> int:
     import subprocess
 
-    cmd = [sys.executable, str(ROOT / "Docs" / "utilidades_distribucion.py"), "--solo-limpieza"]
+    cmd = [sys.executable, str(ROOT / "Docs" / "utilidades.py"), "--solo-limpieza"]
     if args.dry_run:
         cmd.append("--dry-run")
     if args.solo_pycache:
@@ -124,8 +125,8 @@ def cmd_temporales(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Mantenimiento del TFG (dataset cerrado).",
-        epilog="Ver Files/README.md y Docs/Entrega/Memoria_TFG.md §5.4",
+        description="Mantenimiento del banco (dataset cerrado).",
+        epilog="Ver Files/README.md",
     )
     sub = parser.add_subparsers(dest="comando", required=True)
 

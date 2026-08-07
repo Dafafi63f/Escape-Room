@@ -5,6 +5,10 @@ from __future__ import annotations
 
 import unittest
 
+from Tests.Fixtures.support import ensure_juego_path
+
+ensure_juego_path()
+
 from Comun.config_historia import (
     ConfigPresetHistoria,
     ID_ESTRATEGIA_MATERIAS,
@@ -12,10 +16,8 @@ from Comun.config_historia import (
     opciones_config_historia,
     opcion_historia_soportada,
     sanitizar_estrategia_config,
-    usar_analisis_historico_desde_config,
     usar_analisis_local_desde_config,
     usar_ponderacion_desde_config,
-    valores_estrategia_historica,
     valores_estrategia_practica,
 )
 from Comun.perfil_contenido import PerfilContenido
@@ -23,67 +25,46 @@ from Comun.presets_historia import buscar_preset
 
 
 class TestCapacidadesHistoria(unittest.TestCase):
-    def test_sin_historico_pero_con_listado_permite_historia(self) -> None:
-        perfil = PerfilContenido(
-            analisis_historico_disponible=False,
-            tiene_historico=False,
-        )
+    def test_con_listado_permite_historia(self) -> None:
+        perfil = PerfilContenido()
         self.assertTrue(perfil.modo_historia_disponible)
 
-    def test_estrategias_sin_historico_solo_practica(self) -> None:
-        perfil = PerfilContenido(analisis_historico_disponible=False)
+    def test_estrategias_solo_practica(self) -> None:
         vals = {v for v, _ in valores_estrategia_practica()}
         self.assertEqual(
             vals,
             {"sin_historico", "debilidades", "fortalezas", "equilibrado"},
         )
-
-    def test_estrategias_historico_sin_plan_curricular(self) -> None:
-        perfil = PerfilContenido(
-            analisis_historico_disponible=True,
-            tiene_metadatos_curriculares=False,
-        )
-        vals = {v for v, _ in valores_estrategia_historica(perfil)}
         self.assertNotIn("curricular", vals)
-        self.assertEqual(
-            vals,
-            {"debilidades", "fortalezas", "equilibrado", "sin_historico"},
-        )
 
-    def test_opciones_historia_incluyen_ambos_filtros(self) -> None:
-        perfil = PerfilContenido(analisis_historico_disponible=True)
+    def test_opciones_historia_solo_practica(self) -> None:
+        perfil = PerfilContenido()
         preset = buscar_preset("repaso")
         ids = {o.id for o in opciones_config_historia(preset, perfil=perfil)}
-        self.assertIn(ID_ESTRATEGIA_MATERIAS, ids)
+        self.assertNotIn(ID_ESTRATEGIA_MATERIAS, ids)
         self.assertIn(ID_ESTRATEGIA_PRACTICA, ids)
 
-    def test_opciones_sin_historico_solo_practica(self) -> None:
-        perfil = PerfilContenido(analisis_historico_disponible=False)
+    def test_opciones_examen_fijo_solo_practica(self) -> None:
+        perfil = PerfilContenido()
         preset = buscar_preset("examen_fijo")
         ids = {o.id for o in opciones_config_historia(preset, perfil=perfil)}
         self.assertNotIn(ID_ESTRATEGIA_MATERIAS, ids)
         self.assertIn(ID_ESTRATEGIA_PRACTICA, ids)
 
-    def test_etiquetas_estrategia_diferencian_historico_y_practica(self) -> None:
+    def test_etiquetas_estrategia_practica(self) -> None:
         from Comun.config_historia import (
-            etiqueta_campo_estrategia_materias,
             etiqueta_campo_estrategia_practica,
-            tooltip_valor_estrategia_historica,
             tooltip_valor_estrategia_practica,
         )
 
-        perfil_hist = PerfilContenido(analisis_historico_disponible=True)
-        hist = dict(valores_estrategia_historica(perfil_hist))
         pract = dict(valores_estrategia_practica())
-        self.assertNotEqual(hist["equilibrado"], pract["equilibrado"])
-        self.assertNotEqual(hist["sin_historico"], pract["sin_historico"])
-        self.assertIn("MatCAD", etiqueta_campo_estrategia_materias(perfil_hist))
+        self.assertEqual(pract["equilibrado"], "Práctica suave")
+        self.assertEqual(pract["sin_historico"], "Reparto uniforme")
         self.assertIn("práctica", etiqueta_campo_estrategia_practica())
-        self.assertIn("MatCAD", tooltip_valor_estrategia_historica("debilidades") or "")
         self.assertIn("práctica", tooltip_valor_estrategia_practica("debilidades") or "")
 
     def test_todos_los_presets_historia_tienen_prioridad(self) -> None:
-        perfil = PerfilContenido(analisis_historico_disponible=False)
+        perfil = PerfilContenido()
         for preset_id in (
             "repaso",
             "repaso_area",
@@ -99,10 +80,7 @@ class TestCapacidadesHistoria(unittest.TestCase):
         from Comun.generador_examen_historia import PerfilPedagogico
         from Comun.presets_historia import argumentos_generador, config_defecto
 
-        perfil = PerfilContenido(
-            analisis_historico_disponible=False,
-            csv_minimal=True,
-        )
+        perfil = PerfilContenido(csv_minimal=True)
         preset = buscar_preset("examen_fijo")
         cfg = config_defecto(
             preset,
@@ -134,35 +112,45 @@ class TestCapacidadesHistoria(unittest.TestCase):
         self.assertFalse(viable)
         self.assertIn("grupo", motivo.lower())
 
-    def test_usar_analisis_desactivado_sin_historico(self) -> None:
+    def test_sanitizar_migra_legacy_estrategia_materias(self) -> None:
         preset = buscar_preset("repaso")
-        perfil = PerfilContenido(analisis_historico_disponible=False)
-        cfg = ConfigPresetHistoria(valores={ID_ESTRATEGIA_PRACTICA: "debilidades"})
-        sanitizar_estrategia_config(cfg, perfil)
-        self.assertEqual(cfg.get_str(ID_ESTRATEGIA_PRACTICA), "debilidades")
-        self.assertFalse(
-            usar_analisis_historico_desde_config(preset, cfg, perfil=perfil)
+        perfil = PerfilContenido()
+        cfg = ConfigPresetHistoria(
+            valores={ID_ESTRATEGIA_MATERIAS: "debilidades"}
         )
+        sanitizar_estrategia_config(cfg, perfil)
+        self.assertIsNone(cfg.get_str(ID_ESTRATEGIA_MATERIAS))
+        self.assertEqual(cfg.get_str(ID_ESTRATEGIA_PRACTICA), "debilidades")
         self.assertTrue(
             usar_analisis_local_desde_config(preset, cfg, perfil=perfil)
+        )
+        self.assertTrue(
+            usar_ponderacion_desde_config(preset, cfg, perfil=perfil)
         )
 
-    def test_filtros_independientes_con_historico(self) -> None:
+    def test_ponderacion_por_practica_local(self) -> None:
         preset = buscar_preset("repaso")
-        perfil = PerfilContenido(analisis_historico_disponible=True)
+        perfil = PerfilContenido()
         cfg = ConfigPresetHistoria(
-            valores={
-                ID_ESTRATEGIA_MATERIAS: "sin_historico",
-                ID_ESTRATEGIA_PRACTICA: "debilidades",
-            }
-        )
-        self.assertFalse(
-            usar_analisis_historico_desde_config(preset, cfg, perfil=perfil)
+            valores={ID_ESTRATEGIA_PRACTICA: "debilidades"}
         )
         self.assertTrue(
             usar_analisis_local_desde_config(preset, cfg, perfil=perfil)
         )
         self.assertTrue(
+            usar_ponderacion_desde_config(preset, cfg, perfil=perfil)
+        )
+
+    def test_sin_ponderacion_reparto_uniforme(self) -> None:
+        preset = buscar_preset("repaso")
+        perfil = PerfilContenido()
+        cfg = ConfigPresetHistoria(
+            valores={ID_ESTRATEGIA_PRACTICA: "sin_historico"}
+        )
+        self.assertFalse(
+            usar_analisis_local_desde_config(preset, cfg, perfil=perfil)
+        )
+        self.assertFalse(
             usar_ponderacion_desde_config(preset, cfg, perfil=perfil)
         )
 

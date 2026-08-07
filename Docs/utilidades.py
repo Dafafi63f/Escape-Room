@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Utilidad **externa**: elimina artefactos temporales y ficheros runtime del juego.
+"""Utilidades del repo: limpieza de temporales y regeneración del zip jugable.
 
 Política de limpieza (complemento de ``Comun.persistencia``)
 ------------------------------------------------------------
@@ -16,7 +16,16 @@ El árbol ``Juego/Data/`` residual (p. ej. de despliegues antiguos) se elimina *
 Desde **dentro** del juego: solo ``Comun.persistencia`` — borra ``.txt`` y vacía
 el contenido de preferencias y estadísticas (los ``.json`` se conservan).
 
-CLI: ``python Docs/utilidades_tfg.py`` (lógica en ``Files/borrar_temporales.py``).
+Tras la limpieza (por defecto) regenera ``MATCAD_juego_portable.zip`` en la
+raíz del repo (artefacto local; CI lo publica en el release ``juego``).
+
+CLI::
+
+    python Docs/utilidades.py                  # limpieza + zip
+    python Docs/utilidades.py --solo-limpieza  # solo temporales
+    python Docs/utilidades.py --solo-zip       # solo paquete jugable
+    python Docs/utilidades.py --sin-zip        # solo limpieza
+    python Files/mantenimiento.py temporales  # delega en --solo-limpieza
 """
 
 from __future__ import annotations
@@ -30,8 +39,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-_FILES_DIR = Path(__file__).resolve().parent
-_PROYECTO = _FILES_DIR.parent
+_DOCS_DIR = Path(__file__).resolve().parent
+_PROYECTO = _DOCS_DIR.parent
 
 _OMITIR_PARTES = frozenset({
     ".venv",
@@ -69,7 +78,7 @@ def raiz_proyecto() -> Path:
 
 
 def dir_data_juego() -> Path:
-    """``Data/Juego/`` canónico en la raíz del TFG (desarrollo con ``juego_grafico.py``)."""
+    """``Data/Juego/`` canónico en la raíz del repo (desarrollo con ``juego_grafico.py``)."""
     return raiz_proyecto() / "Data" / "Juego"
 
 
@@ -758,43 +767,6 @@ def _configurar_stdout_utf8() -> None:
         reconfigure(encoding="utf-8", errors="replace")
 
 
-def _parser_borrar_temporales() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description=(
-            "Utilidad externa: borra __pycache__, cachés y elimina del disco los "
-            "ficheros runtime en Data/Juego/ (raíz del repo): preferencias_grafico.json, "
-            "estadisticas_jugador.json, ranking_*.json legado, *.txt; elimina también "
-            "Juego/Data/ (árbol residual) y directorios vacíos anidados en el repo. "
-            "Desde el juego solo se vacía el contenido de los JSON, no se borran."
-        ),
-    )
-    parser.add_argument("--dry-run", action="store_true", help="Solo lista, sin borrar")
-    grupo = parser.add_mutually_exclusive_group()
-    grupo.add_argument(
-        "--solo-pycache",
-        action="store_true",
-        help="Solo carpetas __pycache__ y cachés de herramientas",
-    )
-    grupo.add_argument(
-        "--solo-juego",
-        action="store_true",
-        help="Solo elimina ficheros runtime en Data/Juego/ (.txt y JSON)",
-    )
-    grupo.add_argument(
-        "--solo-txt",
-        action="store_true",
-        help="Solo elimina ficheros .txt en Data/Juego/",
-    )
-    return parser
-
-
-def _alcance_borrado(args: argparse.Namespace) -> tuple[bool, bool, bool]:
-    incluir_pycache = not args.solo_txt and not args.solo_juego
-    incluir_txt = not args.solo_pycache
-    incluir_json = not args.solo_pycache and not args.solo_txt
-    return incluir_pycache, incluir_txt, incluir_json
-
-
 def _imprimir_resumen_post_borrado(
     resumen: ResumenLimpieza,
     *,
@@ -877,9 +849,64 @@ def _recolectar_artefactos_limpieza(
     )
 
 
-def main(argv: list[str] | None = None) -> int:
-    _configurar_stdout_utf8()
-    args = _parser_borrar_temporales().parse_args(argv)
+def _parser_utilidades() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Utilidades del repo: limpia temporales/runtime y regenera el zip jugable. "
+            "Por defecto hace ambas cosas."
+        ),
+    )
+    parser.add_argument("--dry-run", action="store_true", help="Solo lista, sin borrar ni zip")
+    fase = parser.add_mutually_exclusive_group()
+    fase.add_argument(
+        "--solo-limpieza",
+        action="store_true",
+        help="Solo borra temporales/runtime (sin regenerar el zip)",
+    )
+    fase.add_argument(
+        "--solo-zip",
+        action="store_true",
+        help="Solo regenera MATCAD_juego_portable.zip",
+    )
+    fase.add_argument(
+        "--sin-zip",
+        action="store_true",
+        help="Igual que --solo-limpieza",
+    )
+    alcance = parser.add_mutually_exclusive_group()
+    alcance.add_argument(
+        "--solo-pycache",
+        action="store_true",
+        help="En limpieza: solo carpetas __pycache__ y cachés de herramientas",
+    )
+    alcance.add_argument(
+        "--solo-juego",
+        action="store_true",
+        help="En limpieza: solo ficheros runtime en Data/Juego/ (.txt y JSON)",
+    )
+    alcance.add_argument(
+        "--solo-txt",
+        action="store_true",
+        help="En limpieza: solo ficheros .txt en Data/Juego/",
+    )
+    parser.add_argument(
+        "-o",
+        "--salida",
+        type=Path,
+        default=None,
+        help="Ruta del zip (defecto: MATCAD_juego_portable.zip en la raíz)",
+    )
+    return parser
+
+
+def _alcance_borrado(args: argparse.Namespace) -> tuple[bool, bool, bool]:
+    incluir_pycache = not args.solo_txt and not args.solo_juego
+    incluir_txt = not args.solo_pycache
+    incluir_json = not args.solo_pycache and not args.solo_txt
+    return incluir_pycache, incluir_txt, incluir_json
+
+
+def _hacer_limpieza(args: argparse.Namespace) -> int:
     incluir_pycache, incluir_txt, incluir_json = _alcance_borrado(args)
 
     raiz = raiz_proyecto()
@@ -925,3 +952,45 @@ def main(argv: list[str] | None = None) -> int:
         incluir_json=incluir_json,
     )
     return 1 if resumen.errores_totales else 0
+
+
+def _hacer_zip(args: argparse.Namespace) -> int:
+    if args.dry_run:
+        print("Dry-run: se omitió la regeneración del zip.")
+        return 0
+    files_dir = str(raiz_proyecto() / "Files")
+    if files_dir not in sys.path:
+        sys.path.insert(0, files_dir)
+    from crear_zip_portable import crear_zip_portable  # noqa: E402
+
+    destino = args.salida
+    salida = crear_zip_portable(destino) if destino is not None else crear_zip_portable()
+    tamaño = salida.stat().st_size
+    print(f"Zip jugable: {salida} ({tamaño / 1024:.0f} KiB)")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    _configurar_stdout_utf8()
+    args = _parser_utilidades().parse_args(argv)
+    solo_zip = bool(args.solo_zip)
+    solo_limpieza = bool(args.solo_limpieza or args.sin_zip)
+
+    codigo = 0
+    if not solo_zip:
+        codigo = _hacer_limpieza(args)
+        if codigo:
+            return codigo
+    if not solo_limpieza:
+        try:
+            codigo_zip = _hacer_zip(args)
+        except FileNotFoundError as exc:
+            print(f"Error al generar el zip: {exc}", file=sys.stderr)
+            return 1
+        if codigo_zip:
+            return codigo_zip
+    return codigo
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

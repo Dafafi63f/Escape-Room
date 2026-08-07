@@ -1653,15 +1653,10 @@ class PartidaEscapeRoom(Pantalla):
         self.ir_a(MenuPrincipal(self.datos, self.ir_a, self.salir_app))
 
     def _fin_partida(self, *, abandonado: bool = False) -> None:
-        from Comun.generador_examen_historia import cargar_estadisticas_historicas
-
         victoria = self._resultado == "victoria" and not abandonado
         derrota = self._resultado == "derrota" and not abandonado
         cierre = None
         if self.registros:
-            stats = cargar_estadisticas_historicas(
-                materias_validas=set(self.datos.materias_meta)
-            )
             if abandonado:
                 titulo_txt = f"ABANDONO — {self.preset.nombre}"
             elif victoria:
@@ -1690,7 +1685,6 @@ class PartidaEscapeRoom(Pantalla):
                     ),
                     "n_salas": self.config.n_salas,
                 },
-                stats_historicas=stats,
                 abandonado=abandonado,
             )
         if abandonado:

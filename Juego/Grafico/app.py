@@ -234,7 +234,6 @@ class DatosJuego:
     path_preguntas_csv: Path
     path_plantillas_json: Path | None = None
     path_listado_materias: Path | None = None
-    path_historico: Path | None = None
     perfil: PerfilContenido = field(default_factory=PerfilContenido.completo)
     avisos_carga: tuple[str, ...] = ()
     abrir_feedback: Callable[[], None] | None = field(default=None, repr=False, compare=False)

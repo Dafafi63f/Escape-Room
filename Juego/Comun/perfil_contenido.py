@@ -24,12 +24,10 @@ class PerfilContenido:
     tiene_listado_materias: bool = True
     tiene_plantillas: bool = True
     tiene_presets: bool = True
-    tiene_historico: bool = True
     tiene_preguntas_resistencia: bool = True
     tiene_metadatos_curriculares: bool = True
     tiene_grupos_tematicos: bool = True
     tiene_tipos_pregunta: bool = True
-    analisis_historico_disponible: bool = True
     dataset_intermedio: bool = False
 
     @property

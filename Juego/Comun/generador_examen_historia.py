@@ -3,31 +3,28 @@
 """
 Motor de generación de exámenes (modo historia).
 
-Usa el histórico de calificaciones (MatCAD) para ponderar materias según el
-perfil pedagógico y el banco de preguntas. La dificultad no se fija en la
-configuración: emerge del pool al elegir preguntas por tipo (teoría/cálculo).
+Pondera materias según la práctica local del jugador (estadísticas pasadas)
+y el perfil pedagógico, sobre el banco de preguntas. La dificultad no se fija
+en la configuración: emerge del pool al elegir preguntas por tipo (teoría/cálculo).
 
 Importado por modo_historia.py. Para probar sin jugar: Files/cli_examen_historia.py
 """
 
 from __future__ import annotations
 
-import csv
 import random
 from collections import defaultdict
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Callable
 
 from Comun.reglas import validar_total_preguntas
-from Comun.rutas import resolver_historico_qualificacions
 from Comun.semillas import RngPartida
 
 from enum import Enum
 
 
 class PerfilPedagogico(str, Enum):
-    """Perfiles v1 (datos agregados del histórico)."""
+    """Perfiles v1 (ponderación por práctica / índice de dificultad local)."""
 
     BALANCEADO = "balanceado"
     REFUERZO = "refuerzo"
@@ -38,10 +35,20 @@ class PerfilPedagogico(str, Enum):
 
 def describir_perfil(perfil: PerfilPedagogico) -> str:
     textos = {
-        PerfilPedagogico.BALANCEADO: "Preferencia histórica suave al repartir preguntas entre materias.",
-        PerfilPedagogico.REFUERZO: "Más preguntas en materias con más suspensos del ámbito.",
-        PerfilPedagogico.DESAFIO: "Más preguntas en materias con mejores medias del ámbito.",
-        PerfilPedagogico.POR_CURSO: "Cobertura del ámbito curricular; más preguntas en las más exigentes.",
+        PerfilPedagogico.BALANCEADO: (
+            "Preferencia suave al repartir preguntas según el índice de dificultad "
+            "de tu práctica."
+        ),
+        PerfilPedagogico.REFUERZO: (
+            "Más preguntas en materias o conceptos con peor acierto en tu práctica."
+        ),
+        PerfilPedagogico.DESAFIO: (
+            "Más preguntas en materias o conceptos con mejor acierto en tu práctica."
+        ),
+        PerfilPedagogico.POR_CURSO: (
+            "Cobertura del ámbito curricular; más preguntas en las más exigentes "
+            "según tu práctica."
+        ),
         PerfilPedagogico.SIMULACRO: "Una pregunta por materia del ámbito (repaso global).",
     }
     return textos.get(perfil, perfil.value)
@@ -66,17 +73,6 @@ def preguntas_por_materia_defecto(
     return PREGUNTAS_POR_MATERIA_DEFECTO
 
 
-# Nombre de asignatura en el CSV histórico (columna «Unnamed: 9») → Materia del listado.
-ALIASES_NOMBRE_HISTORICO: dict[str, str] = {
-    "Computació d'Altes Prestacions": "Computació i Simulació d'Altes Prestacions",
-    "Simulació d'Altes Prestacions": "Computació i Simulació d'Altes Prestacions",
-}
-
-COL_NOMBRE_ASIGNATURA = "Unnamed: 9"
-COL_NOTA = "Qualificació"
-UMBRAL_SUSPENS = 5.0
-
-
 @dataclass(frozen=True)
 class EstadisticaMateria:
     materia: str
@@ -98,61 +94,14 @@ class PlanExamen:
     rng: RngPartida | None = None
 
 
-def normalizar_nombre_historico(nombre: str) -> str:
-    nombre = (nombre or "").strip()
-    return ALIASES_NOMBRE_HISTORICO.get(nombre, nombre)
-
-
-def cargar_estadisticas_historicas(
-    path_csv: Path | None = None,
-    *,
-    materias_validas: set[str] | None = None,
-) -> dict[str, EstadisticaMateria]:
-    path = path_csv or resolver_historico_qualificacions()
-    acum: dict[str, list[float]] = defaultdict(list)
-
-    with path.open("r", encoding="utf-8", newline="") as f:
-        reader = csv.DictReader(f, delimiter=";")
-        for row in reader:
-            nombre = normalizar_nombre_historico(row.get(COL_NOMBRE_ASIGNATURA, ""))
-            if not nombre:
-                continue
-            if materias_validas is not None and nombre not in materias_validas:
-                continue
-            raw = (row.get(COL_NOTA) or "").strip().replace(",", ".")
-            try:
-                nota = float(raw)
-            except ValueError:
-                continue
-            acum[nombre].append(nota)
-
-    stats: dict[str, EstadisticaMateria] = {}
-    for materia, notas in acum.items():
-        n = len(notas)
-        media = sum(notas) / n
-        suspensos = sum(1 for x in notas if x < UMBRAL_SUSPENS)
-        tasa = suspensos / n
-        # Índice 0..1: más alto ⇒ más difícil según el histórico agregado.
-        indice = min(1.0, max(0.0, 0.55 * tasa + 0.45 * ((UMBRAL_SUSPENS - media) / 3.0)))
-        stats[materia] = EstadisticaMateria(
-            materia=materia,
-            n_registros=n,
-            media=round(media, 2),
-            tasa_suspens=round(tasa, 3),
-            indice_dificultad=round(indice, 3),
-        )
-    return stats
-
-
 def indices_dificultad_ambito(
     candidatas: list[str],
     stats: dict[str, EstadisticaMateria],
 ) -> dict[str, float]:
     """Índice 0..1 de dificultad relativo al ámbito filtrado (curso/semestre/grupo).
 
-    El histórico global sigue siendo la fuente, pero se reescala dentro de las
-    materias candidatas para que refuerzo/desafío y el orden tengan sentido aunque
-    el ámbito elegido no coincida con las asignaturas más difíciles del grado entero.
+    Las estadísticas (práctica local) se reescalan dentro de las materias candidatas
+    para que refuerzo/desafío y el orden tengan sentido en el ámbito elegido.
     """
     if not candidatas:
         return {}
@@ -188,7 +137,7 @@ def calcular_pesos_materia(
         if not usar_analisis_historico:
             w = 1.0
         elif perfil == PerfilPedagogico.BALANCEADO:
-            # Preferencia suave: el histórico inclina sin bloquear otras materias.
+            # Preferencia suave: la práctica inclina sin bloquear otras materias.
             w = 0.75 + 0.50 * indice
         elif perfil == PerfilPedagogico.REFUERZO:
             w = 0.35 + indice
@@ -655,46 +604,17 @@ def resolver_stats_para_generador(
     preset,
     cfg,
     perfil,
-    path_historico=None,
     materias_meta: dict | None = None,
 ) -> dict[str, EstadisticaMateria]:
-    """Histórico MatCAD, práctica local o mezcla según preset, perfil y configuración."""
-    from Comun.config_historia import (
-        usar_analisis_historico_desde_config,
-        usar_analisis_local_desde_config,
-        usar_ponderacion_desde_config,
-    )
-    from Comun.estadisticas_jugador import (
-        cargar_estadisticas_locales,
-        combinar_stats_examen,
-    )
+    """Carga estadísticas locales si la configuración pide ponderar por práctica."""
+    from Comun.config_historia import usar_analisis_local_desde_config
+    from Comun.estadisticas_jugador import cargar_estadisticas_locales
 
-    historico: dict[str, EstadisticaMateria] = {}
-    local: dict[str, EstadisticaMateria] = {}
-
-    usar_hist = usar_analisis_historico_desde_config(preset, cfg, perfil=perfil)
-    usar_local = usar_analisis_local_desde_config(preset, cfg, perfil=perfil)
-
-    if (
-        usar_hist
-        and perfil is not None
-        and perfil.analisis_historico_disponible
-        and path_historico is not None
-    ):
-        try:
-            historico = cargar_estadisticas_historicas(
-                path_historico,
-                materias_validas=set(materias_meta) if materias_meta else None,
-            )
-        except FileNotFoundError:
-            historico = {}
-
-    if usar_local and perfil is not None:
-        local = cargar_estadisticas_locales(perfil, materias_meta)
-
-    if historico and local:
-        return combinar_stats_examen(historico, local)
-    return historico or local
+    if not usar_analisis_local_desde_config(preset, cfg, perfil=perfil):
+        return {}
+    if perfil is None:
+        return {}
+    return cargar_estadisticas_locales(perfil, materias_meta)
 
 
 def _ordenar_seleccion_examen(
@@ -774,18 +694,15 @@ def generar_examen(
     """
     Construye un examen eligiendo N preguntas por materia del pool disponible.
 
-    La dificultad no se impone: sale del banco al sortear. Con histórico activo,
-    el reparto entre materias sigue los pesos del perfil (salvo
+    La dificultad no se impone: sale del banco al sortear. Con ponderación activa
+    (práctica local), el reparto entre materias sigue los pesos del perfil (salvo
     ``exigir_balance_completo``). Con semilla fija, la selección es reproducible.
     """
     if pregunta_key is None:
         pregunta_key = lambda p: (p.materia, p.texto)
 
     if stats is None:
-        if not seleccion_plana:
-            stats = cargar_estadisticas_historicas(materias_validas=set(materias_orden))
-        else:
-            stats = {}
+        stats = {}
 
     from Comun.semillas import RngPartida, semilla_partida_aleatoria
 
@@ -1101,13 +1018,13 @@ def resumen_estadisticas(
     materias: list[str],
     top_n: int = 8,
 ) -> str:
-    """Texto breve para CLI: materias más exigentes según histórico."""
+    """Texto breve para CLI: materias más exigentes según el índice de dificultad."""
     ordenadas = sorted(
         (stats[m] for m in materias if m in stats),
         key=lambda s: s.indice_dificultad,
         reverse=True,
     )
-    lineas = ["Materias con mayor índice de dificultad (histórico agregado):"]
+    lineas = ["Materias con mayor índice de dificultad (práctica / stats):"]
     for st in ordenadas[:top_n]:
         lineas.append(
             f"  · {st.materia}: media {st.media}, suspens {st.tasa_suspens:.0%}, "

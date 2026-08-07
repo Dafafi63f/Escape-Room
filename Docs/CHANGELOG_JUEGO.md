@@ -1,8 +1,8 @@
-# Novedades del juego
+﻿# Novedades del juego
 
 Cambios **visibles o relevantes para quien juega** en la interfaz gráfica pygame. El historial técnico del TFG está en [`CHANGELOG_PROYECTO.md`](CHANGELOG_PROYECTO.md).
 
-**Última actualización:** 2026-08-07
+**Última actualización:** 2026-08-08
 
 ---
 
@@ -12,6 +12,9 @@ El TFG ya está cerrado. A partir de aquí MATCAD sigue como **juego educativo /
 
 - **Versión** en menú e Info: `v1.1.0`.
 - **Datasets en la UI:** opciones renombradas a **UAB (Básico)** (480 oficiales) y **UAB (Completo)** (960; extras en beta). Los ficheros en `Data/` conservan sus nombres.
+- **Histórico MatCAD retirado:** el modo historia (y similares) pondera solo con tus estadísticas locales (`estadisticas_jugador.json`). El CSV institucional ya no forma parte del juego.
+- **Data/ limpio:** sin CSV/xlsx de calificaciones; `metadatos_inferidos.json` deja de versionarse (runtime en `Data/Juego/`).
+- **Descarga solo el juego:** [MATCAD_juego_portable.zip](https://github.com/Dafafi63f/Escape-Room/releases/download/juego/MATCAD_juego_portable.zip) (sin clonar el repo). Localmente: `python Docs/utilidades.py --solo-zip` → `MATCAD_juego_portable.zip` en la raíz.
 - Mantenimiento interno (CI, tipados, módulos de UI más compactos) sin cambiar la jugabilidad base de la 1.0.
 
 ## 2026-06-29 — Versión 1.0.0 (entrega TFG)
@@ -21,7 +24,7 @@ Versión **jugable y cerrada** para la entrega del TFG.
 - **Menú principal** e **Info (ℹ️)** muestran la versión `v1.0.0`.
 - **Modo libre / escape:** por defecto banco **480 revisadas**; el banco ampliado (960) es opcional y está etiquetado como extras sin revisión completa.
 - **Apuestas (resistencia):** el botín aleatorio ya no incluye Tiempo lento, +Tiempo ni Doble o nada; las compras en popup se titulan «Oferta — …».
-- **578 tests** pasando; zip portable regenerable con `python Docs/utilidades_tfg.py --solo-zip`.
+- **578 tests** en la entrega; arrancar con `python Juego/juego_grafico.py`.
 
 ## 2026-06-29 (atajos, examen dirigido, estadísticas)
 
@@ -35,7 +38,7 @@ Versión **jugable y cerrada** para la entrega del TFG.
 - Los datos se guardan en `Data/Juego/estadisticas_jugador.json` al cerrar cualquier partida (independiente del informe `.txt`). El fichero se crea vacío al arrancar el juego si no existe.
 - **Opciones (⚙️):** botón «Restablecer estadísticas» (como un guardado nuevo).
 - **Eliminado:** ranking local (`ranking_resistencia.json`), pantalla de ranking y posición en el resumen de resistencia. Los récords pasan a las estadísticas agregadas.
-- Esquema de los JSON locales en [`Juego/Comun/persistencia.py`](../Juego/Comun/persistencia.py) (`python Docs/utilidades_tfg.py --esquemas-juego`).
+- Esquema de los JSON locales en [`Juego/Comun/persistencia.py`](../Juego/Comun/persistencia.py) (esquemas en `persistencia.py`).
 
 ## 2026-06-27 (escape room y economía)
 
@@ -57,7 +60,7 @@ Versión **jugable y cerrada** para la entrega del TFG.
 
 - Eliminada la versión en terminal; **único lanzador:** `python Juego/juego_grafico.py`.
 - Informes, feedback y generador de historia viven en `Juego/Comun/`.
-- Suite de tests reorientada al backend gráfico (**424** tests: 416 en `Tests/` + 8 en `Files/`). *Conteo histórico (junio 2026); suite actual: **578** tests en `Tests/`.*
+- Suite de tests reorientada al backend gráfico (**424** tests: 416 en `Tests/` + 8 en `Files/`). *Conteo histórico (junio 2026); suite actual: **615** tests en `Tests/`.*
 
 ## 2026-06-19 (interfaz gráfica)
 

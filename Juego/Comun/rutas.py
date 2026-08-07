@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Resolución de rutas a datos y persistencia (script o zip portable)."""
+"""Resolución de rutas a datos y persistencia (repo o zip jugable)."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def juego_dir() -> Path:
 
 
 def _raiz_paquete() -> Path:
-    """Raíz del paquete desplegado (``MATCAD_minimal/``, repo del TFG, etc.)."""
+    """Raíz del paquete desplegado (repo o zip jugable)."""
     return _JUEGO_DIR.parent
 
 
@@ -197,7 +197,7 @@ def resolver_dir_privado() -> Path:
 
 
 def resolver_preguntas_minimal() -> Path:
-    """CSV mínimo del banco (480 filas) para tests y zip mínimo."""
+    """CSV mínimo del banco (480 filas) para tests y paquete mínimo."""
     return _dir_privado() / "Preguntas_minimal.csv"
 
 
@@ -327,14 +327,6 @@ def resolver_presets_historia() -> Path:
 
 def resolver_presets_especiales() -> Path:
     return resolver_presets()
-
-def resolver_historico_qualificacions() -> Path:
-    return _buscar_archivo(
-        "Historic_qualificacions_MatCAD_completo.csv",
-        ("Historic_qualificacions_MatCAD_completo.csv",),
-        zona="banco",
-    )
-
 
 def resolver_config_creador_privado() -> Path | None:
     """JSON local del creador (datos personales y secretos; no se versiona)."""

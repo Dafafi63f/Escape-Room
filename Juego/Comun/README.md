@@ -13,15 +13,9 @@ Al arrancar, [`contenido.py`](contenido.py) construye un [`PerfilContenido`](per
 | `contenido.py` | Marcadores de paquete, validación CSV, bootstrap y degradación automática |
 | `perfil_contenido.py` | Capacidades activas según datos y modo |
 
-Rutas resueltas en carga (`path_listado_materias`, `path_plantillas_json`, `path_historico`) viajan en `DatosJuego`; no usar `PATH_MATERIAS` ni `resolver_plantillas()` en pantallas si hay datos cargados.
+Rutas resueltas en carga (`path_listado_materias`, `path_plantillas_json`) viajan en `DatosJuego`; no usar `PATH_MATERIAS` ni `resolver_plantillas()` en pantallas si hay datos cargados.
 
-Distribución:
-
-| Zip | Marcador | Comportamiento |
-|-----|----------|----------------|
-| `MATCAD_juego_minimal.zip` | `.matcad-paquete-minimo` | Datos de usuario: solo CSV mínimo junto al paquete |
-| `MATCAD_juego_portable.zip` | `.matcad-paquete-completo` | Juego MATCAD completo del autor |
-| Repositorio (dev) | ninguno | Completo si `Data/` cumple requisitos; avisos si falta algo |
+El repositorio de desarrollo se comporta como paquete completo si `Data/` cumple requisitos; con solo un CSV mínimo (`--csv` o layout plano) el perfil degrada a modo mínimo.
 
 ## Módulos — núcleo
 
@@ -84,7 +78,7 @@ Detalle en [`semillas.py`](semillas.py) y [`modos_diarios.py`](modos_diarios.py)
 | Ubicación | Contenido |
 |-----------|-----------|
 | [`Grafico/`](../Grafico/README.md) | Pantallas pygame, widgets, tema, tooltips, [`arranque_partida.py`](../Grafico/arranque_partida.py) (`construir_navegacion_fin_partida`), [`changelog_juego.py`](../Grafico/changelog_juego.py) |
-| [`Files/borrar_temporales.py`](../../Files/borrar_temporales.py) | Limpieza externa del repo (CLI: [`Docs/utilidades_tfg.py`](../../Docs/utilidades_tfg.py)) |
+| [`Docs/utilidades.py`](../../Docs/utilidades.py) | Limpieza externa del repo y `MATCAD_juego_portable.zip` en la raíz |
 
 El gráfico elige banco en [`Grafico/pantallas_libre.py`](../Grafico/pantallas_libre.py).
 

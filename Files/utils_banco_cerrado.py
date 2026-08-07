@@ -46,8 +46,6 @@ _ENV_OVERRIDE_PLANTILLAS = "TFG_PERMITIR_PLANTILLAS"
 
 SCRIPTS_SOLO_LECTURA = (
     "mantenimiento.py",
-    "utilidades_tfg.py",
-    "utilidades_distribucion.py",
     "validacion_dataset.py",
     "auditoria.py",
     "clasificar_pregunta.py",

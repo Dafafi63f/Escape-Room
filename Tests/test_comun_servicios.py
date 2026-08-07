@@ -8,7 +8,6 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 from Tests.Fixtures.support import ensure_juego_path
 
@@ -16,12 +15,9 @@ ensure_juego_path()
 
 from Comun.feedback import (  # noqa: E402
     PLANTILLA_CREADOR_PRIVADO,
-    creador_privado_para_distribucion,
     escribir_plantilla_creador_privado,
     mensaje_crear_creador_privado,
     plantilla_creador_privado,
-    smtp_distribucion_listo,
-    texto_creador_privado_distribucion,
     texto_plantilla_creador_privado,
 )
 from Comun.informe_examen import meta_cierre_historia, meta_cierre_libre  # noqa: E402
@@ -54,42 +50,6 @@ class TestConfigCreador(unittest.TestCase):
     def test_mensaje_apunta_a_comun(self) -> None:
         self.assertIn("Comun.feedback", mensaje_crear_creador_privado())
         self.assertNotIn("Consola", mensaje_crear_creador_privado())
-
-    def test_distribucion_solo_feedback_smtp(self) -> None:
-        smtp = {
-            "smtp_servidor": "smtp.gmail.com",
-            "smtp_usuario": "a@b.c",
-            "smtp_password": "secreto",
-            "smtp_destino": "dest@x.y",
-        }
-        privado = {"feedback_smtp": smtp, "github": {"personal_access_token": "tok"}}
-        with tempfile.TemporaryDirectory() as tmp:
-            ruta = Path(tmp) / "creador_privado.json"
-            ruta.write_text(json.dumps(privado), encoding="utf-8")
-            with patch("Comun.feedback.resolver_config_creador_privado", return_value=ruta):
-                datos = creador_privado_para_distribucion()
-                assert datos is not None
-                self.assertEqual(set(datos.keys()), {"feedback_smtp"})
-                self.assertNotIn("github", datos)
-                listo, dest = smtp_distribucion_listo()
-                self.assertTrue(listo)
-                self.assertEqual(dest, "dest@x.y")
-                texto = texto_creador_privado_distribucion()
-                assert texto is not None
-                empaquetado = json.loads(texto)
-                self.assertEqual(empaquetado["feedback_smtp"]["smtp_password"], "secreto")
-
-    def test_distribucion_rechaza_smtp_incompleto(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            ruta = Path(tmp) / "creador_privado.json"
-            ruta.write_text(
-                '{"feedback_smtp": {"smtp_servidor": "x", "smtp_usuario": "y"}}',
-                encoding="utf-8",
-            )
-            with patch("Comun.feedback.resolver_config_creador_privado", return_value=ruta):
-                listo, _ = smtp_distribucion_listo()
-                self.assertFalse(listo)
-                self.assertIsNone(texto_creador_privado_distribucion())
 
 
 class TestCierreInforme(unittest.TestCase):

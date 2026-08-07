@@ -1142,23 +1142,10 @@ class PartidaModoHistoria(Pantalla):
         self.ir_a(MenuPrincipal(self.datos, self.ir_a, self.salir_app))
 
     def _fin_partida(self, *, abandonado: bool = False) -> None:
-        from Comun.generador_examen_historia import cargar_estadisticas_historicas
         from Comun.modos_diarios import titulo_fin_partida_historia
 
         cierre = None
         if self.registros:
-            stats: dict = {}
-            if (
-                self.datos.perfil.analisis_historico_disponible
-                and self.datos.path_historico is not None
-            ):
-                try:
-                    stats = cargar_estadisticas_historicas(
-                        self.datos.path_historico,
-                        materias_validas=set(self.datos.materias_meta),
-                    )
-                except FileNotFoundError:
-                    stats = {}
             titulo_txt = titulo_fin_partida_historia(
                 self.preset.id,
                 self.preset.nombre,
@@ -1178,7 +1165,6 @@ class PartidaModoHistoria(Pantalla):
                     materias=self.materias_examen,
                     n_preguntas=self.total,
                 ),
-                stats_historicas=stats,
                 abandonado=abandonado,
             )
         titulo_pantalla = titulo_fin_partida_historia(

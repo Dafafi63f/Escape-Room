@@ -2,7 +2,9 @@
 
 Scripts y utilidades de **mantenimiento del banco**. No son necesarios para jugar; el jugador solo necesita `Juego/juego_grafico.py` y `Data/`.
 
-Limpieza de artefactos temporales: [`borrar_temporales.py`](borrar_temporales.py) o [`../Docs/utilidades_tfg.py`](../Docs/utilidades_tfg.py) (`--solo-limpieza`).
+Paquete jugable: `python Docs/utilidades.py --solo-zip` genera `MATCAD_juego_portable.zip` en la raíz (no versionado) y CI lo publica en [Releases / juego](https://github.com/Dafafi63f/Escape-Room/releases/tag/juego). Implementación: [`crear_zip_portable.py`](crear_zip_portable.py).
+
+Limpieza de artefactos temporales: [`Docs/utilidades.py`](../Docs/utilidades.py) (`--solo-limpieza`) o `python Files/mantenimiento.py temporales`.
 
 ## Bancos cerrados (pool juego: **1000** preguntas reales)
 
@@ -12,7 +14,7 @@ No se prevén altas ni bajas; solo **revisión** de enunciados y distractores.
 | Archivo | Estado | Override |
 |---------|--------|----------|
 | `Data/Banco/Preguntas.csv` | 480 preguntas revisadas (2026-06-03) | `TFG_PERMITIR_CSV=1` |
-| `Data/Banco/plantillas.json` | 960 filas (480 revisadas + 480 extras); **repo del autor**, no zip portable | `TFG_PERMITIR_PLANTILLAS=1` |
+| `Data/Banco/plantillas.json` | 960 filas (480 revisadas + 480 extras); repo de desarrollo | `TFG_PERMITIR_PLANTILLAS=1` |
 | 40 exclusivas resistencia | `Juego/Comun/preguntas_resistencia_exclusivas_datos.py` | Editar el `.py` (pool = **1000**) |
 
 Rutas canónicas: [`rutas_data.py`](rutas_data.py) (`DATA_BANCO`, `DATA_JUEGO`).
@@ -68,15 +70,6 @@ python Files/mantenimiento.py duplicados revisar
 
 Los scripts de **regeneración del JSON** (equilibrador, catálogos repuesto/internet, pipeline de inyección) se eliminaron en 2026-06: el banco quedó materializado en `plantillas.json`. Para recuperarlos, usar el historial de git con `TFG_PERMITIR_PLANTILLAS=1`.
 
-## Simulaciones (memoria TFG)
-
-| Script | Uso |
-|--------|-----|
-| `simulacion_evaluacion_azar.py` | Monte Carlo: respuestas al azar (§5.7) |
-| `simulacion_pity.py` | Análisis del sistema de pity (§5.8) |
-
-Figuras: `python Docs/generar_figuras_memoria.py`
-
 ## Utilidades (`utils_*`)
 
 | Módulo | Función |
@@ -111,6 +104,6 @@ Suite del juego: [`Tests/`](../Tests/README.md). CI: `.github/workflows/tests.ym
 ## Limpieza de temporales
 
 ```bash
-python Docs/utilidades_tfg.py --solo-limpieza
+python Docs/utilidades.py --solo-limpieza
 python Files/mantenimiento.py temporales
 ```

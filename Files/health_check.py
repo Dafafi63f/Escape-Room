@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Comprobación integral del TFG: datos del juego, tests y validación del banco.
+Comprobación integral del proyecto: datos del juego, tests y validación del banco.
 
   python Files/health_check.py
   python Files/health_check.py --solo-datos
@@ -84,7 +84,7 @@ def paso_validar(*, detalle: bool, estricto: bool) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Health check del TFG (datos + tests + banco)")
+    parser = argparse.ArgumentParser(description="Health check (datos + tests + banco)")
     modo = parser.add_mutually_exclusive_group()
     modo.add_argument("--solo-datos", action="store_true", help="Solo comprobar carga de datos")
     modo.add_argument("--solo-tests", action="store_true", help="Solo ejecutar tests de Tests/")

@@ -21,8 +21,6 @@ Copia [`Preguntas.csv`](Preguntas.csv) como punto de partida (3 preguntas de eje
 python Juego/juego_grafico.py --csv ruta/Preguntas.csv
 ```
 
-O descomprime `MATCAD_juego_minimal.zip`, reemplaza `Preguntas.csv` y ejecuta `Jugar.bat`.
-
 Modos disponibles: libre simplificado, historia (repaso / simulacro / examen fijo) y resistencia con eventos.
 
-> El CSV mínimo completo del autor (480 preguntas desde `Data/Banco/`) está en `Data/Privado/Preguntas_minimal.csv`. El juego completo MATCAD viene en `MATCAD_juego_portable.zip`.
+> El CSV mínimo completo del autor (480 preguntas desde `Data/Banco/`) está en `Data/Privado/Preguntas_minimal.csv`.

@@ -8,7 +8,7 @@ Uso seguro:
   python Files/duplicados.py plantillas
 
 Bloqueado: modifica Preguntas.csv (TFG_PERMITIR_CSV=1) o plantillas.json (TFG_PERMITIR_PLANTILLAS=1).
-Ver Files/README.md y Docs/Entrega/Memoria_TFG.md §5.4
+Ver Files/README.md
 """
 
 from __future__ import annotations

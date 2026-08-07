@@ -15,7 +15,6 @@ from Comun.rutas import _ruta_json_escritura
 
 __all__ = [
     "cargar_estadisticas_locales",
-    "combinar_stats_examen",
     "formatear_panel_estadisticas",
     "formatear_tarjeta_sigue_por_aqui",
     "registrar_cierre_partida",
@@ -161,7 +160,7 @@ def registrar_cierre_partida(
     estado: EstadoPartida,
     cierre: CierreInformePartida,
 ) -> None:
-    """Agrega una sesión cerrada al histórico local (independiente del informe .txt)."""
+    """Agrega una sesión cerrada al historial local (independiente del informe .txt)."""
     if not cierre.registros:
         return
 
@@ -773,35 +772,3 @@ def cargar_estadisticas_locales(
             stats[clave] = est
     return stats
 
-
-def combinar_stats_examen(historico: dict, local: dict) -> dict:
-    """Mezcla histórico MatCAD y práctica local ponderando por volumen de datos."""
-    from Comun.generador_examen_historia import EstadisticaMateria
-
-    if not historico:
-        return dict(local)
-    if not local:
-        return dict(historico)
-
-    combinado: dict[str, EstadisticaMateria] = {}
-    for clave in set(historico) | set(local):
-        h = historico.get(clave)
-        l = local.get(clave)
-        if h and l:
-            nh, nl = h.n_registros, l.n_registros
-            total = nh + nl
-            indice = (h.indice_dificultad * nh + l.indice_dificultad * nl) / total
-            media = (h.media * nh + l.media * nl) / total
-            tasa = (h.tasa_suspens * nh + l.tasa_suspens * nl) / total
-            combinado[clave] = EstadisticaMateria(
-                materia=clave,
-                n_registros=total,
-                media=round(media, 2),
-                tasa_suspens=round(tasa, 3),
-                indice_dificultad=round(indice, 3),
-            )
-        elif h is not None:
-            combinado[clave] = h
-        elif l is not None:
-            combinado[clave] = l
-    return combinado

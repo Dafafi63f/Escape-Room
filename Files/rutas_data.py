@@ -60,7 +60,6 @@ def ruta_json(nombre: str) -> Path:
 PATH_PREGUNTAS = ruta_banco("Preguntas.csv")
 PATH_LISTADO_MATERIAS = ruta_banco("listado_materias.csv")
 PATH_CRITERIOS_CLASIFICACION = ruta_banco("criterios_clasificacion_materia.csv")
-PATH_HISTORICO_QUALIFICACIONS = ruta_banco("Historic_qualificacions_MatCAD_completo.csv")
 PATH_PLANTILLAS = ruta_banco("plantillas.json")
 PATH_PRESETS = PROYECTO / "Juego" / "presets.json"
 PATH_PRESETS_HISTORIA = PATH_PRESETS

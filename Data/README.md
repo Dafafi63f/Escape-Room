@@ -2,60 +2,58 @@
 
 Ficheros que usa el juego y las herramientas de mantenimiento.
 
-**Datos propios (usuario):** solo CSV mínimo → juego mínimo (`--csv` o `MATCAD_juego_minimal.zip`). Ver [`Plantillas/README.md`](Plantillas/README.md).
+**Datos propios (usuario):** solo CSV mínimo (`--csv`). Ver [`Plantillas/README.md`](Plantillas/README.md).
 
-**Juego completo MATCAD (autor):** `Data/Banco/` curricular + listado + zip portable. No está previsto que el usuario monte un paquete completo alternativo (versión intermedia futura).
+**Juego completo MATCAD (autor):** `Data/Banco/` curricular + listado. El zip jugable lo publica CI en [Releases / juego](https://github.com/Dafafi63f/Escape-Room/releases/tag/juego).
 
 ## Estructura
 
 ```
 Data/
-├── Banco/        # Banco de preguntas y catálogos (.csv, .json de producción)
-├── Juego/        # Estado local del jugador (.json runtime, informes .txt)
-├── Privado/      # Config del autor y fuentes locales (no se versiona ni empaqueta)
+├── Banco/        # Banco de preguntas y catálogos de producción
+├── Juego/        # Estado local del jugador (runtime; no versionar)
+├── Plantillas/   # Ejemplo CSV mínimo para datos propios
+├── Privado/      # Config del autor (no se versiona ni empaqueta, salvo excepciones)
 └── README.md
 ```
 
-### `Data/Banco/` (banco cerrado y datos de mantenimiento)
+### `Data/Banco/` (juego completo)
 
 | Fichero | Uso |
 |---------|-----|
-| `Preguntas.csv` | Banco principal (**480** preguntas cerradas) — **único imprescindible** para jugar |
-| `listado_materias.csv` | Metadatos de **40** materias (juego completo) |
-| `plantillas.json` | **Opcional (autor):** 480 revisadas + 480 extras sin revisar; activa el **banco ampliado** y el pool de resistencia. **No se incluye en el zip portable.** |
+| `Preguntas.csv` | Banco principal (**480** preguntas) — imprescindible para jugar |
+| `listado_materias.csv` | Metadatos de **40** materias (paquete completo / modo historia) |
+| `plantillas.json` | Opcional: 480 revisadas + 480 extras (banco ampliado y pool de resistencia) |
+| `criterios_clasificacion_materia.csv` | Solo mantenimiento (`Files/`): palabras clave por materia |
 
-| `criterios_clasificacion_materia.csv` | Palabras clave por materia |
-| `Historic_qualificacions_MatCAD_completo.csv` | Histórico — modo historia |
+Ya **no** hay CSV de calificaciones históricas: la ponderación del modo historia usa `estadisticas_jugador.json`.
 
 ### `Data/Privado/` (autor: no versionar ni empaquetar)
 
-Todo lo **privado o local del mantenimiento** en un solo sitio (no va al zip portable).
-
 | Fichero | Uso |
 |---------|-----|
-| `creador_privado.json` | Datos personales, SMTP del feedback, secretos GitHub |
-| `Preguntas_minimal.csv` | Exportación mínima del banco (tests y zip mínimo; ver `Tests/Fixtures/generar_preguntas_minimal.py`) |
-| `*.xlsx` | Fuentes de mantenimiento (p. ej. histórico antes de exportar a CSV en `Banco/`) |
+| `creador_privado.json` | Datos personales, SMTP del feedback, secretos |
+| `Preguntas_minimal.csv` | Exportación mínima para tests (`Tests/Fixtures/generar_preguntas_minimal.py`) |
+| `*.xlsx` | Fuentes locales opcionales de mantenimiento |
 
 Plantilla del JSON: `cd Juego && python -m Comun.feedback`. Ver [`Privado/README.md`](Privado/README.md).
 
-### `Data/Juego/` (solo datos locales del jugador)
+### `Data/Juego/` (solo runtime del jugador)
 
-Se crea al jugar; **no debe contener catálogos ni banco** (ni versionarse copias de `presets.json`, `preguntas_resistencia.json`, etc.).
+Se crea al jugar; **no versionar**. Catálogos (`presets.json`, etc.) viven en `Juego/`, no aquí.
 
 | Fichero | Uso |
 |---------|-----|
-| `preferencias_grafico.json` | Nombre, emojis, tooltips (menú opciones) |
-| `estadisticas_jugador.json` | Totales, récords, evolución agregada |
+| `preferencias_grafico.json` | Nombre, emojis, tooltips |
+| `estadisticas_jugador.json` | Totales, récords, evolución; ponderación del modo historia |
+| `metadatos_inferidos.json` | Inferencias al jugar con CSV mínimo / dataset intermedio |
 | `*.txt` | Informes de partida y copias de feedback |
 
 Auditoría: `python Files/health_check.py --solo-datos` (o `Comun.persistencia.auditar_carpetas_data`).
 
-Catálogo de modos: [`Juego/presets.json`](../Juego/presets.json) (viaja con el código, no en `Data/Juego/`).
+El juego resuelve rutas con [`Juego/Comun/rutas.py`](../Juego/Comun/rutas.py): banco en `Data/Banco/`, estado local en `Data/Juego/`.
 
-El juego resuelve rutas con [`Juego/Comun/rutas.py`](../Juego/Comun/rutas.py): banco en `Data/Banco/`, estado local en `Data/Juego/` (con compatibilidad hacia rutas legadas).
-
-Plantilla de ejemplo para datos propios: [`Plantillas/Preguntas.csv`](Plantillas/Preguntas.csv) (ver [`Plantillas/README.md`](Plantillas/README.md)).
+Ejemplo de datos propios: [`Plantillas/Preguntas.csv`](Plantillas/Preguntas.csv) (ver [`Plantillas/README.md`](Plantillas/README.md)).
 
 ### Catálogo `Juego/presets.json`
 
@@ -63,11 +61,11 @@ Modos activos en el carrusel de historia (`contexto_reglas`: `historia_*`):
 
 | ID | Rol |
 |----|-----|
-| `repaso` | Repaso flexible por ámbito (N asignaturas, histórico opcional) |
+| `repaso` | Repaso flexible por ámbito (N asignaturas; prioridad según tu práctica) |
 | `repaso_area` | Todas las materias de un bloque G1–G10 |
-| `simulacro` | Ronda de exámenes (semestre o curso completo; tipo de preguntas teórico/cálculo) |
-| `examen_asignatura` | Simulacro de una materia (N preguntas por plantilla; tipo de preguntas teórico/cálculo) |
-| `examen_fijo` | Plantilla 4×6 (24 preguntas): diario, aleatorio o semilla numérica (sin histórico) |
+| `simulacro` | Ronda de exámenes (semestre o curso; tipo teoría/cálculo) |
+| `examen_asignatura` | Simulacro de una materia (N preguntas por plantilla) |
+| `examen_fijo` | Plantilla 4×6 (24 preguntas): diario, aleatorio o semilla |
 
 **Modos especiales** (definidos en código, `Comun/presets_historia.py`; `contexto_reglas`: `escape` / `resistencia`):
 
@@ -301,7 +299,7 @@ Los informes y el feedback del jugador se guardan en `Data/Juego/` en tiempo de 
 Informes `.txt`, preferencias y estadísticas en `Data/Juego/` se pueden borrar desde la raíz del proyecto:
 
 ```bash
-python Docs/utilidades_tfg.py --solo-limpieza
+python Docs/utilidades.py --solo-limpieza
 ```
 
-Ver también [`Docs/utilidades_tfg.py`](../Docs/utilidades_tfg.py) y [`Juego/Comun/persistencia.py`](../Juego/Comun/persistencia.py).
+Ver también [`Docs/utilidades.py`](../Docs/utilidades.py) y [`Juego/Comun/persistencia.py`](../Juego/Comun/persistencia.py).

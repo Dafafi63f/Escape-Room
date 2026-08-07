@@ -16,18 +16,15 @@
 | **Estadísticas** | Panel «Mis estadísticas», JSON local, récords por modo |
 | **Opciones** | Nombre, tooltips, emojis, informes, restablecer datos |
 | **Banco** | 480 preguntas revisadas + 480 extras en plantillas (opcional) + 40 exclusivas resistencia |
-| **Tests / CI** | 578 tests unitarios, health check, empaquetado zip |
+| **Tests / CI** | 578 tests unitarios en la entrega; health check *(suite actual en `main`: ~615)* |
 
-## Cómo jugar y empaquetar
+## Cómo jugar
 
 ```bash
 pip install -r Juego/requirements.txt
 python Juego/juego_grafico.py
 python Files/health_check.py          # datos + tests + validar banco
-python Docs/utilidades_tfg.py --solo-zip --forzar-zip
 ```
-
-En Windows: `Juego\Distribucion\Jugar.bat` (tras descomprimir el zip portable).
 
 ## Qué queda para el futuro (no bloquea jugar)
 
@@ -44,3 +41,4 @@ Ideas y mejoras **no incluidas** en 1.0.0; ver [`CHECKLIST.md`](CHECKLIST.md) §
 
 - El **banco ampliado** (960) mezcla preguntas revisadas con extras JSON; úsalo si quieres más variedad, sabiendo que los extras no tienen la misma revisión manual que las 480.
 - El **paquete mínimo** (solo CSV) limita modos especiales y filtros; el examen del día sigue disponible desde la barra superior.
+- En v1.1+ el zip jugable se descarga desde [Releases / juego](https://github.com/Dafafi63f/Escape-Room/releases/tag/juego) (no hay carpeta `Distribucion/` en el repo).

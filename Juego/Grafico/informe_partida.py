@@ -71,7 +71,6 @@ def publicar_informe_grafico(
     total_previsto: int,
     prefijo: str,
     meta: dict | None = None,
-    stats_historicas: dict | None = None,
     abandonado: bool = False,
 ) -> str | None:
     """Guarda un informe nuevo en disco (nunca sobrescribe otros de la misma sesión)."""
@@ -84,7 +83,6 @@ def publicar_informe_grafico(
         total_previsto=total_previsto,
         nombre_jugador=estado.nombre,
         meta={**(meta or {}), "abandonado": abandonado},
-        stats_historicas=stats_historicas,
         prefijo=prefijo,
         imprimir_aviso_terminal=False,
     )
@@ -104,6 +102,5 @@ def guardar_informe_cierre(
         total_previsto=cierre.total_previsto,
         prefijo=cierre.prefijo,
         meta=cierre.meta,
-        stats_historicas=cierre.stats_historicas,
         abandonado=cierre.abandonado,
     )

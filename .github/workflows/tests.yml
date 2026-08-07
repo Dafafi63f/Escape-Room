@@ -93,32 +93,10 @@ jobs:
       - name: Run MyPy (Grafico)
         run: mypy Juego/Grafico --follow-imports=skip
 
-  package-windows:
-    name: Package zips (Windows)
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version-file: .python-version
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Build distribution zips
-        run: python Docs/utilidades_distribucion.py --solo-zip --forzar-zip
-
-      - name: Verify zips exist
-        shell: pwsh
-        run: |
-          if (-not (Test-Path Juego/Distribucion/MATCAD_juego_portable.zip)) { exit 1 }
-          if (-not (Test-Path Juego/Distribucion/MATCAD_juego_minimal.zip)) { exit 1 }
-
   tests-summary:
     name: tests-summary
     runs-on: ubuntu-latest
-    needs: [pre-commits, unit-tests, integration-tests, mypy, package-windows]
+    needs: [pre-commits, unit-tests, integration-tests, mypy]
     if: always()
     steps:
       - name: Aggregate test results
@@ -132,14 +110,12 @@ jobs:
             echo "| Run Unit Tests | ${{ needs.unit-tests.result }} |"
             echo "| Run Integration Tests | ${{ needs.integration-tests.result }} |"
             echo "| Run MyPy | ${{ needs.mypy.result }} |"
-            echo "| Package zips (Windows) | ${{ needs.package-windows.result }} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [[ "${{ needs.pre-commits.result }}" != "success" ]] \
             || [[ "${{ needs.unit-tests.result }}" != "success" ]] \
             || [[ "${{ needs.integration-tests.result }}" != "success" ]] \
-            || [[ "${{ needs.mypy.result }}" != "success" ]] \
-            || [[ "${{ needs.package-windows.result }}" != "success" ]]; then
+            || [[ "${{ needs.mypy.result }}" != "success" ]]; then
             echo "Algún job de Tests ha fallado."
             exit 1
           fi

@@ -1,0 +1,47 @@
+name: Paquete jugable
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Juego/**"
+      - "Data/Banco/**"
+      - "Data/Plantillas/**"
+      - "Data/README.md"
+      - "Files/crear_zip_portable.py"
+      - "Docs/utilidades.py"
+      - ".github/workflows/paquete-jugable.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publicar-zip:
+    name: Publicar zip jugable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Generar zip
+        run: python Docs/utilidades.py --solo-zip
+
+      - name: Publicar release juego
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: juego
+          name: Paquete jugable (solo lo necesario)
+          body: |
+            Zip con el motor y el banco para jugar sin clonar el repositorio completo.
+
+            1. Descomprime `MATCAD_juego_portable.zip`
+            2. `pip install -r Juego/requirements.txt` (o `Jugar.bat` en Windows)
+            3. `python Juego/juego_grafico.py`
+
+            Código completo, tests y docs: repositorio `main`.
+          files: MATCAD_juego_portable.zip
+          fail_on_unmatched_files: true

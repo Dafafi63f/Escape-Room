@@ -43,7 +43,7 @@ from Comun.presets_historia import (  # noqa: E402
     semilla_desde_preset,
     _cargar_presets_historia_archivo,
 )
-from Comun.config_historia import ConfigPresetHistoria, ID_ESTRATEGIA_MATERIAS, ID_ESTRATEGIA_PRACTICA, ORDEN_OPCIONES_HISTORIA, VALORES_PRIORIDAD_HISTORICA, limites_n_materias, opciones_config_historia, validar_config  # noqa: E402
+from Comun.config_historia import ConfigPresetHistoria, ID_ESTRATEGIA_PRACTICA, ORDEN_OPCIONES_HISTORIA, limites_n_materias, opciones_config_historia, validar_config, valores_estrategia_practica  # noqa: E402
 from Comun.presets_historia import PresetHistoria  # noqa: E402
 from Comun.generador_examen_historia import PerfilPedagogico  # noqa: E402
 from Comun.rutas import (  # noqa: E402
@@ -55,8 +55,8 @@ from Comun.rutas import (  # noqa: E402
 )
 from Comun.modos_diarios import config_atajo_aleatorio, config_atajo_diario, semilla_examen_dia  # noqa: E402
 from Comun.generador_examen_historia import (  # noqa: E402
+    EstadisticaMateria,
     calcular_pesos_materia,
-    cargar_estadisticas_historicas,
     generar_examen,
     indices_dificultad_ambito,
 )
@@ -73,7 +73,16 @@ class TestPresetsHistoria(unittest.TestCase):
             resolver_plantillas(),
             cls.materias_meta,
         )
-        cls.stats = cargar_estadisticas_historicas(materias_validas=set(cls.materias_meta))
+        cls.stats = {}
+        for i, materia in enumerate(cls.orden):
+            indice = (i % 10) / 9.0
+            cls.stats[materia] = EstadisticaMateria(
+                materia=materia,
+                n_registros=10 + i,
+                media=round(7.0 - 3.0 * indice, 2),
+                tasa_suspens=round(indice * 0.5, 3),
+                indice_dificultad=round(indice, 3),
+            )
 
     def _kwargs_generador(
         self,
@@ -124,7 +133,7 @@ class TestPresetsHistoria(unittest.TestCase):
         )
         return preset, cfg
 
-    def test_catalogo_ordenado_historico_primero(self) -> None:
+    def test_catalogo_ordenado_carrusel_historia(self) -> None:
         self.assertEqual(NUM_MODOS_HISTORIA_CARRUSEL, 5)
         self.assertEqual(len(self.presets), NUM_MODOS_HISTORIA_CARRUSEL)
         self.assertEqual(self.presets[0].id, "repaso")
@@ -240,24 +249,27 @@ class TestPresetsHistoria(unittest.TestCase):
 
     def test_simulacro_estrategia_debilidades_usa_refuerzo(self) -> None:
         preset = next(p for p in self.presets if p.id == "simulacro")
-        cfg = self._validar(preset, self._config_defecto(preset))
+        cfg = config_defecto(preset, materias_meta=self.materias_meta, materias_orden=self.orden)
+        cfg.valores["estrategia_practica"] = "debilidades"
+        cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
         self.assertEqual(kwargs["perfil"], PerfilPedagogico.REFUERZO)
         self.assertFalse(kwargs["seleccion_determinista"])
 
-    def test_simulacro_estrategia_curricular_es_determinista(self) -> None:
+    def test_simulacro_estrategia_uniforme_es_balanceado(self) -> None:
         preset = next(p for p in self.presets if p.id == "simulacro")
         cfg = config_defecto(preset, materias_meta=self.materias_meta, materias_orden=self.orden)
-        cfg.valores["estrategia_materias"] = "curricular"
+        cfg.valores["estrategia_practica"] = "sin_historico"
         cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
         self.assertEqual(kwargs["perfil"], PerfilPedagogico.BALANCEADO)
-        self.assertTrue(kwargs["seleccion_determinista"])
+        self.assertFalse(kwargs["seleccion_determinista"])
+        self.assertFalse(kwargs["usar_analisis_historico"])
 
     def test_repaso_estrategia_fortalezas(self) -> None:
         preset = next(p for p in self.presets if p.id == "repaso")
         cfg = config_defecto(preset, materias_meta=self.materias_meta, materias_orden=self.orden)
-        cfg.valores["estrategia_materias"] = "fortalezas"
+        cfg.valores["estrategia_practica"] = "fortalezas"
         cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
         self.assertEqual(kwargs["perfil"], PerfilPedagogico.DESAFIO)
@@ -293,7 +305,7 @@ class TestPresetsHistoria(unittest.TestCase):
         cfg = self._validar(
             preset,
             ConfigPresetHistoria(
-                valores={"curso": "1", "n_materias": 10, "estrategia_materias": "debilidades"},
+                valores={"curso": "1", "n_materias": 10, "estrategia_practica": "debilidades"},
             ),
         )
         plan = generar_examen(
@@ -331,7 +343,7 @@ class TestPresetsHistoria(unittest.TestCase):
         cfg = self._validar(
             preset,
             ConfigPresetHistoria(
-                valores={"n_materias": 40, "estrategia_materias": "debilidades"},
+                valores={"n_materias": 40, "estrategia_practica": "debilidades"},
             ),
         )
         self.assertEqual(cfg.get_int("n_materias"), 40)
@@ -367,7 +379,7 @@ class TestPresetsHistoria(unittest.TestCase):
                     preset,
                     ConfigPresetHistoria(
                         valores={
-                            "estrategia_materias": "debilidades",
+                            "estrategia_practica": "debilidades",
                             **valores_extra,
                         }
                     ),
@@ -396,7 +408,7 @@ class TestPresetsHistoria(unittest.TestCase):
                 valores={
                     "periodo": "1-1",
                     "n_materias": 5,
-                    "estrategia_materias": "debilidades",
+                    "estrategia_practica": "debilidades",
                 },
             ),
         )
@@ -442,7 +454,7 @@ class TestPresetsHistoria(unittest.TestCase):
                 valores={
                     "periodo": "1-1",
                     "n_materias": 5,
-                    "estrategia_materias": "debilidades",
+                    "estrategia_practica": "debilidades",
                 },
             ),
         )
@@ -468,7 +480,7 @@ class TestPresetsHistoria(unittest.TestCase):
                     "curso": "1",
                     "semestre": "1",
                     "n_materias": 5,
-                    "estrategia_materias": "debilidades",
+                    "estrategia_practica": "debilidades",
                 },
             ),
         )
@@ -494,7 +506,7 @@ class TestPresetsHistoria(unittest.TestCase):
         cfg = self._validar(
             preset,
             ConfigPresetHistoria(
-                valores={"semestre": "1", "n_materias": 20, "estrategia_materias": "debilidades"},
+                valores={"semestre": "1", "n_materias": 20, "estrategia_practica": "debilidades"},
             ),
         )
         plan = generar_examen(
@@ -562,9 +574,9 @@ class TestPresetsHistoria(unittest.TestCase):
 
     def test_examen_asignatura_n_preguntas_defecto(self) -> None:
         preset = next(p for p in self.presets if p.id == "examen_asignatura")
-        self.assertFalse(preset.usa_analisis_historico)
         self.assertTrue(preset.usar_plantillas_materia)
         cfg = self._validar(preset, self._config_defecto(preset))
+        cfg.valores["estrategia_practica"] = "debilidades"
         kwargs = self._kwargs_generador(preset, cfg)
         self.assertTrue(kwargs["usar_analisis_historico"])
         self.assertEqual(kwargs["n_preguntas"], 12)
@@ -681,7 +693,7 @@ class TestPresetsHistoria(unittest.TestCase):
         cfg = self._validar(
             preset,
             ConfigPresetHistoria(
-                valores={"n_materias": 8, "estrategia_materias": "debilidades"},
+                valores={"n_materias": 8, "estrategia_practica": "debilidades"},
             ),
         )
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
@@ -696,16 +708,18 @@ class TestPresetsHistoria(unittest.TestCase):
         )
         self.assertEqual(len(plan.materias), 8)
 
-    def test_repaso_muestra_estrategia_historica(self) -> None:
+    def test_repaso_muestra_estrategia_practica(self) -> None:
         preset = next(p for p in self.presets if p.id == "repaso")
         cfg = config_defecto(preset, materias_meta=self.materias_meta, materias_orden=self.orden)
+        cfg.valores["estrategia_practica"] = "debilidades"
+        cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
         self.assertEqual(kwargs["perfil"], PerfilPedagogico.REFUERZO)
-        cfg.valores["estrategia_materias"] = "equilibrado"
+        cfg.valores["estrategia_practica"] = "equilibrado"
         cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
         self.assertEqual(kwargs["perfil"], PerfilPedagogico.BALANCEADO)
-        cfg.valores["estrategia_materias"] = "fortalezas"
+        cfg.valores["estrategia_practica"] = "fortalezas"
         cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
         self.assertEqual(kwargs["perfil"], PerfilPedagogico.DESAFIO)
@@ -913,14 +927,14 @@ class TestPresetsHistoria(unittest.TestCase):
         cfg = self._validar(
             repaso,
             ConfigPresetHistoria(
-                valores={"semestre": "1", "n_materias": 20, "estrategia_materias": "debilidades"},
+                valores={"semestre": "1", "n_materias": 20, "estrategia_practica": "debilidades"},
             ),
         )
         self.assertEqual(cfg.get_int("n_materias"), 20)
         cfg = self._validar(
             repaso,
             ConfigPresetHistoria(
-                valores={"n_materias": 40, "estrategia_materias": "equilibrado"},
+                valores={"n_materias": 40, "estrategia_practica": "equilibrado"},
             ),
         )
         self.assertEqual(cfg.get_int("n_materias"), 40)
@@ -940,16 +954,14 @@ class TestPresetsHistoria(unittest.TestCase):
                 "periodo",
                 "curso",
                 "semestre",
-                ID_ESTRATEGIA_MATERIAS,
                 ID_ESTRATEGIA_PRACTICA,
                 "n_materias",
             ],
-            "repaso_area": ["grupo", ID_ESTRATEGIA_MATERIAS, ID_ESTRATEGIA_PRACTICA],
+            "repaso_area": ["grupo", ID_ESTRATEGIA_PRACTICA],
             "simulacro": [
                 "periodo",
                 "curso",
                 "semestre",
-                ID_ESTRATEGIA_MATERIAS,
                 ID_ESTRATEGIA_PRACTICA,
                 "n_materias",
                 "enfoque",
@@ -957,7 +969,6 @@ class TestPresetsHistoria(unittest.TestCase):
             ],
             "examen_asignatura": [
                 "materia",
-                ID_ESTRATEGIA_MATERIAS,
                 ID_ESTRATEGIA_PRACTICA,
                 "enfoque",
                 "n_preguntas",
@@ -966,7 +977,6 @@ class TestPresetsHistoria(unittest.TestCase):
             "examen_fijo": [
                 "origen_semilla",
                 "semilla",
-                ID_ESTRATEGIA_MATERIAS,
                 ID_ESTRATEGIA_PRACTICA,
             ],
         }
@@ -980,44 +990,38 @@ class TestPresetsHistoria(unittest.TestCase):
     def test_todos_los_modos_tienen_prioridad_configurable(self) -> None:
         for preset in self.presets:
             ops = opciones_config_historia(preset)
-            prioridad = next(o for o in ops if o.id == ID_ESTRATEGIA_MATERIAS)
+            prioridad = next(o for o in ops if o.id == ID_ESTRATEGIA_PRACTICA)
             with self.subTest(preset=preset.id):
-                self.assertEqual(prioridad.id, ID_ESTRATEGIA_MATERIAS)
+                self.assertEqual(prioridad.id, ID_ESTRATEGIA_PRACTICA)
                 self.assertIn("debilidades", {v for v, _ in prioridad.valores})
+                self.assertEqual(
+                    {v for v, _ in prioridad.valores},
+                    {v for v, _ in valores_estrategia_practica()},
+                )
 
-    def test_todos_los_modos_historia_usan_analisis_historico_por_defecto(self) -> None:
-        from Comun.presets_historia import _es_preset_historia
-
-        todos = [
-            p
-            for p in _cargar_presets_historia_archivo(resolver_presets())
-            if _es_preset_historia(p) and not p.solo_atajo
-        ]
-        self.assertEqual(len(todos), NUM_MODOS_HISTORIA_CARRUSEL)
-        for preset in todos:
-            if preset.id in {"examen_asignatura", "examen_fijo"}:
-                self.assertFalse(preset.usa_analisis_historico)
-                continue
-            self.assertTrue(preset.usa_analisis_historico, preset.id)
-        self.assertFalse(buscar_preset("examen_fijo").usa_analisis_historico)
+    def test_todos_los_modos_historia_usan_practica_local(self) -> None:
         for preset in self.presets:
             cfg = self._validar(preset, self._config_defecto(preset))
+            cfg.valores["estrategia_practica"] = "debilidades"
             kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
             self.assertTrue(kwargs["usar_analisis_historico"], preset.id)
+            cfg.valores["estrategia_practica"] = "sin_historico"
+            kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
+            self.assertFalse(kwargs["usar_analisis_historico"], preset.id)
 
-    def test_prioridad_sin_historico_desactiva_analisis(self) -> None:
+    def test_prioridad_sin_historico_desactiva_ponderacion(self) -> None:
         preset = next(p for p in self.presets if p.id == "repaso")
         cfg = self._validar(
             preset,
             ConfigPresetHistoria(
-                valores={"estrategia_materias": "sin_historico", "n_materias": 5},
+                valores={"estrategia_practica": "sin_historico", "n_materias": 5},
             ),
         )
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
         self.assertFalse(kwargs["usar_analisis_historico"])
-        self.assertEqual(cfg.get_str("estrategia_materias"), "sin_historico")
+        self.assertEqual(cfg.get_str("estrategia_practica"), "sin_historico")
 
-    def test_pesos_historicos_no_excluyen_materias(self) -> None:
+    def test_pesos_practica_no_excluyen_materias(self) -> None:
         muestra = self.orden[:8]
         pesos_ref = calcular_pesos_materia(
             muestra,
@@ -1156,8 +1160,7 @@ class TestPresetsHistoria(unittest.TestCase):
 
     def test_examen_fijo_sin_ponderacion_con_sin_historico(self) -> None:
         preset, cfg = self._examen_fijo("diario")
-        cfg.valores["estrategia_materias"] = "sin_historico"
-        self.assertFalse(preset.usa_analisis_historico)
+        cfg.valores["estrategia_practica"] = "sin_historico"
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
         self.assertFalse(kwargs["usar_analisis_historico"])
         self.assertEqual(kwargs["perfil"], PerfilPedagogico.BALANCEADO)
