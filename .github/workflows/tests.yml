@@ -35,7 +35,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Install dependencies
-        run: pip install --only-binary=:all: -r requirements.txt
+        run: "pip install --only-binary=:all: -r requirements.txt"
 
       - name: Install fonts for pygame emoji tests
         run: |
@@ -57,7 +57,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Install dependencies
-        run: pip install --only-binary=:all: -r requirements.txt
+        run: "pip install --only-binary=:all: -r requirements.txt"
 
       - name: Install fonts for pygame emoji tests
         run: |
@@ -85,7 +85,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Install dependencies
-        run: pip install --only-binary=:all: -r requirements.txt
+        run: "pip install --only-binary=:all: -r requirements.txt"
 
       - name: Run MyPy (Comun + Files)
         run: mypy Juego/Comun Files
