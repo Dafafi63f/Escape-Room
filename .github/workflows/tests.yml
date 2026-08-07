@@ -35,7 +35,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Install dependencies
-        run: "pip install --only-binary=:all: -r requirements.txt"
+        run: "pip install --only-binary=:all: pygame-ce==2.5.7 pandas==3.0.3 matplotlib==3.11.0 mypy==2.1.0 pre-commit==4.6.0"
 
       - name: Install fonts for pygame emoji tests
         run: |
@@ -57,7 +57,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Install dependencies
-        run: "pip install --only-binary=:all: -r requirements.txt"
+        run: "pip install --only-binary=:all: pygame-ce==2.5.7 pandas==3.0.3 matplotlib==3.11.0 mypy==2.1.0 pre-commit==4.6.0"
 
       - name: Install fonts for pygame emoji tests
         run: |
@@ -85,7 +85,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Install dependencies
-        run: "pip install --only-binary=:all: -r requirements.txt"
+        run: "pip install --only-binary=:all: pygame-ce==2.5.7 pandas==3.0.3 matplotlib==3.11.0 mypy==2.1.0 pre-commit==4.6.0"
 
       - name: Run MyPy (Comun + Files)
         run: mypy Juego/Comun Files
