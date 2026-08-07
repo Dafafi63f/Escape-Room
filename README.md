@@ -5,11 +5,21 @@ Juego educativo de cuestionarios MatCAD en **pygame** (modos libre, historia, re
 **Versión actual:** `v1.1.0` — juego educativo · proyecto personal  
 **Origen académico:** la entrega TFG v1.0.0 queda fuera de este repositorio (archivo local del autor).
 
-- **Descargar solo el juego:** [MATCAD_juego_portable.zip](https://github.com/Dafafi63f/Escape-Room/releases/download/juego/MATCAD_juego_portable.zip) (sin tests ni docs de desarrollo)
-- **Cómo jugar:** [`Juego/COMO_JUGAR.md`](Juego/COMO_JUGAR.md) · lanzador [`Juego/juego_grafico.py`](Juego/juego_grafico.py)
-- **Repositorio:** https://github.com/Dafafi63f/Escape-Room.git
+## Descargar solo el juego
+
+[**MATCAD_juego_portable.zip**](https://github.com/Dafafi63f/Escape-Room/releases/download/juego/MATCAD_juego_portable.zip) — motor + banco, sin tests ni docs de desarrollo.
+
+1. Descomprime el zip  
+2. `pip install -r Juego/requirements.txt` (o `Jugar.bat` en Windows)  
+3. `python Juego/juego_grafico.py`
+
+Guía: [`Juego/COMO_JUGAR.md`](Juego/COMO_JUGAR.md) · Releases: https://github.com/Dafafi63f/Escape-Room/releases/tag/juego
+
+## Repositorio completo
 
 ```bash
+git clone https://github.com/Dafafi63f/Escape-Room.git
+cd Escape-Room
 pip install -r Juego/requirements.txt
 python Juego/juego_grafico.py
 ```
