@@ -24,6 +24,8 @@ pip install -r Juego/requirements.txt
 python Juego/juego_grafico.py
 ```
 
+En Windows también puedes usar [`Jugar.bat`](Jugar.bat) (instala dependencias y arranca el juego).
+
 No incluyas tokens, contraseñas ni claves privadas en archivos versionados.
 
 ## Documentación

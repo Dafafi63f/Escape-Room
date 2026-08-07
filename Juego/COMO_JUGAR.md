@@ -15,7 +15,7 @@ Si no quieres clonar el repo entero (tests, docs, scripts de mantenimiento):
 
 1. Descarga [MATCAD_juego_portable.zip](https://github.com/Dafafi63f/Escape-Room/releases/download/juego/MATCAD_juego_portable.zip)
 2. Descomprime la carpeta
-3. En Windows puedes usar `Jugar.bat`; o en cualquier sistema:
+3. En Windows puedes usar [`Jugar.bat`](../Jugar.bat) en la raíz del repo (o del zip); o en cualquier sistema:
 
 ```bash
 pip install -r Juego/requirements.txt

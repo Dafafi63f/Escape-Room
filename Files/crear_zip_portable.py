@@ -58,18 +58,6 @@ Repositorio (código completo, tests, docs):
   https://github.com/Dafafi63f/Escape-Room
 """
 
-_JUGAR_BAT = """@echo off
-cd /d "%~dp0"
-python -m pip install -r Juego\\requirements.txt
-if errorlevel 1 (
-  echo Fallo al instalar dependencias. Comprueba que Python este en el PATH.
-  pause
-  exit /b 1
-)
-python Juego\\juego_grafico.py
-if errorlevel 1 pause
-"""
-
 
 def _omitir(ruta: Path) -> bool:
     return any(parte in _EXCLUIR_NOMBRES for parte in ruta.parts)
@@ -82,10 +70,13 @@ def _anadir_archivo(zf: zipfile.ZipFile, origen: Path, arcname: str) -> None:
 def crear_zip_portable(destino: Path = _SALIDA_DEFECTO) -> Path:
     destino = destino.resolve()
     destino.parent.mkdir(parents=True, exist_ok=True)
+    jugar_bat = _RAIZ / "Jugar.bat"
+    if not jugar_bat.is_file():
+        raise FileNotFoundError(f"Falta {jugar_bat}")
 
     with zipfile.ZipFile(destino, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("LEEME.txt", _LEEME_ZIP)
-        zf.writestr("Jugar.bat", _JUGAR_BAT)
+        _anadir_archivo(zf, jugar_bat, "Jugar.bat")
         zf.writestr(_MARCADOR_COMPLETO, "completo\n")
 
         for ruta in sorted(_JUEGO.rglob("*")):

@@ -305,12 +305,45 @@ class TestBorrarTemporalesExterno(unittest.TestCase):
             juego = raiz / "Data" / "Juego"
             juego.mkdir(parents=True)
             (juego / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
+            (juego / "estadisticas_jugador.json").write_text("{}", encoding="utf-8")
+            (juego / "metadatos_inferidos.json").write_text("{}", encoding="utf-8")
+            (juego / "informe_partida_demo.txt").write_text("informe", encoding="utf-8")
+            (juego / "feedback_bug_jugador_20260101_000000_abcd.txt").write_text(
+                "feedback", encoding="utf-8"
+            )
 
             with patch("utilidades.raiz_proyecto", return_value=raiz):
-                self.assertEqual(len(listar_ficheros_runtime_juego()[0]), 1)
+                json_locales, _, txt = listar_ficheros_runtime_juego()
+                self.assertEqual(len(json_locales), 3)
+                self.assertEqual(len(txt), 2)
+                resumen = borrar_temporales(raiz, incluir_pycache=False)
+                self.assertEqual(resumen.json_preferencias_borrados, 3)
+                self.assertEqual(resumen.txt_borrados, 2)
+                self.assertEqual(listar_ficheros_runtime_juego(), ([], [], []))
+
+    def test_elimina_runtime_plano_y_legacy(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            data = raiz / "Data"
+            data.mkdir(parents=True)
+            (data / "preferencias_grafico.json").write_text("{}", encoding="utf-8")
+            (data / "informe_plano.txt").write_text("x", encoding="utf-8")
+            informes = data / "Informes"
+            informes.mkdir()
+            (informes / "viejo.txt").write_text("y", encoding="utf-8")
+            feedback = data / "Feedback"
+            feedback.mkdir()
+            (feedback / "aviso.txt").write_text("z", encoding="utf-8")
+            (data / "README.md").write_text("keep", encoding="utf-8")
+
+            with patch("utilidades.raiz_proyecto", return_value=raiz):
                 resumen = borrar_temporales(raiz, incluir_pycache=False)
                 self.assertEqual(resumen.json_preferencias_borrados, 1)
-                self.assertEqual(listar_ficheros_runtime_juego()[0], [])
+                self.assertEqual(resumen.txt_borrados, 3)
+                self.assertFalse((data / "preferencias_grafico.json").exists())
+                self.assertFalse(informes.exists())
+                self.assertFalse(feedback.exists())
+                self.assertTrue((data / "README.md").is_file())
 
     def test_dir_data_juego(self) -> None:
         with patch("utilidades.raiz_proyecto", return_value=Path("/proyecto")):

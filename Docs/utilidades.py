@@ -5,13 +5,17 @@
 Política de limpieza (complemento de ``Comun.persistencia``)
 ------------------------------------------------------------
 
-Desde **fuera** (esta utilidad): borra del disco ``preferencias_grafico.json``,
-``estadisticas_jugador.json``, ``ranking_*.json`` legado y ``*.txt`` en ``Data/Juego/``
-(raíz del repo), más ``__pycache__`` y cachés.
-El árbol ``Juego/Data/`` residual (p. ej. de despliegues antiguos) se elimina **entero** (incluye
-``Juego/Data/Juego/``). También se quitan **directorios vacíos** anidados en el repo
-(p. ej. ``test/a/b/z``). Al abrir el juego, los JSON de runtime se recrean. Si
-``Data/Juego/`` (raíz) queda vacía tras el borrado selectivo, también se elimina.
+Desde **fuera** (esta utilidad): borra del disco todo el runtime generado al jugar:
+
+- JSON: ``preferencias_*.json``, ``estadisticas_jugador.json``,
+  ``metadatos_inferidos.json``, ``ranking_*.json`` legado
+- TXT: informes de partida y copias locales de feedback (``*.txt``)
+
+en ``Data/Juego/`` (repo completo), en ``Data/`` plano (paquete mínimo) y en
+carpetas legacy ``Data/Informes|Feedback|JSON|json/``. También ``__pycache__`` y
+cachés. El árbol ``Juego/Data/`` residual se elimina **entero**. Si
+``Data/Juego/`` (o legacy) queda vacía tras el borrado, también se elimina.
+Al abrir el juego, los JSON de runtime se recrean.
 
 Desde **dentro** del juego: solo ``Comun.persistencia`` — borra ``.txt`` y vacía
 el contenido de preferencias y estadísticas (los ``.json`` se conservan).
@@ -58,6 +62,9 @@ _CARPETAS_CACHE_RAIZ = (
     ".scannerwork",
 )
 
+# Subcarpetas antiguas bajo Data/ (lectura legacy en Comun.rutas).
+_LEGACY_RUNTIME_SUBDIRS = ("Informes", "Feedback", "JSON", "json")
+
 __all__ = [
     "ResumenBorradoJson",
     "ResumenLimpieza",
@@ -94,6 +101,28 @@ def dirs_data_juego() -> list[Path]:
     return [carpeta] if carpeta.is_dir() else []
 
 
+def dirs_runtime_jugador(raiz: Path | None = None) -> list[Path]:
+    """Carpetas donde el juego escribe estado local, informes y feedback.
+
+    Incluye ``Data/Juego/``, ficheros sueltos en ``Data/`` (paquete mínimo) y
+    subcarpetas legacy ``Informes`` / ``Feedback`` / ``JSON``.
+    """
+    base = (raiz or raiz_proyecto()) / "Data"
+    if not base.is_dir():
+        return []
+    carpetas: list[Path] = []
+    juego = base / "Juego"
+    if juego.is_dir():
+        carpetas.append(juego)
+    # Plano: solo entradas directas de Data/ (no Banco/Privado/Plantillas).
+    carpetas.append(base)
+    for nombre in _LEGACY_RUNTIME_SUBDIRS:
+        legacy = base / nombre
+        if legacy.is_dir():
+            carpetas.append(legacy)
+    return carpetas
+
+
 def listar_ficheros_runtime_junto_al_exe(
     raiz: Path | None = None,
 ) -> tuple[list[Path], list[Path], list[Path]]:
@@ -105,15 +134,20 @@ def listar_ficheros_runtime_junto_al_exe(
 
 
 def _ficheros_runtime_en(carpeta: Path) -> tuple[list[Path], list[Path], list[Path]]:
-    preferencias = sorted(
-        (
-            *carpeta.glob("preferencias_grafico.json"),
+    """JSON/TXT generados al jugar (prefs, stats, metadatos, rankings, informes, feedback)."""
+    json_locales = sorted(
+        p
+        for p in {
+            *carpeta.glob("preferencias_*.json"),
             *carpeta.glob("estadisticas_jugador.json"),
-        )
+            *carpeta.glob("metadatos_inferidos.json"),
+        }
+        if p.is_file()
     )
     rankings = sorted(p for p in carpeta.glob("ranking_*.json") if p.is_file())
+    # Informes de examen + feedback_*.txt (y cualquier otro .txt de runtime).
     txt = sorted(p for p in carpeta.glob("*.txt") if p.is_file())
-    return preferencias, rankings, txt
+    return json_locales, rankings, txt
 
 
 def _agregar_ficheros_unicos(
@@ -134,12 +168,12 @@ def _agregar_ficheros_unicos(
 
 
 def listar_ficheros_runtime_juego() -> tuple[list[Path], list[Path], list[Path]]:
-    """``(preferencias, rankings, txt)`` en todas las carpetas ``Data/Juego/`` del repo."""
+    """``(json_locales, rankings, txt)`` de runtime (prefs/stats/metadatos/informes/feedback)."""
     preferencias: list[Path] = []
     rankings: list[Path] = []
     txt: list[Path] = []
     vistos: set[Path] = set()
-    for carpeta in dirs_data_juego():
+    for carpeta in dirs_runtime_jugador():
         p, r, t = _ficheros_runtime_en(carpeta)
         _agregar_ficheros_unicos(preferencias, p, vistos=vistos)
         _agregar_ficheros_unicos(rankings, r, vistos=vistos)
@@ -148,8 +182,12 @@ def listar_ficheros_runtime_juego() -> tuple[list[Path], list[Path], list[Path]]
 
 
 def _rutas_limpieza_data_juego(raiz: Path) -> list[tuple[Path, Path]]:
-    """Pares (hoja, límite) para vaciar ``Data/Juego/`` canónico (no ``Juego/Data/`` residual)."""
-    return [(raiz / "Data" / "Juego", raiz / "Data")]
+    """Pares (hoja, límite) para vaciar ``Data/Juego/`` y legacy (sin borrar ``Data/``)."""
+    data = raiz / "Data"
+    pares = [(data / "Juego", data)]
+    for nombre in _LEGACY_RUNTIME_SUBDIRS:
+        pares.append((data / nombre, data))
+    return pares
 
 
 def _onerror_rmtree(
@@ -786,13 +824,15 @@ def _imprimir_resumen_post_borrado(
         )
     if incluir_txt:
         print(
-            f"  .txt eliminados: {resumen.txt_borrados} | errores: {resumen.txt_errores} | "
+            f"  .txt eliminados: {resumen.txt_borrados} "
+            f"(informes/feedback) | errores: {resumen.txt_errores} | "
             f"liberados: {_formatear_tamano(resumen.bytes_txt)}"
         )
     if incluir_json:
         print(
-            f"  JSON eliminados: {resumen.json_preferencias_borrados} preferencias, "
-            f"{resumen.json_rankings_borrados} rankings | errores: {resumen.json_errores} | "
+            f"  JSON eliminados: {resumen.json_preferencias_borrados} runtime "
+            f"(prefs/stats/metadatos), {resumen.json_rankings_borrados} rankings | "
+            f"errores: {resumen.json_errores} | "
             f"liberados: {_formatear_tamano(resumen.bytes_json)}"
         )
         if resumen.json_preferencias_borrados or resumen.json_rankings_borrados:
@@ -882,12 +922,12 @@ def _parser_utilidades() -> argparse.ArgumentParser:
     alcance.add_argument(
         "--solo-juego",
         action="store_true",
-        help="En limpieza: solo ficheros runtime en Data/Juego/ (.txt y JSON)",
+        help="En limpieza: solo ficheros runtime (.txt informes/feedback y JSON)",
     )
     alcance.add_argument(
         "--solo-txt",
         action="store_true",
-        help="En limpieza: solo ficheros .txt en Data/Juego/",
+        help="En limpieza: solo ficheros .txt (informes/feedback)",
     )
     parser.add_argument(
         "-o",

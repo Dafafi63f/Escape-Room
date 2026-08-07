@@ -8,7 +8,7 @@ Descarga solo el juego (sin el repo entero):
    (marca "Add python.exe to PATH").
 2. En la carpeta del zip descomprimido (o en la raíz del repositorio):
      pip install -r Juego\requirements.txt
-   En Windows también puedes usar Jugar.bat del zip.
+   En Windows también puedes usar Jugar.bat (raíz del repo o del zip).
 3. Arranca:
      python Juego\juego_grafico.py
 
