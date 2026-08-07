@@ -28,7 +28,7 @@ from utils_dataset_csv import borrar_pycache_en_proyecto
 from utils_orden_temas import cargar_orden_temas
 from utils_plantillas_core import clave_contenido_sin_materia
 from utils_plantillas_pool import es_uso_copia_dataset
-from rutas_data import PATH_PLANTILLAS
+from rutas_data import PATH_PLANTILLAS, ruta_escritura_proyecto
 
 
 def _fila_desde_plantilla(materia: str, tpl: dict) -> dict:
@@ -215,11 +215,13 @@ def main() -> int:
         print(f"  … y {len(hallazgos) - 20} más")
 
     if args.json:
-        Path(args.json).write_text(
+        destino = ruta_escritura_proyecto(args.json)
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        destino.write_text(
             json.dumps(hallazgos, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
-        print(f"Informe: {args.json}")
+        print(f"Informe: {destino}")
 
     if not args.aplicar:
         if hallazgos:

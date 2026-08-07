@@ -1,4 +1,4 @@
 # Dependencias mínimas para jugar (solo pygame-ce).
 # Uso: pip install -r Juego/requirements.txt
 
-pygame-ce>=2.5
+pygame-ce==2.5.7

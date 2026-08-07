@@ -65,3 +65,19 @@ PATH_PRESETS = PROYECTO / "Juego" / "presets.json"
 PATH_PRESETS_HISTORIA = PATH_PRESETS
 PATH_CREADOR_PRIVADO = DATA_PRIVADO / "creador_privado.json"
 PATH_PREGUNTAS_MINIMAL = DATA_PRIVADO / "Preguntas_minimal.csv"
+
+
+def ruta_escritura_proyecto(ruta: str | Path) -> Path:
+    """Resuelve ``ruta`` y exige que quede dentro del repo (anti path-escape CLI)."""
+    candidato = Path(ruta).expanduser()
+    destino = (
+        candidato.resolve()
+        if candidato.is_absolute()
+        else (Path.cwd() / candidato).resolve()
+    )
+    base = PROYECTO.resolve()
+    try:
+        destino.relative_to(base)
+    except ValueError as exc:
+        raise ValueError(f"Ruta fuera del proyecto: {destino}") from exc
+    return destino
