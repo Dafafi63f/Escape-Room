@@ -156,6 +156,71 @@ def _actualizar_records(
         )
 
 
+def _actualizar_totales_cierre(
+    totales: dict[str, Any],
+    *,
+    preguntas_sesion: int,
+    aciertos_sesion: int,
+    fallos_sesion: int,
+    duracion_seg: int,
+    salas_sesion: int,
+) -> None:
+    totales["partidas"] = int(totales.get("partidas", 0)) + 1
+    totales["preguntas"] = int(totales.get("preguntas", 0)) + preguntas_sesion
+    totales["aciertos"] = int(totales.get("aciertos", 0)) + aciertos_sesion
+    totales["fallos"] = int(totales.get("fallos", 0)) + fallos_sesion
+    if duracion_seg > 0:
+        totales["segundos_jugados"] = int(totales.get("segundos_jugados", 0)) + duracion_seg
+    if salas_sesion > 0:
+        totales["salas_escape"] = int(totales.get("salas_escape", 0)) + salas_sesion
+
+
+def _construir_sesion_cierre(
+    *,
+    modo: str,
+    preguntas_sesion: int,
+    aciertos_sesion: int,
+    pct: float,
+    cierre: CierreInformePartida,
+    estado: EstadoPartida,
+    duracion_seg: int,
+    meta: dict[str, Any],
+) -> dict[str, Any]:
+    sesion = {
+        "fecha_iso": _ahora_iso(),
+        "modo": modo,
+        "preguntas": preguntas_sesion,
+        "aciertos": aciertos_sesion,
+        "pct": round(pct, 1),
+        "abandonado": bool(cierre.abandonado),
+        "puntos_arcade": int(estado.puntos_arcade),
+        "duracion_seg": duracion_seg,
+    }
+    if modo == "resistencia" and meta.get("racha") is not None:
+        sesion["racha"] = int(meta["racha"])
+    if modo == "escape" and meta.get("salas_superadas") is not None:
+        sesion["salas_superadas"] = int(meta["salas_superadas"])
+    return sesion
+
+
+def _registrar_pity_resistencia_cierre(
+    datos: dict[str, Any],
+    *,
+    modo: str,
+    meta: dict[str, Any],
+) -> None:
+    if modo != "resistencia":
+        return
+    visto_raw = meta.get("resistencia_variedad_vista")
+    if not isinstance(visto_raw, (list, tuple, set, frozenset)):
+        return
+    from Comun.pity_variedad_resistencia import PityVariedadResistencia
+
+    pity_variedad = PityVariedadResistencia.desde_dict(datos.get("resistencia_variedad"))
+    pity_variedad.registrar_partida({str(x) for x in visto_raw if isinstance(x, str)})
+    datos["resistencia_variedad"] = pity_variedad.a_dict()
+
+
 def registrar_cierre_partida(
     estado: EstadoPartida,
     cierre: CierreInformePartida,
@@ -175,20 +240,19 @@ def registrar_cierre_partida(
     pct = (100.0 * aciertos_sesion / preguntas_sesion) if preguntas_sesion else 0.0
     duracion_seg = estado.duracion_partida_seg()
 
-    totales["partidas"] = int(totales.get("partidas", 0)) + 1
-    totales["preguntas"] = int(totales.get("preguntas", 0)) + preguntas_sesion
-    totales["aciertos"] = int(totales.get("aciertos", 0)) + aciertos_sesion
-    totales["fallos"] = int(totales.get("fallos", 0)) + fallos_sesion
-    if duracion_seg > 0:
-        totales["segundos_jugados"] = int(totales.get("segundos_jugados", 0)) + duracion_seg
-
     salas_sesion = (
         int(meta["salas_superadas"])
         if modo == "escape" and meta.get("salas_superadas") is not None
         else 0
     )
-    if salas_sesion > 0:
-        totales["salas_escape"] = int(totales.get("salas_escape", 0)) + salas_sesion
+    _actualizar_totales_cierre(
+        totales,
+        preguntas_sesion=preguntas_sesion,
+        aciertos_sesion=aciertos_sesion,
+        fallos_sesion=fallos_sesion,
+        duracion_seg=duracion_seg,
+        salas_sesion=salas_sesion,
+    )
 
     _inc_modo(
         datos["por_modo"],
@@ -235,33 +299,17 @@ def registrar_cierre_partida(
         pct_sesion=pct,
     )
 
-    sesion = {
-        "fecha_iso": _ahora_iso(),
-        "modo": modo,
-        "preguntas": preguntas_sesion,
-        "aciertos": aciertos_sesion,
-        "pct": round(pct, 1),
-        "abandonado": bool(cierre.abandonado),
-        "puntos_arcade": int(estado.puntos_arcade),
-        "duracion_seg": duracion_seg,
-    }
-    if modo == "resistencia" and meta.get("racha") is not None:
-        sesion["racha"] = int(meta["racha"])
-
-    if modo == "resistencia":
-        visto_raw = meta.get("resistencia_variedad_vista")
-        if isinstance(visto_raw, (list, tuple, set, frozenset)):
-            from Comun.pity_variedad_resistencia import PityVariedadResistencia
-
-            pity_variedad = PityVariedadResistencia.desde_dict(
-                datos.get("resistencia_variedad")
-            )
-            pity_variedad.registrar_partida(
-                {str(x) for x in visto_raw if isinstance(x, str)}
-            )
-            datos["resistencia_variedad"] = pity_variedad.a_dict()
-    if modo == "escape" and meta.get("salas_superadas") is not None:
-        sesion["salas_superadas"] = int(meta["salas_superadas"])
+    sesion = _construir_sesion_cierre(
+        modo=modo,
+        preguntas_sesion=preguntas_sesion,
+        aciertos_sesion=aciertos_sesion,
+        pct=pct,
+        cierre=cierre,
+        estado=estado,
+        duracion_seg=duracion_seg,
+        meta=meta,
+    )
+    _registrar_pity_resistencia_cierre(datos, modo=modo, meta=meta)
 
     sesiones: list[dict[str, Any]] = list(datos.get("sesiones") or [])
     sesiones.append(sesion)
@@ -534,31 +582,35 @@ def _modo_menos_jugado(por_modo: dict[str, Any], modos: tuple[str, ...]) -> str 
     return candidatos[0][1]
 
 
-def formatear_tarjeta_sigue_por_aqui(perfil=None) -> list[str]:
-    """Líneas de la tarjeta «Sigue por aquí» para el panel de estadísticas."""
-    datos = _cargar_raw()
-    totales = datos.get("totales") or {}
-    sesiones: list[dict[str, Any]] = list(datos.get("sesiones") or [])
-    dias: list[str] = list(datos.get("dias_activos") or [])
-    por_modo: dict[str, Any] = dict(datos.get("por_modo") or {})
-    por_materia: dict[str, Any] = dict(datos.get("por_materia") or {})
-    por_concepto: dict[str, Any] = dict(datos.get("por_concepto") or {})
+def _lineas_punto_debil_tarjeta(
+    por_concepto: dict[str, Any],
+    por_materia: dict[str, Any],
+    perfil,
+) -> tuple[tuple[str, float, int] | None, tuple[str, float, int] | None]:
+    debil_concepto = _concepto_mas_debil(por_concepto) if _mostrar_analisis_conceptos(perfil) else None
+    debil_materia = _materia_mas_debil(por_materia) if not debil_concepto else None
+    return debil_concepto, debil_materia
 
-    partidas = int(totales.get("partidas", 0))
-    lineas: list[str] = ["--- SIGUE POR AQUI ---"]
 
-    if partidas == 0:
-        lineas.append("  Juega tu primera partida para ver recomendaciones.")
-        return lineas
-
+def _lineas_recomendacion_tarjeta(
+    *,
+    dias: list[str],
+    por_concepto: dict[str, Any],
+    por_materia: dict[str, Any],
+    sesiones: list[dict[str, Any]],
+    por_modo: dict[str, Any],
+    perfil,
+) -> list[str]:
+    lineas: list[str] = []
     dias_sin = _dias_sin_actividad(dias)
     if dias_sin >= 2:
         lineas.append(
             f"  Llevas {dias_sin} dias sin practicar; un examen corto hoy ayuda a retomar."
         )
 
-    debil_concepto = _concepto_mas_debil(por_concepto) if _mostrar_analisis_conceptos(perfil) else None
-    debil_materia = _materia_mas_debil(por_materia) if not debil_concepto else None
+    debil_concepto, debil_materia = _lineas_punto_debil_tarjeta(
+        por_concepto, por_materia, perfil
+    )
     if debil_concepto is not None:
         concepto, pct, intentos = debil_concepto
         lineas.append(
@@ -593,6 +645,36 @@ def formatear_tarjeta_sigue_por_aqui(perfil=None) -> list[str]:
         lineas.append(
             f"  Prueba el modo {_etiqueta_modo(modo_sugerido, perfil)}; aun no lo has usado."
         )
+    return lineas
+
+
+def formatear_tarjeta_sigue_por_aqui(perfil=None) -> list[str]:
+    """Líneas de la tarjeta «Sigue por aquí» para el panel de estadísticas."""
+    datos = _cargar_raw()
+    totales = datos.get("totales") or {}
+    sesiones: list[dict[str, Any]] = list(datos.get("sesiones") or [])
+    dias: list[str] = list(datos.get("dias_activos") or [])
+    por_modo: dict[str, Any] = dict(datos.get("por_modo") or {})
+    por_materia: dict[str, Any] = dict(datos.get("por_materia") or {})
+    por_concepto: dict[str, Any] = dict(datos.get("por_concepto") or {})
+
+    partidas = int(totales.get("partidas", 0))
+    lineas: list[str] = ["--- SIGUE POR AQUI ---"]
+
+    if partidas == 0:
+        lineas.append("  Juega tu primera partida para ver recomendaciones.")
+        return lineas
+
+    lineas.extend(
+        _lineas_recomendacion_tarjeta(
+            dias=dias,
+            por_concepto=por_concepto,
+            por_materia=por_materia,
+            sesiones=sesiones,
+            por_modo=por_modo,
+            perfil=perfil,
+        )
+    )
 
     if len(lineas) == 1:
         lineas.append("  Sigue practicando; aqui apareceran consejos personalizados.")

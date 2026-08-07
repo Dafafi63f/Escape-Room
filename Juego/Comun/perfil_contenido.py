@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 TipoPaquete = Literal["minimo", "completo", "desarrollo"]
 
+_MSG_FALTA_PRESETS = "Falta el catálogo de presets (Juego/presets.json)."
+
 
 @dataclass(frozen=True)
 class PerfilContenido:
@@ -115,13 +117,13 @@ class PerfilContenido:
                     "Usa Examen fijo en la barra superior (📕)."
                 )
             if not self.tiene_presets:
-                return "Falta el catálogo de presets (Juego/presets.json)."
+                return _MSG_FALTA_PRESETS
             if not self.tiene_listado_materias:
                 return "Falta el listado de materias."
         if modo == "especiales" and not self.tiene_presets:
-            return "Falta el catálogo de presets (Juego/presets.json)."
+            return _MSG_FALTA_PRESETS
         if modo == "diarios" and not self.tiene_presets:
-            return "Falta el catálogo de presets (Juego/presets.json)."
+            return _MSG_FALTA_PRESETS
         return "Modo no disponible con el contenido cargado."
 
     def modo_especial_disponible(self, preset_id: str) -> bool:

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from Comun.reglas import complejidad_pregunta, niveles_en_pool
 from Comun.config_historia import etiqueta_grupo_tematico
@@ -76,6 +76,7 @@ __all__ = [
 ]
 
 _DIFICULTADES_TODAS = frozenset({"Facil", "Media", "Dificil"})
+_RASGO_CLASICA = "Clásica"
 _PLANTILLA_BALANCEADA = "puerta_materia"
 _TAMANOS_REDUCCION = (3, 5)
 VIDAS_MAX_ESCAPE = 3
@@ -656,7 +657,7 @@ def _indices_candidatas(
 
 
 def _criterios_sin_filtro_complejidad(criterios: CriteriosSeleccionPool) -> CriteriosSeleccionPool:
-    return replace(criterios, min_complejidad=1, max_complejidad=99)
+    return cast(CriteriosSeleccionPool, replace(criterios, min_complejidad=1, max_complejidad=99))
 
 
 def _indices_por_dificultad(
@@ -1126,6 +1127,7 @@ def _jefe_quitar_rasgo_desafio(
     numero_sala: int,
     rng: random.Random,
 ) -> PuertaEscape:
+    from Comun.escape_room import PuertaEscape
     from Comun.eventos_partida import combinar_modificadores_puerta, evento_por_id
 
     opcionales = _ids_rasgos_desafio_opcionales(puerta.modificadores)
@@ -1136,7 +1138,7 @@ def _jefe_quitar_rasgo_desafio(
         evento_por_id(eid) for eid in puerta.modificadores.eventos_ids if eid != quitar
     ]
     mods = combinar_modificadores_puerta(tuple(rasgos), numero_sala=numero_sala)
-    return replace(puerta, modificadores=mods)
+    return cast(PuertaEscape, replace(puerta, modificadores=mods))
 
 
 def _jefe_cambiar_rasgo_desafio(
@@ -1146,6 +1148,7 @@ def _jefe_cambiar_rasgo_desafio(
     rng: random.Random,
     desafios_disp: list,
 ) -> PuertaEscape:
+    from Comun.escape_room import PuertaEscape
     from Comun.eventos_partida import (
         _compatible_con_rasgos_puerta,
         combinar_modificadores_puerta,
@@ -1166,7 +1169,7 @@ def _jefe_cambiar_rasgo_desafio(
         return puerta
     rasgos = list(actuales) + [rng.choice(compatibles)]
     mods = combinar_modificadores_puerta(tuple(rasgos), numero_sala=numero_sala)
-    return replace(puerta, modificadores=mods)
+    return cast(PuertaEscape, replace(puerta, modificadores=mods))
 
 
 def _jefe_regenerar_modificadores(
@@ -1175,6 +1178,7 @@ def _jefe_regenerar_modificadores(
     numero_sala: int,
     rng: random.Random,
 ) -> PuertaEscape:
+    from Comun.escape_room import PuertaEscape
     from Comun.eventos_partida import generar_modificadores_puerta
 
     mods = generar_modificadores_puerta(
@@ -1187,7 +1191,7 @@ def _jefe_regenerar_modificadores(
     if mods.sin_pregunta:
         return puerta
     mods_jefe = _modificadores_jefe_escape(mods, numero_sala=numero_sala, rng=rng)
-    return replace(puerta, modificadores=mods_jefe)
+    return cast(PuertaEscape, replace(puerta, modificadores=mods_jefe))
 
 
 def _asegurar_puerta_jefe_viable(
@@ -1269,7 +1273,7 @@ def _asegurar_puerta_jefe_viable(
         return mejor
 
     mods_min = _modificadores_jefe_escape(
-        ModificadoresPuerta(rasgos=("Clásica",)),
+        ModificadoresPuerta(rasgos=(_RASGO_CLASICA,)),
         numero_sala=numero_sala,
         rng=rng,
     )
@@ -1317,19 +1321,20 @@ def asegurar_puerta_viable(
         )
 
     candidata = puerta
+    from Comun.escape_room import PuertaEscape
 
     for n in reversed(_TAMANOS_REDUCCION):
         if n >= candidata.n_preguntas:
             continue
         prueba = replace(candidata, n_preguntas=n)
         if _puerta_cumple(prueba, pool, numero_sala=numero_sala, n_salas=n_salas):
-            return prueba
+            return cast(PuertaEscape, prueba)
 
     evento_relajado = _evento_balanceado_desde(candidata.evento)
     for n in reversed(_TAMANOS_REDUCCION):
         prueba = replace(candidata, n_preguntas=n, evento=evento_relajado)
         if _puerta_cumple(prueba, pool, numero_sala=numero_sala, n_salas=n_salas):
-            return prueba
+            return cast(PuertaEscape, prueba)
 
     if grupos_pool and _evento_es_grupo(candidata.evento):
         from Comun.escape_room import PuertaEscape
@@ -1346,7 +1351,7 @@ def asegurar_puerta_viable(
                     candidata,
                     n_preguntas=n,
                     evento=evento,
-                    modificadores=ModificadoresPuerta(rasgos=("Clásica",)),
+                    modificadores=ModificadoresPuerta(rasgos=(_RASGO_CLASICA,)),
                 )
                 disp = contar_candidatas_puerta(
                     pool, prueba, numero_sala=numero_sala, n_salas=n_salas
@@ -1370,7 +1375,7 @@ def asegurar_puerta_viable(
                     candidata,
                     n_preguntas=n,
                     evento=evento,
-                    modificadores=ModificadoresPuerta(rasgos=("Clásica",)),
+                    modificadores=ModificadoresPuerta(rasgos=(_RASGO_CLASICA,)),
                 )
                 disp = contar_candidatas_puerta(
                     pool, prueba, numero_sala=numero_sala, n_salas=n_salas

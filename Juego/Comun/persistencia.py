@@ -19,14 +19,17 @@ __all__ = [
 ]
 
 # Ficheros de catálogo / banco que no deben aparecer en Data/Juego/.
+_FICHERO_PRESETS = "presets.json"
+_FICHERO_CREADOR_PRIVADO = "creador_privado.json"
+_FICHERO_ESTADISTICAS_JUGADOR = "estadisticas_jugador.json"
 _FICHEROS_PROHIBIDOS_EN_JUEGO = frozenset({
-    "presets.json",
+    _FICHERO_PRESETS,
     "preguntas_resistencia.json",
     "plantillas.json",
     "Preguntas.csv",
     "listado_materias.csv",
     "criterios_clasificacion_materia.csv",
-    "creador_privado.json",
+    _FICHERO_CREADOR_PRIVADO,
 })
 
 _CARPETAS_PROHIBIDAS_EN_JUEGO = frozenset({"defaults", "Banco"})
@@ -34,7 +37,7 @@ _CARPETAS_PROHIBIDAS_EN_JUEGO = frozenset({"defaults", "Banco"})
 # Runtime del jugador: no deben versionarse ni empaquetarse en el zip jugable.
 _PATRONES_RUNTIME_JUEGO = (
     "preferencias_grafico.json",
-    "estadisticas_jugador.json",
+    _FICHERO_ESTADISTICAS_JUGADOR,
     "ranking_*.json",
     "*.txt",
 )  # documentación; ver es_fichero_runtime_juego()
@@ -112,7 +115,7 @@ def es_fichero_runtime_juego(nombre: str) -> bool:
     bajo = nombre.lower()
     if bajo.endswith(".txt"):
         return True
-    if bajo == "estadisticas_jugador.json":
+    if bajo == _FICHERO_ESTADISTICAS_JUGADOR:
         return True
     if bajo == "metadatos_inferidos.json":
         return True
@@ -121,111 +124,155 @@ def es_fichero_runtime_juego(nombre: str) -> bool:
     return bajo.startswith("ranking_") and bajo.endswith(".json")
 
 
-def auditar_carpetas_data(raiz: Path | None = None) -> list[str]:
-    """Detecta ficheros fuera de sitio en ``Data/Banco/``, ``Data/Juego/`` y ``Data/Privado/``."""
-    from Comun.rutas import etiqueta_dir_datos_jugador, juego_dir, layout_datos_jugador_plano
+def _destino_catalogo_prohibido_juego(nombre: str) -> str:
+    if nombre == _FICHERO_PRESETS:
+        return "Juego/presets.json"
+    if nombre == "preguntas_resistencia.json":
+        return "Juego/Comun/preguntas_resistencia_exclusivas_datos.py"
+    if nombre == _FICHERO_CREADOR_PRIVADO:
+        return "Data/Privado/"
+    return "Data/Banco/"
 
-    base = (raiz or juego_dir().parent) / "Data"
-    problemas: list[str] = []
-    banco = base / "Banco"
-    juego = base / "Juego"
-    destino_runtime = etiqueta_dir_datos_jugador()
 
-    if not layout_datos_jugador_plano():
-        for fichero in sorted(base.iterdir()) if base.is_dir() else []:
-            if not fichero.is_file():
-                continue
-            nombre = fichero.name
-            if es_fichero_runtime_juego(nombre):
-                problemas.append(
-                    f"Data/{nombre}: estado local del jugador "
-                    f"(debe estar en {destino_runtime}/)"
-                )
-    else:
-        for subdir in ("Banco", "Juego", "Privado"):
-            ruta = base / subdir
-            if ruta.is_dir():
-                problemas.append(
-                    f"Data/{subdir}/: subdirectorio no usado en paquete mínimo "
-                    "(todos los ficheros van en Data/ plano)"
-                )
-
-    if not layout_datos_jugador_plano():
-        for fichero in sorted(banco.iterdir()) if banco.is_dir() else []:
-            if not fichero.is_file():
-                continue
-            nombre = fichero.name
-            if nombre.endswith(".txt") or nombre.startswith("preferencias_"):
-                problemas.append(
-                    f"Data/Banco/{nombre}: informe o preferencias del jugador "
-                    f"(debe estar en {destino_runtime}/)"
-                )
-            elif nombre in ("estadisticas_jugador.json",) or nombre.startswith("ranking_"):
-                problemas.append(
-                    f"Data/Banco/{nombre}: estadísticas locales "
-                    f"(debe estar en {destino_runtime}/)"
-                )
-            elif nombre == "presets.json":
-                problemas.append(
-                    f"Data/Banco/{nombre}: catálogo de modos "
-                    "(debe estar en Juego/presets.json)"
-                )
-            elif nombre == "creador_privado.json":
-                problemas.append(
-                    f"Data/Banco/{nombre}: configuración privada del autor "
-                    "(mover a Data/Privado/)"
-                )
-            elif fichero.suffix.lower() == ".xlsx":
-                problemas.append(
-                    f"Data/Banco/{nombre}: fuente de mantenimiento "
-                    "(mover a Data/Privado/)"
-                )
-
-    if not layout_datos_jugador_plano() and juego.is_dir():
-        for entrada in sorted(juego.rglob("*")):
-            if not entrada.is_file():
-                continue
-            rel = entrada.relative_to(juego)
-            partes = rel.parts
-            if partes and partes[0] in _CARPETAS_PROHIBIDAS_EN_JUEGO:
-                problemas.append(
-                    f"Data/Juego/{rel.as_posix()}: carpeta obsoleta "
-                    "(los valores por defecto están en Comun/persistencia.py)"
-                )
-                continue
-            nombre = entrada.name
-            if nombre in _FICHEROS_PROHIBIDOS_EN_JUEGO:
-                if nombre == "presets.json":
-                    destino = "Juego/presets.json"
-                elif nombre == "preguntas_resistencia.json":
-                    destino = "Juego/Comun/preguntas_resistencia_exclusivas_datos.py"
-                elif nombre == "creador_privado.json":
-                    destino = "Data/Privado/"
-                else:
-                    destino = "Data/Banco/"
-                problemas.append(
-                    f"Data/Juego/{rel.as_posix()}: catálogo o banco fuera de sitio "
-                    f"(usar {destino})"
-                )
-
-    for fichero in sorted(base.glob("*.xlsx")):
-        problemas.append(
-            f"Data/{fichero.name}: fuente de mantenimiento "
+def _problema_fichero_banco(nombre: str, destino_runtime: str, fichero: Path) -> str | None:
+    if nombre.endswith(".txt") or nombre.startswith("preferencias_"):
+        return (
+            f"Data/Banco/{nombre}: informe o preferencias del jugador "
+            f"(debe estar en {destino_runtime}/)"
+        )
+    if nombre in (_FICHERO_ESTADISTICAS_JUGADOR,) or nombre.startswith("ranking_"):
+        return (
+            f"Data/Banco/{nombre}: estadísticas locales "
+            f"(debe estar en {destino_runtime}/)"
+        )
+    if nombre == _FICHERO_PRESETS:
+        return (
+            f"Data/Banco/{nombre}: catálogo de modos "
+            "(debe estar en Juego/presets.json)"
+        )
+    if nombre == _FICHERO_CREADOR_PRIVADO:
+        return (
+            f"Data/Banco/{nombre}: configuración privada del autor "
             "(mover a Data/Privado/)"
         )
+    if fichero.suffix.lower() == ".xlsx":
+        return (
+            f"Data/Banco/{nombre}: fuente de mantenimiento "
+            "(mover a Data/Privado/)"
+        )
+    return None
 
-    fuentes_legacy = (raiz or juego_dir().parent) / "Files" / "fuentes"
+
+def _problema_entrada_juego(entrada: Path, juego: Path) -> str | None:
+    rel = entrada.relative_to(juego)
+    partes = rel.parts
+    if partes and partes[0] in _CARPETAS_PROHIBIDAS_EN_JUEGO:
+        return (
+            f"Data/Juego/{rel.as_posix()}: carpeta obsoleta "
+            "(los valores por defecto están en Comun/persistencia.py)"
+        )
+    nombre = entrada.name
+    if nombre not in _FICHEROS_PROHIBIDOS_EN_JUEGO:
+        return None
+    destino = _destino_catalogo_prohibido_juego(nombre)
+    return (
+        f"Data/Juego/{rel.as_posix()}: catálogo o banco fuera de sitio "
+        f"(usar {destino})"
+    )
+
+
+def _auditar_runtime_en_data_raiz(base: Path, destino_runtime: str) -> list[str]:
+    problemas: list[str] = []
+    for fichero in sorted(base.iterdir()) if base.is_dir() else []:
+        if not fichero.is_file():
+            continue
+        if es_fichero_runtime_juego(fichero.name):
+            problemas.append(
+                f"Data/{fichero.name}: estado local del jugador "
+                f"(debe estar en {destino_runtime}/)"
+            )
+    return problemas
+
+
+def _auditar_subdirs_layout_plano(base: Path) -> list[str]:
+    problemas: list[str] = []
+    for subdir in ("Banco", "Juego", "Privado"):
+        ruta = base / subdir
+        if ruta.is_dir():
+            problemas.append(
+                f"Data/{subdir}/: subdirectorio no usado en paquete mínimo "
+                "(todos los ficheros van en Data/ plano)"
+            )
+    return problemas
+
+
+def _auditar_carpeta_banco(banco: Path, destino_runtime: str) -> list[str]:
+    problemas: list[str] = []
+    for fichero in sorted(banco.iterdir()) if banco.is_dir() else []:
+        if not fichero.is_file():
+            continue
+        msg = _problema_fichero_banco(fichero.name, destino_runtime, fichero)
+        if msg:
+            problemas.append(msg)
+    return problemas
+
+
+def _auditar_carpeta_juego(juego: Path) -> list[str]:
+    problemas: list[str] = []
+    if not juego.is_dir():
+        return problemas
+    for entrada in sorted(juego.rglob("*")):
+        if not entrada.is_file():
+            continue
+        msg = _problema_entrada_juego(entrada, juego)
+        if msg:
+            problemas.append(msg)
+    return problemas
+
+
+def _auditar_xlsx_en_data(base: Path) -> list[str]:
+    return [
+        f"Data/{fichero.name}: fuente de mantenimiento "
+        "(mover a Data/Privado/)"
+        for fichero in sorted(base.glob("*.xlsx"))
+    ]
+
+
+def _auditar_rutas_legacy(raiz: Path) -> list[str]:
+    problemas: list[str] = []
+    fuentes_legacy = raiz / "Files" / "fuentes"
     if fuentes_legacy.is_dir() and any(fuentes_legacy.iterdir()):
         problemas.append(
             "Files/fuentes/: carpeta obsoleta (mover su contenido a Data/Privado/)"
         )
-
-    fixture_csv = (raiz or juego_dir().parent) / "Tests" / "Fixtures" / "Preguntas_minimal.csv"
+    fixture_csv = raiz / "Tests" / "Fixtures" / "Preguntas_minimal.csv"
     if fixture_csv.is_file():
         problemas.append(
-            "Tests/Fixtures/Preguntas_minimal.csv: obsoleto (usar Data/Privado/Preguntas_minimal.csv)"
+            "Tests/Fixtures/Preguntas_minimal.csv: obsoleto "
+            "(usar Data/Privado/Preguntas_minimal.csv)"
         )
+    return problemas
 
+
+def auditar_carpetas_data(raiz: Path | None = None) -> list[str]:
+    """Detecta ficheros fuera de sitio en ``Data/Banco/``, ``Data/Juego/`` y ``Data/Privado/``."""
+    from Comun.rutas import etiqueta_dir_datos_jugador, juego_dir, layout_datos_jugador_plano
+
+    raiz_pkg = raiz or juego_dir().parent
+    base = raiz_pkg / "Data"
+    destino_runtime = etiqueta_dir_datos_jugador()
+    plano = layout_datos_jugador_plano()
+
+    problemas: list[str] = []
+    if plano:
+        problemas.extend(_auditar_subdirs_layout_plano(base))
+    else:
+        problemas.extend(_auditar_runtime_en_data_raiz(base, destino_runtime))
+        problemas.extend(_auditar_carpeta_banco(base / "Banco", destino_runtime))
+        problemas.extend(_auditar_carpeta_juego(base / "Juego"))
+
+    problemas.extend(_auditar_xlsx_en_data(base))
+    problemas.extend(_auditar_rutas_legacy(raiz_pkg))
     return problemas
 
 
@@ -235,7 +282,7 @@ def texto_referencia_datos_juego() -> str:
         "Data/Juego/ — datos locales del jugador (generados al jugar)",
         "",
         "  preferencias_grafico.json",
-        "  estadisticas_jugador.json",
+        f"  {_FICHERO_ESTADISTICAS_JUGADOR}",
         "  *.txt (informes y feedback)",
         "",
         "Catálogo de modos: Juego/presets.json",
@@ -244,7 +291,7 @@ def texto_referencia_datos_juego() -> str:
     ]
     for clave, desc in CAMPOS_PREFERENCIAS.items():
         lineas.append(f"  {clave}: {desc}")
-    lineas.extend(["", "estadisticas_jugador.json — secciones:"])
+    lineas.extend(["", f"{_FICHERO_ESTADISTICAS_JUGADOR} — secciones:"])
     for clave, desc in CAMPOS_ESTADISTICAS.items():
         lineas.append(f"  {clave}: {desc}")
     return "\n".join(lineas)

@@ -67,11 +67,12 @@ def indice_area_defecto() -> int:
 # --- Plantilla creador_privado.json ---
 
 FICHERO_CREADOR_PRIVADO = "creador_privado.json"
+_CORREO_EJEMPLO = "tu.correo@ejemplo.com"
 
 PLANTILLA_CREADOR_PRIVADO: dict = {
     "creador": {
         "nombre": "Tu nombre completo",
-        "correo": "tu.correo@ejemplo.com",
+        "correo": _CORREO_EJEMPLO,
         "universidad": "UAB",
         "titulacion": "Grau en Enginyeria Informàtica",
         "tutor": "Nombre del tutor/a",
@@ -84,7 +85,7 @@ PLANTILLA_CREADOR_PRIVADO: dict = {
         "personal_access_token": "",
     },
     "feedback_smtp": {
-        "correo_destino": "tu.correo@ejemplo.com",
+        "correo_destino": _CORREO_EJEMPLO,
         "correo_asunto": "MATCAD — feedback del juego",
         "habilitar_smtp": True,
         "smtp_servidor": "smtp.gmail.com",
@@ -92,7 +93,7 @@ PLANTILLA_CREADOR_PRIVADO: dict = {
         "smtp_usuario": "tu.cuenta@gmail.com",
         "smtp_password": "",
         "smtp_remitente": "tu.cuenta@gmail.com",
-        "smtp_destino": "tu.correo@ejemplo.com",
+        "smtp_destino": _CORREO_EJEMPLO,
     },
     "contacto_jugador": {
         "nota": "Si prefieres no usar el formulario del juego, también puedes escribirme por:",

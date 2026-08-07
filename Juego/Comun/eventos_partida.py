@@ -17,7 +17,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field, replace
 from enum import Enum
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 from Comun.motor_nucleo import EstadoPartida
 from Comun.reglas import sumar_puntos_arcade
@@ -400,6 +400,9 @@ def _def_botin_objeto_escape(
     )
 
 
+_TITULO_PUERTA_BLOQUE = "Puerta bloque"
+_TEXTO_1_VIDA = "1 vida"
+
 _CATALOGO: tuple[DefinicionEvento, ...] = (
     # --- Contenido escape: materia (perfiles) y puerta bloque (4 subtipos) ---
     _c(
@@ -414,7 +417,7 @@ _CATALOGO: tuple[DefinicionEvento, ...] = (
     ),
     _c(
         "puerta_grupo",
-        "Puerta bloque",
+        _TITULO_PUERTA_BLOQUE,
         "Grupo temático del plan: varias materias del mismo bloque G1–G10.",
         EMOJI_BLOQUE_SUBTIPO_GRUPO,
         AlcanceEvento.ESCAPE,
@@ -425,7 +428,7 @@ _CATALOGO: tuple[DefinicionEvento, ...] = (
     ),
     _c(
         "puerta_curso",
-        "Puerta bloque",
+        _TITULO_PUERTA_BLOQUE,
         "Curso del plan: todas las materias de un curso.",
         EMOJI_PUERTA_CURSO,
         AlcanceEvento.ESCAPE,
@@ -440,7 +443,7 @@ _CATALOGO: tuple[DefinicionEvento, ...] = (
     ),
     _c(
         "puerta_semestre",
-        "Puerta bloque",
+        _TITULO_PUERTA_BLOQUE,
         "Semestre del plan: preguntas del semestre indicado (cualquier curso).",
         EMOJI_PUERTA_SEMESTRE,
         AlcanceEvento.ESCAPE,
@@ -455,7 +458,7 @@ _CATALOGO: tuple[DefinicionEvento, ...] = (
     ),
     _c(
         "puerta_periodo",
-        "Puerta bloque",
+        _TITULO_PUERTA_BLOQUE,
         "Periodo académico: semestre concreto (curso-semestre).",
         EMOJI_PUERTA_PERIODO,
         AlcanceEvento.ESCAPE,
@@ -1110,11 +1113,14 @@ def definicion_materia_con_perfil(perfil: PerfilContenidoMateria) -> DefinicionE
     base = _POR_ID["puerta_materia"]
     opts = perfil.opts or base.contenido_escape or OpcionesContenidoEscape()
     desc = f"{base.descripcion} {perfil.descripcion_filtro}".strip()
-    return replace(
-        base,
-        descripcion=desc,
-        modificadores=perfil.mod,
-        contenido_escape=opts,
+    return cast(
+        DefinicionEvento,
+        replace(
+            base,
+            descripcion=desc,
+            modificadores=perfil.mod,
+            contenido_escape=opts,
+        ),
     )
 
 
@@ -1757,7 +1763,7 @@ def _linea_recompensa_botin_carta(
         )
     if m.delta_vidas_al_completar > 0:
         n = m.delta_vidas_al_completar
-        txt = "1 vida" if n == 1 else f"{n} vidas"
+        txt = _TEXTO_1_VIDA if n == 1 else f"{n} vidas"
         if sin_pregunta:
             return linea_recompensa_pie_carta(
                 f"+{txt} (tope {vidas_max_tope})", emoji=emoji
@@ -2061,13 +2067,13 @@ def tooltip_recompensa_completar(
         return ""
     if es_jefe:
         n = bonus.delta_vidas
-        txt = "1 vida" if n == 1 else f"{n} vidas"
+        txt = _TEXTO_1_VIDA if n == 1 else f"{n} vidas"
         return (
             "Puerta jefe: bloque largo de 10 preguntas. "
             f"Al superarla sin fallar: +{txt} (tope actual de vidas)."
         )
     n = bonus.delta_vidas
-    txt = "1 vida" if n == 1 else f"{n} vidas"
+    txt = _TEXTO_1_VIDA if n == 1 else f"{n} vidas"
     return f"Al superar la puerta sin fallar: +{txt} (tope actual de vidas)."
 
 
@@ -2559,7 +2565,7 @@ def _acortar_frase_riesgo(texto: str) -> str:
     limpio = texto.strip()
     sustituciones = {
         "un objeto al azar": "objeto",
-        "pierdes 1 vida": "1 vida",
+        "pierdes 1 vida": _TEXTO_1_VIDA,
         "pierdes 1 vida y todos tus objetos": "1 vida y todos tus objetos",
         "pierdes un objeto al azar": "1 objeto",
         "pierdes todos tus objetos": "todos tus objetos",

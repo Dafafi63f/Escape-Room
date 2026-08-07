@@ -513,13 +513,24 @@ def texto_bloque_filtro_extra(er: EstadoResistencia) -> str | None:
     )
 
 
+_PREF_BOTIN_JEFE = "Botín de jefe: "
+_ETIQUETA_ENFRENTAMIENTO_JEFE = "Enfrentamiento con jefe"
+_PREF_JEFE = "Jefe:"
+_ETIQUETA_RELAMPAGO = "Relámpago"
+_PREF_NIEBLA = "Niebla:"
+_ETIQUETA_DOBLE_PUNTOS = "Doble puntos"
+_ETIQUETA_TRIPLE_PUNTOS = "Triple puntos"
+_ETIQUETA_PREGUNTA_DIFICIL = "Pregunta difícil"
+_ETIQUETA_PREGUNTA_EXTRA_DIFICIL = "Pregunta extra difícil"
+
+
 def formatear_aviso_jefe(etiqueta: str) -> str:
     """Popup al empezar un jefe (10 preguntas, botín al completarlo)."""
     from Comun.emojis_escape import EMOJI_JEFE
 
-    resto = etiqueta.removeprefix("Jefe: ").strip()
+    resto = etiqueta.removeprefix(f"{_PREF_JEFE} ").strip()
     texto = (
-        f"¡Enfrentamiento con jefe! {resto}. "
+        f"¡{_ETIQUETA_ENFRENTAMIENTO_JEFE}! {resto}. "
         "Derrotarlo al completar las preguntas da botín especial."
     )
     return prefijar_emoji(texto, EMOJI_JEFE)
@@ -536,7 +547,7 @@ def _resumen_premio_jefe(recompensa: EventoRecompensaResistencia) -> str:
         from Comun.economia_partida import texto_bonus_amuleto
 
         return texto_bonus_amuleto(recompensa.bonus_proximo_acierto)
-    premio = recompensa.etiqueta.removeprefix("Botín de jefe: ").strip()
+    premio = recompensa.etiqueta.removeprefix(_PREF_BOTIN_JEFE).strip()
     return premio or recompensa.etiqueta
 
 
@@ -819,7 +830,7 @@ def recompensas_completar_jefe_resistencia(
         pid = elegir_powerup_loot(er.inventario, rng)
         candidatos.append(
             EventoRecompensaResistencia(
-                f"Botín de jefe: {etiqueta_powerup(pid)}",
+                f"{_PREF_BOTIN_JEFE}{etiqueta_powerup(pid)}",
                 powerup_id=pid,
             )
         )
@@ -861,21 +872,21 @@ def separar_emoji_mensaje(mensaje: str) -> tuple[str, str]:
 
 
 def emoji_evento_etiqueta(etiqueta: str) -> str:
-    if etiqueta.startswith("Relámpago"):
+    if etiqueta.startswith(_ETIQUETA_RELAMPAGO):
         return "⚡"
-    if etiqueta.startswith("Niebla:"):
+    if etiqueta.startswith(_PREF_NIEBLA):
         return EMOJI_NIEBLA_OPCIONES
-    if etiqueta == "Doble puntos":
+    if etiqueta == _ETIQUETA_DOBLE_PUNTOS:
         return "✨"
-    if etiqueta == "Triple puntos":
+    if etiqueta == _ETIQUETA_TRIPLE_PUNTOS:
         return "💎"
-    if etiqueta == "Pregunta difícil":
+    if etiqueta == _ETIQUETA_PREGUNTA_DIFICIL:
         return "🔥"
-    if etiqueta == "Pregunta extra difícil":
+    if etiqueta == _ETIQUETA_PREGUNTA_EXTRA_DIFICIL:
         return "☠️"
     if etiqueta.startswith("Bloque:"):
         return EMOJI_BLOQUE_FILTRO_RESISTENCIA
-    if etiqueta.startswith("Jefe:") or "Enfrentamiento con jefe" in etiqueta:
+    if etiqueta.startswith(_PREF_JEFE) or _ETIQUETA_ENFRENTAMIENTO_JEFE in etiqueta:
         from Comun.emojis_escape import EMOJI_JEFE
 
         return EMOJI_JEFE
@@ -896,18 +907,18 @@ def emoji_evento_etiqueta(etiqueta: str) -> str:
 
 
 def descripcion_evento_etiqueta(etiqueta: str) -> str:
-    if etiqueta.startswith("Relámpago"):
+    if etiqueta.startswith(_ETIQUETA_RELAMPAGO):
         seg = etiqueta.split(":")[-1].strip() if ":" in etiqueta else ""
         return f"Menos tiempo para responder{f' ({seg})' if seg else ''}."
-    if etiqueta.startswith("Niebla:"):
+    if etiqueta.startswith(_PREF_NIEBLA):
         return "Se ocultará 1 respuesta al azar (puede ser la correcta)."
-    if etiqueta in {"Doble puntos", "Triple puntos"}:
+    if etiqueta in {_ETIQUETA_DOBLE_PUNTOS, _ETIQUETA_TRIPLE_PUNTOS}:
         return f"Si aciertas, sumarás {etiqueta.lower()} en esta pregunta."
-    if etiqueta == "Pregunta difícil":
+    if etiqueta == _ETIQUETA_PREGUNTA_DIFICIL:
         return "Esta pregunta será más difícil de lo habitual en esta fase."
-    if etiqueta == "Pregunta extra difícil":
+    if etiqueta == _ETIQUETA_PREGUNTA_EXTRA_DIFICIL:
         return "Una pregunta muy exigente para esta fase de la partida."
-    if etiqueta.startswith("Jefe:") or "Enfrentamiento con jefe" in etiqueta:
+    if etiqueta.startswith(_PREF_JEFE) or _ETIQUETA_ENFRENTAMIENTO_JEFE in etiqueta:
         return (
             "Bloque de 10 preguntas del mismo tema. "
             "Al completarlo recibes botín especial de jefe."
@@ -1436,6 +1447,7 @@ def aplicar_efectos_maldicion(
     *,
     numero_pregunta: int = 0,
 ) -> None:
+    del p, numero_pregunta
     if not er.maldicion:
         return
     from Comun.maldiciones_partida import plantilla_maldicion_resistencia
@@ -1521,8 +1533,8 @@ def formatear_aviso_recompensa(
     if etiqueta.startswith("Objeto: "):
         texto = f"¡Obtuviste {etiqueta.removeprefix('Objeto: ')}!"
     elif "Botín de jefe" in etiqueta:
-        if etiqueta.startswith("Botín de jefe: "):
-            premio = etiqueta.removeprefix("Botín de jefe: ")
+        if etiqueta.startswith(_PREF_BOTIN_JEFE):
+            premio = etiqueta.removeprefix(_PREF_BOTIN_JEFE)
             texto = f"¡Jefe derrotado! {premio}."
         else:
             texto = etiqueta
@@ -1543,17 +1555,17 @@ def formatear_aviso_recompensa(
 
 
 def formatear_aviso_evento(etiqueta: str) -> str:
-    if etiqueta.startswith("Relámpago"):
+    if etiqueta.startswith(_ETIQUETA_RELAMPAGO):
         seg = etiqueta.split(":")[-1].strip() if ":" in etiqueta else ""
         texto = f"¡Pregunta relámpago!{f' {seg}' if seg else ''}"
-    elif etiqueta in {"Doble puntos", "Triple puntos"}:
+    elif etiqueta in {_ETIQUETA_DOBLE_PUNTOS, _ETIQUETA_TRIPLE_PUNTOS}:
         texto = f"¡{etiqueta} en esta pregunta!"
-    elif etiqueta.startswith("Niebla:"):
+    elif etiqueta.startswith(_PREF_NIEBLA):
         texto = f"¡{etiqueta}!"
-    elif etiqueta in {"Pregunta difícil", "Pregunta extra difícil"}:
+    elif etiqueta in {_ETIQUETA_PREGUNTA_DIFICIL, _ETIQUETA_PREGUNTA_EXTRA_DIFICIL}:
         texto = f"¡{etiqueta}!"
-    elif etiqueta.startswith("Jefe:") or "Enfrentamiento con jefe" in etiqueta:
-        if "Enfrentamiento con jefe" in etiqueta:
+    elif etiqueta.startswith(_PREF_JEFE) or _ETIQUETA_ENFRENTAMIENTO_JEFE in etiqueta:
+        if _ETIQUETA_ENFRENTAMIENTO_JEFE in etiqueta:
             return etiqueta
         return formatear_aviso_jefe(etiqueta)
     else:
@@ -1634,21 +1646,12 @@ def aplicar_recompensa(
     er.ultimo_evento = evento.etiqueta
 
 
-def usar_powerup(
+def _aplicar_efecto_powerup_uso(
     powerup_id: str,
     er: EstadoResistencia,
     p: Pregunta,
 ) -> str | None:
-    """Consume un powerup almacenable; devuelve mensaje de error o None si OK."""
-    from Comun.maldiciones_partida import objetos_bloqueados_efectivo_resistencia
-
-    if objetos_bloqueados_efectivo_resistencia(er):
-        return "Maldición activa: no puedes usar objetos."
-    err_uso = puede_usar_powerup_en_pregunta(powerup_id, er.powerups_usados_en_pregunta)
-    if err_uso:
-        return err_uso
-    if not er.consumir_powerup(powerup_id):
-        return "No tienes ese objeto."
+    """Aplica el efecto del powerup; devuelve mensaje de error o None si OK."""
     if powerup_id == "fifty_fifty":
         er.letras_ocultas = letras_ocultas_fifty_fifty(p)
     elif powerup_id == "bomba":
@@ -1681,6 +1684,27 @@ def usar_powerup(
     elif powerup_id not in {"skip", "cambio"}:
         er.agregar_powerup(powerup_id)
         return f"Objeto desconocido: {powerup_id}"
+    return None
+
+
+def usar_powerup(
+    powerup_id: str,
+    er: EstadoResistencia,
+    p: Pregunta,
+) -> str | None:
+    """Consume un powerup almacenable; devuelve mensaje de error o None si OK."""
+    from Comun.maldiciones_partida import objetos_bloqueados_efectivo_resistencia
+
+    if objetos_bloqueados_efectivo_resistencia(er):
+        return "Maldición activa: no puedes usar objetos."
+    err_uso = puede_usar_powerup_en_pregunta(powerup_id, er.powerups_usados_en_pregunta)
+    if err_uso:
+        return err_uso
+    if not er.consumir_powerup(powerup_id):
+        return "No tienes ese objeto."
+    err_efecto = _aplicar_efecto_powerup_uso(powerup_id, er, p)
+    if err_efecto:
+        return err_efecto
     from Comun.objetos_partida import POWERUPS_MULTI_USO_PREGUNTA
 
     if powerup_id not in POWERUPS_MULTI_USO_PREGUNTA:

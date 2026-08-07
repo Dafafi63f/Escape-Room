@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+_TITULO_ESCAPE_ROOM = "Escape room"
+
 import time
 from collections.abc import Callable
 from dataclasses import replace
@@ -586,7 +588,7 @@ class ConfigAjustesEscapeRoom(Pantalla):
         )
 
     def titulo_pausa(self) -> str:
-        return "Escape room"
+        return _TITULO_ESCAPE_ROOM
 
 
 _INV_GAP = GAP_BOTONES_COMPACTOS
@@ -2099,7 +2101,7 @@ class PartidaEscapeRoom(Pantalla):
         superficie.fill(COLOR_FONDO)
         self._dibujar_barra_superior(superficie)
         sala = self._sala_actual()
-        titulo = titulo_pantalla(sala.nombre if sala else "Escape room")
+        titulo = titulo_pantalla(sala.nombre if sala else _TITULO_ESCAPE_ROOM)
         tit = self.fuentes["titulo"].render(titulo, True, COLOR_TITULO)
         superficie.blit(tit, tit.get_rect(midtop=(ANCHO // 2, self.Y_TITULO_SALA)))
         subt = self.fuentes["menu"].render("Elige una puerta:", True, COLOR_TEXTO_PANEL)
@@ -2136,7 +2138,7 @@ class PartidaEscapeRoom(Pantalla):
         superficie.fill(COLOR_FONDO)
         self._dibujar_barra_superior(superficie)
         sala = self._sala_actual()
-        titulo = titulo_pantalla(f"{sala.nombre if sala else 'Escape room'}  Tienda")
+        titulo = titulo_pantalla(f"{sala.nombre if sala else _TITULO_ESCAPE_ROOM}  Tienda")
         tit = self.fuentes["titulo"].render(titulo, True, COLOR_TITULO)
         superficie.blit(tit, tit.get_rect(midtop=(ANCHO // 2, self.Y_TITULO_SALA)))
         subt = self.fuentes["menu"].render(
@@ -2201,7 +2203,7 @@ class PartidaEscapeRoom(Pantalla):
         superficie.fill(COLOR_FONDO)
         self._dibujar_barra_superior(superficie)
         sala = self._sala_actual()
-        titulo = titulo_pantalla(sala.nombre if sala else "Escape room")
+        titulo = titulo_pantalla(sala.nombre if sala else _TITULO_ESCAPE_ROOM)
         tit = self.fuentes["titulo"].render(titulo, True, COLOR_TITULO)
         superficie.blit(tit, tit.get_rect(midtop=(ANCHO // 2, self.Y_TITULO_SALA)))
         dibujar_feedback_partida(

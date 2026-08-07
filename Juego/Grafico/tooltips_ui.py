@@ -316,6 +316,7 @@ def tooltip_opcion_ciclo_libre(
     perfil=None,
 ) -> str | None:
     """Ayuda en la caja central ◀ valor ▶ del paso 1 libre; None si es autoexplicativo."""
+    del perfil
     if op_id in _OPCIONES_CICLO_SIN_TOOLTIP:
         return None
     if op_id == "banco":

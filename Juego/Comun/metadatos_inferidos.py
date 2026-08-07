@@ -64,6 +64,8 @@ COLUMNAS_CSV_INTERMEDIO = _COLUMNAS_INTERMEDIO
 
 _COLUMNAS_LISTADO_MATERIAS = ("Materia", "Grupo", "Tematica", "Nivel", "Curso", "Semestre")
 
+_FICHERO_METADATOS = "metadatos_inferidos.json"
+
 _RE_CALCULO = re.compile(
     r"(?i)(?:"
     r"\d+\s*[%=+\-*/^]|"
@@ -76,7 +78,7 @@ _RE_CALCULO = re.compile(
 
 
 def resolver_path_metadatos_inferidos() -> Path:
-    return _ruta_json_escritura("metadatos_inferidos.json")
+    return _ruta_json_escritura(_FICHERO_METADATOS)
 
 
 def huella_pregunta(pregunta: Pregunta | object) -> str:
@@ -112,8 +114,8 @@ def _guardar_raw(datos: dict[str, Any]) -> None:
     """Persiste metadatos con nombre fijo bajo el directorio resuelto (anti path-traversal)."""
     candidato = resolver_path_metadatos_inferidos()
     directorio = candidato.parent.resolve()
-    destino = (directorio / "metadatos_inferidos.json").resolve()
-    if destino.parent != directorio or destino.name != "metadatos_inferidos.json":
+    destino = (directorio / _FICHERO_METADATOS).resolve()
+    if destino.parent != directorio or destino.name != _FICHERO_METADATOS:
         raise RuntimeError("Ruta de metadatos_inferidos no segura")
     directorio.mkdir(parents=True, exist_ok=True)
     destino.write_text(

@@ -276,7 +276,7 @@ def _construir_evento(
     return evento_resistencia_aleatorio(kind, intensidad, numero_pregunta=numero_pregunta)
 
 
-def _añadir_malos_aleatorios(
+def _anadir_malos_aleatorios(
     eventos: list[EventoAleatorioResistencia],
     *,
     kinds: tuple[str, ...],
@@ -359,7 +359,7 @@ def eventos_aleatorios_para_pregunta(
         n_malos = 1
         if max_malos > 1 and rng.random() < min(0.35, intensidad * 0.4):
             n_malos = min(2, max_malos, len(kinds))
-        _añadir_malos_aleatorios(
+        _anadir_malos_aleatorios(
             eventos,
             kinds=kinds,
             cantidad=n_malos,
@@ -396,7 +396,7 @@ def eventos_aleatorios_para_pregunta(
     if exceso > 0.0 and kinds:
         n_extra = min(8, 1 + int(exceso * 5))
         int_extra = min(1.0, intensidad + exceso * 0.2)
-        _añadir_malos_aleatorios(
+        _anadir_malos_aleatorios(
             eventos,
             kinds=kinds,
             cantidad=n_extra,

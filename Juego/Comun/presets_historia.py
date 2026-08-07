@@ -241,7 +241,7 @@ def _cargar_presets_desde_json(
     items = data.get("presets")
     if not isinstance(items, list) or not items:
         raise ValueError(f"El cat?logo {path} no contiene presets.")
-    presets = [_parse_preset(x) for x in items]
+    presets = [_parse_preset(x, catalogo_historia=catalogo_historia) for x in items]
     presets.sort(key=clave_orden)
     ids = [p.id for p in presets]
     if len(ids) != len(set(ids)):
@@ -371,7 +371,7 @@ def cargar_presets_especiales(
     perfil=None,
 ) -> list[PresetHistoria]:
     _ = path  # compatibilidad; los especiales ya no vienen del JSON
-    return catalogo_modos_especiales()
+    return catalogo_modos_especiales(perfil=perfil)
 
 
 def buscar_preset(preset_id: str) -> PresetHistoria:
@@ -382,7 +382,7 @@ def buscar_preset(preset_id: str) -> PresetHistoria:
     return buscar_modo_especial(preset_id)
 
 
-def _parse_preset(item: dict) -> PresetHistoria:
+def _parse_preset(item: dict, *, catalogo_historia: bool = False) -> PresetHistoria:
     for campo in ("id", "nombre", "descripcion", "perfil", "contexto_reglas"):
         if not item.get(campo):
             raise ValueError(f"Preset sin campo obligatorio {campo!r}: {item!r}")

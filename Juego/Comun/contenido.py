@@ -32,6 +32,8 @@ _COLUMNAS_CURRICULARES_PLAN = frozenset(
     }
 )
 _COLUMNAS_CURRICULARES = _COLUMNAS_PEDAGOGICAS | _COLUMNAS_CURRICULARES_PLAN
+_FICHERO_PRESETS = "presets.json"
+_FICHERO_PREGUNTAS_CSV = "Preguntas.csv"
 
 
 def leer_cabeceras_csv(path_csv: Path) -> set[str]:
@@ -116,9 +118,9 @@ def _detectar_minimo_por_layout() -> TipoPaquete | None:
     for base in _bases_busqueda_marcador():
         if (base / _MARCADOR_COMPLETO).is_file():
             continue
-        if not (base / "Juego" / "presets.json").is_file():
+        if not (base / "Juego" / _FICHERO_PRESETS).is_file():
             continue
-        csv = base / "Data" / "Preguntas.csv"
+        csv = base / "Data" / _FICHERO_PREGUNTAS_CSV
         if not csv.is_file():
             continue
         try:
@@ -132,7 +134,7 @@ def _detectar_minimo_por_layout() -> TipoPaquete | None:
 def resolver_csv_paquete_minimo() -> Path:
     """Ruta al CSV del paquete mínimo (``Data/Preguntas.csv`` junto al marcador)."""
     for base in _bases_busqueda_marcador():
-        candidato = base / "Data" / "Preguntas.csv"
+        candidato = base / "Data" / _FICHERO_PREGUNTAS_CSV
         if candidato.is_file():
             return candidato.resolve()
     raise FileNotFoundError(
@@ -199,9 +201,9 @@ def evaluar_requisitos_completo() -> ResultadoValidacion:
     Si existe, activa el banco ampliado y el pool de resistencia con plantillas.
     """
     faltas: list[str] = []
-    path_csv = _comprobar_archivo(resolver_dataset, "Preguntas.csv", faltas)
+    path_csv = _comprobar_archivo(resolver_dataset, _FICHERO_PREGUNTAS_CSV, faltas)
     _comprobar_fichero_paquete("listado_materias.csv", "listado_materias.csv", faltas)
-    presets = juego_dir() / "presets.json"
+    presets = juego_dir() / _FICHERO_PRESETS
     if not presets.is_file():
         faltas.append("Juego/presets.json")
 
@@ -310,11 +312,11 @@ def _archivo_junto(path_csv: Path, nombre: str) -> Path | None:
 
 def _presets_en_carpeta_paquete(path_csv: Path) -> bool:
     paquete = path_csv.parent
-    candidatos = [paquete / "Juego" / "presets.json", paquete / "presets.json"]
+    candidatos = [paquete / "Juego" / _FICHERO_PRESETS, paquete / _FICHERO_PRESETS]
     if paquete.name == "Data":
         candidatos[:0] = [
-            paquete.parent / "Juego" / "presets.json",
-            paquete.parent / "presets.json",
+            paquete.parent / "Juego" / _FICHERO_PRESETS,
+            paquete.parent / _FICHERO_PRESETS,
         ]
     return any(p.is_file() for p in candidatos)
 
@@ -325,7 +327,7 @@ def _presets_juego_minimo(path_csv: Path, *, paquete_zip: bool) -> bool:
         return True
     if paquete_zip:
         return False
-    return (juego_dir() / "presets.json").is_file()
+    return (juego_dir() / _FICHERO_PRESETS).is_file()
 
 
 def _resolver_opcional(resolver) -> Path | None:

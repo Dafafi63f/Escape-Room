@@ -14,6 +14,8 @@ Duplicado incluye:
 
 from __future__ import annotations
 
+_TOKEN_DEFINICION = "definición"
+
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
@@ -365,13 +367,13 @@ def _motivo_equivalencia_semantica(
     def _es_definicional(tokens_enunciado: set[str]) -> bool:
         return bool(
             tokens_enunciado
-            & {"definicion", "definición", "definicio", "defineix", "define"}
+            & {"definicion", _TOKEN_DEFINICION, "definicio", "defineix", "define"}
         ) or "es" in tokens_enunciado or "és" in tokens_enunciado
 
     if jq_c >= 0.32 and (_es_definicional(ca) or _es_definicional(cb)):
         nucleo_a = ca - {
             "definicion",
-            "definición",
+            _TOKEN_DEFINICION,
             "definicio",
             "defineix",
             "define",
@@ -382,7 +384,7 @@ def _motivo_equivalencia_semantica(
         }
         nucleo_b = cb - {
             "definicion",
-            "definición",
+            _TOKEN_DEFINICION,
             "definicio",
             "defineix",
             "define",

@@ -121,7 +121,7 @@ def _limpiar_texto_plano(bruta: str) -> str:
     return texto.strip()
 
 
-def _procesar_viñeta(limpia: str, salida: list[str]) -> bool:
+def _procesar_vineta(limpia: str, salida: list[str]) -> bool:
     if not limpia.startswith("- "):
         return False
     cuerpo = _limpiar_texto_plano(limpia[2:])
@@ -147,7 +147,7 @@ def _recortar_referencia_proyecto(texto: str) -> str:
 
 def _procesar_linea_texto(bruta: str, salida: list[str]) -> None:
     limpia = bruta.strip()
-    if _procesar_viñeta(limpia, salida):
+    if _procesar_vineta(limpia, salida):
         return
     texto_linea = _recortar_referencia_proyecto(_limpiar_texto_plano(bruta))
     if texto_linea:

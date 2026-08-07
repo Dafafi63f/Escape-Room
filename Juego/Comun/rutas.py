@@ -15,6 +15,9 @@ _JUEGO_DIR = _COMUN_DIR.parent
 
 _ZonaDatos = Literal["banco", "juego"]
 _LEGACY_DATA_SUBDIRS = ("CSV", "csv", "JSON", "json", "Informes", "Feedback")
+_FICHERO_PRESETS = "presets.json"
+_FICHERO_PREGUNTAS_CSV = "Preguntas.csv"
+_FICHERO_CREADOR_PRIVADO = "creador_privado.json"
 
 
 def juego_dir() -> Path:
@@ -26,6 +29,37 @@ def _raiz_paquete() -> Path:
     return _JUEGO_DIR.parent
 
 
+def _anadir_candidato_busqueda(
+    ruta: Path,
+    vistos: set[Path],
+    candidatos: list[Path],
+) -> None:
+    try:
+        resuelta = ruta.resolve()
+    except OSError:
+        return
+    if resuelta in vistos or not resuelta.exists():
+        return
+    vistos.add(resuelta)
+    candidatos.append(resuelta)
+
+
+def _anadir_ancestros_hasta_paquete(
+    cwd: Path,
+    paquete: Path,
+    vistos: set[Path],
+    candidatos: list[Path],
+) -> None:
+    for ruta in (cwd, *cwd.parents):
+        _anadir_candidato_busqueda(ruta, vistos, candidatos)
+        try:
+            if ruta.resolve() == paquete:
+                break
+        except OSError:
+            if ruta == paquete:
+                break
+
+
 def _roots_busqueda() -> list[Path]:
     candidatos: list[Path] = []
     vistos: set[Path] = set()
@@ -34,18 +68,8 @@ def _roots_busqueda() -> list[Path]:
     except OSError:
         paquete = _raiz_paquete()
 
-    def _añadir(ruta: Path) -> None:
-        try:
-            resuelta = ruta.resolve()
-        except OSError:
-            return
-        if resuelta in vistos or not resuelta.exists():
-            return
-        vistos.add(resuelta)
-        candidatos.append(resuelta)
-
-    _añadir(paquete)
-    _añadir(_JUEGO_DIR)
+    _anadir_candidato_busqueda(paquete, vistos, candidatos)
+    _anadir_candidato_busqueda(_JUEGO_DIR, vistos, candidatos)
 
     try:
         cwd = Path.cwd().resolve()
@@ -54,36 +78,17 @@ def _roots_busqueda() -> list[Path]:
 
     try:
         cwd.relative_to(paquete)
-        dentro = True
-    except ValueError:
-        dentro = False
+        _anadir_ancestros_hasta_paquete(cwd, paquete, vistos, candidatos)
+        return candidatos
 
-    if dentro:
-        for ruta in (cwd, *cwd.parents):
-            _añadir(ruta)
-            try:
-                if ruta.resolve() == paquete:
-                    break
-            except OSError:
-                if ruta == paquete:
-                    break
-    else:
-        _añadir(cwd)
+    except ValueError:
+        _anadir_candidato_busqueda(cwd, vistos, candidatos)
         try:
             paquete.relative_to(cwd)
         except ValueError:
-            pass
-        else:
-            for ruta in (cwd, *cwd.parents):
-                _añadir(ruta)
-                try:
-                    if ruta.resolve() == paquete:
-                        break
-                except OSError:
-                    if ruta == paquete:
-                        break
-
-    return candidatos
+            return candidatos
+        _anadir_ancestros_hasta_paquete(cwd, paquete, vistos, candidatos)
+        return candidatos
 
 
 def _bases_rglob_acotado(raiz: Path) -> list[Path]:
@@ -167,8 +172,8 @@ def layout_datos_jugador_plano() -> bool:
         return False
     if (raiz / ".matcad-paquete-minimo").is_file():
         return True
-    tiene_presets = (raiz / "Juego" / "presets.json").is_file()
-    if (raiz / "Data" / "Preguntas.csv").is_file() and tiene_presets:
+    tiene_presets = (raiz / "Juego" / _FICHERO_PRESETS).is_file()
+    if (raiz / "Data" / _FICHERO_PREGUNTAS_CSV).is_file() and tiene_presets:
         return True
     return False
 
@@ -294,7 +299,7 @@ def _ruta_json_escritura(nombre: str) -> Path:
 
 
 def resolver_dataset() -> Path:
-    return _buscar_archivo("Preguntas.csv", ("Preguntas.csv",), zona="banco")
+    return _buscar_archivo(_FICHERO_PREGUNTAS_CSV, (_FICHERO_PREGUNTAS_CSV,), zona="banco")
 
 
 def resolver_listado_materias() -> Path:
@@ -307,10 +312,10 @@ def resolver_plantillas() -> Path:
 
 def resolver_presets() -> Path:
     """Catálogo de modos (historia, escape, resistencia…). Vive en ``Juego/presets.json``."""
-    canonico = _JUEGO_DIR / "presets.json"
+    canonico = _JUEGO_DIR / _FICHERO_PRESETS
     if canonico.is_file():
         return canonico
-    for nombre in ("presets.json", "presets_historia.json"):
+    for nombre in (_FICHERO_PRESETS, "presets_historia.json"):
         for zona in ("juego", "banco"):
             try:
                 return _buscar_archivo(nombre, (nombre,), zona=zona)
@@ -334,18 +339,18 @@ def resolver_config_creador_privado() -> Path | None:
     global _path_creador_privado
     if _path_creador_privado is not _CREADOR_PRIVADO_SIN_RESOLVER:
         return _path_creador_privado if isinstance(_path_creador_privado, Path) else None
-    canonico = _dir_privado() / "creador_privado.json"
+    canonico = _dir_privado() / _FICHERO_CREADOR_PRIVADO
     if canonico.is_file():
         _path_creador_privado = canonico
         return canonico
     if layout_datos_jugador_plano():
         _path_creador_privado = None
         return None
-    legado = _data_root() / "Banco" / "creador_privado.json"
+    legado = _data_root() / "Banco" / _FICHERO_CREADOR_PRIVADO
     if legado.is_file():
         _path_creador_privado = legado
         return legado
-    for p in _candidatos_bajo_data(_raiz_paquete(), "creador_privado.json", zona="banco"):
+    for p in _candidatos_bajo_data(_raiz_paquete(), _FICHERO_CREADOR_PRIVADO, zona="banco"):
         if p.is_file():
             _path_creador_privado = p
             return p
@@ -358,7 +363,7 @@ def resolver_ruta_creador_privado_defecto() -> Path:
     existente = resolver_config_creador_privado()
     if existente is not None:
         return existente
-    return _dir_privado() / "creador_privado.json"
+    return _dir_privado() / _FICHERO_CREADOR_PRIVADO
 
 
 def resolver_dir_informes() -> Path:

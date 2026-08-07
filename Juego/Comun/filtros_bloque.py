@@ -111,6 +111,36 @@ def clasificar_filtro_bloque(
     return None
 
 
+_FILTRO_ESCAPE_POR_ID_O_AMBITO: tuple[tuple[tuple[str, str], TipoFiltroBloque], ...] = (
+    (("puerta_grupo", "grupo"), TipoFiltroBloque.GRUPO),
+    (("puerta_materia", "materia"), TipoFiltroBloque.MATERIA),
+    (("puerta_periodo", "periodo"), TipoFiltroBloque.PERIODO),
+    (("puerta_curso", "curso"), TipoFiltroBloque.CURSO),
+    (("puerta_semestre", "semestre"), TipoFiltroBloque.SEMESTRE),
+)
+
+
+def _filtro_escape_por_campos(
+    *,
+    materia: str | None,
+    grupo: str | None,
+    curso: str | None,
+    semestre: str | None,
+    usa_grupo: bool,
+) -> TipoFiltroBloque:
+    if grupo or usa_grupo:
+        return TipoFiltroBloque.GRUPO
+    if curso and semestre:
+        return TipoFiltroBloque.PERIODO
+    if curso:
+        return TipoFiltroBloque.CURSO
+    if semestre:
+        return TipoFiltroBloque.SEMESTRE
+    if materia:
+        return TipoFiltroBloque.MATERIA
+    return TipoFiltroBloque.MATERIA
+
+
 def clasificar_filtro_evento_escape(
     *,
     definicion_id: str,
@@ -124,27 +154,16 @@ def clasificar_filtro_evento_escape(
 ) -> TipoFiltroBloque:
     """Clasifica el filtro de contenido de una puerta escape (materia o bloque)."""
     del tipos_permitidos  # reserva de API; hoy el filtro no discrimina por tipo.
-    if definicion_id == "puerta_grupo" or ambito == "grupo":
-        return TipoFiltroBloque.GRUPO
-    if definicion_id == "puerta_materia" or ambito == "materia":
-        return TipoFiltroBloque.MATERIA
-    if definicion_id == "puerta_periodo" or ambito == "periodo":
-        return TipoFiltroBloque.PERIODO
-    if definicion_id == "puerta_curso" or ambito == "curso":
-        return TipoFiltroBloque.CURSO
-    if definicion_id == "puerta_semestre" or ambito == "semestre":
-        return TipoFiltroBloque.SEMESTRE
-    if grupo or usa_grupo:
-        return TipoFiltroBloque.GRUPO
-    if curso and semestre:
-        return TipoFiltroBloque.PERIODO
-    if curso:
-        return TipoFiltroBloque.CURSO
-    if semestre:
-        return TipoFiltroBloque.SEMESTRE
-    if materia:
-        return TipoFiltroBloque.MATERIA
-    return TipoFiltroBloque.MATERIA
+    for (id_clave, ambito_clave), tipo in _FILTRO_ESCAPE_POR_ID_O_AMBITO:
+        if definicion_id == id_clave or ambito == ambito_clave:
+            return tipo
+    return _filtro_escape_por_campos(
+        materia=materia,
+        grupo=grupo,
+        curso=curso,
+        semestre=semestre,
+        usa_grupo=usa_grupo,
+    )
 
 
 def kind_filtro_bloque(tipo: TipoFiltroBloque) -> str:

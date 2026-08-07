@@ -653,6 +653,12 @@ def _row(
 
 
 # Parches por Id (solo columnas de pregunta; Materia/Dificultad/Tipo se ajustan si faltan)
+_MAT_CALC_UNA = "Càlcul en una Variable"
+_MAT_FONAMENTS = "Fonaments de Computadors"
+_MAT_INICIACIO = "Iniciació a la Programació"
+_MAT_CALC_DIVERSAS = "Càlcul en Diverses Variables"
+_MAT_CALC_NUMERIC = "Càlcul Numèric"
+
 PATCHES: dict[int, dict[str, str]] = {
     # Àlgebra: quitar triplicado polinomio característico
     3: _row(
@@ -669,65 +675,65 @@ PATCHES: dict[int, dict[str, str]] = {
     ),
     # Càlcul I: contenido de una variable (los numéricos pasan a CN)
     11: _row(
-        "Càlcul en una Variable", "Facil", "Teoria",
+        _MAT_CALC_UNA, "Facil", "Teoria",
         "¿Qué es la derivada?",
         "Integral", "Límite", "Tasa de cambio instantánea", "Serie", "C",
     ),
     12: _row(
-        "Càlcul en una Variable", "Facil", "Teoria",
+        _MAT_CALC_UNA, "Facil", "Teoria",
         "¿Qué es el límite de f(x) cuando x tiende a a?",
         "El valor de f(a) siempre", "La recta tangente", "La derivada en a",
         "El valor al que tiende f(x)", "D",
     ),
     13: _row(
-        "Càlcul en una Variable", "Media", "Teoria",
+        _MAT_CALC_UNA, "Media", "Teoria",
         "¿Qué enuncia el teorema fundamental del cálculo (parte II)?",
         "Toda función es derivable", "La integral de la derivada recupera la función (salvo constante)",
         "Toda serie converge", "El gradiente es cero", "B",
     ),
     22: _row(
-        "Fonaments de Computadors", "Facil", "Teoria",
+        _MAT_FONAMENTS, "Facil", "Teoria",
         "En la arquitectura von Neumann, programa e instrucciones se almacenan:",
         "En memorias físicas separadas sin bus común",
         "En la misma memoria accesible por el mismo mecanismo",
         "Solo en registros del ALU", "Únicamente en disco óptico", "B",
     ),
     14: _row(
-        "Càlcul en una Variable", "Media", "Teoria",
+        _MAT_CALC_UNA, "Media", "Teoria",
         "¿Qué es el radio de convergencia de una serie de potencias?",
         "Límite superior de |x| donde converge", "Número de términos",
         "Suma total", "Derivada", "A",
     ),
     15: _row(
-        "Càlcul en una Variable", "Dificil", "Teoria",
+        _MAT_CALC_UNA, "Dificil", "Teoria",
         "¿Qué es la continuidad de f en un punto a?",
         "f(a)=0", "Existe límite pero no es finito",
         "lim(x→a) f(x)=f(a)", "f está definida solo en a", "C",
     ),
     20: _row(
-        "Càlcul en una Variable", "Dificil", "Calculo",
+        _MAT_CALC_UNA, "Dificil", "Calculo",
         "Si f(x)=x², ¿cuál es la integral definida de 0 a 2?",
         "4", "8/3", "2", "6", "B",
     ),
     24: _row(
-        "Fonaments de Computadors", "Media", "Teoria",
+        _MAT_FONAMENTS, "Media", "Teoria",
         "¿Qué es un hazard de datos en pipeline?",
         "Fallido de predicción", "Error de caché", "Interrupción",
         "Dependencia que impide ejecución paralela", "D",
     ),
     # Iniciació: solo Python/programación (shell → Programari de Sistema)
     32: _row(
-        "Iniciació a la Programació", "Facil", "Teoria",
+        _MAT_INICIACIO, "Facil", "Teoria",
         "¿Qué es una variable?",
         "Función", "Clase", "Constante", "Contenedor con nombre para un valor", "D",
     ),
     34: _row(
-        "Iniciació a la Programació", "Dificil", "Teoria",
+        _MAT_INICIACIO, "Dificil", "Teoria",
         "¿Cómo se define el operador módulo %?",
         "Potencia", "Resto de la división entera", "División", "Multiplicación", "B",
     ),
     35: _row(
-        "Iniciació a la Programació", "Dificil", "Teoria",
+        _MAT_INICIACIO, "Dificil", "Teoria",
         "¿Cómo se define un parámetro de función?",
         "Variable global", "Valor de retorno", "Variable de entrada de una función", "Constante", "C",
     ),
@@ -742,85 +748,85 @@ PATCHES: dict[int, dict[str, str]] = {
     ),
     # Diverses: quitar período (Fourier) → jacobiano polar
     69: _row(
-        "Càlcul en Diverses Variables", "Media", "Calculo",
+        _MAT_CALC_DIVERSAS, "Media", "Calculo",
         "¿Cuál es el Jacobiano de x=r·cos(theta) y=r·sen(theta)?",
         "r", "r²", "1", "r/2", "A",
     ),
     # Fonaments: quitar duplicado de localidad espacial
     23: _row(
-        "Fonaments de Computadors", "Media", "Teoria",
+        _MAT_FONAMENTS, "Media", "Teoria",
         "¿Qué es la localidad temporal en acceso a memoria?",
         "Misma dirección se reutiliza en poco tiempo",
         "Paginação", "Acceso aleatorio", "Direcciones cercanas se acceden juntas", "A",
     ),
     # Diverses: sustituir punto crítico duplicado (git 63) por derivada parcial
     63: _row(
-        "Càlcul en Diverses Variables", "Media", "Teoria",
+        _MAT_CALC_DIVERSAS, "Media", "Teoria",
         "¿Qué es la derivada parcial de f respecto a x?",
         "La derivada total", "La derivada de f tratando las demás variables como constantes",
         "La integral de f", "El gradiente", "B",
     ),
     # Diverses: sustituir segundo punto crítico (git 62) por diferenciabilidad
     62: _row(
-        "Càlcul en Diverses Variables", "Facil", "Teoria",
+        _MAT_CALC_DIVERSAS, "Facil", "Teoria",
         "¿Cuándo f es diferenciable en un punto?",
         "Si tiene derivadas parciales", "Si es continua",
         "Si existe plano tangente que aproxima bien", "Si tiene gradiente", "C",
     ),
     # Càlcul Numèric: bloque coherente
     71: _row(
-        "Càlcul Numèric", "Facil", "Teoria",
+        _MAT_CALC_NUMERIC, "Facil", "Teoria",
         "¿Qué es el método de bisección?",
         "Para derivadas", "Para integrales",
         "Para encontrar raíces dividiendo el intervalo", "Para interpolación", "C",
     ),
     72: _row(
-        "Càlcul Numèric", "Facil", "Calculo",
+        _MAT_CALC_NUMERIC, "Facil", "Calculo",
         "¿Qué es el error de truncamiento?",
         "Por la máquina", "Por redondeo",
         "Por aproximar una serie infinita con términos finitos", "Por el método", "C",
     ),
     73: _row(
-        "Càlcul Numèric", "Media", "Teoria",
+        _MAT_CALC_NUMERIC, "Media", "Teoria",
         "¿Qué es el método de diferencias finitas?",
         "Para integrales", "Para series", "Para Monte Carlo",
         "Aproximar derivadas con cocientes incrementales", "D",
     ),
     74: _row(
-        "Càlcul Numèric", "Media", "Teoria",
+        _MAT_CALC_NUMERIC, "Media", "Teoria",
         "¿Cómo se define el método del punto fijo?",
         "Iterar x=g(x) hasta convergencia", "Bisección", "Secante", "Newton", "A",
     ),
     75: _row(
-        "Càlcul Numèric", "Dificil", "Teoria",
+        _MAT_CALC_NUMERIC, "Dificil", "Teoria",
         "En cálculo numérico con aritmética finita, el error de redondeo aparece porque:",
         "Toda función es analítica en ℝ",
         "Solo existe un conjunto finito de números máquina representables",
         "El método del trapecio siempre diverge", "La derivada segunda es nula", "B",
     ),
     76: _row(
-        "Càlcul Numèric", "Dificil", "Teoria",
+        _MAT_CALC_NUMERIC, "Dificil", "Teoria",
         "¿Cómo se define la regla de Simpson?",
         "Monte Carlo", "Trapecio", "Aproximación por parábolas", "Rectángulos", "C",
     ),
     77: _row(
-        "Càlcul Numèric", "Facil", "Calculo",
+        _MAT_CALC_NUMERIC, "Facil", "Calculo",
         "Newton-Raphson para x²-2, x₀=1. ¿x₁?",
         "1", "1.5", "2", "0.5", "B",
     ),
     78: _row(
-        "Càlcul Numèric", "Facil", "Calculo",
+        _MAT_CALC_NUMERIC, "Facil", "Calculo",
         "Aproximación trapecio para ∫₀¹ x dx con 2 subintervalos?",
         "0.25", "0.75", "1", "0.5", "D",
     ),
     79: _row(
-        "Càlcul Numèric", "Media", "Calculo",
+        _MAT_CALC_NUMERIC, "Media", "Calculo",
         "¿Qué es la tolerancia en un método numérico?",
         "El número de iteraciones", "La precisión", "El error máximo",
         "El criterio de parada (error aceptable)", "D",
     ),
     80: _row(
-        "Càlcul Numèric", "Dificil", "Calculo",
+        _MAT_CALC_NUMERIC, "Dificil", "Calculo",
         "Si f es C² en [a,b], ¿cómo escala usualmente el error global de la regla del trapecio compuesto con paso h=(b-a)/n?",
         "O(h³)", "O(h)", "O(1/h)", "O(h²)", "D",
     ),

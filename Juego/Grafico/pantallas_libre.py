@@ -4,6 +4,10 @@
 
 from __future__ import annotations
 
+_MSG_DIFICULTAD_PROGRESIVA = (
+    "La dificultad progresiva requiere al menos 2 niveles."
+)
+
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -1043,7 +1047,7 @@ class ConfigFiltrosLibre(Pantalla):
         self.boton_dificultad_progresiva.seleccionado = self.dificultad_progresiva
         self.mensaje = ""
         if self.dificultad_progresiva and len(self.niveles_sel) < 2:
-            self.mensaje = "La dificultad progresiva requiere al menos 2 niveles."
+            self.mensaje = _MSG_DIFICULTAD_PROGRESIVA
         self._reposicionar_botones_navegacion()
 
     def _y_niveles_lbl(self) -> int:
@@ -1129,7 +1133,7 @@ class ConfigFiltrosLibre(Pantalla):
             self.niveles_sel.add(nivel)
         self.mensaje = ""
         if self.dificultad_progresiva and len(self.niveles_sel) < 2:
-            self.mensaje = "La dificultad progresiva requiere al menos 2 niveles."
+            self.mensaje = _MSG_DIFICULTAD_PROGRESIVA
         self._actualizar_estado_botones_nivel()
         self._reposicionar_botones_navegacion()
 
@@ -1445,7 +1449,7 @@ class ConfigFiltrosLibre(Pantalla):
             self.mensaje = "Selecciona al menos un nivel."
             return
         if self.dificultad_progresiva and len(niveles) < 2:
-            self.mensaje = "La dificultad progresiva requiere al menos 2 niveles."
+            self.mensaje = _MSG_DIFICULTAD_PROGRESIVA
             return
         try:
             self._construir_reglas_finales()
