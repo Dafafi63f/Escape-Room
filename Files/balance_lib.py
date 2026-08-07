@@ -525,14 +525,9 @@ def ajustar_dificultad_global_por_intercambio(rows: list[dict], max_pasos: int =
         ok = all(c.get(d, 0) == tgt[d] for d in ("Facil", "Media", "Dificil"))
         if ok:
             break
-        exc = max(
-            ("Facil", "Media", "Dificil"),
-            key=lambda d, cont=c: cont.get(d, 0) - tgt[d],
-        )
-        defi = min(
-            ("Facil", "Media", "Dificil"),
-            key=lambda d, cont=c: cont.get(d, 0) - tgt[d],
-        )
+        diffs = {d: c.get(d, 0) - tgt[d] for d in ("Facil", "Media", "Dificil")}
+        exc = max(diffs, key=diffs.__getitem__)
+        defi = min(diffs, key=diffs.__getitem__)
         if c.get(exc, 0) <= tgt[exc] or c.get(defi, 0) >= tgt[defi]:
             break
         i = next(i for i, r in enumerate(rows) if r["Dificultad"] == exc)
