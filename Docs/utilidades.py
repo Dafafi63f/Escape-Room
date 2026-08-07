@@ -964,9 +964,16 @@ def _hacer_zip(args: argparse.Namespace) -> int:
     from crear_zip_portable import crear_zip_portable  # noqa: E402
 
     destino = args.salida
-    salida = crear_zip_portable(destino) if destino is not None else crear_zip_portable()
-    tamaño = salida.stat().st_size
-    print(f"Zip jugable: {salida} ({tamaño / 1024:.0f} KiB)")
+    try:
+        salida = crear_zip_portable(destino) if destino is not None else crear_zip_portable()
+    except OSError as exc:
+        print(f"Error al generar el zip: {exc}", file=sys.stderr)
+        return 1
+    if not salida.is_file():
+        print(f"Error: no se creó el zip en {salida}", file=sys.stderr)
+        return 1
+    tamano_kib = salida.stat().st_size / 1024
+    print(f"Zip jugable: {salida} ({tamano_kib:.0f} KiB)")
     return 0
 
 

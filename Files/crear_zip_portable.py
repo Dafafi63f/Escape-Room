@@ -75,7 +75,7 @@ def _omitir(ruta: Path) -> bool:
     return any(parte in _EXCLUIR_NOMBRES for parte in ruta.parts)
 
 
-def _añadir_archivo(zf: zipfile.ZipFile, origen: Path, arcname: str) -> None:
+def _anadir_archivo(zf: zipfile.ZipFile, origen: Path, arcname: str) -> None:
     zf.write(origen, arcname.replace("\\", "/"))
 
 
@@ -94,13 +94,13 @@ def crear_zip_portable(destino: Path = _SALIDA_DEFECTO) -> Path:
             if ruta.suffix.lower() in {".pyc", ".pyo"}:
                 continue
             rel = ruta.relative_to(_RAIZ).as_posix()
-            _añadir_archivo(zf, ruta, rel)
+            _anadir_archivo(zf, ruta, rel)
 
         for rel in _DATA_INCLUIR:
             origen = _DATA / rel
             if not origen.is_file():
                 raise FileNotFoundError(f"Falta dato requerido: {origen}")
-            _añadir_archivo(zf, origen, f"Data/{rel}")
+            _anadir_archivo(zf, origen, f"Data/{rel}")
 
     return destino
 
@@ -116,8 +116,8 @@ def main() -> int:
     )
     args = parser.parse_args()
     salida = crear_zip_portable(args.salida)
-    tamaño = salida.stat().st_size
-    print(f"OK: {salida} ({tamaño / 1024:.0f} KiB)")
+    tamano_kib = salida.stat().st_size / 1024
+    print(f"OK: {salida} ({tamano_kib:.0f} KiB)")
     return 0
 
 

@@ -145,7 +145,8 @@ def peso_pregunta_libre_desde_estrategia(
     stats = cargar_estadisticas_locales(perfil_contenido, materias_meta)
     if not stats:
         return None
-    perfil_ped = perfil_pedagogico_estrategia(estrategia or "")
+    assert estrategia is not None
+    perfil_ped = perfil_pedagogico_estrategia(estrategia)
     return lambda p: peso_pregunta_para_seleccion(p, stats, perfil_ped)
 
 

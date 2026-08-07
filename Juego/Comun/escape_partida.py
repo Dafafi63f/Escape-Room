@@ -278,8 +278,7 @@ def sufijo_mensaje_fallo_puerta(puerta: PuertaEscape) -> str:
     n = vidas_perdidas_fallo_puerta(puerta)
     if n <= 1:
         return ""
-    txt = "1 vida" if n == 1 else f"{n} vidas"
-    return f" (pierdes {txt}, puerta jefe)"
+    return f" (pierdes {n} vidas, puerta jefe)"
 
 
 def mensaje_feedback_puerta_sin_pregunta(puerta: PuertaEscape) -> str:

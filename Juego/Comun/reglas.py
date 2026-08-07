@@ -598,8 +598,6 @@ _TITULOS_LIBRE: dict[object, str] = {}
 def _titulos_libre() -> dict[object, str]:
     global _TITULOS_LIBRE
     if not _TITULOS_LIBRE:
-        ContextoPartida
-
         _TITULOS_LIBRE = {
             ContextoPartida.LIBRE_BLOQUE_CORTO: f"Bloque mínimo ({MIN_PREGUNTAS_PARTIDA} preguntas)",
             ContextoPartida.LIBRE_BLOQUE_NORMAL: "Bloque amplio (6+ preguntas)",
@@ -666,8 +664,6 @@ def construir_reglas_personalizadas(
 
 
 def contexto_partida(*, modo_infinito: bool, n_preguntas: int) -> ContextoPartida:
-    clasificar_libre
-
     return clasificar_libre(modo_infinito=modo_infinito, n_preguntas=n_preguntas)
 
 
@@ -682,8 +678,6 @@ def reglas_desde_combinacion(
     modo_infinito: bool = False,
     n_preguntas: int = 10,
 ) -> ReglasPartida:
-    validar_reglas
-
     reglas = construir_reglas_personalizadas(
         contexto,
         vidas=vidas,

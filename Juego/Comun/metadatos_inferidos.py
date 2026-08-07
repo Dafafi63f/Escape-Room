@@ -109,9 +109,14 @@ def _cargar_raw() -> dict[str, Any]:
 
 
 def _guardar_raw(datos: dict[str, Any]) -> None:
-    path = resolver_path_metadatos_inferidos()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+    """Persiste metadatos con nombre fijo bajo el directorio resuelto (anti path-traversal)."""
+    candidato = resolver_path_metadatos_inferidos()
+    directorio = candidato.parent.resolve()
+    destino = (directorio / "metadatos_inferidos.json").resolve()
+    if destino.parent != directorio or destino.name != "metadatos_inferidos.json":
+        raise RuntimeError("Ruta de metadatos_inferidos no segura")
+    directorio.mkdir(parents=True, exist_ok=True)
+    destino.write_text(
         json.dumps(datos, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )

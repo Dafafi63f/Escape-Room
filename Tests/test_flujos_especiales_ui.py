@@ -126,7 +126,9 @@ class TestFlujosEspecialesUI(unittest.TestCase):
             self.assertIsNotNone(idx)
             return partida.pool[idx].texto
 
-        self.assertEqual(_primera_pregunta(), _primera_pregunta())
+        a = _primera_pregunta()
+        b = _primera_pregunta()
+        self.assertEqual(a, b)
 
 
 if __name__ == "__main__":
