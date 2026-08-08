@@ -459,7 +459,7 @@ def _imprimir_aviso_informe_guardado(ruta: Path) -> None:
         try:
             print(linea)
         except UnicodeEncodeError:
-            sys.stdout.buffer.write((linea + "\n").encode("utf-8", errors="replace"))
+            sys.stdout.buffer.write(f"{linea}\n".encode("utf-8", errors="replace"))
 
 
 def guardar_informe_examen(texto: str, *, nombre_archivo: str) -> Path:

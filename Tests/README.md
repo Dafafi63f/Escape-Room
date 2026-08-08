@@ -2,7 +2,7 @@
 
 Pruebas unitarias del juego en directorio plano `Tests/` (dominio `Comun/`, interfaz `Grafico/` y flujos integrados).
 
-**Suite actual:** **615** tests.
+**Suite actual:** **616** tests.
 
 ## Ejecutar
 
@@ -55,6 +55,7 @@ GitHub Actions:
 | `test_maldiciones.py` | Maldiciones de resistencia |
 | `test_objetos_powerups.py` | Objetos y power-ups |
 | `test_pity_variedad_resistencia.py` | Pity y variedad en resistencia |
+| `test_zip_portable.py` | Generación del zip jugable (contenido mínimo, sin Tests/Docs/Files) |
 
 ## `Fixtures/` (soporte, no tests)
 

@@ -133,7 +133,8 @@ def _crear_directorio_si_falta(ruta: Path) -> None:
         ruta.mkdir(exist_ok=True)
     except OSError as exc:
         winerror = getattr(exc, "winerror", None)
-        if (winerror == 183 or isinstance(exc, FileExistsError)) and ruta.is_dir():
+        conflicto_existente = winerror == 183 or isinstance(exc, FileExistsError)
+        if conflicto_existente and ruta.is_dir():
             return
         raise
 

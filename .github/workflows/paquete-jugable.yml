@@ -3,14 +3,6 @@ name: Paquete jugable
 on:
   push:
     branches: [main]
-    paths:
-      - "Juego/**"
-      - "Data/Banco/**"
-      - "Data/Plantillas/**"
-      - "Data/README.md"
-      - "Files/crear_zip_portable.py"
-      - "Docs/utilidades.py"
-      - ".github/workflows/paquete-jugable.yml"
   workflow_dispatch:
 
 permissions:
