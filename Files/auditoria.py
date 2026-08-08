@@ -31,7 +31,7 @@ _PLACEHOLDER = re.compile(
     r"todas\s+son\s+correctas)(\b|$)",
     re.I,
 )
-_NUMERIC_OK = re.compile(r"^[\d\s.,+\-*/^()%€$·πeologn√]+$", re.I)
+_NUMERIC_OK = re.compile(r"^[\d\s.,+\-*/^()%€$·πelogn√]+$", re.I)
 _GENERICAS = re.compile(
     r"(error de sintaxis|no\s+existe|siempre\s+es\s+0|nunca\s+se\s+puede|"
     r"no\s+tiene\s+sentido|no\s+aplica|no\s+es\s+posible|imposible\s+siempre)",
@@ -60,63 +60,84 @@ def _norm_opt(s: str) -> str:
     return normalizar_basico(s)
 
 
-def auditar_item(
+def _incidencia(label: str, tipo: str, detalle: str) -> dict:
+    return {"id": label, "tipo": tipo, "detalle": detalle}
+
+
+def _auditar_correcta_y_vacias(
     label: str,
-    pregunta: str,
-    opciones: dict[str, str],
+    corr: str,
     correcta: str,
+    vals: dict[str, str],
 ) -> list[dict]:
     inc: list[dict] = []
-    corr = (correcta or "").strip().upper()
-    vals = {L: (opciones.get(L) or "").strip() for L in LETRAS}
-
     if corr not in LETRAS:
-        inc.append({"id": label, "tipo": "correcta_invalida", "detalle": repr(correcta)})
-
+        inc.append(_incidencia(label, "correcta_invalida", repr(correcta)))
     vacias = [L for L in LETRAS if not vals[L]]
     if vacias:
-        inc.append({"id": label, "tipo": "opcion_vacia", "detalle": ",".join(vacias)})
-
+        inc.append(_incidencia(label, "opcion_vacia", ",".join(vacias)))
     if corr in LETRAS and not vals.get(corr):
-        inc.append({"id": label, "tipo": "correcta_vacia", "detalle": corr})
+        inc.append(_incidencia(label, "correcta_vacia", corr))
+    return inc
 
+
+def _auditar_opciones_duplicadas(label: str, vals: dict[str, str]) -> list[dict]:
     norms = {_norm_opt(v) for v in vals.values() if v}
-    if len(norms) < 4:
-        dup = Counter(_norm_opt(v) for v in vals.values() if v)
-        reps = [k[:60] for k, n in dup.items() if n > 1]
-        inc.append({"id": label, "tipo": "opciones_duplicadas", "detalle": "; ".join(reps[:3])})
+    if len(norms) >= 4:
+        return []
+    dup = Counter(_norm_opt(v) for v in vals.values() if v)
+    reps = [k[:60] for k, n in dup.items() if n > 1]
+    return [_incidencia(label, "opciones_duplicadas", "; ".join(reps[:3]))]
 
+
+def _auditar_calidad_opciones(
+    label: str, vals: dict[str, str], corr: str
+) -> list[dict]:
+    inc: list[dict] = []
     for L, v in vals.items():
         if not v:
             continue
         if len(v) < 3 and not _NUMERIC_OK.match(v):
-            inc.append({"id": label, "tipo": "opcion_muy_corta", "detalle": f"{L}={v!r}"})
+            inc.append(_incidencia(label, "opcion_muy_corta", f"{L}={v!r}"))
         if _PLACEHOLDER.search(v):
-            inc.append({"id": label, "tipo": "placeholder", "detalle": f"{L}: {v[:80]}"})
+            inc.append(_incidencia(label, "placeholder", f"{L}: {v[:80]}"))
         if _GENERICAS.search(v) and L != corr:
-            inc.append({"id": label, "tipo": "distractor_generico", "detalle": f"{L}: {v[:80]}"})
+            inc.append(_incidencia(label, "distractor_generico", f"{L}: {v[:80]}"))
+    return inc
 
-    if corr in LETRAS and vals.get(corr):
-        nc = _norm_opt(vals[corr])
-        for L, v in vals.items():
-            if L == corr or not v:
-                continue
-            nv = _norm_opt(v)
-            if (
-                len(nc) >= 12
-                and len(nv) >= 12
-                and nc != nv
-                and (nc in nv or nv in nc)
-                and abs(len(nc) - len(nv)) < 20
-            ):
-                inc.append(
-                    {
-                        "id": label,
-                        "tipo": "filtracion_respuesta",
-                        "detalle": f"correcta({corr})≈{L}: {v[:70]}",
-                    }
+
+def _auditar_filtracion_respuesta(
+    label: str, vals: dict[str, str], corr: str
+) -> list[dict]:
+    if corr not in LETRAS or not vals.get(corr):
+        return []
+    inc: list[dict] = []
+    nc = _norm_opt(vals[corr])
+    for L, v in vals.items():
+        if L == corr or not v:
+            continue
+        nv = _norm_opt(v)
+        if (
+            len(nc) >= 12
+            and len(nv) >= 12
+            and nc != nv
+            and (nc in nv or nv in nc)
+            and abs(len(nc) - len(nv)) < 20
+        ):
+            inc.append(
+                _incidencia(
+                    label,
+                    "filtracion_respuesta",
+                    f"correcta({corr})≈{L}: {v[:70]}",
                 )
+            )
+    return inc
 
+
+def _auditar_similitud_y_longitud(
+    label: str, vals: dict[str, str], corr: str
+) -> list[dict]:
+    inc: list[dict] = []
     pares_sim = []
     for i, a in enumerate(LETRAS):
         for b in LETRAS[i + 1 :]:
@@ -126,17 +147,11 @@ def auditar_item(
             if j >= 0.92 and len(_tokens(vals[a])) >= 4:
                 pares_sim.append(f"{a}-{b}({j:.2f})")
     if pares_sim:
-        inc.append({"id": label, "tipo": "opciones_muy_parecidas", "detalle": ", ".join(pares_sim)})
+        inc.append(_incidencia(label, "opciones_muy_parecidas", ", ".join(pares_sim)))
 
     lens = [len(vals[L]) for L in LETRAS if vals[L]]
     if len(lens) >= 2 and max(lens) > 4 * min(lens) and max(lens) > 80:
-        inc.append(
-            {
-                "id": label,
-                "tipo": "desbalance_longitud",
-                "detalle": f"lens={lens}",
-            }
-        )
+        inc.append(_incidencia(label, "desbalance_longitud", f"lens={lens}"))
 
     if corr in LETRAS:
         correct_len = len(vals[corr])
@@ -144,19 +159,42 @@ def auditar_item(
         if otros and correct_len == max([correct_len] + otros) and correct_len > 60:
             if correct_len > 1.8 * (sum(otros) / len(otros)):
                 inc.append(
-                    {
-                        "id": label,
-                        "tipo": "correcta_mas_larga",
-                        "detalle": f"len({corr})={correct_len}, media_otros={sum(otros)/len(otros):.0f}",
-                    }
+                    _incidencia(
+                        label,
+                        "correcta_mas_larga",
+                        f"len({corr})={correct_len}, media_otros={sum(otros)/len(otros):.0f}",
+                    )
                 )
+    return inc
 
+
+def _auditar_opcion_igual_enunciado(
+    label: str, pregunta: str, vals: dict[str, str]
+) -> list[dict]:
     enun = normalizar_pregunta(pregunta)
+    inc: list[dict] = []
     for L, v in vals.items():
         nv = normalizar_pregunta(v)
         if nv and enun and nv == enun:
-            inc.append({"id": label, "tipo": "opcion_igual_enunciado", "detalle": L})
+            inc.append(_incidencia(label, "opcion_igual_enunciado", L))
+    return inc
 
+
+def auditar_item(
+    label: str,
+    pregunta: str,
+    opciones: dict[str, str],
+    correcta: str,
+) -> list[dict]:
+    corr = (correcta or "").strip().upper()
+    vals = {L: (opciones.get(L) or "").strip() for L in LETRAS}
+    inc: list[dict] = []
+    inc.extend(_auditar_correcta_y_vacias(label, corr, correcta, vals))
+    inc.extend(_auditar_opciones_duplicadas(label, vals))
+    inc.extend(_auditar_calidad_opciones(label, vals, corr))
+    inc.extend(_auditar_filtracion_respuesta(label, vals, corr))
+    inc.extend(_auditar_similitud_y_longitud(label, vals, corr))
+    inc.extend(_auditar_opcion_igual_enunciado(label, pregunta, vals))
     return inc
 
 
@@ -284,44 +322,141 @@ def comprobar_cobertura_plantillas() -> int:
     return 1
 
 
-def auditar_plantillas_global() -> int:
+_USO_A_SLOT_PLANTILLA = {
+    "general": ("Teoria", "Media"),
+    "dificil": ("Teoria", "Dificil"),
+    "calculo": ("Calculo", "Media"),
+    "repuesto": None,
+    "reserva": None,
+}
+
+
+def _norm_plantilla_campo(s: str) -> str:
+    return (s or "").strip()
+
+
+def _key_fila_auditoria(r: dict) -> tuple:
+    return (
+        _norm_plantilla_campo(r.get("Materia") or r.get("Tema", "")),
+        _norm_plantilla_campo(r.get("Pregunta", "")),
+        _norm_plantilla_campo(r.get("A", "")),
+        _norm_plantilla_campo(r.get("B", "")),
+        _norm_plantilla_campo(r.get("C", "")),
+        _norm_plantilla_campo(r.get("D", "")),
+        _norm_plantilla_campo(r.get("Correcta", "")),
+    )
+
+
+def _key_plantilla_auditoria(tema: str, t: dict) -> tuple:
+    return (
+        _norm_plantilla_campo(tema),
+        _norm_plantilla_campo(t.get("pregunta", "")),
+        _norm_plantilla_campo(t.get("A", "")),
+        _norm_plantilla_campo(t.get("B", "")),
+        _norm_plantilla_campo(t.get("C", "")),
+        _norm_plantilla_campo(t.get("D", "")),
+        _norm_plantilla_campo(t.get("correcta", "")),
+    )
+
+
+def _slot_plantilla_extra(t: dict) -> tuple[str, str] | None:
+    tipo = _norm_plantilla_campo(t.get("tipo", ""))
+    dif = _norm_plantilla_campo(t.get("dificultad", ""))
+    if not tipo or not dif:
+        uso = t.get("uso")
+        infer = _USO_A_SLOT_PLANTILLA.get(uso) if isinstance(uso, str) else None
+        if infer:
+            tipo, dif = infer
+    if tipo and dif:
+        return tipo, dif
+    return None
+
+
+def _analizar_balance_extra_tema(
+    tema: str,
+    items: list,
+    *,
+    slots_objetivo: Counter,
+    minimo: int,
+) -> tuple[str | None, str | None]:
+    extra = [t for t in items if not es_uso_copia_dataset(str(t.get("uso", "")))]
+    por_slot: Counter = Counter()
+    for t in extra:
+        slot = _slot_plantilla_extra(t)
+        if slot:
+            por_slot[slot] += 1
+    por_ds = Counter(
+        (
+            _norm_plantilla_campo(t.get("tipo", "Teoria")),
+            _norm_plantilla_campo(t.get("dificultad", "Media")),
+        )
+        for t in items
+        if es_uso_copia_dataset(str(t.get("uso", "")))
+    )
+    faltan_slot = [
+        f"{tipo}/{dif}"
+        for (tipo, dif), _need in slots_objetivo.items()
+        if por_slot.get((tipo, dif), 0) < 1 and por_ds.get((tipo, dif), 0) < 1
+    ]
+    hueco = f"{tema}: falta {', '.join(faltan_slot)}" if faltan_slot else None
+    bajo = f"{tema}: {len(items)} < {minimo}" if len(items) < minimo else None
+    return hueco, bajo
+
+
+def _imprimir_lista_auditoria(
+    titulo: str, lineas: list[str], *, max_show: int, ok_msg: str
+) -> None:
+    if lineas:
+        print(titulo)
+        for line in lineas[:max_show]:
+            print(f"    - {line}")
+        if len(lineas) > max_show:
+            print(f"    ... +{len(lineas) - max_show} más")
+    else:
+        print(ok_msg)
+
+
+def _duplicados_exactos_plantillas(plantillas: dict) -> dict[tuple, list[str]]:
     from collections import defaultdict as dd
 
+    por_clave: dict[tuple, list[str]] = dd(list)
+    for tema, items in plantillas.items():
+        for i, t in enumerate(items):
+            k = (
+                _norm_plantilla_campo(t.get("pregunta", "")),
+                _norm_plantilla_campo(t.get("A", "")),
+                _norm_plantilla_campo(t.get("B", "")),
+                _norm_plantilla_campo(t.get("C", "")),
+                _norm_plantilla_campo(t.get("D", "")),
+            )
+            por_clave[k].append(f"{tema}#{i}")
+    return {k: v for k, v in por_clave.items() if len(v) > 1 and k[0]}
+
+
+def _recoger_huecos_plantillas(
+    plantillas: dict,
+    temas: list[str],
+    *,
+    slots_objetivo: Counter,
+    minimo: int,
+) -> tuple[list[str], list[str]]:
+    huecos_balance: list[str] = []
+    bajo_minimo: list[str] = []
+    for tema in temas:
+        items = plantillas.get(tema, [])
+        hueco, bajo = _analizar_balance_extra_tema(
+            tema, items, slots_objetivo=slots_objetivo, minimo=minimo
+        )
+        if hueco:
+            huecos_balance.append(hueco)
+        if bajo:
+            bajo_minimo.append(bajo)
+    return huecos_balance, bajo_minimo
+
+
+def auditar_plantillas_global() -> int:
     from objetivos_balanceo import SLOTS_CANONICOS_12, plantillas_minimas_por_materia
     from utils_orden_temas import cargar_orden_temas
-
-    _USO_A_SLOT = {
-        "general": ("Teoria", "Media"),
-        "dificil": ("Teoria", "Dificil"),
-        "calculo": ("Calculo", "Media"),
-        "repuesto": None,
-        "reserva": None,
-    }
-
-    def _norm(s: str) -> str:
-        return (s or "").strip()
-
-    def _key_row(r: dict) -> tuple:
-        return (
-            _norm(r.get("Materia") or r.get("Tema", "")),
-            _norm(r.get("Pregunta", "")),
-            _norm(r.get("A", "")),
-            _norm(r.get("B", "")),
-            _norm(r.get("C", "")),
-            _norm(r.get("D", "")),
-            _norm(r.get("Correcta", "")),
-        )
-
-    def _key_tpl(tema: str, t: dict) -> tuple:
-        return (
-            _norm(tema),
-            _norm(t.get("pregunta", "")),
-            _norm(t.get("A", "")),
-            _norm(t.get("B", "")),
-            _norm(t.get("C", "")),
-            _norm(t.get("D", "")),
-            _norm(t.get("correcta", "")),
-        )
 
     temas, _ = cargar_orden_temas()
     minimo = plantillas_minimas_por_materia()
@@ -330,10 +465,17 @@ def auditar_plantillas_global() -> int:
         plantillas = json.load(f)
     rows = list(csv.DictReader(PATH_CSV.open(encoding="utf-8", newline=""), delimiter=";"))
 
-    keys_plant = {_key_tpl(tema, t) for tema, items in plantillas.items() for t in items}
-    faltan_ds = sum(1 for r in rows if _key_row(r) not in keys_plant)
+    keys_plant = {
+        _key_plantilla_auditoria(tema, t)
+        for tema, items in plantillas.items()
+        for t in items
+    }
+    faltan_ds = sum(1 for r in rows if _key_fila_auditoria(r) not in keys_plant)
     n_dataset_tag = sum(
-        1 for items in plantillas.values() for t in items if es_uso_copia_dataset(str(t.get("uso", "")))
+        1
+        for items in plantillas.values()
+        for t in items
+        if es_uso_copia_dataset(str(t.get("uso", "")))
     )
 
     print("=" * 72)
@@ -343,73 +485,28 @@ def auditar_plantillas_global() -> int:
     print(f"Copias etiquetadas dataset_*: {n_dataset_tag}")
     print(f"Filas del CSV ausentes en plantillas: {faltan_ds}")
 
-    huecos_balance: list[str] = []
-    bajo_minimo: list[str] = []
     slots_objetivo = Counter(SLOTS_CANONICOS_12)
-
     print("\nBalance pool EXTRA (sin dataset_*; tipo/dificultad o uso general/dificil/calculo):")
     print("-" * 72)
 
-    for tema in temas:
-        items = plantillas.get(tema, [])
-        extra = [t for t in items if not es_uso_copia_dataset(str(t.get("uso", "")))]
-        por_slot: Counter = Counter()
-        for t in extra:
-            tipo = _norm(t.get("tipo", ""))
-            dif = _norm(t.get("dificultad", ""))
-            if not tipo or not dif:
-                infer = _USO_A_SLOT.get(t.get("uso"))
-                if infer:
-                    tipo, dif = infer
-            if tipo and dif:
-                por_slot[(tipo, dif)] += 1
-        por_ds = Counter(
-            (_norm(t.get("tipo", "Teoria")), _norm(t.get("dificultad", "Media")))
-            for t in items
-            if es_uso_copia_dataset(str(t.get("uso", "")))
-        )
-        faltan_slot = [
-            f"{tipo}/{dif}"
-            for (tipo, dif), _need in slots_objetivo.items()
-            if por_slot.get((tipo, dif), 0) < 1 and por_ds.get((tipo, dif), 0) < 1
-        ]
-        if faltan_slot:
-            huecos_balance.append(f"{tema}: falta {', '.join(faltan_slot)}")
-        if len(items) < minimo:
-            bajo_minimo.append(f"{tema}: {len(items)} < {minimo}")
+    huecos_balance, bajo_minimo = _recoger_huecos_plantillas(
+        plantillas, temas, slots_objetivo=slots_objetivo, minimo=minimo
+    )
+    _imprimir_lista_auditoria(
+        f"  [HUECOS] {len(huecos_balance)} materias sin cubrir algún slot "
+        "(ni extra ni copia dataset_*):",
+        huecos_balance,
+        max_show=15,
+        ok_msg="  [OK] Todas las materias tienen ≥1 plantilla extra por cada (Tipo, Dificultad)",
+    )
+    _imprimir_lista_auditoria(
+        f"\n  [BAJO MÍNIMO] {len(bajo_minimo)} materias con <{minimo} entradas totales:",
+        bajo_minimo,
+        max_show=10,
+        ok_msg=f"\n  [OK] Todas ≥ {minimo} entradas por materia (2× dataset)",
+    )
 
-    if huecos_balance:
-        print(
-            f"  [HUECOS] {len(huecos_balance)} materias sin cubrir algún slot "
-            "(ni extra ni copia dataset_*):"
-        )
-        for line in huecos_balance[:15]:
-            print(f"    - {line}")
-        if len(huecos_balance) > 15:
-            print(f"    ... +{len(huecos_balance) - 15} más")
-    else:
-        print("  [OK] Todas las materias tienen ≥1 plantilla extra por cada (Tipo, Dificultad)")
-
-    if bajo_minimo:
-        print(f"\n  [BAJO MÍNIMO] {len(bajo_minimo)} materias con <{minimo} entradas totales:")
-        for line in bajo_minimo[:10]:
-            print(f"    - {line}")
-    else:
-        print(f"\n  [OK] Todas ≥ {minimo} entradas por materia (2× dataset)")
-
-    por_clave: dict[tuple, list[str]] = dd(list)
-    for tema, items in plantillas.items():
-        for i, t in enumerate(items):
-            k = (
-                _norm(t.get("pregunta", "")),
-                _norm(t.get("A", "")),
-                _norm(t.get("B", "")),
-                _norm(t.get("C", "")),
-                _norm(t.get("D", "")),
-            )
-            por_clave[k].append(f"{tema}#{i}")
-
-    exact_global = {k: v for k, v in por_clave.items() if len(v) > 1 and k[0]}
+    exact_global = _duplicados_exactos_plantillas(plantillas)
     print(f"\nDuplicados exactos globales (mismo enunciado+opciones): {len(exact_global)}")
     for _k, labels in list(exact_global.items())[:8]:
         print(f"  {' | '.join(labels[:4])}{'…' if len(labels) > 4 else ''}")
@@ -419,9 +516,7 @@ def auditar_plantillas_global() -> int:
     print("  python Files/duplicados.py revisar")
     print("=" * 72)
 
-    if faltan_ds or exact_global:
-        return 1
-    if huecos_balance:
+    if faltan_ds or exact_global or huecos_balance:
         return 1
     return 0
 

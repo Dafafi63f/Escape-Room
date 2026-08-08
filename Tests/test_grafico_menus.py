@@ -945,6 +945,8 @@ class TestHoverTooltipsGrafico(unittest.TestCase):
             sistema_puntuacion=SistemaPuntuacion.ARCADE,
             correccion_al_final=False,
         )
+        from Grafico.pantallas import OpcionesPartidaLibre
+
         self.app.actual = PartidaModoLibre(
             nombre="Test",
             pool=[p],
@@ -952,7 +954,7 @@ class TestHoverTooltipsGrafico(unittest.TestCase):
             ir_a=self.ir_a,
             datos=self.datos,
             salir_app=self.salir,
-            total_previsto=1,
+            opciones=OpcionesPartidaLibre(total_previsto=1),
         )
         self.app._crear_botones_pausa()
         self.assertEqual(

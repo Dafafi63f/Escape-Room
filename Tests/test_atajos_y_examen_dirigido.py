@@ -14,6 +14,7 @@ ensure_juego_path()
 import pygame  # noqa: E402
 
 from Comun.generador_examen_historia import (  # noqa: E402
+    OpcionesGeneracionExamen,
     calcular_pesos_desde_registros,
     generar_examen,
     PerfilPedagogico,
@@ -193,16 +194,9 @@ class TestExamenDirigidoSesion(unittest.TestCase):
         pesos = calcular_pesos_desde_registros(registros)
         plan = generar_examen(
             self.pool,
-            perfil=PerfilPedagogico.BALANCEADO,
-            materias_orden=["M1", "M2"],
+            materias_orden=['M1', 'M2'],
             materias_meta=self.materias_meta,
-            stats={},
-            n_materias=2,
-            preguntas_por_materia=3,
-            semilla=42,
-            usar_analisis_historico=False,
-            pesos_materia_sesion=pesos,
-            preguntas_excluir=[r.pregunta for r in registros],
+            opciones=OpcionesGeneracionExamen(perfil=PerfilPedagogico.BALANCEADO, stats={}, n_materias=2, preguntas_por_materia=3, semilla=42, usar_analisis_historico=False, pesos_materia_sesion=pesos, preguntas_excluir=[r.pregunta for r in registros]),
         )
         claves_previas = {(p.materia, p.texto) for p in previas}
         for pregunta in plan.preguntas:
@@ -262,16 +256,9 @@ class TestCadenaExamenDirigido(unittest.TestCase):
         }
         plan = generar_examen(
             self.pool,
-            perfil=PerfilPedagogico.BALANCEADO,
-            materias_orden=["M1", "M2"],
+            materias_orden=['M1', 'M2'],
             materias_meta=self.materias_meta,
-            stats={},
-            n_materias=2,
-            preguntas_por_materia=3,
-            semilla=99,
-            usar_analisis_historico=False,
-            pesos_materia_sesion=pesos,
-            preguntas_excluir=cadena.preguntas_en_ventana_exclusion(),
+            opciones=OpcionesGeneracionExamen(perfil=PerfilPedagogico.BALANCEADO, stats={}, n_materias=2, preguntas_por_materia=3, semilla=99, usar_analisis_historico=False, pesos_materia_sesion=pesos, preguntas_excluir=cadena.preguntas_en_ventana_exclusion()),
         )
         for pregunta in plan.preguntas:
             self.assertNotIn((pregunta.materia, pregunta.texto), vistas)
@@ -336,17 +323,9 @@ class TestCadenaExamenDirigido(unittest.TestCase):
         pesos = calcular_pesos_desde_registros(registros)
         plan = generar_examen(
             self.pool,
-            perfil=PerfilPedagogico.BALANCEADO,
-            materias_orden=["M1", "M2"],
+            materias_orden=['M1', 'M2'],
             materias_meta=self.materias_meta,
-            stats={},
-            n_materias=2,
-            preguntas_por_materia=3,
-            semilla=7,
-            usar_analisis_historico=False,
-            exigir_balance_completo=True,
-            pesos_materia_sesion=pesos,
-            preguntas_excluir=[r.pregunta for r in registros],
+            opciones=OpcionesGeneracionExamen(perfil=PerfilPedagogico.BALANCEADO, stats={}, n_materias=2, preguntas_por_materia=3, semilla=7, usar_analisis_historico=False, exigir_balance_completo=True, pesos_materia_sesion=pesos, preguntas_excluir=[r.pregunta for r in registros]),
         )
         por_materia: dict[str, int] = {}
         for pregunta in plan.preguntas:

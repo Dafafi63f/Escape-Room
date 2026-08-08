@@ -13,6 +13,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, replace
 
+from Comun.motor_nucleo import EstadoPartida
 from Comun.eventos_partida import (
     DefinicionEvento,
     EventoContenidoInstanciado,
@@ -350,6 +351,23 @@ def _pools_filtro_contenido(pool: list[Pregunta]) -> dict[str, tuple]:
     }
 
 
+@dataclass(frozen=True)
+class _CtxPuertasSala:
+    """Contexto compartido al reconstruir/normalizar puertas de una sala."""
+
+    materias_base: tuple[str, ...]
+    materias_pool: tuple[str, ...]
+    materias_puerta: tuple[str, ...]
+    grupos_base: tuple[str, ...]
+    grupos_pool: tuple[str, ...]
+    pool_preguntas: list[Pregunta]
+    n_salas: int
+    rng: random.Random
+    pity: PityPuertasEspecialesEscape
+    estado: EstadoPartida | None = None
+    vidas_max: int | None = None
+
+
 def _reconstruir_puerta_con_preguntas(
     indice: int,
     *,
@@ -358,17 +376,7 @@ def _reconstruir_puerta_con_preguntas(
     n_preg: int,
     numero_sala: int,
     sala_idx: int,
-    materias_base: tuple[str, ...],
-    materias_pool: tuple[str, ...],
-    materias_puerta: tuple[str, ...],
-    grupos_base: tuple[str, ...],
-    grupos_pool: tuple[str, ...],
-    pool_preguntas: list[Pregunta],
-    n_salas: int,
-    rng: random.Random,
-    pity: PityPuertasEspecialesEscape,
-    estado=None,
-    vidas_max: int | None = None,
+    ctx: _CtxPuertasSala,
     permitir_pausas: bool = True,
 ) -> PuertaEscape:
     es_jefe = (
@@ -376,42 +384,46 @@ def _reconstruir_puerta_con_preguntas(
         and not plantilla_lleva_perfil_materia(plantilla)
     )
     if n_preg == PREGUNTAS_POR_JEFE and plantilla_lleva_perfil_materia(plantilla):
-        n_preg = rng.choice(TAMANOS_PUERTA)
+        n_preg = ctx.rng.choice(TAMANOS_PUERTA)
         es_jefe = False
     mods = generar_modificadores_puerta(
         numero_sala=numero_sala,
-        rng=rng,
+        rng=ctx.rng,
         pausas_usadas=frozenset(RASGOS_PUERTA_SIN_PREGUNTA_ESCAPE),
-        pity=None if es_jefe else pity,
-        estado=estado,
-        vidas_max=vidas_max,
+        pity=None if es_jefe else ctx.pity,
+        estado=ctx.estado,
+        vidas_max=ctx.vidas_max,
         permitir_pausas=False if es_jefe else permitir_pausas,
     )
     if es_jefe and not mods.sin_pregunta:
-        mods = _modificadores_jefe_escape(mods, numero_sala=numero_sala, rng=rng)
+        mods = _modificadores_jefe_escape(mods, numero_sala=numero_sala, rng=ctx.rng)
     if mods.sin_pregunta:
         n_preg = 0
         evento = instanciar_evento_contenido(
             evento_por_id("puerta_materia"),
-            materias_pool=materias_base,
+            materias_pool=ctx.materias_base,
             grupos_pool=(),
-            rng=rng,
+            rng=ctx.rng,
             indice_puerta=sala_idx * 10 + indice,
-            materia_preferida=materias_base[indice % len(materias_base)],
+            materia_preferida=ctx.materias_base[indice % len(ctx.materias_base)],
         )
     else:
         plantilla_usada = plantilla
         perfil_usado = perfil_id if plantilla_lleva_perfil_materia(plantilla_usada) else None
-        materia_pref = materias_puerta[indice] if indice < len(materias_puerta) else None
+        materia_pref = (
+            ctx.materias_puerta[indice] if indice < len(ctx.materias_puerta) else None
+        )
         opts = plantilla_usada.contenido_escape
         ambito = opts.ambito_efectivo if opts else "materia"
-        pools_filtro = _pools_filtro_contenido(pool_preguntas)
-        grupos_eff = grupos_base if ambito == "grupo" else grupos_pool
+        pools_filtro = _pools_filtro_contenido(ctx.pool_preguntas)
+        grupos_eff = ctx.grupos_base if ambito == "grupo" else ctx.grupos_pool
         evento = instanciar_evento_contenido(
             plantilla_usada,
-            materias_pool=materias_base if ambito == "materia" else materias_pool,
+            materias_pool=(
+                ctx.materias_base if ambito == "materia" else ctx.materias_pool
+            ),
             grupos_pool=grupos_eff,
-            rng=rng,
+            rng=ctx.rng,
             indice_puerta=sala_idx * 10 + indice,
             materia_preferida=None if ambito != "materia" else materia_pref,
             perfil_id=perfil_usado,
@@ -425,14 +437,14 @@ def _reconstruir_puerta_con_preguntas(
         es_jefe=es_jefe and not mods.sin_pregunta,
     )
     return asegurar_puerta_viable(
-        pool_preguntas,
+        ctx.pool_preguntas,
         puerta,
         numero_sala=numero_sala,
-        n_salas=n_salas,
-        materias_pool=materias_base,
-        grupos_pool=grupos_base or grupos_pool,
-        rng=rng,
-        pools_bloque=pools_bloque_del_pool(pool_preguntas),
+        n_salas=ctx.n_salas,
+        materias_pool=ctx.materias_base,
+        grupos_pool=ctx.grupos_base or ctx.grupos_pool,
+        rng=ctx.rng,
+        pools_bloque=pools_bloque_del_pool(ctx.pool_preguntas),
     )
 
 
@@ -441,26 +453,16 @@ def _normalizar_puertas_tienda_escape(
     *,
     numero_sala: int,
     sala_idx: int,
-    materias_base: tuple[str, ...],
-    materias_pool: tuple[str, ...],
-    materias_puerta: tuple[str, ...],
-    grupos_base: tuple[str, ...],
-    grupos_pool: tuple[str, ...],
-    pool_preguntas: list[Pregunta],
+    ctx: _CtxPuertasSala,
     plantillas,
     tamanos: tuple[int, ...],
-    n_salas: int,
-    rng: random.Random,
-    pity: PityPuertasEspecialesEscape,
-    estado=None,
-    vidas_max: int | None = None,
 ) -> None:
     """Quita tiendas inviables y restaura una puerta con preguntas (sin convertir en descanso)."""
-    if estado is None:
+    if ctx.estado is None:
         return
     from Comun.tienda_escape import puede_visitar_tienda_escape, puerta_es_tienda
 
-    if puede_visitar_tienda_escape(numero_sala, estado, vidas_max=vidas_max):
+    if puede_visitar_tienda_escape(numero_sala, ctx.estado, vidas_max=ctx.vidas_max):
         return
     for i, puerta in enumerate(puertas):
         if not puerta_es_tienda(puerta):
@@ -473,17 +475,7 @@ def _normalizar_puertas_tienda_escape(
             n_preg=tamanos[i],
             numero_sala=numero_sala,
             sala_idx=sala_idx,
-            materias_base=materias_base,
-            materias_pool=materias_pool,
-            materias_puerta=materias_puerta,
-            grupos_base=grupos_base,
-            grupos_pool=grupos_pool,
-            pool_preguntas=pool_preguntas,
-            n_salas=n_salas,
-            rng=rng,
-            pity=pity,
-            estado=estado,
-            vidas_max=vidas_max,
+            ctx=ctx,
         )
 
 
@@ -635,6 +627,17 @@ def _construir_puertas_sala_jefe(
         rng=rng,
     )
 
+    ctx = _CtxPuertasSala(
+        materias_base=materias_base,
+        materias_pool=materias_pool,
+        materias_puerta=materias_puerta,
+        grupos_base=grupos_base,
+        grupos_pool=grupos_pool,
+        pool_preguntas=pool_preguntas,
+        n_salas=n_salas,
+        rng=rng,
+        pity=pity,
+    )
     puertas: list[PuertaEscape] = []
     for i, (plantilla, perfil_id) in enumerate(plantillas):
         puertas.append(
@@ -645,15 +648,7 @@ def _construir_puertas_sala_jefe(
                 n_preg=tamanos[i] if i < len(tamanos) else 3,
                 numero_sala=numero_sala,
                 sala_idx=sala_idx,
-                materias_base=materias_base,
-                materias_pool=materias_pool,
-                materias_puerta=materias_puerta,
-                grupos_base=grupos_base,
-                grupos_pool=grupos_pool,
-                pool_preguntas=pool_preguntas,
-                n_salas=n_salas,
-                rng=rng,
-                pity=pity,
+                ctx=ctx,
                 permitir_pausas=False,
             )
         )
@@ -831,19 +826,21 @@ def _construir_puertas_sala(
         puertas,
         numero_sala=numero_sala,
         sala_idx=sala_idx,
-        materias_base=materias_base,
-        materias_pool=materias_pool,
-        materias_puerta=materias_puerta,
-        grupos_base=grupos_base,
-        grupos_pool=grupos_pool,
-        pool_preguntas=pool_preguntas,
+        ctx=_CtxPuertasSala(
+            materias_base=materias_base,
+            materias_pool=materias_pool,
+            materias_puerta=materias_puerta,
+            grupos_base=grupos_base,
+            grupos_pool=grupos_pool,
+            pool_preguntas=pool_preguntas,
+            n_salas=n_salas,
+            rng=rng,
+            pity=pity or PityPuertasEspecialesEscape(),
+            estado=estado,
+            vidas_max=vidas_max,
+        ),
         plantillas=plantillas,
         tamanos=tamanos,
-        n_salas=n_salas,
-        rng=rng,
-        pity=pity or PityPuertasEspecialesEscape(),
-        estado=estado,
-        vidas_max=vidas_max,
     )
     return tuple(puertas)
 

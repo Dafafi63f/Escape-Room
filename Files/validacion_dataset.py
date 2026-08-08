@@ -160,11 +160,46 @@ def revision_completa(df: pd.DataFrame, orden_materias: list[str]) -> None:
     print("=" * 60)
 
 
-def validacion_extendida(df: pd.DataFrame, *, con_variedad: bool) -> int:
-    print("=" * 60)
-    print("VALIDACIÓN EXTENDIDA DEL CSV")
-    print("=" * 60)
+def _revisar_complejidad_global(df: pd.DataFrame) -> tuple[list, list]:
+    mapa = mapa_metadatos_por_materia(PATH_LISTADO_MATERIAS)
+    incoherentes: list = []
+    desconocidas: list = []
+    for _, row in df.iterrows():
+        mat = str(row.get("Materia", "") or "").strip()
+        meta = mapa.get(mat)
+        if not meta:
+            desconocidas.append(row.get("Id"))
+            continue
+        try:
+            esperado = complejidad_global_valor(
+                str(meta.get("Nivel", "")), str(row.get("Dificultad", ""))
+            )
+        except (TypeError, ValueError):
+            incoherentes.append(row.get("Id"))
+            continue
+        if "ComplejidadGlobal" not in df.columns or not str(
+            row.get("ComplejidadGlobal", "")
+        ).strip():
+            continue
+        try:
+            actual = int(float(str(row.get("ComplejidadGlobal", "")).strip() or "0"))
+            if esperado != actual:
+                incoherentes.append(row.get("Id"))
+        except ValueError:
+            incoherentes.append(row.get("Id"))
+    return desconocidas, incoherentes
 
+
+def _hash_fuera_cripto(df: pd.DataFrame) -> list[int]:
+    hash_fuera = []
+    for _, row in df.iterrows():
+        texto = " ".join(str(row.get(c, "") or "") for c in ("Pregunta", "A", "B", "C", "D"))
+        if _PATRON_HASH.search(texto) and str(row.get("Materia", "")).strip() != MATERIA_CRIPTO:
+            hash_fuera.append(int(row["Id"]))
+    return hash_fuera
+
+
+def _imprimir_checks_basicos(df: pd.DataFrame) -> None:
     ids = df["Id"].dropna().astype(int)
     if ids.duplicated().any():
         print(f"\nIDs duplicados: {ids[ids.duplicated()].tolist()[:10]}")
@@ -182,29 +217,15 @@ def validacion_extendida(df: pd.DataFrame, *, con_variedad: bool) -> int:
     else:
         print("Campos obligatorios: OK")
 
-    mapa = mapa_metadatos_por_materia(PATH_LISTADO_MATERIAS)
-    incoherentes: list = []
-    desconocidas: list = []
-    for _, row in df.iterrows():
-        mat = str(row.get("Materia", "") or "").strip()
-        meta = mapa.get(mat)
-        if not meta:
-            desconocidas.append(row.get("Id"))
-            continue
-        try:
-            esperado = complejidad_global_valor(
-                str(meta.get("Nivel", "")), str(row.get("Dificultad", ""))
-            )
-        except (TypeError, ValueError):
-            incoherentes.append(row.get("Id"))
-            continue
-        if "ComplejidadGlobal" in df.columns and str(row.get("ComplejidadGlobal", "")).strip():
-            try:
-                actual = int(float(str(row.get("ComplejidadGlobal", "")).strip() or "0"))
-                if esperado != actual:
-                    incoherentes.append(row.get("Id"))
-            except ValueError:
-                incoherentes.append(row.get("Id"))
+
+def validacion_extendida(df: pd.DataFrame, *, con_variedad: bool) -> int:
+    print("=" * 60)
+    print("VALIDACIÓN EXTENDIDA DEL CSV")
+    print("=" * 60)
+
+    _imprimir_checks_basicos(df)
+
+    desconocidas, incoherentes = _revisar_complejidad_global(df)
     if desconocidas:
         print(f"Materias sin listado: {len(desconocidas)} (muestra {desconocidas[:6]})")
     if incoherentes:
@@ -219,11 +240,7 @@ def validacion_extendida(df: pd.DataFrame, *, con_variedad: bool) -> int:
     else:
         print("Dificultad y Tipo: OK")
 
-    hash_fuera = []
-    for _, row in df.iterrows():
-        texto = " ".join(str(row.get(c, "") or "") for c in ("Pregunta", "A", "B", "C", "D"))
-        if _PATRON_HASH.search(texto) and str(row.get("Materia", "")).strip() != MATERIA_CRIPTO:
-            hash_fuera.append(int(row["Id"]))
+    hash_fuera = _hash_fuera_cripto(df)
     if hash_fuera:
         print(f"«hash» fuera de {MATERIA_CRIPTO}: {hash_fuera[:12]}")
     else:

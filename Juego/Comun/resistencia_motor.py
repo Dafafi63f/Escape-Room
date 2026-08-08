@@ -1836,6 +1836,210 @@ def _aplicar_penalizacion_apuesta(
     return False, avisos
 
 
+def _solucion_si_mostrar(estado: EstadoPartida, p: Pregunta) -> str | None:
+    if not estado.reglas.mostrar_solucion_tras_fallo:
+        return None
+    from Comun.motor_nucleo import texto_solucion
+
+    return texto_solucion(p)
+
+
+def _turno_proteccion_fallo_resistencia(
+    estado: EstadoPartida,
+    er: EstadoResistencia,
+    p: Pregunta,
+    *,
+    fallo: bool,
+) -> ResultadoTurnoResistencia | None:
+    if not fallo:
+        return None
+    if er.escudo_activo:
+        er.escudo_activo = False
+        return ResultadoTurnoResistencia(
+            feedback=FeedbackRespuesta(
+                mensaje="Escudo: el fallo no cuesta vida ni corta la racha.",
+                solucion=_solucion_si_mostrar(estado, p),
+            ),
+            reintentar_pregunta=True,
+        )
+    if er.segunda_oportunidad_activa:
+        er.segunda_oportunidad_activa = False
+        return ResultadoTurnoResistencia(
+            feedback=FeedbackRespuesta(
+                mensaje="Segunda oportunidad: inténtalo otra vez.",
+                solucion=_solucion_si_mostrar(estado, p),
+            ),
+            reintentar_pregunta=True,
+        )
+    return None
+
+
+def _turno_maldicion_fatal_resistencia(
+    estado: EstadoPartida,
+    er: EstadoResistencia,
+    p: Pregunta,
+    resultado: ResultadoRespuesta,
+    *,
+    fallo: bool,
+    indice_pregunta: int,
+) -> ResultadoTurnoResistencia | None:
+    from Comun.maldiciones_partida import maldicion_es_fatal, mensaje_fallo_maldicion_fatal
+
+    if not (fallo and maldicion_es_fatal(er.maldicion)):
+        return None
+    feedback = evaluar_respuesta(p, estado, resultado)
+    if estado.vidas_restantes is not None:
+        estado.vidas_restantes = 0
+    feedback = replace(
+        feedback,
+        sin_vidas=True,
+        mensaje=f"{feedback.mensaje}{mensaje_fallo_maldicion_fatal()}",
+    )
+    avisos_fatal = procesar_post_turno_resistencia(
+        er, acierto=False, numero_pregunta=indice_pregunta
+    )
+    return ResultadoTurnoResistencia(
+        feedback=feedback,
+        avisos_extra=tuple(avisos_fatal),
+    )
+
+
+def _aplicar_doble_o_nada_turno(
+    estado: EstadoPartida,
+    er: EstadoResistencia,
+    *,
+    acierto: bool,
+    fallo: bool,
+    puntos_prev: int,
+) -> bool:
+    doble_o_nada = er.doble_o_nada_activo
+    if doble_o_nada:
+        er.doble_o_nada_activo = False
+    if acierto and doble_o_nada:
+        delta = estado.puntos_arcade - puntos_prev
+        if delta > 0:
+            estado.puntos_arcade, _ = sumar_puntos_arcade(
+                estado.puntos_arcade, delta
+            )
+    if fallo and doble_o_nada and estado.vidas_restantes is not None:
+        estado.vidas_restantes = max(0, estado.vidas_restantes - 1)
+    return doble_o_nada
+
+
+def _avisos_recompensas_acierto_resistencia(
+    estado: EstadoPartida,
+    er: EstadoResistencia,
+    *,
+    indice_pregunta: int,
+) -> list[str]:
+    avisos_post: list[str] = []
+    familias_recompensa: set[str] = set()
+    er.registrar_acierto()
+    for aviso in _aplicar_recompensa_apuesta_exito(estado, er):
+        avisos_post.append(aviso)
+        if "vida" in aviso.lower():
+            familias_recompensa.add("vida")
+    for recompensa in tirar_recompensas_tras_acierto(
+        er,
+        estado,
+        numero_pregunta=indice_pregunta,
+        familias_otorgadas=familias_recompensa,
+    ):
+        aplicar_recompensa(estado, er, recompensa)
+        avisos_post.append(
+            formatear_aviso_recompensa(
+                recompensa.etiqueta,
+                bonus_proximo_acierto=recompensa.bonus_proximo_acierto,
+            )
+        )
+    if er.pregunta_final_jefe:
+        er.pregunta_final_jefe = False
+        candidatas = recompensas_completar_jefe_resistencia(
+            er, estado, numero_pregunta=indice_pregunta
+        )
+        otorgadas: list[EventoRecompensaResistencia] = []
+        for recompensa in candidatas:
+            if _otorgar_recompensa_resistencia(
+                estado, er, recompensa, familias_recompensa
+            ):
+                otorgadas.append(recompensa)
+        if otorgadas:
+            avisos_post.append(formatear_aviso_botin_jefe_resistencia(otorgadas))
+    return avisos_post
+
+
+def _enriquecer_mensaje_apuesta_acierto(
+    feedback: FeedbackRespuesta,
+    er: EstadoResistencia,
+    *,
+    mult_apuesta: int,
+) -> FeedbackRespuesta:
+    if not er.apuesta_activa:
+        return feedback
+    msg = feedback.mensaje
+    if not msg.startswith("Correcto"):
+        return feedback
+    extras_apuesta: list[str] = []
+    if mult_apuesta > 1:
+        extras_apuesta.append(f"×{mult_apuesta}")
+    r = er.apuesta_activa.recompensa
+    if r.delta_vidas > 0:
+        extras_apuesta.append(
+            f"+{r.delta_vidas} vida" + ("s" if r.delta_vidas > 1 else "")
+        )
+    if r.powerup_id or r.powerup_aleatorio:
+        extras_apuesta.append("objeto")
+    if not extras_apuesta:
+        return feedback
+    return replace(
+        feedback,
+        mensaje=f"{msg} (apuesta: {', '.join(extras_apuesta)})",
+    )
+
+
+def _marcar_sin_vidas_si_aplica(
+    feedback: FeedbackRespuesta,
+    estado: EstadoPartida,
+    *,
+    fallo: bool,
+    fin_apuesta: bool,
+) -> FeedbackRespuesta:
+    if fallo and (
+        (estado.reglas.tiene_vidas() and (estado.vidas_restantes or 0) <= 0)
+        or fin_apuesta
+    ):
+        return replace(feedback, sin_vidas=True)
+    return feedback
+
+
+def _avisos_post_respuesta_resistencia(
+    estado: EstadoPartida,
+    er: EstadoResistencia,
+    *,
+    acierto: bool,
+    fallo: bool,
+    indice_pregunta: int,
+    avisos_apuesta_fallo: list[str],
+) -> list[str]:
+    avisos_post: list[str] = list(avisos_apuesta_fallo)
+    if acierto:
+        avisos_post.extend(
+            _avisos_recompensas_acierto_resistencia(
+                estado, er, indice_pregunta=indice_pregunta
+            )
+        )
+    elif fallo:
+        er.registrar_fallo()
+        if er.pregunta_final_jefe:
+            er.pregunta_final_jefe = False
+    avisos_post.extend(
+        procesar_post_turno_resistencia(
+            er, acierto=acierto, numero_pregunta=indice_pregunta
+        )
+    )
+    return avisos_post
+
+
 def procesar_turno_resistencia(
     estado: EstadoPartida,
     er: EstadoResistencia,
@@ -1851,148 +2055,55 @@ def procesar_turno_resistencia(
     if acierto and er.apuesta_activa:
         mult_apuesta = max(1, er.apuesta_activa.recompensa.mult_puntos)
 
-    if fallo and er.escudo_activo:
-        er.escudo_activo = False
-        solucion = None
-        if estado.reglas.mostrar_solucion_tras_fallo:
-            from Comun.motor_nucleo import texto_solucion
+    protegido = _turno_proteccion_fallo_resistencia(
+        estado, er, p, fallo=fallo
+    )
+    if protegido is not None:
+        return protegido
 
-            solucion = texto_solucion(p)
-        return ResultadoTurnoResistencia(
-            feedback=FeedbackRespuesta(
-                mensaje="Escudo: el fallo no cuesta vida ni corta la racha.",
-                solucion=solucion,
-            ),
-            reintentar_pregunta=True,
-        )
-
-    if fallo and er.segunda_oportunidad_activa:
-        er.segunda_oportunidad_activa = False
-        solucion = None
-        if estado.reglas.mostrar_solucion_tras_fallo:
-            from Comun.motor_nucleo import texto_solucion
-
-            solucion = texto_solucion(p)
-        return ResultadoTurnoResistencia(
-            feedback=FeedbackRespuesta(
-                mensaje="Segunda oportunidad: inténtalo otra vez.",
-                solucion=solucion,
-            ),
-            reintentar_pregunta=True,
-        )
-
-    from Comun.maldiciones_partida import maldicion_es_fatal, mensaje_fallo_maldicion_fatal
-
-    if fallo and maldicion_es_fatal(er.maldicion):
-        feedback = evaluar_respuesta(p, estado, resultado)
-        if estado.vidas_restantes is not None:
-            estado.vidas_restantes = 0
-        feedback = replace(
-            feedback,
-            sin_vidas=True,
-            mensaje=f"{feedback.mensaje}{mensaje_fallo_maldicion_fatal()}",
-        )
-        avisos_fatal = procesar_post_turno_resistencia(
-            er, acierto=False, numero_pregunta=indice_pregunta
-        )
-        return ResultadoTurnoResistencia(
-            feedback=feedback,
-            avisos_extra=tuple(avisos_fatal),
-        )
+    fatal = _turno_maldicion_fatal_resistencia(
+        estado,
+        er,
+        p,
+        resultado,
+        fallo=fallo,
+        indice_pregunta=indice_pregunta,
+    )
+    if fatal is not None:
+        return fatal
 
     feedback = evaluar_respuesta(p, estado, resultado)
-
     puntos_prev = estado.puntos_arcade
-    doble_o_nada = er.doble_o_nada_activo
-    if doble_o_nada:
-        er.doble_o_nada_activo = False
-
-    if acierto and doble_o_nada:
-        delta = estado.puntos_arcade - puntos_prev
-        if delta > 0:
-            estado.puntos_arcade, _ = sumar_puntos_arcade(
-                estado.puntos_arcade, delta
-            )
-
-    if fallo and doble_o_nada and estado.vidas_restantes is not None:
-        estado.vidas_restantes = max(0, estado.vidas_restantes - 1)
+    _aplicar_doble_o_nada_turno(
+        estado, er, acierto=acierto, fallo=fallo, puntos_prev=puntos_prev
+    )
 
     if acierto and er.bonus_proximo_acierto:
         bonus = er.bonus_proximo_acierto
         estado.puntos_arcade, _ = sumar_puntos_arcade(estado.puntos_arcade, bonus)
         er.bonus_proximo_acierto = 0
 
-    _fin_apuesta, avisos_apuesta_fallo = _aplicar_penalizacion_apuesta(
+    fin_apuesta, avisos_apuesta_fallo = _aplicar_penalizacion_apuesta(
         estado,
         er,
         fallo=fallo,
         numero_pregunta=indice_pregunta,
     )
-    if fallo and (
-        (estado.reglas.tiene_vidas() and (estado.vidas_restantes or 0) <= 0)
-        or _fin_apuesta
-    ):
-        feedback = replace(feedback, sin_vidas=True)
-
-    avisos_post: list[str] = list(avisos_apuesta_fallo)
-    familias_recompensa: set[str] = set()
-    if acierto:
-        er.registrar_acierto()
-        for aviso in _aplicar_recompensa_apuesta_exito(estado, er):
-            avisos_post.append(aviso)
-            if "vida" in aviso.lower():
-                familias_recompensa.add("vida")
-        for recompensa in tirar_recompensas_tras_acierto(
-            er,
-            estado,
-            numero_pregunta=indice_pregunta,
-            familias_otorgadas=familias_recompensa,
-        ):
-            aplicar_recompensa(estado, er, recompensa)
-            avisos_post.append(
-                formatear_aviso_recompensa(
-                    recompensa.etiqueta,
-                    bonus_proximo_acierto=recompensa.bonus_proximo_acierto,
-                )
-            )
-        if er.pregunta_final_jefe:
-            er.pregunta_final_jefe = False
-            candidatas = recompensas_completar_jefe_resistencia(
-                er, estado, numero_pregunta=indice_pregunta
-            )
-            otorgadas: list[EventoRecompensaResistencia] = []
-            for recompensa in candidatas:
-                if _otorgar_recompensa_resistencia(
-                    estado, er, recompensa, familias_recompensa
-                ):
-                    otorgadas.append(recompensa)
-            if otorgadas:
-                avisos_post.append(formatear_aviso_botin_jefe_resistencia(otorgadas))
-    elif fallo:
-        er.registrar_fallo()
-        if er.pregunta_final_jefe:
-            er.pregunta_final_jefe = False
-
-    avisos_post.extend(
-        procesar_post_turno_resistencia(er, acierto=acierto, numero_pregunta=indice_pregunta)
+    feedback = _marcar_sin_vidas_si_aplica(
+        feedback, estado, fallo=fallo, fin_apuesta=fin_apuesta
     )
-
-    if acierto and er.apuesta_activa:
-        msg = feedback.mensaje
-        if msg.startswith("Correcto"):
-            extras_apuesta: list[str] = []
-            if mult_apuesta > 1:
-                extras_apuesta.append(f"×{mult_apuesta}")
-            r = er.apuesta_activa.recompensa
-            if r.delta_vidas > 0:
-                extras_apuesta.append(f"+{r.delta_vidas} vida" + ("s" if r.delta_vidas > 1 else ""))
-            if r.powerup_id or r.powerup_aleatorio:
-                extras_apuesta.append("objeto")
-            if extras_apuesta:
-                feedback = replace(
-                    feedback,
-                    mensaje=f"{msg} (apuesta: {', '.join(extras_apuesta)})",
-                )
+    avisos_post = _avisos_post_respuesta_resistencia(
+        estado,
+        er,
+        acierto=acierto,
+        fallo=fallo,
+        indice_pregunta=indice_pregunta,
+        avisos_apuesta_fallo=avisos_apuesta_fallo,
+    )
+    if acierto:
+        feedback = _enriquecer_mensaje_apuesta_acierto(
+            feedback, er, mult_apuesta=mult_apuesta
+        )
 
     return ResultadoTurnoResistencia(
         feedback=feedback,

@@ -741,46 +741,38 @@ def materias_ordenadas(materias_orden: list[str]) -> list[str]:
     return list(materias_orden)
 
 
-def defectos_config(
-    opciones: tuple[OpcionPreset, ...],
+def _defecto_valor_opcion(
+    op: OpcionPreset,
     *,
     materias_meta: dict[str, dict[str, str]],
     materias_orden: list[str],
-    path_plantillas: Path | None = None,
-    perfil=None,
-) -> ConfigPresetHistoria:
-    valores: dict[str, Any] = {}
-    exclusion = tiene_exclusion_periodo_curso_semestre(opciones)
-    for op in opciones:
-        if op.defecto is not None:
-            valores[op.id] = op.defecto
-        elif op.tipo == "materia" and materias_orden:
-            valores[op.id] = materias_orden[0]
-        elif op.tipo == "curso" and (op.obligatorio or not exclusion):
-            cursos = cursos_disponibles(materias_meta)
-            if cursos:
-                valores[op.id] = cursos[0]
-        elif op.tipo == "grupo":
-            if op.defecto is not None:
-                valores[op.id] = op.defecto
-            elif op.obligatorio:
-                valores[op.id] = "1"
-        elif op.tipo == "periodo" and op.defecto is None and not exclusion:
-            periodos = periodos_academicos(materias_meta)
-            if periodos:
-                valores[op.id] = periodos[0][0]
-    if exclusion:
-        if valores.get("periodo"):
-            valores.pop("curso", None)
-            valores.pop("semestre", None)
-        elif valores.get("curso") or valores.get("semestre"):
-            valores.pop("periodo", None)
-    if valores.get("grupo"):
-        valores.pop("periodo", None)
-        valores.pop("curso", None)
-        valores.pop("semestre", None)
-    elif _tiene_filtro_curricular(valores):
-        valores.pop("grupo", None)
+    exclusion: bool,
+) -> Any | None:
+    if op.defecto is not None:
+        return op.defecto
+    if op.tipo == "materia" and materias_orden:
+        return materias_orden[0]
+    if op.tipo == "curso" and (op.obligatorio or not exclusion):
+        cursos = cursos_disponibles(materias_meta)
+        return cursos[0] if cursos else None
+    if op.tipo == "grupo":
+        if op.obligatorio:
+            return "1"
+        return None
+    if op.tipo == "periodo" and op.defecto is None and not exclusion:
+        periodos = periodos_academicos(materias_meta)
+        return periodos[0][0] if periodos else None
+    return None
+
+
+def _aplicar_defectos_especiales(
+    valores: dict[str, Any],
+    opciones: tuple[OpcionPreset, ...],
+    *,
+    materias_meta: dict[str, dict[str, str]],
+    path_plantillas: Path | None,
+    perfil,
+) -> None:
     if any(o.id == "enfoque" for o in opciones):
         op_nm = next((o for o in opciones if o.id == "n_materias"), None)
         plantilla_max = op_nm.max if op_nm and op_nm.max is not None else 40
@@ -802,18 +794,42 @@ def defectos_config(
         ):
             plantillas = cargar_plantillas_materia(path_plantillas, str(materia))
             ajustar_n_preguntas_examen_asignatura(valores, opciones, plantillas)
+
+
+def defectos_config(
+    opciones: tuple[OpcionPreset, ...],
+    *,
+    materias_meta: dict[str, dict[str, str]],
+    materias_orden: list[str],
+    path_plantillas: Path | None = None,
+    perfil=None,
+) -> ConfigPresetHistoria:
+    valores: dict[str, Any] = {}
+    exclusion = tiene_exclusion_periodo_curso_semestre(opciones)
+    for op in opciones:
+        valor = _defecto_valor_opcion(
+            op,
+            materias_meta=materias_meta,
+            materias_orden=materias_orden,
+            exclusion=exclusion,
+        )
+        if valor is not None:
+            valores[op.id] = valor
+    _aplicar_exclusion_ambito_valores(valores, opciones)
+    _aplicar_defectos_especiales(
+        valores,
+        opciones,
+        materias_meta=materias_meta,
+        path_plantillas=path_plantillas,
+        perfil=perfil,
+    )
     return ConfigPresetHistoria(valores=valores)
 
 
-def validar_config(
+def _aplicar_exclusion_ambito_valores(
+    valores: dict[str, Any],
     opciones: tuple[OpcionPreset, ...],
-    config: ConfigPresetHistoria,
-    *,
-    materias_meta: dict[str, dict[str, str]],
-    preset_id: str | None = None,
-    plantillas_materia: list[dict] | None = None,
-) -> ConfigPresetHistoria:
-    valores = dict(config.valores)
+) -> None:
     if tiene_exclusion_periodo_curso_semestre(opciones):
         if valores.get("periodo"):
             valores.pop("curso", None)
@@ -826,104 +842,229 @@ def validar_config(
         valores.pop("semestre", None)
     elif _tiene_filtro_curricular(valores):
         valores.pop("grupo", None)
+
+
+def _limites_entero_config(
+    op: OpcionPreset,
+    valores: dict[str, Any],
+    *,
+    materias_meta: dict[str, dict[str, str]],
+    preset_id: str | None,
+    plantillas_materia: list[dict] | None,
+) -> tuple[int, int]:
+    min_v = op.min if op.min is not None else 0
+    max_v = op.max if op.max is not None else 9999
+    if op.id == "n_materias":
+        min_v, max_v = limites_n_materias(
+            op,
+            valores,
+            materias_meta=materias_meta,
+            preset_id=preset_id,
+        )
+        if max_v <= 0:
+            raise ValueError(
+                f"No se puede montar un examen de al menos {MIN_PREGUNTAS_PARTIDA} "
+                "preguntas con el ámbito elegido."
+            )
+    elif op.id == "n_preguntas":
+        min_v, max_v = limites_n_preguntas(
+            op,
+            valores,
+            plantillas_materia=plantillas_materia,
+        )
+        if max_v <= 0:
+            raise ValueError(
+                f"No hay suficientes plantillas para un examen de al menos "
+                f"{MIN_PREGUNTAS_PARTIDA} preguntas con la materia y el tipo de preguntas "
+                "elegidos."
+            )
+    elif op.id == "tiempo_total_min":
+        max_v = max_tiempo_total_min(op, valores, preset_id=preset_id)
+    return min_v, max_v
+
+
+def _validar_opcion_entero(
+    op: OpcionPreset,
+    valores: dict[str, Any],
+    raw: Any,
+    *,
+    materias_meta: dict[str, dict[str, str]],
+    preset_id: str | None,
+    plantillas_materia: list[dict] | None,
+) -> None:
+    if raw is None or raw == "":
+        if op.obligatorio:
+            raise ValueError(f"Falta {op.etiqueta}.")
+        valores[op.id] = op.defecto if op.defecto is not None else 0
+        return
+    n = int(raw)
+    min_v, max_v = _limites_entero_config(
+        op,
+        valores,
+        materias_meta=materias_meta,
+        preset_id=preset_id,
+        plantillas_materia=plantillas_materia,
+    )
+    if not (min_v <= n <= max_v):
+        raise ValueError(f"{op.etiqueta}: valor entre {min_v} y {max_v}.")
+    valores[op.id] = n
+
+
+def _validar_opcion_curso(
+    op: OpcionPreset,
+    valores: dict[str, Any],
+    raw: Any,
+    *,
+    materias_meta: dict[str, dict[str, str]],
+    preset_id: str | None,
+) -> None:
+    if not raw:
+        if op.obligatorio or (
+            preset_id == "simulacro" and _simulacro_ambito_curso_completo(valores)
+        ):
+            raise ValueError(f"Elige {op.etiqueta.lower()}.")
+    elif raw not in cursos_disponibles(materias_meta):
+        raise ValueError(f"Curso no válido: {raw!r}.")
+    else:
+        valores[op.id] = str(raw)
+
+
+def _validar_opcion_semestre(
+    op: OpcionPreset,
+    valores: dict[str, Any],
+    raw: Any,
+    *,
+    materias_meta: dict[str, dict[str, str]],
+) -> None:
+    curso = valores.get("curso")
+    if not raw:
+        if op.obligatorio:
+            if not curso:
+                raise ValueError("Indica el curso antes del semestre.")
+            raise ValueError(f"Elige {op.etiqueta.lower()}.")
+        return
+    semestre = str(raw)
+    if curso:
+        if semestre not in semestres_para_curso(materias_meta, str(curso)):
+            raise ValueError(f"Semestre no válido para el curso {curso}.")
+    elif semestre not in semestres_disponibles(materias_meta):
+        raise ValueError(f"Semestre no válido: {semestre!r}.")
+    valores[op.id] = semestre
+
+
+def _validar_opcion_periodo(
+    op: OpcionPreset,
+    valores: dict[str, Any],
+    raw: Any,
+    *,
+    materias_meta: dict[str, dict[str, str]],
+) -> None:
+    if not raw:
+        if op.obligatorio:
+            raise ValueError(f"Elige {op.etiqueta.lower()}.")
+    elif not periodo_valido(materias_meta, str(raw)):
+        raise ValueError(f"Periodo no válido: {raw!r} (use curso-semestre, p. ej. 3-2).")
+    else:
+        valores[op.id] = str(raw)
+
+
+def _validar_opcion_grupo(
+    op: OpcionPreset,
+    valores: dict[str, Any],
+    raw: Any,
+) -> None:
+    if not raw:
+        if op.obligatorio:
+            raise ValueError(f"Elige {op.etiqueta.lower()}.")
+    elif str(raw) not in GRUPOS_TEMATICOS:
+        raise ValueError(f"Grupo no válido: {raw!r}.")
+    else:
+        valores[op.id] = str(raw)
+
+
+def _validar_opcion_materia(
+    op: OpcionPreset,
+    valores: dict[str, Any],
+    raw: Any,
+    *,
+    materias_meta: dict[str, dict[str, str]],
+) -> None:
+    if not raw:
+        raise ValueError("Elige una materia.")
+    if str(raw) not in materias_meta:
+        raise ValueError(f"Materia no válida: {raw!r}.")
+    valores[op.id] = str(raw)
+
+
+def _validar_opcion_eleccion(
+    op: OpcionPreset,
+    valores: dict[str, Any],
+    raw: Any,
+) -> None:
+    if not raw:
+        valores[op.id] = op.defecto or (op.valores[0][0] if op.valores else "")
+    elif op.valores and str(raw) not in {v for v, _ in op.valores}:
+        raise ValueError(f"Opción no válida para {op.etiqueta}.")
+    else:
+        valores[op.id] = str(raw)
+
+
+def _validar_opcion_config(
+    op: OpcionPreset,
+    valores: dict[str, Any],
+    *,
+    materias_meta: dict[str, dict[str, str]],
+    preset_id: str | None,
+    plantillas_materia: list[dict] | None,
+) -> None:
+    raw = valores.get(op.id)
+    if op.tipo == "entero":
+        _validar_opcion_entero(
+            op,
+            valores,
+            raw,
+            materias_meta=materias_meta,
+            preset_id=preset_id,
+            plantillas_materia=plantillas_materia,
+        )
+    elif op.tipo == "curso":
+        _validar_opcion_curso(
+            op, valores, raw, materias_meta=materias_meta, preset_id=preset_id
+        )
+    elif op.tipo == "semestre":
+        _validar_opcion_semestre(op, valores, raw, materias_meta=materias_meta)
+    elif op.tipo == "periodo":
+        _validar_opcion_periodo(op, valores, raw, materias_meta=materias_meta)
+    elif op.tipo == "grupo":
+        _validar_opcion_grupo(op, valores, raw)
+    elif op.tipo == "materia":
+        _validar_opcion_materia(op, valores, raw, materias_meta=materias_meta)
+    elif op.tipo == "eleccion":
+        _validar_opcion_eleccion(op, valores, raw)
+
+
+def validar_config(
+    opciones: tuple[OpcionPreset, ...],
+    config: ConfigPresetHistoria,
+    *,
+    materias_meta: dict[str, dict[str, str]],
+    preset_id: str | None = None,
+    plantillas_materia: list[dict] | None = None,
+) -> ConfigPresetHistoria:
+    valores = dict(config.valores)
+    _aplicar_exclusion_ambito_valores(valores, opciones)
     for op in opciones:
         if filtro_ambito_bloqueado(
             op.id, valores, opciones, preset_id=preset_id
         ):
             continue
-        raw = valores.get(op.id)
-        if op.tipo == "entero":
-            if raw is None or raw == "":
-                if op.obligatorio:
-                    raise ValueError(f"Falta {op.etiqueta}.")
-                valores[op.id] = op.defecto if op.defecto is not None else 0
-                continue
-            n = int(raw)
-            min_v = op.min if op.min is not None else 0
-            max_v = op.max if op.max is not None else 9999
-            if op.id == "n_materias":
-                min_v, max_v = limites_n_materias(
-                    op,
-                    valores,
-                    materias_meta=materias_meta,
-                    preset_id=preset_id,
-                )
-                if max_v <= 0:
-                    raise ValueError(
-                        f"No se puede montar un examen de al menos {MIN_PREGUNTAS_PARTIDA} "
-                        "preguntas con el ámbito elegido."
-                    )
-            elif op.id == "n_preguntas":
-                min_v, max_v = limites_n_preguntas(
-                    op,
-                    valores,
-                    plantillas_materia=plantillas_materia,
-                )
-                if max_v <= 0:
-                    raise ValueError(
-                        f"No hay suficientes plantillas para un examen de al menos "
-                        f"{MIN_PREGUNTAS_PARTIDA} preguntas con la materia y el tipo de preguntas "
-                        "elegidos."
-                    )
-            elif op.id == "tiempo_total_min":
-                max_v = max_tiempo_total_min(op, valores, preset_id=preset_id)
-            if not (min_v <= n <= max_v):
-                raise ValueError(f"{op.etiqueta}: valor entre {min_v} y {max_v}.")
-            valores[op.id] = n
-        elif op.tipo == "curso":
-            if not raw:
-                if op.obligatorio or (
-                    preset_id == "simulacro" and _simulacro_ambito_curso_completo(valores)
-                ):
-                    raise ValueError(f"Elige {op.etiqueta.lower()}.")
-            elif raw not in cursos_disponibles(materias_meta):
-                raise ValueError(f"Curso no válido: {raw!r}.")
-            else:
-                valores[op.id] = str(raw)
-        elif op.tipo == "semestre":
-            curso = valores.get("curso")
-            if not raw:
-                if op.obligatorio:
-                    if not curso:
-                        raise ValueError("Indica el curso antes del semestre.")
-                    raise ValueError(f"Elige {op.etiqueta.lower()}.")
-            else:
-                semestre = str(raw)
-                if curso:
-                    if semestre not in semestres_para_curso(materias_meta, str(curso)):
-                        raise ValueError(f"Semestre no válido para el curso {curso}.")
-                elif semestre not in semestres_disponibles(materias_meta):
-                    raise ValueError(f"Semestre no válido: {semestre!r}.")
-                valores[op.id] = semestre
-        elif op.tipo == "periodo":
-            if not raw:
-                if op.obligatorio:
-                    raise ValueError(f"Elige {op.etiqueta.lower()}.")
-            elif not periodo_valido(materias_meta, str(raw)):
-                raise ValueError(f"Periodo no válido: {raw!r} (use curso-semestre, p. ej. 3-2).")
-            else:
-                valores[op.id] = str(raw)
-        elif op.tipo == "grupo":
-            if not raw:
-                if op.obligatorio:
-                    raise ValueError(f"Elige {op.etiqueta.lower()}.")
-            elif str(raw) not in GRUPOS_TEMATICOS:
-                raise ValueError(f"Grupo no válido: {raw!r}.")
-            else:
-                valores[op.id] = str(raw)
-        elif op.tipo == "materia":
-            if not raw:
-                raise ValueError("Elige una materia.")
-            if str(raw) not in materias_meta:
-                raise ValueError(f"Materia no válida: {raw!r}.")
-            valores[op.id] = str(raw)
-        elif op.tipo == "eleccion":
-            if not raw:
-                valores[op.id] = op.defecto or (op.valores[0][0] if op.valores else "")
-            elif op.valores and str(raw) not in {v for v, _ in op.valores}:
-                raise ValueError(f"Opción no válida para {op.etiqueta}.")
-            else:
-                valores[op.id] = str(raw)
+        _validar_opcion_config(
+            op,
+            valores,
+            materias_meta=materias_meta,
+            preset_id=preset_id,
+            plantillas_materia=plantillas_materia,
+        )
     validar_coherencia_filtros_ambito(opciones, valores)
     return ConfigPresetHistoria(valores=valores)
 

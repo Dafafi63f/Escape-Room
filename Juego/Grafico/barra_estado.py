@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import pygame
 
 from Comun.linea_estado_ui import (
@@ -22,12 +24,29 @@ _GAP_EMOJI_TEXTO = 4
 _GAP_ENTRE_CHIPS = 12
 
 __all__ = [
+    "DatosBarraEstadoPartida",
     "SegmentoEstado",
     "dibujar_estado_partida_en_barra",
     "dibujar_linea_estado_con_iconos",
     "formatear_linea_estado",
     "segmentos_linea_estado",
 ]
+
+
+@dataclass(frozen=True)
+class DatosBarraEstadoPartida:
+    """Campos opcionales de la barra de estado de partida."""
+
+    segundos_pregunta_restantes: int | None = None
+    vidas_max: int | None = None
+    numero_pregunta: int | None = None
+    racha: int | None = None
+    progreso_puerta: str | None = None
+    progreso_sala: str | None = None
+    mostrar_tiempo_activo: bool = True
+    desafio_bloque_texto: str | None = None
+    bloque_filtro_texto: str | None = None
+    efectos_puerta: tuple[str, ...] = ()
 
 
 def _emojis_activos() -> bool:
@@ -155,18 +174,11 @@ def dibujar_estado_partida_en_barra(
     x_centro_min: int,
     x_centro_max: int,
     y: int | None = None,
-    segundos_pregunta_restantes: int | None = None,
-    vidas_max: int | None = None,
-    numero_pregunta: int | None = None,
-    racha: int | None = None,
-    progreso_puerta: str | None = None,
-    progreso_sala: str | None = None,
-    mostrar_tiempo_activo: bool = True,
-    desafio_bloque_texto: str | None = None,
-    bloque_filtro_texto: str | None = None,
-    efectos_puerta: tuple[str, ...] = (),
+    datos: DatosBarraEstadoPartida | None = None,
 ) -> None:
     """Atajo: segmentos + dibujo centrado en la zona disponible."""
+    if datos is None:
+        datos = DatosBarraEstadoPartida()
     if y is None:
         y = Y_ICONOS_FIJOS + max(0, (alto_icono_fijo(fuentes["menu"]) - fuentes["pequena"].get_height()) // 2)
     ancho_centro = max(80, x_centro_max - x_centro_min)
@@ -174,16 +186,16 @@ def dibujar_estado_partida_en_barra(
     segmentos = segmentos_linea_estado(
         estado,
         progreso,
-        segundos_pregunta_restantes=segundos_pregunta_restantes,
-        vidas_max=vidas_max,
-        numero_pregunta=numero_pregunta,
-        racha=racha,
-        progreso_puerta=progreso_puerta,
-        progreso_sala=progreso_sala,
-        mostrar_tiempo_activo=mostrar_tiempo_activo,
-        desafio_bloque_texto=desafio_bloque_texto,
-        bloque_filtro_texto=bloque_filtro_texto,
-        efectos_puerta=efectos_puerta,
+        segundos_pregunta_restantes=datos.segundos_pregunta_restantes,
+        vidas_max=datos.vidas_max,
+        numero_pregunta=datos.numero_pregunta,
+        racha=datos.racha,
+        progreso_puerta=datos.progreso_puerta,
+        progreso_sala=datos.progreso_sala,
+        mostrar_tiempo_activo=datos.mostrar_tiempo_activo,
+        desafio_bloque_texto=datos.desafio_bloque_texto,
+        bloque_filtro_texto=datos.bloque_filtro_texto,
+        efectos_puerta=datos.efectos_puerta,
     )
     fuente_emoji = fuentes.get("icono_emoji")
     if fuente_emoji is None:

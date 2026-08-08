@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from Comun.config_historia import ConfigPresetHistoria, validar_config
@@ -20,6 +21,7 @@ from Comun.reglas import ReglasPartida
 from Comun.semillas import resolver_semillas_partida
 from Comun.rutas import resolver_presets
 from Comun.generador_examen_historia import (
+    OpcionesGeneracionExamen,
     PlanExamen,
     generar_examen,
     resolver_stats_para_generador,
@@ -44,25 +46,28 @@ def cargar_catalogo_historia(perfil=None) -> list[PresetHistoria]:
     return cargar_presets_historia(resolver_presets(), perfil=perfil)
 
 
-def _kwargs_generador_examen(
+def _opciones_generador_examen(
     datos: DatosJuego,
     preset: PresetHistoria,
     cfg: ConfigPresetHistoria,
-) -> dict:
-    kwargs = argumentos_generador(
+) -> OpcionesGeneracionExamen:
+    opciones = argumentos_generador(
         preset,
         cfg,
         materias_meta=datos.materias_meta,
         perfil_datos=datos.perfil,
     )
-    if kwargs.get("usar_plantillas_materia"):
-        materia = kwargs.get("materia_fija")
+    if opciones.usar_plantillas_materia:
+        materia = opciones.materia_fija
         if materia and datos.path_plantillas_json and datos.perfil.tiene_plantillas:
-            kwargs["plantillas_materia"] = cargar_plantillas_materia(
-                datos.path_plantillas_json,
-                materia,
+            opciones = replace(
+                opciones,
+                plantillas_materia=cargar_plantillas_materia(
+                    datos.path_plantillas_json,
+                    materia,
+                ),
             )
-    return kwargs
+    return opciones
 
 
 def preparar_examen_dirigido_sesion(
@@ -92,11 +97,13 @@ def preparar_examen_dirigido_sesion(
     cfg = config
     sanitizar_estrategia_config(cfg, datos.perfil)
     perfiles = perfiles_fallo_desde_registros(registros_acum)
-    kwargs = _kwargs_generador_examen(datos, preset, cfg)
-    kwargs["usar_analisis_historico"] = False
+    opciones = replace(
+        _opciones_generador_examen(datos, preset, cfg),
+        usar_analisis_historico=False,
+    )
     plantillas_materia = None
-    if kwargs.get("usar_plantillas_materia"):
-        materia = kwargs.get("materia_fija")
+    if opciones.usar_plantillas_materia:
+        materia = opciones.materia_fija
         if materia and datos.path_plantillas_json and datos.perfil.tiene_plantillas:
             plantillas_materia = cargar_plantillas_materia(
                 datos.path_plantillas_json,
@@ -110,7 +117,7 @@ def preparar_examen_dirigido_sesion(
         plantillas_materia=plantillas_materia,
     )
     orden_preguntas = resolver_orden_preguntas(preset, cfg)
-    kwargs["orden_preguntas"] = orden_preguntas
+    opciones = replace(opciones, orden_preguntas=orden_preguntas)
     preguntas_excluir = cadena_actualizada.preguntas_en_ventana_exclusion()
     preguntas_ultima = [r.pregunta for r in registros_sesion]
 
@@ -130,12 +137,14 @@ def preparar_examen_dirigido_sesion(
                 datos.preguntas,
                 materias_orden=orden,
                 materias_meta=datos.materias_meta,
-                stats={},
-                semilla=semilla_intento,
-                registros_dirigido=registros_acum,
-                preguntas_excluir=excluir,
-                perfiles_fallo=perfiles_intento,
-                **kwargs,
+                opciones=replace(
+                    opciones,
+                    stats={},
+                    semilla=semilla_intento,
+                    registros_dirigido=registros_acum,
+                    preguntas_excluir=excluir,
+                    perfiles_fallo=perfiles_intento,
+                ),
             )
             break
         except ValueError as exc:
@@ -218,10 +227,12 @@ def preparar_partida_historia(
         datos.preguntas,
         materias_orden=orden,
         materias_meta=datos.materias_meta,
-        stats=stats,
-        semilla=semilla_partida,
-        semilla_contenido=semilla_contenido_generador,
-        **(_kwargs_generador_examen(datos, preset, cfg)),
+        opciones=replace(
+            _opciones_generador_examen(datos, preset, cfg),
+            stats=stats,
+            semilla=semilla_partida,
+            semilla_contenido=semilla_contenido_generador,
+        ),
     )
     reglas = aplicar_preset(preset, cfg)
     return plan, reglas

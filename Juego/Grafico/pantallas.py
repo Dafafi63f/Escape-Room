@@ -7,6 +7,7 @@ from __future__ import annotations
 import random
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import pygame
@@ -53,7 +54,7 @@ from Grafico.ui import (
     rect_boton_etiqueta,
     rects_botones_apilados,
 )
-from Grafico.barra_estado import dibujar_estado_partida_en_barra
+from Grafico.barra_estado import DatosBarraEstadoPartida, dibujar_estado_partida_en_barra
 from Grafico.feedback_partida import (
     dibujar_feedback_partida,
     feedback_debe_avanzar,
@@ -347,6 +348,20 @@ def _segundos_pregunta_restantes(inicio: float, limite: int | None) -> int | Non
     return max(0, int(limite - (time.monotonic() - inicio)))
 
 
+@dataclass(frozen=True)
+class OpcionesPartidaLibre:
+    """Opciones opcionales al crear una partida en modo libre."""
+
+    infinito: bool = False
+    total_previsto: int | None = None
+    complejidad_min: int = 1
+    complejidad_max: int | None = None
+    niveles_complejidad: frozenset[int] | set[int] | None = None
+    meta_informe: dict | None = None
+    navegacion_fin: NavegacionFinPartida | None = None
+    estrategia_practica: str = "sin_historico"
+
+
 class PartidaModoLibre(Pantalla):
     def __init__(
         self,
@@ -357,37 +372,36 @@ class PartidaModoLibre(Pantalla):
         ir_a: Callable[[Pantalla], None],
         datos: DatosJuego,
         salir_app: Callable[[], None],
-        infinito: bool = False,
-        total_previsto: int | None = None,
-        complejidad_min: int = 1,
-        complejidad_max: int | None = None,
-        niveles_complejidad: frozenset[int] | set[int] | None = None,
-        meta_informe: dict | None = None,
-        navegacion_fin: NavegacionFinPartida | None = None,
-        estrategia_practica: str = "sin_historico",
+        opciones: OpcionesPartidaLibre | None = None,
     ) -> None:
+        opts = opciones or OpcionesPartidaLibre()
         self.nombre = nombre
         self.pool = list(pool)
-        self.estrategia_practica = estrategia_practica
+        self.estrategia_practica = opts.estrategia_practica
         from Comun.pool_libre import peso_pregunta_libre_desde_estrategia
 
         self._peso_pregunta = peso_pregunta_libre_desde_estrategia(
             datos.perfil,
             datos.materias_meta,
-            estrategia_practica,
+            opts.estrategia_practica,
         )
-        self.infinito = infinito
-        self.total = None if infinito else (total_previsto or len(self.pool))
-        if niveles_complejidad is not None:
+        self.infinito = opts.infinito
+        self.total = None if opts.infinito else (opts.total_previsto or len(self.pool))
+        if opts.niveles_complejidad is not None:
             self.niveles_complejidad = normalizar_niveles_seleccionados(
-                niveles_complejidad,
+                opts.niveles_complejidad,
                 self.pool,
             )
         else:
-            rango = set(range(complejidad_min, (complejidad_max or max_complejidad_pool(self.pool)) + 1))
+            rango = set(
+                range(
+                    opts.complejidad_min,
+                    (opts.complejidad_max or max_complejidad_pool(self.pool)) + 1,
+                )
+            )
             self.niveles_complejidad = normalizar_niveles_seleccionados(rango, self.pool)
-        self.meta_informe = meta_informe or {}
-        self.navegacion_fin = navegacion_fin
+        self.meta_informe = opts.meta_informe or {}
+        self.navegacion_fin = opts.navegacion_fin
         self.registros: list = []
         self.ir_a = ir_a
         self.datos = datos
@@ -500,14 +514,18 @@ class PartidaModoLibre(Pantalla):
                 self.inicio_pregunta,
                 self.estado.reglas.tiempo_por_pregunta_seg,
             )
+        kw_progreso = self._kwargs_progreso_barra()
         dibujar_estado_partida_en_barra(
             superficie,
             estado=self.estado,
+            progreso=kw_progreso.get("progreso", ""),
             fuentes=self.fuentes,
             x_centro_min=x_centro_min,
             x_centro_max=x_centro_max,
-            segundos_pregunta_restantes=seg_preg,
-            **self._kwargs_progreso_barra(),
+            datos=DatosBarraEstadoPartida(
+                segundos_pregunta_restantes=seg_preg,
+                numero_pregunta=kw_progreso.get("numero_pregunta"),
+            ),
         )
         if self.nombre and not es_nombre_anonimo(self.nombre):
             nombre_txt = fuente.render(self.nombre, True, COLOR_ACENTO)

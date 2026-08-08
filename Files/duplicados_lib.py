@@ -55,9 +55,16 @@ def _bucket_key(fila: dict) -> str:
     return clave_enunciado(fila)[:40]
 
 
-def pares_duplicados(items: list[tuple[str, dict]]) -> list[tuple[str, str, str]]:
-    """Compara solo candidatos en el mismo bucket léxico (evita O(n²) global)."""
-    out: list[tuple[str, str, str]] = []
+def _indexar_candidatos_duplicados(
+    items: list[tuple[str, dict]],
+) -> tuple[
+    dict[str, list[tuple[str, dict]]],
+    dict[str, list[tuple[str, dict]]],
+    dict[str, list[tuple[str, dict]]],
+    dict[str, list[tuple[str, dict]]],
+    dict[str, list[tuple[str, dict]]],
+    dict[str, list[tuple[str, dict]]],
+]:
     por_enunciado: dict[str, list[tuple[str, dict]]] = defaultdict(list)
     por_bucket: dict[str, list[tuple[str, dict]]] = defaultdict(list)
     por_respuesta: dict[str, list[tuple[str, dict]]] = defaultdict(list)
@@ -82,79 +89,69 @@ def pares_duplicados(items: list[tuple[str, dict]]) -> list[tuple[str, str, str]
         col = clave_esqueleto_colapsado(fila)
         if col and "#" in clave_esqueleto_pregunta(fila):
             por_colapsado[col].append((label, fila))
+    return (
+        por_enunciado,
+        por_bucket,
+        por_respuesta,
+        por_esqueleto,
+        por_familia,
+        por_colapsado,
+    )
 
+
+def _pares_mismo_enunciado(
+    por_enunciado: dict[str, list[tuple[str, dict]]],
+) -> list[tuple[str, str, str]]:
+    out: list[tuple[str, str, str]] = []
     for ids in por_enunciado.values():
         if len(ids) < 2:
             continue
         for i in range(len(ids)):
             for j in range(i + 1, len(ids)):
                 out.append((ids[i][0], ids[j][0], "mismo_enunciado"))
+    return out
 
+
+def _anadir_pares_motivo_grupos(
+    grupos,
+    out: list[tuple[str, str, str]],
+    vistos: set[tuple[str, str]],
+) -> None:
+    for grupo in grupos:
+        if len(grupo) < 2:
+            continue
+        for i in range(len(grupo)):
+            for j in range(i + 1, len(grupo)):
+                par = tuple(sorted((grupo[i][0], grupo[j][0])))
+                if par in vistos:
+                    continue
+                m = motivo_duplicado(grupo[i][1], grupo[j][1])
+                if m:
+                    out.append((grupo[i][0], grupo[j][0], m))
+                    vistos.add(par)
+
+
+def pares_duplicados(items: list[tuple[str, dict]]) -> list[tuple[str, str, str]]:
+    """Compara solo candidatos en el mismo bucket léxico (evita O(n²) global)."""
+    (
+        por_enunciado,
+        por_bucket,
+        por_respuesta,
+        por_esqueleto,
+        por_familia,
+        por_colapsado,
+    ) = _indexar_candidatos_duplicados(items)
+
+    out = _pares_mismo_enunciado(por_enunciado)
     vistos = {tuple(sorted((a, b))) for a, b, _ in out}
-    for grupo in por_familia.values():
-        if len(grupo) < 2:
-            continue
-        for i in range(len(grupo)):
-            for j in range(i + 1, len(grupo)):
-                par = tuple(sorted((grupo[i][0], grupo[j][0])))
-                if par in vistos:
-                    continue
-                m = motivo_duplicado(grupo[i][1], grupo[j][1])
-                if m:
-                    out.append((grupo[i][0], grupo[j][0], m))
-                    vistos.add(par)
-
-    for grupo in por_colapsado.values():
-        if len(grupo) < 2:
-            continue
-        for i in range(len(grupo)):
-            for j in range(i + 1, len(grupo)):
-                par = tuple(sorted((grupo[i][0], grupo[j][0])))
-                if par in vistos:
-                    continue
-                m = motivo_duplicado(grupo[i][1], grupo[j][1])
-                if m:
-                    out.append((grupo[i][0], grupo[j][0], m))
-                    vistos.add(par)
-
-    for grupo in por_esqueleto.values():
-        if len(grupo) < 2:
-            continue
-        for i in range(len(grupo)):
-            for j in range(i + 1, len(grupo)):
-                par = tuple(sorted((grupo[i][0], grupo[j][0])))
-                if par in vistos:
-                    continue
-                m = motivo_duplicado(grupo[i][1], grupo[j][1])
-                if m:
-                    out.append((grupo[i][0], grupo[j][0], m))
-                    vistos.add(par)
-
-    for grupo in por_respuesta.values():
-        if len(grupo) < 2:
-            continue
-        for i in range(len(grupo)):
-            for j in range(i + 1, len(grupo)):
-                par = tuple(sorted((grupo[i][0], grupo[j][0])))
-                if par in vistos:
-                    continue
-                m = motivo_duplicado(grupo[i][1], grupo[j][1])
-                if m:
-                    out.append((grupo[i][0], grupo[j][0], m))
-                    vistos.add(par)
-
-    for grupo in por_bucket.values():
-        if len(grupo) < 2:
-            continue
-        for i in range(len(grupo)):
-            for j in range(i + 1, len(grupo)):
-                par = tuple(sorted((grupo[i][0], grupo[j][0])))
-                if par in vistos:
-                    continue
-                m = motivo_duplicado(grupo[i][1], grupo[j][1])
-                if m:
-                    out.append((grupo[i][0], grupo[j][0], m))
-                    vistos.add(par)
+    for grupos in (
+        por_familia.values(),
+        por_colapsado.values(),
+        por_esqueleto.values(),
+        por_respuesta.values(),
+        por_bucket.values(),
+    ):
+        _anadir_pares_motivo_grupos(grupos, out, vistos)
     return out
 
 

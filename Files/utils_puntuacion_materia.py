@@ -36,8 +36,8 @@ def normalizar(texto: str) -> str:
     t = re.sub(r"[ìíîï]", "i", t)
     t = re.sub(r"[òóôõö]", "o", t)
     t = re.sub(r"[ùúûü]", "u", t)
-    t = re.sub(r"ñ", "n", t)
-    t = re.sub(r"·", "", t)
+    t = t.replace("ñ", "n")
+    t = t.replace("·", "")
     return t
 
 

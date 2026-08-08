@@ -1307,6 +1307,61 @@ def _asegurar_puerta_jefe_viable(
     return candidata
 
 
+def _mejor_puerta_por_eventos(
+    candidata: PuertaEscape,
+    pool: list[Pregunta],
+    *,
+    numero_sala: int,
+    n_salas: int,
+    eventos: list,
+    rasgos_clasica: bool,
+) -> PuertaEscape | None:
+    from Comun.escape_room import PuertaEscape
+
+    mejor: PuertaEscape | None = None
+    mejor_n = 0
+    for evento in eventos:
+        for n in reversed(_TAMANOS_REDUCCION):
+            kwargs = {
+                "n_preguntas": n,
+                "evento": evento,
+            }
+            if rasgos_clasica:
+                kwargs["modificadores"] = ModificadoresPuerta(rasgos=(_RASGO_CLASICA,))
+            prueba = cast(PuertaEscape, replace(candidata, **kwargs))
+            disp = contar_candidatas_puerta(
+                pool, prueba, numero_sala=numero_sala, n_salas=n_salas
+            )
+            if disp >= n and disp > mejor_n:
+                mejor = prueba
+                mejor_n = disp
+    return mejor
+
+
+def _reducir_tamano_puerta(
+    candidata: PuertaEscape,
+    pool: list[Pregunta],
+    *,
+    numero_sala: int,
+    n_salas: int,
+    evento=None,
+) -> PuertaEscape | None:
+    from Comun.escape_room import PuertaEscape
+
+    for n in reversed(_TAMANOS_REDUCCION):
+        if evento is None and n >= candidata.n_preguntas:
+            continue
+        if evento is not None:
+            prueba = cast(
+                PuertaEscape, replace(candidata, n_preguntas=n, evento=evento)
+            )
+        else:
+            prueba = cast(PuertaEscape, replace(candidata, n_preguntas=n))
+        if _puerta_cumple(prueba, pool, numero_sala=numero_sala, n_salas=n_salas):
+            return prueba
+    return None
+
+
 def asegurar_puerta_viable(
     pool: list[Pregunta],
     puerta: PuertaEscape,
@@ -1337,77 +1392,58 @@ def asegurar_puerta_viable(
         )
 
     candidata = puerta
-    from Comun.escape_room import PuertaEscape
-
-    for n in reversed(_TAMANOS_REDUCCION):
-        if n >= candidata.n_preguntas:
-            continue
-        prueba = cast(PuertaEscape, replace(candidata, n_preguntas=n))
-        if _puerta_cumple(prueba, pool, numero_sala=numero_sala, n_salas=n_salas):
-            return prueba
+    reducida = _reducir_tamano_puerta(
+        candidata, pool, numero_sala=numero_sala, n_salas=n_salas
+    )
+    if reducida is not None:
+        return reducida
 
     evento_relajado = _evento_balanceado_desde(candidata.evento)
-    for n in reversed(_TAMANOS_REDUCCION):
-        prueba = cast(
-            PuertaEscape,
-            replace(candidata, n_preguntas=n, evento=evento_relajado),
-        )
-        if _puerta_cumple(prueba, pool, numero_sala=numero_sala, n_salas=n_salas):
-            return prueba
+    reducida = _reducir_tamano_puerta(
+        candidata,
+        pool,
+        numero_sala=numero_sala,
+        n_salas=n_salas,
+        evento=evento_relajado,
+    )
+    if reducida is not None:
+        return reducida
 
     if grupos_pool and _evento_es_grupo(candidata.evento):
-        from Comun.escape_room import PuertaEscape
-
-        mejor: PuertaEscape | None = None
-        mejor_n = 0
-        for grupo in grupos_pool:
-            evento = EventoContenidoInstanciado(
+        eventos_grupo = [
+            EventoContenidoInstanciado(
                 definicion=evento_por_id("puerta_grupo"),
                 grupo=grupo,
             )
-            for n in reversed(_TAMANOS_REDUCCION):
-                prueba = cast(
-                    PuertaEscape,
-                    replace(
-                        candidata,
-                        n_preguntas=n,
-                        evento=evento,
-                        modificadores=ModificadoresPuerta(rasgos=(_RASGO_CLASICA,)),
-                    ),
-                )
-                disp = contar_candidatas_puerta(
-                    pool, prueba, numero_sala=numero_sala, n_salas=n_salas
-                )
-                if disp >= n and disp > mejor_n:
-                    mejor = prueba
-                    mejor_n = disp
+            for grupo in grupos_pool
+        ]
+        mejor = _mejor_puerta_por_eventos(
+            candidata,
+            pool,
+            numero_sala=numero_sala,
+            n_salas=n_salas,
+            eventos=eventos_grupo,
+            rasgos_clasica=True,
+        )
         if mejor is not None:
             return mejor
 
     if materias_pool:
-        mejor = None
-        mejor_n = 0
-        for materia in materias_pool:
-            evento = EventoContenidoInstanciado(
+        eventos_mat = [
+            EventoContenidoInstanciado(
                 definicion=evento_por_id(_PLANTILLA_BALANCEADA),
                 materia=materia,
             )
-            for n in reversed(_TAMANOS_REDUCCION):
-                prueba = cast(
-                    PuertaEscape,
-                    replace(
-                        candidata,
-                        n_preguntas=n,
-                        evento=evento,
-                        modificadores=ModificadoresPuerta(rasgos=(_RASGO_CLASICA,)),
-                    ),
-                )
-                disp = contar_candidatas_puerta(
-                    pool, prueba, numero_sala=numero_sala, n_salas=n_salas
-                )
-                if disp >= n and disp > mejor_n:
-                    mejor = prueba
-                    mejor_n = disp
+            for materia in materias_pool
+        ]
+        mejor = _mejor_puerta_por_eventos(
+            candidata,
+            pool,
+            numero_sala=numero_sala,
+            n_salas=n_salas,
+            eventos=eventos_mat,
+            rasgos_clasica=True,
+        )
         if mejor is not None:
             return mejor
 

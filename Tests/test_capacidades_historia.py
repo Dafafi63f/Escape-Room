@@ -92,9 +92,9 @@ class TestCapacidadesHistoria(unittest.TestCase):
         kwargs = argumentos_generador(
             preset, cfg, materias_meta={}, perfil_datos=perfil
         )
-        self.assertTrue(kwargs["usar_analisis_historico"])
-        self.assertTrue(kwargs["seleccion_plana"])
-        self.assertEqual(kwargs["perfil"], PerfilPedagogico.REFUERZO)
+        self.assertTrue(kwargs.usar_analisis_historico)
+        self.assertTrue(kwargs.seleccion_plana)
+        self.assertEqual(kwargs.perfil, PerfilPedagogico.REFUERZO)
 
     def test_repaso_sin_metadatos_curriculares_oculta_filtros(self) -> None:
         preset = buscar_preset("repaso")

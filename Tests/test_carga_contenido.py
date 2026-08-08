@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import json
 import shutil
 import tempfile
@@ -208,8 +210,8 @@ class TestCargaContenidoPortable(unittest.TestCase):
         kwargs = argumentos_generador(
             preset, cfg, materias_meta=datos.materias_meta, perfil_datos=datos.perfil
         )
-        self.assertTrue(kwargs["seleccion_plana"])
-        self.assertEqual(kwargs["n_preguntas"], 24)
+        self.assertTrue(kwargs.seleccion_plana)
+        self.assertEqual(kwargs.n_preguntas, 24)
 
         plan, _reglas = preparar_partida_historia(datos, preset, cfg)
         self.assertEqual(len(plan.preguntas), 24)
@@ -221,9 +223,7 @@ class TestCargaContenidoPortable(unittest.TestCase):
                 datos.preguntas,
                 materias_orden=orden_materias_juego(datos),
                 materias_meta=datos.materias_meta,
-                semilla=1,
-                semilla_contenido=semilla_dia,
-                **kwargs,
+                opciones=replace(kwargs, semilla=1, semilla_contenido=semilla_dia),
             ).preguntas
         )
         textos_b = tuple(
@@ -232,9 +232,7 @@ class TestCargaContenidoPortable(unittest.TestCase):
                 datos.preguntas,
                 materias_orden=orden_materias_juego(datos),
                 materias_meta=datos.materias_meta,
-                semilla=2,
-                semilla_contenido=semilla_dia,
-                **kwargs,
+                opciones=replace(kwargs, semilla=2, semilla_contenido=semilla_dia),
             ).preguntas
         )
         self.assertEqual(set(textos_a), set(textos_b))
@@ -276,7 +274,7 @@ class TestCargaContenidoPortable(unittest.TestCase):
         kwargs = argumentos_generador(
             preset, cfg, materias_meta=datos.materias_meta, perfil_datos=datos.perfil
         )
-        self.assertTrue(kwargs["seleccion_plana"])
+        self.assertTrue(kwargs.seleccion_plana)
 
         plan_inicial, _ = preparar_partida_historia(datos, preset, cfg)
         registros = [

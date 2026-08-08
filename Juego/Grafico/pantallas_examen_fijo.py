@@ -10,6 +10,7 @@ from __future__ import annotations
 import random
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import pygame
@@ -17,6 +18,7 @@ import pygame
 from Comun.modelos import Pregunta
 from Comun.motor_nucleo import (
     EstadoPartida,
+    NavegacionFinPartida,
     ResultadoRespuesta,
     PresentacionOpcionesPregunta,
     evaluar_respuesta,
@@ -123,7 +125,7 @@ from Grafico.feedback_partida import (
     marcar_inicio_feedback,
     solucion_feedback_grafico,
 )
-from Grafico.barra_estado import dibujar_estado_partida_en_barra
+from Grafico.barra_estado import DatosBarraEstadoPartida, dibujar_estado_partida_en_barra
 from Grafico.arranque_partida import (
     construir_navegacion_fin_partida,
     iniciar_pantalla_partida,
@@ -1006,6 +1008,19 @@ class ConfigOpcionesHistoria(Pantalla):
         return f"Configurar — {self.preset.nombre}"
 
 
+@dataclass(frozen=True)
+class OpcionesPartidaHistoria:
+    """Opciones opcionales al crear una partida de examen fijo / historia."""
+
+    materias_examen: list[str] | None = None
+    config_historia: ConfigPresetHistoria | None = None
+    semilla_partida: int = 0
+    semilla_contenido: int = 0
+    rng_partida: RngPartida | None = None
+    navegacion_fin: NavegacionFinPartida | None = None
+    cadena_dirigido: object | None = None
+
+
 class PartidaModoHistoria(Pantalla):
     """Partida con lista fija de preguntas (preset historia o examen del día)."""
 
@@ -1019,26 +1034,19 @@ class PartidaModoHistoria(Pantalla):
         ir_a: Callable[[Pantalla], None],
         datos: DatosJuego,
         salir_app: Callable[[], None],
-        materias_examen: list[str] | None = None,
-        config_historia: ConfigPresetHistoria | None = None,
-        semilla_partida: int = 0,
-        semilla_contenido: int = 0,
-        rng_partida: RngPartida | None = None,
-        navegacion_fin=None,
-        cadena_dirigido=None,
+        opciones: OpcionesPartidaHistoria | None = None,
     ) -> None:
-        from Comun.motor_nucleo import NavegacionFinPartida
-
+        opts = opciones or OpcionesPartidaHistoria()
         self.nombre = nombre
         self.preset = preset
-        self.config_historia = config_historia or ConfigPresetHistoria()
-        self.semilla_partida = semilla_partida
-        self.semilla_contenido = semilla_contenido or semilla_partida
-        self._rng_partida = rng_partida or crear_rng_partida(semilla_partida)
-        self.navegacion_fin: NavegacionFinPartida | None = navegacion_fin
-        self.cadena_dirigido = cadena_dirigido
+        self.config_historia = opts.config_historia or ConfigPresetHistoria()
+        self.semilla_partida = opts.semilla_partida
+        self.semilla_contenido = opts.semilla_contenido or opts.semilla_partida
+        self._rng_partida = opts.rng_partida or crear_rng_partida(opts.semilla_partida)
+        self.navegacion_fin: NavegacionFinPartida | None = opts.navegacion_fin
+        self.cadena_dirigido = opts.cadena_dirigido
         self.preguntas = preguntas
-        self.materias_examen = materias_examen or []
+        self.materias_examen = opts.materias_examen or []
         self.total = len(preguntas)
         self.ir_a = ir_a
         self.datos = datos
@@ -1307,7 +1315,7 @@ class PartidaModoHistoria(Pantalla):
             x_centro_min=x_centro_min,
             x_centro_max=x_centro_max,
             y=y_estado,
-            segundos_pregunta_restantes=seg_preg,
+            datos=DatosBarraEstadoPartida(segundos_pregunta_restantes=seg_preg),
         )
         pygame.draw.line(
             superficie,
@@ -1546,17 +1554,19 @@ class ResumenHistoriaPartida(ResumenPartida):
                 nombre=self.estado.nombre,
                 preset=self.preset,
                 preguntas=plan.preguntas,
-                materias_examen=plan.materias,
                 reglas=reglas,
                 ir_a=self.ir_a,
                 datos=self.datos,
                 salir_app=self.salir_app,
-                config_historia=self.config_historia,
-                semilla_partida=plan.semilla_partida,
-                semilla_contenido=plan.semilla_contenido,
-                rng_partida=plan.rng,
-                navegacion_fin=self.navegacion_fin,
-                cadena_dirigido=cadena,
+                opciones=OpcionesPartidaHistoria(
+                    materias_examen=plan.materias,
+                    config_historia=self.config_historia,
+                    semilla_partida=plan.semilla_partida,
+                    semilla_contenido=plan.semilla_contenido,
+                    rng_partida=plan.rng,
+                    navegacion_fin=self.navegacion_fin,
+                    cadena_dirigido=cadena,
+                ),
             )
         )
 

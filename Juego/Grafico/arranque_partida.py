@@ -159,7 +159,7 @@ def iniciar_pantalla_preset(
         )
 
     from Grafico.modo_historia import preparar_partida_historia
-    from Grafico.pantallas_examen_fijo import PartidaModoHistoria
+    from Grafico.pantallas_examen_fijo import OpcionesPartidaHistoria, PartidaModoHistoria
 
     plan, reglas = preparar_partida_historia(
         datos,
@@ -177,18 +177,21 @@ def iniciar_pantalla_preset(
         navegacion_fin.contexto_historia.semilla_contenido = plan.semilla_contenido
     if not plan.preguntas:
         raise ValueError("No se pudo generar el examen.")
+
     return PartidaModoHistoria(
         nombre=nombre,
         preset=preset,
         preguntas=plan.preguntas,
-        materias_examen=plan.materias,
         reglas=reglas,
         ir_a=ir_a,
         datos=datos,
         salir_app=salir_app,
-        config_historia=config,
-        semilla_partida=plan.semilla_partida,
-        semilla_contenido=plan.semilla_contenido,
-        rng_partida=plan.rng,
-        navegacion_fin=navegacion_fin,
+        opciones=OpcionesPartidaHistoria(
+            materias_examen=plan.materias,
+            config_historia=config,
+            semilla_partida=plan.semilla_partida,
+            semilla_contenido=plan.semilla_contenido,
+            rng_partida=plan.rng,
+            navegacion_fin=navegacion_fin,
+        ),
     )

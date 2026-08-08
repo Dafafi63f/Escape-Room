@@ -93,17 +93,8 @@ def permutar_abcd_objetivo(row: dict, letra_objetivo: str) -> dict:
     return out
 
 
-def comprobar_orden_canonico_df(df) -> list[str]:
-    import pandas as pd
-
+def _errores_globales_orden(df, temas, n_tgt, n_tipo, tgt_diff, tgt_corr) -> list[str]:
     errs: list[str] = []
-    if not isinstance(df, pd.DataFrame):
-        df = pd.DataFrame(df)
-    temas, _ = cargar_orden_temas()
-    n_tgt = TARGET_TOTAL_PREGUNTAS
-    n_tipo = preguntas_por_tipo_global()
-    tgt_diff = objetivos_dificultad_globales()
-    tgt_corr = objetivos_correcta_por_letra(n_tgt)
     if len(df) != n_tgt:
         errs.append(f"Filas: se esperaban {n_tgt}, hay {len(df)}")
     if set(df["Materia"].unique()) - set(temas):
@@ -125,36 +116,54 @@ def comprobar_orden_canonico_df(df) -> list[str]:
     bad_ciclo = df[corr != esp]
     if len(bad_ciclo):
         errs.append(f"Ciclo Correcta vs Id: {len(bad_ciclo)} filas (muestra Id {bad_ciclo['Id'].head(5).tolist()})")
+    return errs
 
+
+def _errores_bloque_materia(df, tema: str, bi: int, ppm: int, pat_tipo: list[str]) -> list[str]:
+    errs: list[str] = []
+    sub = df[df["Materia"] == tema].copy()
+    if len(sub) != ppm:
+        return [f"{tema!r}: {len(sub)} filas (obj. {ppm})"]
+    sub["_ord"] = sub["Id"].astype(int)
+    sub = sub.sort_values("_ord")
+    tipos = sub["Tipo"].tolist()
+    if tipos != pat_tipo:
+        errs.append(f"{tema!r}: tipo no es {''.join('T' if t == 'Teoria' else 'C' for t in pat_tipo)}: {tipos}")
+    fmd = target_fmd(bi)
+    vc = sub["Dificultad"].value_counts()
+    if vc.get("Facil", 0) != fmd[0] or vc.get("Media", 0) != fmd[1] or vc.get("Dificil", 0) != fmd[2]:
+        errs.append(f"{tema!r}: F/M/D bloque {vc.to_dict()} vs obj. {fmd}")
+    difs_t = [ord_diff(x) for x in sub.iloc[:TEORIA_POR_MATERIA]["Dificultad"]]
+    for i in range(TEORIA_POR_MATERIA - 1):
+        if difs_t[i] > difs_t[i + 1]:
+            errs.append(f"{tema!r}: ladder Teoría roto en pos. {i}: {difs_t}")
+            break
+    difs_c = [ord_diff(x) for x in sub.iloc[TEORIA_POR_MATERIA:ppm]["Dificultad"]]
+    for i in range(CALCULO_POR_MATERIA - 1):
+        if difs_c[i] > difs_c[i + 1]:
+            errs.append(f"{tema!r}: ladder Cálculo roto en pos. {i}: {difs_c}")
+            break
+    slots = list(zip(sub["Tipo"], sub["Dificultad"]))
+    if slots != list(SLOTS_CANONICOS_12):
+        errs.append(f"{tema!r}: estructura distinta de 2FT 2MT 2DT 2FC 2MC 2DC")
+    return errs
+
+
+def comprobar_orden_canonico_df(df) -> list[str]:
+    import pandas as pd
+
+    if not isinstance(df, pd.DataFrame):
+        df = pd.DataFrame(df)
+    temas, _ = cargar_orden_temas()
+    n_tgt = TARGET_TOTAL_PREGUNTAS
+    n_tipo = preguntas_por_tipo_global()
+    tgt_diff = objetivos_dificultad_globales()
+    tgt_corr = objetivos_correcta_por_letra(n_tgt)
+    errs = _errores_globales_orden(df, temas, n_tgt, n_tipo, tgt_diff, tgt_corr)
     ppm = preguntas_por_materia()
     pat_tipo = ["Teoria"] * TEORIA_POR_MATERIA + ["Calculo"] * CALCULO_POR_MATERIA
     for bi, tema in enumerate(temas):
-        sub = df[df["Materia"] == tema].copy()
-        if len(sub) != ppm:
-            errs.append(f"{tema!r}: {len(sub)} filas (obj. {ppm})")
-            continue
-        sub["_ord"] = sub["Id"].astype(int)
-        sub = sub.sort_values("_ord")
-        tipos = sub["Tipo"].tolist()
-        if tipos != pat_tipo:
-            errs.append(f"{tema!r}: tipo no es {''.join('T' if t == 'Teoria' else 'C' for t in pat_tipo)}: {tipos}")
-        fmd = target_fmd(bi)
-        vc = sub["Dificultad"].value_counts()
-        if vc.get("Facil", 0) != fmd[0] or vc.get("Media", 0) != fmd[1] or vc.get("Dificil", 0) != fmd[2]:
-            errs.append(f"{tema!r}: F/M/D bloque {vc.to_dict()} vs obj. {fmd}")
-        difs_t = [ord_diff(x) for x in sub.iloc[:TEORIA_POR_MATERIA]["Dificultad"]]
-        for i in range(TEORIA_POR_MATERIA - 1):
-            if difs_t[i] > difs_t[i + 1]:
-                errs.append(f"{tema!r}: ladder Teoría roto en pos. {i}: {difs_t}")
-                break
-        difs_c = [ord_diff(x) for x in sub.iloc[TEORIA_POR_MATERIA:ppm]["Dificultad"]]
-        for i in range(CALCULO_POR_MATERIA - 1):
-            if difs_c[i] > difs_c[i + 1]:
-                errs.append(f"{tema!r}: ladder Cálculo roto en pos. {i}: {difs_c}")
-                break
-        slots = list(zip(sub["Tipo"], sub["Dificultad"]))
-        if slots != list(SLOTS_CANONICOS_12):
-            errs.append(f"{tema!r}: estructura distinta de 2FT 2MT 2DT 2FC 2MC 2DC")
+        errs.extend(_errores_bloque_materia(df, tema, bi, ppm, pat_tipo))
     return errs
 
 
@@ -296,15 +305,19 @@ def ejecutar_ordenar_ladder() -> int:
     return 0
 
 
-def validar(rows: list[dict], detalle: bool = False, estricto: bool = False) -> tuple[bool, list[str]]:
+def _msgs_conteos_globales(
+    rows: list[dict],
+    *,
+    temas: list[str],
+    tgt_m: int,
+    tgt_tipo: int,
+    tgt_diff: dict,
+    tgt_corr: dict,
+    detalle: bool,
+    estricto: bool,
+) -> list[str]:
     msgs: list[str] = []
     n = len(rows)
-    tgt_m = preguntas_por_materia()
-    tgt_tipo = preguntas_por_tipo_global()
-    tgt_diff = objetivos_dificultad_por_totales(n)
-    tgt_corr = objetivos_correcta_por_letra(n)
-    temas, _ = cargar_orden_temas()
-
     if n != TARGET_TOTAL_PREGUNTAS:
         msgs.append(f"Total: {n} filas (objetivo {TARGET_TOTAL_PREGUNTAS})")
 
@@ -337,23 +350,49 @@ def validar(rows: list[dict], detalle: bool = False, estricto: bool = False) -> 
         for letra in ("A", "B", "C", "D"):
             if por_correcta.get(letra, 0) != tgt_corr[letra]:
                 msgs.append(f"Correcta {letra}: {por_correcta.get(letra, 0)} (objetivo {tgt_corr[letra]})")
+    return msgs
 
+
+def _msgs_detalle_por_materia(rows: list[dict], temas: list[str]) -> list[str]:
+    msgs: list[str] = []
+    for tema in temas:
+        sub = [r for r in rows if materia_de_fila(r) == tema]
+        if len(sub) != 10:
+            continue
+        teo = sum(1 for r in sub if r["Tipo"] == "Teoria")
+        cal = sum(1 for r in sub if r["Tipo"] == "Calculo")
+        if teo != 5 or cal != 5:
+            msgs.append(f"  {tema!r}: {teo} Teoria / {cal} Calculo (objetivo 5/5)")
+
+    n_incoh = sum(1 for r in rows if comparar_con_asignacion(r).debe_sustituir)
+    if n_incoh:
+        msgs.append(
+            f"  Clasificación contenido: {n_incoh} filas con Materia/Tipo/Dificultad "
+            f"incoherentes (python Files/clasificar_pregunta.py --dataset --solo-incoherentes)"
+        )
+    return msgs
+
+
+def validar(rows: list[dict], detalle: bool = False, estricto: bool = False) -> tuple[bool, list[str]]:
+    n = len(rows)
+    tgt_m = preguntas_por_materia()
+    tgt_tipo = preguntas_por_tipo_global()
+    tgt_diff = objetivos_dificultad_por_totales(n)
+    tgt_corr = objetivos_correcta_por_letra(n)
+    temas, _ = cargar_orden_temas()
+
+    msgs = _msgs_conteos_globales(
+        rows,
+        temas=temas,
+        tgt_m=tgt_m,
+        tgt_tipo=tgt_tipo,
+        tgt_diff=tgt_diff,
+        tgt_corr=tgt_corr,
+        detalle=detalle,
+        estricto=estricto,
+    )
     if detalle:
-        for bi, tema in enumerate(temas):
-            sub = [r for r in rows if materia_de_fila(r) == tema]
-            if len(sub) != 10:
-                continue
-            teo = sum(1 for r in sub if r["Tipo"] == "Teoria")
-            cal = sum(1 for r in sub if r["Tipo"] == "Calculo")
-            if teo != 5 or cal != 5:
-                msgs.append(f"  {tema!r}: {teo} Teoria / {cal} Calculo (objetivo 5/5)")
-
-        n_incoh = sum(1 for r in rows if comparar_con_asignacion(r).debe_sustituir)
-        if n_incoh:
-            msgs.append(
-                f"  Clasificación contenido: {n_incoh} filas con Materia/Tipo/Dificultad "
-                f"incoherentes (python Files/clasificar_pregunta.py --dataset --solo-incoherentes)"
-            )
+        msgs.extend(_msgs_detalle_por_materia(rows, temas))
 
     import pandas as pd
 

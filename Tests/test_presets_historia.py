@@ -8,6 +8,8 @@ Secciones:
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import json
 import sys
 import tempfile
@@ -45,7 +47,14 @@ from Comun.presets_historia import (  # noqa: E402
 )
 from Comun.config_historia import ConfigPresetHistoria, ID_ESTRATEGIA_PRACTICA, ORDEN_OPCIONES_HISTORIA, limites_n_materias, opciones_config_historia, validar_config, valores_estrategia_practica  # noqa: E402
 from Comun.presets_historia import PresetHistoria  # noqa: E402
-from Comun.generador_examen_historia import PerfilPedagogico  # noqa: E402
+from Comun.generador_examen_historia import (  # noqa: E402
+    EstadisticaMateria,
+    OpcionesGeneracionExamen,
+    PerfilPedagogico,
+    calcular_pesos_materia,
+    generar_examen,
+    indices_dificultad_ambito,
+)
 from Comun.rutas import (  # noqa: E402
     resolver_dataset,
     resolver_listado_materias,
@@ -54,12 +63,6 @@ from Comun.rutas import (  # noqa: E402
     resolver_presets_historia,
 )
 from Comun.modos_diarios import config_atajo_aleatorio, config_atajo_diario, semilla_examen_dia  # noqa: E402
-from Comun.generador_examen_historia import (  # noqa: E402
-    EstadisticaMateria,
-    calcular_pesos_materia,
-    generar_examen,
-    indices_dificultad_ambito,
-)
 
 
 class TestPresetsHistoria(unittest.TestCase):
@@ -84,16 +87,19 @@ class TestPresetsHistoria(unittest.TestCase):
                 indice_dificultad=round(indice, 3),
             )
 
-    def _kwargs_generador(
+    def _opciones_generador(
         self,
         preset: PresetHistoria,
         cfg: ConfigPresetHistoria,
-    ) -> dict:
+    ) -> OpcionesGeneracionExamen:
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        if kwargs.get("usar_plantillas_materia") and kwargs.get("materia_fija"):
-            kwargs["plantillas_materia"] = cargar_plantillas_materia(
-                resolver_plantillas(),
-                kwargs["materia_fija"],
+        if kwargs.usar_plantillas_materia and kwargs.materia_fija:
+            kwargs = replace(
+                kwargs,
+                plantillas_materia=cargar_plantillas_materia(
+                    resolver_plantillas(),
+                    kwargs.materia_fija,
+                ),
             )
         return kwargs
 
@@ -240,9 +246,7 @@ class TestPresetsHistoria(unittest.TestCase):
                     self.preguntas,
                     materias_orden=self.orden,
                     materias_meta=self.materias_meta,
-                    stats=self.stats,
-                    semilla=semilla_desde_preset(preset) or 42,
-                    **self._kwargs_generador(preset, cfg),
+                    opciones=replace(self._opciones_generador(preset, cfg), stats=self.stats, semilla=semilla_desde_preset(preset) or 42),
                 )
                 self.assertGreater(len(plan.preguntas), 0)
                 self.assertGreater(len(plan.materias), 0)
@@ -253,8 +257,8 @@ class TestPresetsHistoria(unittest.TestCase):
         cfg.valores["estrategia_practica"] = "debilidades"
         cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertEqual(kwargs["perfil"], PerfilPedagogico.REFUERZO)
-        self.assertFalse(kwargs["seleccion_determinista"])
+        self.assertEqual(kwargs.perfil, PerfilPedagogico.REFUERZO)
+        self.assertFalse(kwargs.seleccion_determinista)
 
     def test_simulacro_estrategia_uniforme_es_balanceado(self) -> None:
         preset = next(p for p in self.presets if p.id == "simulacro")
@@ -262,9 +266,9 @@ class TestPresetsHistoria(unittest.TestCase):
         cfg.valores["estrategia_practica"] = "sin_historico"
         cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertEqual(kwargs["perfil"], PerfilPedagogico.BALANCEADO)
-        self.assertFalse(kwargs["seleccion_determinista"])
-        self.assertFalse(kwargs["usar_analisis_historico"])
+        self.assertEqual(kwargs.perfil, PerfilPedagogico.BALANCEADO)
+        self.assertFalse(kwargs.seleccion_determinista)
+        self.assertFalse(kwargs.usar_analisis_historico)
 
     def test_repaso_estrategia_fortalezas(self) -> None:
         preset = next(p for p in self.presets if p.id == "repaso")
@@ -272,8 +276,8 @@ class TestPresetsHistoria(unittest.TestCase):
         cfg.valores["estrategia_practica"] = "fortalezas"
         cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertEqual(kwargs["perfil"], PerfilPedagogico.DESAFIO)
-        self.assertFalse(kwargs["seleccion_determinista"])
+        self.assertEqual(kwargs.perfil, PerfilPedagogico.DESAFIO)
+        self.assertFalse(kwargs.seleccion_determinista)
 
     def test_repasos_sin_opcion_tiempo(self) -> None:
         repasos = {"repaso", "repaso_area"}
@@ -312,9 +316,7 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=42,
-            **argumentos_generador(preset, cfg, materias_meta=self.materias_meta),
+            opciones=replace(argumentos_generador(preset, cfg, materias_meta=self.materias_meta), stats=self.stats, semilla=42),
         )
         self.assertEqual(len(plan.materias), 10)
 
@@ -322,14 +324,12 @@ class TestPresetsHistoria(unittest.TestCase):
         preset = next(p for p in self.presets if p.id == "simulacro")
         cfg = self._validar(preset, self._config_defecto(preset))
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertEqual(kwargs["n_materias"], 5)
+        self.assertEqual(kwargs.n_materias, 5)
         plan = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=7,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=7),
         )
         self.assertEqual(len(plan.materias), 5)
 
@@ -385,14 +385,12 @@ class TestPresetsHistoria(unittest.TestCase):
                     ),
                 )
                 kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-                self.assertEqual(kwargs["orden_preguntas"], "materia")
+                self.assertEqual(kwargs.orden_preguntas, "materia")
                 plan = generar_examen(
                     self.preguntas,
                     materias_orden=self.orden,
                     materias_meta=self.materias_meta,
-                    stats=self.stats,
-                    semilla=11,
-                    **kwargs,
+                    opciones=replace(kwargs, stats=self.stats, semilla=11),
                 )
                 materias_en_preg: list[str] = []
                 for p in plan.preguntas:
@@ -417,17 +415,13 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=42,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=42),
         )
         plan_b = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=42,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=42),
         )
         self.assertEqual(
             [p.texto for p in plan_a.preguntas],
@@ -437,9 +431,7 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=99,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=99),
         )
         self.assertNotEqual(
             [p.texto for p in plan_a.preguntas],
@@ -463,9 +455,7 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=42,
-            **argumentos_generador(preset, cfg, materias_meta=self.materias_meta),
+            opciones=replace(argumentos_generador(preset, cfg, materias_meta=self.materias_meta), stats=self.stats, semilla=42),
         )
         self.assertEqual(len(plan.materias), 5)
 
@@ -491,9 +481,7 @@ class TestPresetsHistoria(unittest.TestCase):
                 self.preguntas,
                 materias_orden=self.orden,
                 materias_meta=self.materias_meta,
-                stats=self.stats,
-                semilla=semilla,
-                **kwargs,
+                opciones=replace(kwargs, stats=self.stats, semilla=semilla),
             )
             conteos = Counter(p.materia for p in plan.preguntas)
             if conteos and max(conteos.values()) != min(conteos.values()):
@@ -513,9 +501,7 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=42,
-            **argumentos_generador(preset, cfg, materias_meta=self.materias_meta),
+            opciones=replace(argumentos_generador(preset, cfg, materias_meta=self.materias_meta), stats=self.stats, semilla=42),
         )
         self.assertEqual(len(plan.materias), 20)
 
@@ -566,9 +552,7 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=42,
-            **argumentos_generador(preset, cfg, materias_meta=self.materias_meta),
+            opciones=replace(argumentos_generador(preset, cfg, materias_meta=self.materias_meta), stats=self.stats, semilla=42),
         )
         self.assertEqual(len(plan.materias), 10)
 
@@ -577,16 +561,14 @@ class TestPresetsHistoria(unittest.TestCase):
         self.assertTrue(preset.usar_plantillas_materia)
         cfg = self._validar(preset, self._config_defecto(preset))
         cfg.valores["estrategia_practica"] = "debilidades"
-        kwargs = self._kwargs_generador(preset, cfg)
-        self.assertTrue(kwargs["usar_analisis_historico"])
-        self.assertEqual(kwargs["n_preguntas"], 12)
+        kwargs = self._opciones_generador(preset, cfg)
+        self.assertTrue(kwargs.usar_analisis_historico)
+        self.assertEqual(kwargs.n_preguntas, 12)
         plan_a = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=1,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=1),
         )
         self.assertEqual(len(plan_a.preguntas), 12)
         tipos = [p.tipo for p in plan_a.preguntas]
@@ -633,14 +615,12 @@ class TestPresetsHistoria(unittest.TestCase):
                         }
                     ),
                 )
-                kwargs = self._kwargs_generador(preset, cfg_max)
+                kwargs = self._opciones_generador(preset, cfg_max)
                 plan = generar_examen(
                     self.preguntas,
                     materias_orden=self.orden,
                     materias_meta=self.materias_meta,
-                    stats=self.stats,
-                    semilla=3,
-                    **kwargs,
+                    opciones=replace(kwargs, stats=self.stats, semilla=3),
                 )
                 self.assertEqual(len(plan.preguntas), max_v)
 
@@ -672,14 +652,12 @@ class TestPresetsHistoria(unittest.TestCase):
                 }
             ),
         )
-        kwargs = self._kwargs_generador(preset, cfg)
+        kwargs = self._opciones_generador(preset, cfg)
         plan = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=7,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=7),
         )
         self.assertGreater(len(plan.preguntas), 0)
         self.assertTrue(all(p.tipo == "Teoria" for p in plan.preguntas))
@@ -693,14 +671,12 @@ class TestPresetsHistoria(unittest.TestCase):
             ),
         )
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertEqual(kwargs["n_materias"], 8)
+        self.assertEqual(kwargs.n_materias, 8)
         plan = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=42,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=42),
         )
         self.assertEqual(len(plan.materias), 8)
 
@@ -710,15 +686,15 @@ class TestPresetsHistoria(unittest.TestCase):
         cfg.valores["estrategia_practica"] = "debilidades"
         cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertEqual(kwargs["perfil"], PerfilPedagogico.REFUERZO)
+        self.assertEqual(kwargs.perfil, PerfilPedagogico.REFUERZO)
         cfg.valores["estrategia_practica"] = "equilibrado"
         cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertEqual(kwargs["perfil"], PerfilPedagogico.BALANCEADO)
+        self.assertEqual(kwargs.perfil, PerfilPedagogico.BALANCEADO)
         cfg.valores["estrategia_practica"] = "fortalezas"
         cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertEqual(kwargs["perfil"], PerfilPedagogico.DESAFIO)
+        self.assertEqual(kwargs.perfil, PerfilPedagogico.DESAFIO)
 
     def test_periodos_academicos_ocho_en_el_grado(self) -> None:
         from Comun.config_historia import parse_periodo, periodos_academicos
@@ -807,9 +783,7 @@ class TestPresetsHistoria(unittest.TestCase):
                         self.preguntas,
                         materias_orden=self.orden,
                         materias_meta=self.materias_meta,
-                        stats=self.stats,
-                        semilla=99,
-                        **argumentos_generador(preset, cfg, materias_meta=self.materias_meta),
+                        opciones=replace(argumentos_generador(preset, cfg, materias_meta=self.materias_meta), stats=self.stats, semilla=99),
                     )
                     self.assertGreater(len(plan.preguntas), 0)
 
@@ -819,14 +793,12 @@ class TestPresetsHistoria(unittest.TestCase):
         cfg.valores["enfoque"] = "teoria"
         cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertEqual(kwargs["tipos_permitidos"], frozenset({"Teoria"}))
+        self.assertEqual(kwargs.tipos_permitidos, frozenset({"Teoria"}))
         plan = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=7,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=7),
         )
         self.assertTrue(all(p.tipo == "Teoria" for p in plan.preguntas))
 
@@ -836,14 +808,12 @@ class TestPresetsHistoria(unittest.TestCase):
         cfg.valores["enfoque"] = "calculo"
         cfg = self._validar(preset, cfg)
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertEqual(kwargs["tipos_permitidos"], frozenset({"Calculo"}))
+        self.assertEqual(kwargs.tipos_permitidos, frozenset({"Calculo"}))
         plan = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=7,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=7),
         )
         self.assertTrue(all(p.tipo == "Calculo" for p in plan.preguntas))
 
@@ -882,15 +852,13 @@ class TestPresetsHistoria(unittest.TestCase):
         preset = next(p for p in self.presets if p.id == "repaso_area")
         cfg = self._validar(preset, self._config_defecto(preset))
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertTrue(kwargs["usar_todas_materias_ambito"])
-        self.assertTrue(kwargs["seleccion_determinista"])
+        self.assertTrue(kwargs.usar_todas_materias_ambito)
+        self.assertTrue(kwargs.seleccion_determinista)
         plan = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=42,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=42),
         )
         grupo = cfg.get_str("grupo")
         esperadas = [
@@ -938,9 +906,7 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=42,
-            **argumentos_generador(repaso, cfg, materias_meta=self.materias_meta),
+            opciones=replace(argumentos_generador(repaso, cfg, materias_meta=self.materias_meta), stats=self.stats, semilla=42),
         )
         self.assertEqual(len(plan.materias), 40)
 
@@ -1000,10 +966,10 @@ class TestPresetsHistoria(unittest.TestCase):
             cfg = self._validar(preset, self._config_defecto(preset))
             cfg.valores["estrategia_practica"] = "debilidades"
             kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-            self.assertTrue(kwargs["usar_analisis_historico"], preset.id)
+            self.assertTrue(kwargs.usar_analisis_historico, preset.id)
             cfg.valores["estrategia_practica"] = "sin_historico"
             kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-            self.assertFalse(kwargs["usar_analisis_historico"], preset.id)
+            self.assertFalse(kwargs.usar_analisis_historico, preset.id)
 
     def test_prioridad_sin_historico_desactiva_ponderacion(self) -> None:
         preset = next(p for p in self.presets if p.id == "repaso")
@@ -1014,7 +980,7 @@ class TestPresetsHistoria(unittest.TestCase):
             ),
         )
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertFalse(kwargs["usar_analisis_historico"])
+        self.assertFalse(kwargs.usar_analisis_historico)
         self.assertEqual(cfg.get_str("estrategia_practica"), "sin_historico")
 
     def test_pesos_practica_no_excluyen_materias(self) -> None:
@@ -1134,18 +1100,13 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=1_001,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=1001),
         )
         plan2 = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=2_002,
-            semilla_contenido=plan1.semilla_contenido,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=2002, semilla_contenido=plan1.semilla_contenido),
         )
         self.assertEqual(plan1.semilla_contenido, 1_001)
         self.assertEqual(plan2.semilla_contenido, 1_001)
@@ -1158,9 +1119,9 @@ class TestPresetsHistoria(unittest.TestCase):
         preset, cfg = self._examen_fijo("diario")
         cfg.valores["estrategia_practica"] = "sin_historico"
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertFalse(kwargs["usar_analisis_historico"])
-        self.assertEqual(kwargs["perfil"], PerfilPedagogico.BALANCEADO)
-        self.assertFalse(kwargs["seleccion_determinista"])
+        self.assertFalse(kwargs.usar_analisis_historico)
+        self.assertEqual(kwargs.perfil, PerfilPedagogico.BALANCEADO)
+        self.assertFalse(kwargs.seleccion_determinista)
 
     def test_examen_fijo_diario_misma_semilla_mismo_plan(self) -> None:
         preset, cfg = self._examen_fijo("diario")
@@ -1174,19 +1135,13 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=42,
-            semilla_contenido=semilla_contenido,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=42, semilla_contenido=semilla_contenido),
         )
         plan_b = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=42,
-            semilla_contenido=semilla_contenido,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=42, semilla_contenido=semilla_contenido),
         )
         self.assertEqual(plan_a.materias, plan_b.materias)
         self.assertEqual(
@@ -1203,19 +1158,13 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=1,
-            semilla_contenido=semilla_contenido,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=1, semilla_contenido=semilla_contenido),
         )
         plan_b = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=99,
-            semilla_contenido=semilla_contenido,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=99, semilla_contenido=semilla_contenido),
         )
         self.assertEqual(
             sorted(p.texto for p in plan_a.preguntas),
@@ -1233,9 +1182,7 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=semilla_examen_dia(date(2026, 6, 18)),
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=semilla_examen_dia(date(2026, 6, 18))),
         )
         n_materias = len(plan.materias)
         ppm = plan.preguntas_por_materia
@@ -1256,9 +1203,7 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=semilla_examen_dia(date(2026, 1, 1)),
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=semilla_examen_dia(date(2026, 1, 1))),
         )
         cursos = {self.materias_meta[m].get("curso") for m in plan.materias}
         semestres = {self.materias_meta[m].get("semestre") for m in plan.materias}
@@ -1272,9 +1217,7 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=semilla_examen_dia(date(2026, 6, 18)),
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=semilla_examen_dia(date(2026, 6, 18))),
         )
         self.assertNotEqual(plan.materias, self.orden[: preset.n_materias])
 
@@ -1292,17 +1235,13 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=semilla,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=semilla),
         )
         plan_b = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=semilla,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=semilla),
         )
         self.assertEqual(plan_a.materias, plan_b.materias)
         self.assertEqual(
@@ -1320,15 +1259,13 @@ class TestPresetsHistoria(unittest.TestCase):
     def test_examen_fijo_aleatorio_orden_por_dificultad(self) -> None:
         preset, cfg = self._examen_fijo("aleatorio")
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertEqual(kwargs["orden_preguntas"], "dificultad")
+        self.assertEqual(kwargs.orden_preguntas, "dificultad")
         semilla = 424242
         plan = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=semilla,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=semilla),
         )
         dificultades = [p.dificultad for p in plan.preguntas]
         orden_dif = {"Facil": 0, "Media": 1, "Dificil": 2}
@@ -1341,9 +1278,7 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=semilla,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=semilla),
         )
         self.assertEqual(
             [p.texto for p in plan.preguntas],
@@ -1358,24 +1293,18 @@ class TestPresetsHistoria(unittest.TestCase):
         self.assertTrue(contenido_examen_estable(preset, cfg=cfg))
         semilla_contenido = semilla_examen_dia(date(2026, 6, 18))
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertEqual(kwargs["orden_preguntas"], "variar")
+        self.assertEqual(kwargs.orden_preguntas, "variar")
         plan_a = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=7,
-            semilla_contenido=semilla_contenido,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=7, semilla_contenido=semilla_contenido),
         )
         plan_b = generar_examen(
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=7,
-            semilla_contenido=semilla_contenido,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=7, semilla_contenido=semilla_contenido),
         )
         self.assertEqual(len(plan_a.preguntas), 24)
         self.assertEqual(
@@ -1392,7 +1321,7 @@ class TestPresetsHistoria(unittest.TestCase):
         self.assertEqual(resolver_orden_preguntas(preset, cfg), "dificultad")
         self.assertFalse(contenido_examen_estable(preset, cfg=cfg))
         kwargs = argumentos_generador(preset, cfg, materias_meta=self.materias_meta)
-        self.assertEqual(kwargs["orden_preguntas"], "dificultad")
+        self.assertEqual(kwargs.orden_preguntas, "dificultad")
         with patch(
             "Comun.semillas.semilla_partida_aleatoria",
             side_effect=[111, 222],
@@ -1417,9 +1346,7 @@ class TestPresetsHistoria(unittest.TestCase):
             self.preguntas,
             materias_orden=self.orden,
             materias_meta=self.materias_meta,
-            stats=self.stats,
-            semilla=424242,
-            **kwargs,
+            opciones=replace(kwargs, stats=self.stats, semilla=424242),
         )
         self.assertEqual(len(plan.preguntas), 24)
 

@@ -126,7 +126,7 @@ from Grafico.feedback_partida import (
     marcar_inicio_feedback,
     solucion_feedback_grafico,
 )
-from Grafico.barra_estado import dibujar_estado_partida_en_barra
+from Grafico.barra_estado import DatosBarraEstadoPartida, dibujar_estado_partida_en_barra
 from Grafico.pantallas import (
     ALTURA_BARRA_PARTIDA,
     ALTO_BOTON_CONTINUAR_PARTIDA,
@@ -1073,12 +1073,14 @@ class PartidaResistencia(Pantalla):
             x_centro_min=x_centro_min,
             x_centro_max=x_centro_max,
             y=y_estado,
-            segundos_pregunta_restantes=seg_preg,
-            vidas_max=self.er.vidas_max,
-            numero_pregunta=numero,
-            racha=self.er.racha,
-            desafio_bloque_texto=self._texto_desafio_bloque_barra(),
-            bloque_filtro_texto=self._texto_bloque_filtro_barra(),
+            datos=DatosBarraEstadoPartida(
+                segundos_pregunta_restantes=seg_preg,
+                vidas_max=self.er.vidas_max,
+                numero_pregunta=numero,
+                racha=self.er.racha,
+                desafio_bloque_texto=self._texto_desafio_bloque_barra(),
+                bloque_filtro_texto=self._texto_bloque_filtro_barra(),
+            ),
         )
         if texto_extra:
             ancho_extra = self._ancho_texto_extra()

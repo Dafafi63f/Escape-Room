@@ -28,10 +28,14 @@ if str(_JUEGO) not in sys.path:
     sys.path.insert(0, str(_JUEGO))
 
 from Comun.datos import cargar_materias, cargar_orden_materias, cargar_preguntas  # noqa: E402
-from Comun.generador_examen_historia import PerfilPedagogico, describir_perfil  # noqa: E402
+from Comun.generador_examen_historia import (  # noqa: E402
+    OpcionesGeneracionExamen,
+    PerfilPedagogico,
+    describir_perfil,
+    generar_examen,
+)
 from Comun.config_historia import validar_config  # noqa: E402
 from Comun.presets_historia import argumentos_generador, cargar_presets_historia, config_defecto  # noqa: E402
-from Comun.generador_examen_historia import generar_examen  # noqa: E402
 from Comun.modelos import BancoPreguntas  # noqa: E402
 from Comun.rutas import resolver_dataset, resolver_listado_materias, resolver_presets  # noqa: E402
 
@@ -96,17 +100,17 @@ def main(argv: list[str] | None = None) -> int:
             materias_meta=materias_meta,
         )
         gen_kwargs = argumentos_generador(preset, cfg, materias_meta=materias_meta)
-        perfil = gen_kwargs["perfil"]
-        n_materias = gen_kwargs["n_materias"]
-        curso_filtro = gen_kwargs["curso_filtro"]
-        semestre_filtro = gen_kwargs["semestre_filtro"]
-        grupo_filtro = gen_kwargs["grupo_filtro"]
-        preguntas_por_materia = gen_kwargs.get("preguntas_por_materia")
-        tipos_permitidos = gen_kwargs.get("tipos_permitidos")
-        usar_todas = gen_kwargs["usar_todas_materias_ambito"]
-        seleccion_det = gen_kwargs["seleccion_determinista"]
-        materia_fija = gen_kwargs.get("materia_fija")
-        usar_ponderacion = bool(gen_kwargs.get("usar_analisis_historico", False))
+        perfil = gen_kwargs.perfil
+        n_materias = gen_kwargs.n_materias
+        curso_filtro = gen_kwargs.curso_filtro
+        semestre_filtro = gen_kwargs.semestre_filtro
+        grupo_filtro = gen_kwargs.grupo_filtro
+        preguntas_por_materia = gen_kwargs.preguntas_por_materia
+        tipos_permitidos = gen_kwargs.tipos_permitidos
+        usar_todas = gen_kwargs.usar_todas_materias_ambito
+        seleccion_det = gen_kwargs.seleccion_determinista
+        materia_fija = gen_kwargs.materia_fija
+        usar_ponderacion = bool(gen_kwargs.usar_analisis_historico)
         titulo_perfil = f"{preset.nombre} ({preset.id})"
     else:
         perfil_val = args.perfil or PerfilPedagogico.BALANCEADO.value
@@ -130,21 +134,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         plan = generar_examen(
             preguntas,
-            perfil=perfil,
             materias_orden=orden_materias,
             materias_meta=materias_meta,
-            stats=stats,
-            n_materias=n_materias,
-            curso_filtro=curso_filtro,
-            semestre_filtro=semestre_filtro,
-            grupo_filtro=grupo_filtro,
-            preguntas_por_materia=preguntas_por_materia,
-            tipos_permitidos=tipos_permitidos,
-            usar_todas_materias_ambito=usar_todas,
-            seleccion_determinista=seleccion_det,
-            materia_fija=materia_fija,
-            usar_analisis_historico=usar_ponderacion,
-            semilla=args.semilla,
+            opciones=OpcionesGeneracionExamen(perfil=perfil, stats=stats, n_materias=n_materias, curso_filtro=curso_filtro, semestre_filtro=semestre_filtro, grupo_filtro=grupo_filtro, preguntas_por_materia=preguntas_por_materia, tipos_permitidos=tipos_permitidos, usar_todas_materias_ambito=usar_todas, seleccion_determinista=seleccion_det, materia_fija=materia_fija, usar_analisis_historico=usar_ponderacion, semilla=args.semilla),
         )
     except ValueError as e:
         print(f"No se pudo generar el examen: {e}", file=sys.stderr)

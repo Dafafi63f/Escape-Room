@@ -119,7 +119,7 @@ from Comun.tienda_escape import (
     seleccionar_articulos_tienda_visita,
     usar_objeto,
 )
-from Grafico.barra_estado import dibujar_estado_partida_en_barra
+from Grafico.barra_estado import DatosBarraEstadoPartida, dibujar_estado_partida_en_barra
 from Grafico.feedback_partida import (
     dibujar_feedback_partida,
     feedback_debe_avanzar,
@@ -1711,70 +1711,65 @@ class PartidaEscapeRoom(Pantalla):
             )
         )
 
-    def _tras_respuesta(self, resultado: ResultadoRespuesta) -> None:
-        p = self._pregunta_actual()
-        inv = self.inventario_escape
-        vidas_al_inicio = self.estado.vidas_restantes
-        escudo = (
-            not resultado.acierto
-            and not resultado.tiempo_agotado
-            and inv.escudo_activo
-        )
-        segunda = (
-            not resultado.acierto
-            and not resultado.tiempo_agotado
-            and inv.segunda_oportunidad_activa
-        )
-        vidas_antes_escudo = self.estado.vidas_restantes if escudo or segunda else None
-        puntos_antes = self.estado.puntos_arcade
-        doble_o_nada = inv.doble_o_nada_activo and (
-            resultado.acierto or not resultado.tiempo_agotado
-        )
-        if doble_o_nada:
-            inv.doble_o_nada_activo = False
-        feedback = evaluar_respuesta(p, self.estado, resultado)
+    def _aplicar_proteccion_fallo_respuesta(self, inv, vidas_antes_escudo, escudo, segunda, feedback):
         if escudo and vidas_antes_escudo is not None:
             self.estado.vidas_restantes = vidas_antes_escudo
             inv.escudo_activo = False
-            feedback = replace(feedback, mensaje="Escudo: no pierdes vida.")
             self.reintentar_pregunta = True
-        elif segunda and vidas_antes_escudo is not None:
+            return replace(feedback, mensaje="Escudo: no pierdes vida.")
+        if segunda and vidas_antes_escudo is not None:
             self.estado.vidas_restantes = vidas_antes_escudo
             inv.segunda_oportunidad_activa = False
-            feedback = replace(
+            self.reintentar_pregunta = True
+            return replace(
                 feedback, mensaje="Segunda oportunidad: inténtalo otra vez."
             )
-            self.reintentar_pregunta = True
-        if (
+        return feedback
+
+    def _aplicar_penalizacion_mensaje_fallo(self, resultado, feedback):
+        if not (
             (not resultado.acierto or resultado.tiempo_agotado)
             and not self.reintentar_pregunta
             and self.puerta_actual is not None
             and aplicar_penalizacion_extra_fallo_puerta(
                 self.estado, self.puerta_actual
-            ) > 0
-        ):
-            sufijo = sufijo_mensaje_fallo_puerta(self.puerta_actual)
-            if sufijo:
-                feedback = replace(
-                    feedback, mensaje=f"{feedback.mensaje}{sufijo}"
-                )
-        fin_partida_maldita = False
-        if (not resultado.acierto or resultado.tiempo_agotado) and not self.reintentar_pregunta:
-            fallo_maldita = procesar_fallo_puerta_maldita(
-                self.puerta_actual,
-                proteccion_activa=False,
             )
-            if fallo_maldita is not None:
-                if fallo_maldita.fin_partida:
-                    fin_partida_maldita = True
-                    if self.estado.vidas_restantes is not None:
-                        self.estado.vidas_restantes = 0
-                    self.desafio_fallo = True
-                if fallo_maldita.mensaje_extra:
-                    feedback = replace(
-                        feedback,
-                        mensaje=f"{feedback.mensaje}{fallo_maldita.mensaje_extra}",
-                    )
+            > 0
+        ):
+            return feedback
+        sufijo = sufijo_mensaje_fallo_puerta(self.puerta_actual)
+        if sufijo:
+            return replace(feedback, mensaje=f"{feedback.mensaje}{sufijo}")
+        return feedback
+
+    def _aplicar_fallo_maldita(self, resultado, feedback) -> tuple:
+        fin_partida_maldita = False
+        if not (
+            (not resultado.acierto or resultado.tiempo_agotado)
+            and not self.reintentar_pregunta
+        ):
+            return feedback, fin_partida_maldita
+        fallo_maldita = procesar_fallo_puerta_maldita(
+            self.puerta_actual,
+            proteccion_activa=False,
+        )
+        if fallo_maldita is None:
+            return feedback, fin_partida_maldita
+        if fallo_maldita.fin_partida:
+            fin_partida_maldita = True
+            if self.estado.vidas_restantes is not None:
+                self.estado.vidas_restantes = 0
+            self.desafio_fallo = True
+        if fallo_maldita.mensaje_extra:
+            feedback = replace(
+                feedback,
+                mensaje=f"{feedback.mensaje}{fallo_maldita.mensaje_extra}",
+            )
+        return feedback, fin_partida_maldita
+
+    def _aplicar_bonos_acierto_respuesta(
+        self, resultado, inv, doble_o_nada, puntos_antes, p, feedback
+    ):
         if resultado.acierto and not resultado.tiempo_agotado:
             bonus_amuleto = inv.bonus_proximo_acierto
             if bonus_amuleto:
@@ -1796,39 +1791,27 @@ class PartidaEscapeRoom(Pantalla):
             and not self.reintentar_pregunta
         ):
             self.estado.vidas_restantes = max(0, self.estado.vidas_restantes - 1)
-        if (
+        if not (
             resultado.acierto
             and not resultado.tiempo_agotado
             and self._mult_puntos_desafio > 1
             and self.estado.reglas.sistema_puntuacion == SistemaPuntuacion.ARCADE
         ):
-            base = calcular_puntos_arcade(p.dificultad, True)
-            extra = puntos_extra_mult_desafio(
-                base, acierto=True, mult=self._mult_puntos_desafio
+            return feedback
+        base = calcular_puntos_arcade(p.dificultad, True)
+        extra = puntos_extra_mult_desafio(
+            base, acierto=True, mult=self._mult_puntos_desafio
+        )
+        if extra:
+            self.estado.puntos_arcade, _ = sumar_puntos_arcade(
+                self.estado.puntos_arcade, extra
             )
-            if extra:
-                self.estado.puntos_arcade, _ = sumar_puntos_arcade(
-                    self.estado.puntos_arcade, extra
-                )
-            feedback = replace(
-                feedback,
-                mensaje=mensaje_acierto_desafio(
-                    base, mult=self._mult_puntos_desafio
-                ),
-            )
-        self._registrar_respuesta(p, resultado)
-        if debe_abandonar_puerta_por_perdida_vida(
-            self.puerta_actual,
-            vidas_antes=vidas_al_inicio,
-            vidas_despues=self.estado.vidas_restantes,
-            reintentar=self.reintentar_pregunta,
-        ):
-            self.desafio_fallo = True
-            if not self.reintentar_pregunta and not fin_partida_maldita:
-                feedback = replace(
-                    feedback,
-                    mensaje=f"{feedback.mensaje}{sufijo_avance_sala_tras_abandono()}",
-                )
+        return replace(
+            feedback,
+            mensaje=mensaje_acierto_desafio(base, mult=self._mult_puntos_desafio),
+        )
+
+    def _cerrar_feedback_respuesta(self, p, resultado, feedback) -> None:
         self.feedback_mensaje = feedback.mensaje
         if self._puerta_completada_con_exito(resultado):
             extra = self._consumir_bonus_completar_puerta()
@@ -1851,6 +1834,51 @@ class PartidaEscapeRoom(Pantalla):
                 respuesta_dataset=resultado.respuesta,
                 acierto=resultado.acierto,
             )
+
+    def _tras_respuesta(self, resultado: ResultadoRespuesta) -> None:
+        p = self._pregunta_actual()
+        inv = self.inventario_escape
+        vidas_al_inicio = self.estado.vidas_restantes
+        escudo = (
+            not resultado.acierto
+            and not resultado.tiempo_agotado
+            and inv.escudo_activo
+        )
+        segunda = (
+            not resultado.acierto
+            and not resultado.tiempo_agotado
+            and inv.segunda_oportunidad_activa
+        )
+        vidas_antes_escudo = self.estado.vidas_restantes if escudo or segunda else None
+        puntos_antes = self.estado.puntos_arcade
+        doble_o_nada = inv.doble_o_nada_activo and (
+            resultado.acierto or not resultado.tiempo_agotado
+        )
+        if doble_o_nada:
+            inv.doble_o_nada_activo = False
+        feedback = evaluar_respuesta(p, self.estado, resultado)
+        feedback = self._aplicar_proteccion_fallo_respuesta(
+            inv, vidas_antes_escudo, escudo, segunda, feedback
+        )
+        feedback = self._aplicar_penalizacion_mensaje_fallo(resultado, feedback)
+        feedback, fin_partida_maldita = self._aplicar_fallo_maldita(resultado, feedback)
+        feedback = self._aplicar_bonos_acierto_respuesta(
+            resultado, inv, doble_o_nada, puntos_antes, p, feedback
+        )
+        self._registrar_respuesta(p, resultado)
+        if debe_abandonar_puerta_por_perdida_vida(
+            self.puerta_actual,
+            vidas_antes=vidas_al_inicio,
+            vidas_despues=self.estado.vidas_restantes,
+            reintentar=self.reintentar_pregunta,
+        ):
+            self.desafio_fallo = True
+            if not self.reintentar_pregunta and not fin_partida_maldita:
+                feedback = replace(
+                    feedback,
+                    mensaje=f"{feedback.mensaje}{sufijo_avance_sala_tras_abandono()}",
+                )
+        self._cerrar_feedback_respuesta(p, resultado, feedback)
 
     def _responder(self, letra: str) -> None:
         if self.fase != "pregunta":
@@ -2086,7 +2114,7 @@ class PartidaEscapeRoom(Pantalla):
             x_centro_min=x_centro_min,
             x_centro_max=x_centro_max,
             y=y_estado,
-            **self._kwargs_barra_estado(),
+            datos=DatosBarraEstadoPartida(**self._kwargs_barra_estado()),
         )
         pygame.draw.line(
             superficie,
@@ -2289,6 +2317,76 @@ class PartidaEscapeRoom(Pantalla):
             tips.extend(self.botones_inventario)
         dibujar_tooltips_botones(superficie, self.fuentes["pequena"], tips)
 
+    def _manejar_hover_fase(self, pos: tuple[int, int]) -> None:
+        for boton in self._botones_ui():
+            boton.actualizar_hover(pos)
+        if self.fase == "puertas":
+            for boton in self.botones_puerta:
+                boton.actualizar_hover(pos)
+            for boton in self.botones_inventario:
+                boton.actualizar_hover(pos)
+            self._actualizar_hover_iconos(pos)
+        elif self.fase == "tienda":
+            for boton in self.botones_tienda:
+                boton.actualizar_hover(pos)
+            self._actualizar_hover_icono_tienda(pos)
+            if self.boton_salir_tienda:
+                self.boton_salir_tienda.actualizar_hover(pos)
+        elif self.fase == "preparacion_puerta":
+            for boton in self.botones_inventario:
+                boton.actualizar_hover(pos)
+            if self.boton_empezar_puerta:
+                self.boton_empezar_puerta.actualizar_hover(pos)
+        elif self.fase == "pregunta":
+            for boton in self.botones_opcion:
+                boton.actualizar_hover(pos)
+            for boton in self.botones_inventario:
+                boton.actualizar_hover(pos)
+
+    def _manejar_clic_puertas(self, pos: tuple[int, int], button: int) -> None:
+        for boton_inv in self.botones_inventario:
+            if boton_inv.manejar_clic(pos, button):
+                return
+        for boton_puerta in self.botones_puerta:
+            if boton_puerta.manejar_clic(pos, button):
+                return
+
+    def _manejar_clic_tienda(self, pos: tuple[int, int], button: int) -> None:
+        for boton_tienda in self.botones_tienda:
+            if boton_tienda.manejar_clic(pos, button):
+                break
+        if self.boton_salir_tienda:
+            self.boton_salir_tienda.manejar_clic(pos, button)
+
+    def _manejar_clic_preparacion(self, pos: tuple[int, int], button: int) -> None:
+        if self.boton_empezar_puerta and self.boton_empezar_puerta.manejar_clic(
+            pos, button
+        ):
+            return
+        for boton_inv in self.botones_inventario:
+            if boton_inv.manejar_clic(pos, button):
+                return
+
+    def _manejar_clic_pregunta(self, pos: tuple[int, int], button: int) -> None:
+        for boton_inv in self.botones_inventario:
+            if boton_inv.manejar_clic(pos, button):
+                return
+        for boton_opcion in self.botones_opcion:
+            if boton_opcion.manejar_clic(pos, button):
+                return
+
+    def _manejar_clic_fase(self, pos: tuple[int, int], button: int) -> None:
+        if self.fase == "puertas":
+            self._manejar_clic_puertas(pos, button)
+        elif self.fase == "tienda":
+            self._manejar_clic_tienda(pos, button)
+        elif self.fase == "preparacion_puerta":
+            self._manejar_clic_preparacion(pos, button)
+        elif self.fase == "feedback":
+            self._continuar_tras_feedback()
+        elif self.fase == "pregunta":
+            self._manejar_clic_pregunta(pos, button)
+
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
         if self.fase in ("pregunta", "feedback") and manejar_teclado_partida(
             evento,
@@ -2299,65 +2397,11 @@ class PartidaEscapeRoom(Pantalla):
         ):
             return None
         if evento.type == pygame.MOUSEMOTION:
-            for boton in self._botones_ui():
-                boton.actualizar_hover(evento.pos)
-            if self.fase == "puertas":
-                for boton in self.botones_puerta:
-                    boton.actualizar_hover(evento.pos)
-                for boton in self.botones_inventario:
-                    boton.actualizar_hover(evento.pos)
-                self._actualizar_hover_iconos(evento.pos)
-            elif self.fase == "tienda":
-                for boton in self.botones_tienda:
-                    boton.actualizar_hover(evento.pos)
-                self._actualizar_hover_icono_tienda(evento.pos)
-                if self.boton_salir_tienda:
-                    self.boton_salir_tienda.actualizar_hover(evento.pos)
-            elif self.fase == "preparacion_puerta":
-                for boton in self.botones_inventario:
-                    boton.actualizar_hover(evento.pos)
-                if self.boton_empezar_puerta:
-                    self.boton_empezar_puerta.actualizar_hover(evento.pos)
-            elif self.fase == "pregunta":
-                for boton in self.botones_opcion:
-                    boton.actualizar_hover(evento.pos)
-                for boton in self.botones_inventario:
-                    boton.actualizar_hover(evento.pos)
+            self._manejar_hover_fase(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONDOWN:
             if self.boton_abandonar.manejar_clic(evento.pos, evento.button):
                 return None
-            if self.fase == "puertas":
-                for boton_inv in self.botones_inventario:
-                    if boton_inv.manejar_clic(evento.pos, evento.button):
-                        break
-                else:
-                    for boton_puerta in self.botones_puerta:
-                        if boton_puerta.manejar_clic(evento.pos, evento.button):
-                            break
-            elif self.fase == "tienda":
-                for boton_tienda in self.botones_tienda:
-                    if boton_tienda.manejar_clic(evento.pos, evento.button):
-                        break
-                if self.boton_salir_tienda:
-                    self.boton_salir_tienda.manejar_clic(evento.pos, evento.button)
-            elif self.fase == "preparacion_puerta":
-                if not (
-                    self.boton_empezar_puerta
-                    and self.boton_empezar_puerta.manejar_clic(evento.pos, evento.button)
-                ):
-                    for boton_inv in self.botones_inventario:
-                        if boton_inv.manejar_clic(evento.pos, evento.button):
-                            break
-            elif self.fase == "feedback":
-                self._continuar_tras_feedback()
-            elif self.fase == "pregunta":
-                for boton_inv in self.botones_inventario:
-                    if boton_inv.manejar_clic(evento.pos, evento.button):
-                        break
-                else:
-                    for boton_opcion in self.botones_opcion:
-                        if boton_opcion.manejar_clic(evento.pos, evento.button):
-                            break
+            self._manejar_clic_fase(evento.pos, evento.button)
         return None
 
     def dibujar(self, superficie: pygame.Surface) -> None:

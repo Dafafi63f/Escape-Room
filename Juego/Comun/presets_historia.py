@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from Comun.config_historia import (
@@ -25,7 +25,7 @@ from Comun.config_historia import (
     tiempo_total_seg_desde_config,
     validar_config,
 )
-from Comun.generador_examen_historia import PerfilPedagogico
+from Comun.generador_examen_historia import OpcionesGeneracionExamen, PerfilPedagogico
 from Comun.reglas import (
     ContextoPartida,
     PoliticaReglas,
@@ -563,8 +563,8 @@ def _ajustes_generador_examen_fijo_csv_minimo(
     preset: PresetHistoria,
     perfil_datos,
     cfg: ConfigPresetHistoria,
-) -> dict[str, object] | None:
-    """CSV m?nimo: muestra plana de N preguntas; la semilla define la selecci?n."""
+) -> tuple[bool, int, bool, str] | None:
+    """CSV mínimo: muestra plana de N preguntas; la semilla define la selección."""
     from Comun.modos_diarios import (
         PREGUNTAS_EXAMEN_BALANCEADO,
         es_id_examen_fijo,
@@ -582,12 +582,7 @@ def _ajustes_generador_examen_fijo_csv_minimo(
     ):
         orden = "aleatorio"
 
-    return {
-        "seleccion_plana": True,
-        "n_preguntas": PREGUNTAS_EXAMEN_BALANCEADO,
-        "exigir_balance_completo": False,
-        "orden_preguntas": orden,
-    }
+    return True, PREGUNTAS_EXAMEN_BALANCEADO, False, orden
 
 
 def argumentos_generador(
@@ -596,8 +591,8 @@ def argumentos_generador(
     *,
     materias_meta: dict[str, dict[str, str]] | None = None,
     perfil_datos=None,
-) -> dict:
-    """Par?metros nombrados para ``generar_examen``."""
+) -> OpcionesGeneracionExamen:
+    """Opciones nombradas para ``generar_examen``."""
     cfg = config or ConfigPresetHistoria()
     curso, semestre = curso_semestre_desde_valores(cfg.valores)
     curso = curso or preset.curso_filtro
@@ -647,27 +642,34 @@ def argumentos_generador(
             n_preguntas = cfg.get_int("n_preguntas", int(op.defecto or 12))
             break
 
-    kwargs = {
-        "perfil": perfil,
-        "n_materias": n_materias if n_materias is not None else MATERIAS_POR_SEMESTRE,
-        "curso_filtro": curso,
-        "semestre_filtro": semestre,
-        "grupo_filtro": grupo,
-        "materia_fija": materia,
-        "preguntas_por_materia": preset.preguntas_por_materia,
-        "tipos_permitidos": tipos_permitidos,
-        "usar_todas_materias_ambito": usar_todas,
-        "seleccion_determinista": seleccion_det,
-        "orden_preguntas": resolver_orden_preguntas(preset, cfg),
-        "exigir_balance_completo": preset.exigir_balance_completo,
-        "usar_analisis_historico": usar_ponderacion_desde_config(
+    opciones = OpcionesGeneracionExamen(
+        perfil=perfil,
+        n_materias=n_materias if n_materias is not None else MATERIAS_POR_SEMESTRE,
+        curso_filtro=curso,
+        semestre_filtro=semestre,
+        grupo_filtro=grupo,
+        materia_fija=materia,
+        preguntas_por_materia=preset.preguntas_por_materia,
+        tipos_permitidos=tipos_permitidos,
+        usar_todas_materias_ambito=usar_todas,
+        seleccion_determinista=seleccion_det,
+        orden_preguntas=resolver_orden_preguntas(preset, cfg),
+        exigir_balance_completo=preset.exigir_balance_completo,
+        usar_analisis_historico=usar_ponderacion_desde_config(
             preset, cfg, perfil=perfil_datos
         ),
-        "usar_plantillas_materia": preset.usar_plantillas_materia,
-        "n_preguntas": n_preguntas,
-        "seleccion_plana": False,
-    }
+        usar_plantillas_materia=preset.usar_plantillas_materia,
+        n_preguntas=n_preguntas,
+        seleccion_plana=False,
+    )
     ajustes = _ajustes_generador_examen_fijo_csv_minimo(preset, perfil_datos, cfg)
-    if ajustes:
-        kwargs.update(ajustes)
-    return kwargs
+    if ajustes is not None:
+        seleccion_plana, n_preg, exigir_balance, orden = ajustes
+        opciones = replace(
+            opciones,
+            seleccion_plana=seleccion_plana,
+            n_preguntas=n_preg,
+            exigir_balance_completo=exigir_balance,
+            orden_preguntas=orden,
+        )
+    return opciones

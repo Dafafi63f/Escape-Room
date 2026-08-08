@@ -630,6 +630,8 @@ class ConfigOpcionesLibre(Pantalla):
             )
 
         def repetir():
+            from Grafico.pantallas import OpcionesPartidaLibre
+
             return PartidaModoLibre(
                 nombre=nombre,
                 pool=pool,
@@ -637,12 +639,14 @@ class ConfigOpcionesLibre(Pantalla):
                 ir_a=ir_a,
                 datos=datos,
                 salir_app=salir_app,
-                infinito=self.modo_infinito,
-                total_previsto=self.total_elegido,
-                niveles_complejidad=niveles,
-                meta_informe=meta,
-                navegacion_fin=nav,
-                estrategia_practica=self.estrategia_practica,
+                opciones=OpcionesPartidaLibre(
+                    infinito=self.modo_infinito,
+                    total_previsto=self.total_elegido,
+                    niveles_complejidad=niveles,
+                    meta_informe=meta,
+                    navegacion_fin=nav,
+                    estrategia_practica=self.estrategia_practica,
+                ),
             )
 
         nav = NavegacionFinPartida(repetir=repetir, configurar=configurar)
@@ -1394,7 +1398,7 @@ class ConfigFiltrosLibre(Pantalla):
         *,
         navegacion_fin: NavegacionFinPartida | None = None,
     ):
-        from Grafico.pantallas import PartidaModoLibre
+        from Grafico.pantallas import OpcionesPartidaLibre, PartidaModoLibre
 
         pool = self._pool_filtrado()
         niveles = normalizar_niveles_seleccionados(self.niveles_sel, pool)
@@ -1406,12 +1410,14 @@ class ConfigFiltrosLibre(Pantalla):
             ir_a=self.ir_a,
             datos=self.datos,
             salir_app=self.salir_app,
-            infinito=self.modo_infinito,
-            total_previsto=self.total_elegido,
-            niveles_complejidad=niveles,
-            meta_informe=self._meta_informe(pool),
-            navegacion_fin=navegacion_fin,
-            estrategia_practica=self.estado.estrategia_practica,
+            opciones=OpcionesPartidaLibre(
+                infinito=self.modo_infinito,
+                total_previsto=self.total_elegido,
+                niveles_complejidad=niveles,
+                meta_informe=self._meta_informe(pool),
+                navegacion_fin=navegacion_fin,
+                estrategia_practica=self.estado.estrategia_practica,
+            ),
         )
 
     def _construir_navegacion_fin(
