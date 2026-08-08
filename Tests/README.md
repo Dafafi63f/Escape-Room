@@ -23,7 +23,8 @@ En CI (`.github/workflows/tests.yml`): `PYTHONPATH` absoluto a `Juego/`, `SDL_VI
 
 GitHub Actions:
 
-- **Tests** (`.github/workflows/tests.yml`) — unitarios, integración, mypy, pre-commit
+- **Tests** (`.github/workflows/tests.yml`) — suite unitaria + validación de banco/health check, mypy, pre-commit
+- **SonarCloud** (`.github/workflows/sonarcloud.yml`) — análisis estático en CI (requiere `SONAR_TOKEN` y Automatic Analysis desactivado)
 - **Paquete jugable** (`.github/workflows/paquete-jugable.yml`) — publica `MATCAD_juego_portable.zip` en el release `juego`
 
 ## Ficheros
