@@ -9,7 +9,6 @@ from __future__ import annotations
 import csv
 import json
 import random
-import secrets
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -636,10 +635,8 @@ def _generar_reemplazo_exacto(tema, plantillas, claves_existentes):
     templates = plantillas.get(tema, [])
     if not templates:
         return None
-    orden = list(range(len(templates)))
-    secrets.SystemRandom().shuffle(orden)
-    for idx in orden:
-        for n in expandir_plantilla(templates[idx]):
+    for template in templates:
+        for n in expandir_plantilla(template):
             clave = (n["Pregunta"], n["A"], n["B"], n["C"], n["D"])
             if clave not in claves_existentes:
                 return {**n, "Materia": tema}
@@ -786,10 +783,8 @@ def generar_reemplazo_enunciado(
     templates = plantillas.get(tema, [])
     if not templates:
         return None
-    orden = list(range(len(templates)))
-    secrets.SystemRandom().shuffle(orden)
-    for idx in orden:
-        for cand in expandir_plantilla(templates[idx]):
+    for template in templates:
+        for cand in expandir_plantilla(template):
             enunciado_norm = normalizar_enunciado(cand["Pregunta"])
             bloque = (
                 cand["Pregunta"].strip(),
