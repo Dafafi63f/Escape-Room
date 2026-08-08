@@ -616,6 +616,15 @@ class ConfigOpcionesHistoria(Pantalla):
         if semestre and not self._semestre_valido_en_config(str(semestre)):
             self.config.valores.pop("semestre", None)
 
+    def _texto_valor_entero(self, op: OpcionPreset, raw: object) -> str:
+        if op.id == "tiempo_total_min" and int(str(raw)) == 0:
+            return "Sin límite"
+        if op.id == "semilla":
+            from Comun.modos_diarios import formatear_semilla_diaria
+
+            return formatear_semilla_diaria(int(str(raw)))
+        return str(raw)
+
     def _texto_valor_con_dato(self, op: OpcionPreset, raw: object) -> str:
         if op.tipo == "grupo":
             return GRUPOS_TEMATICOS.get(str(raw), str(raw))
@@ -634,13 +643,7 @@ class ConfigOpcionesHistoria(Pantalla):
         if op.tipo == "periodo":
             return etiqueta_periodo_desde_clave(str(raw))
         if op.tipo == "entero":
-            if op.id == "tiempo_total_min" and int(str(raw)) == 0:
-                return "Sin límite"
-            if op.id == "semilla":
-                from Comun.modos_diarios import formatear_semilla_diaria
-
-                return formatear_semilla_diaria(int(str(raw)))
-            return str(raw)
+            return self._texto_valor_entero(op, raw)
         return str(raw)
 
     def _texto_valor(self, op_id: str) -> str:
@@ -893,16 +896,12 @@ class ConfigOpcionesHistoria(Pantalla):
             botones.extend(par)
         return botones
 
-    def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
-        if self._manejar_scroll_rueda(evento):
-            return None
+    def _desactivar_campos_fuera_clic(self, pos: tuple[int, int]) -> None:
         for campo in self.campos_entero.values():
-            if campo.manejar_evento(evento):
-                return None
-        if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
-            for campo in self.campos_entero.values():
-                if not campo.rect.collidepoint(evento.pos):
-                    campo.activo = False
+            if not campo.rect.collidepoint(pos):
+                campo.activo = False
+
+    def _manejar_mouse_config(self, evento: pygame.event.Event) -> None:
         if evento.type == pygame.MOUSEMOTION:
             for boton in self._botones_ui():
                 boton.actualizar_hover(evento.pos)
@@ -911,6 +910,16 @@ class ConfigOpcionesHistoria(Pantalla):
             for boton in self._botones_ui():
                 if boton.manejar_clic(evento.pos, evento.button):
                     break
+
+    def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
+        if self._manejar_scroll_rueda(evento):
+            return None
+        for campo in self.campos_entero.values():
+            if campo.manejar_evento(evento):
+                return None
+        if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+            self._desactivar_campos_fuera_clic(evento.pos)
+        self._manejar_mouse_config(evento)
         return None
 
     def _manejar_scroll_rueda(self, evento: pygame.event.Event) -> bool:

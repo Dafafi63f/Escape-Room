@@ -485,6 +485,43 @@ def intercambiar_materia(rows: list[dict], i: int, j: int) -> None:
     rows[j]["Materia"] = a
 
 
+def _mejor_par_intercambio_materia(
+    rows: list[dict],
+    idx_exc: list[int],
+    idx_def: list[int],
+    id_exc: int,
+    id_def: int,
+) -> tuple[int, int]:
+    mejor_par = None
+    mejor_ganancia = -1.0
+    for i in idx_exc:
+        for j in idx_def:
+            antes = _score_fila_materia(rows[i], id_exc) + _score_fila_materia(
+                rows[j], id_def
+            )
+            despues = _score_fila_materia(rows[i], id_def) + _score_fila_materia(
+                rows[j], id_exc
+            )
+            ganancia = despues - antes
+            if ganancia > mejor_ganancia:
+                mejor_ganancia = ganancia
+                mejor_par = (i, j)
+    if mejor_par is None:
+        return idx_exc[0], idx_def[0]
+    return mejor_par
+
+
+def _temas_desbalanceados(
+    rows: list[dict], temas: list[str], tgt: int
+) -> tuple[list[str], list[str], Counter]:
+    por = Counter(materia_de_fila(r) for r in rows)
+    exceso = [t for t in temas if por.get(t, 0) > tgt]
+    deficit = [t for t in temas if por.get(t, 0) < tgt]
+    exceso.sort(key=lambda t: -(por[t] - tgt))
+    deficit.sort(key=lambda t: -(tgt - por.get(t, 0)))
+    return exceso, deficit, por
+
+
 def ajustar_conteos_materia(rows: list[dict], max_pasos: int = 200) -> int:
     """Intercambia Materia entre filas de materias con exceso y déficit."""
     temas, _ = cargar_orden_temas()
@@ -492,16 +529,12 @@ def ajustar_conteos_materia(rows: list[dict], max_pasos: int = 200) -> int:
     cambios = 0
 
     for _ in range(max_pasos):
-        por = Counter(materia_de_fila(r) for r in rows)
-        exceso = [(t, por[t] - tgt) for t in temas if por.get(t, 0) > tgt]
-        deficit = [(t, tgt - por.get(t, 0)) for t in temas if por.get(t, 0) < tgt]
+        exceso, deficit, _por = _temas_desbalanceados(rows, temas, tgt)
         if not exceso or not deficit:
             break
 
-        exceso.sort(key=lambda x: -x[1])
-        deficit.sort(key=lambda x: -x[1])
-        tema_exc, _ = exceso[0]
-        tema_def, _ = deficit[0]
+        tema_exc = exceso[0]
+        tema_def = deficit[0]
         id_exc = MATERIA_TO_ID[tema_exc]
         id_def = MATERIA_TO_ID[tema_def]
 
@@ -510,22 +543,9 @@ def ajustar_conteos_materia(rows: list[dict], max_pasos: int = 200) -> int:
         ]
         idx_def = [i for i, r in enumerate(rows) if materia_de_fila(r) == tema_def]
 
-        mejor_par = None
-        mejor_ganancia = -1.0
-        for i in idx_exc:
-            for j in idx_def:
-                antes = _score_fila_materia(rows[i], id_exc) + _score_fila_materia(rows[j], id_def)
-                despues = _score_fila_materia(rows[i], id_def) + _score_fila_materia(rows[j], id_exc)
-                ganancia = despues - antes
-                if ganancia > mejor_ganancia:
-                    mejor_ganancia = ganancia
-                    mejor_par = (i, j)
-
-        if mejor_par is None:
-            i, j = idx_exc[0], idx_def[0]
-        else:
-            i, j = mejor_par
-
+        i, j = _mejor_par_intercambio_materia(
+            rows, idx_exc, idx_def, id_exc, id_def
+        )
         intercambiar_materia(rows, i, j)
         cambios += 1
 
@@ -558,25 +578,30 @@ def ajustar_tipos_globales(rows: list[dict], max_pasos: int = 50) -> int:
     return cambios
 
 
+def _ajustar_tipos_un_tema(rows: list[dict], tema: str) -> bool:
+    sub = [(i, r) for i, r in enumerate(rows) if materia_de_fila(r) == tema]
+    if len(sub) != 10:
+        return False
+    teo = [i for i, r in sub if r["Tipo"] == "Teoria"]
+    cal = [i for i, r in sub if r["Tipo"] == "Calculo"]
+    if len(teo) == 5 and len(cal) == 5:
+        return False
+    if len(teo) > 5 and cal:
+        intercambiar_tipo(rows, teo[0], cal[0])
+        return True
+    if len(cal) > 5 and teo:
+        intercambiar_tipo(rows, cal[0], teo[0])
+        return True
+    return False
+
+
 def ajustar_tipos_por_materia(rows: list[dict], max_pasos: int = 200) -> int:
     temas, _ = cargar_orden_temas()
     cambios = 0
     for _ in range(max_pasos):
         hubo = False
         for tema in temas:
-            sub = [(i, r) for i, r in enumerate(rows) if materia_de_fila(r) == tema]
-            if len(sub) != 10:
-                continue
-            teo = [i for i, r in sub if r["Tipo"] == "Teoria"]
-            cal = [i for i, r in sub if r["Tipo"] == "Calculo"]
-            if len(teo) == 5 and len(cal) == 5:
-                continue
-            if len(teo) > 5 and cal:
-                intercambiar_tipo(rows, teo[0], cal[0])
-                cambios += 1
-                hubo = True
-            elif len(cal) > 5 and teo:
-                intercambiar_tipo(rows, cal[0], teo[0])
+            if _ajustar_tipos_un_tema(rows, tema):
                 cambios += 1
                 hubo = True
         if not hubo:

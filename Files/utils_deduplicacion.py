@@ -281,6 +281,19 @@ def _familia_pixeles(t: str) -> str | None:
     return None
 
 
+def _motivo_familia_bits_cuantos(ca: str, cb: str, a: dict, b: dict) -> str | None:
+    tags_a = set(ca.split())
+    tags_b = set(cb.split())
+    nucleo = {"BITUNIT", "NQ", "ENUM"}
+    if nucleo <= tags_a and nucleo <= tags_b:
+        if not _EXCLUIR_FAMILIA_BITS.search(_enunciado_normalizado(a)):
+            if not _EXCLUIR_FAMILIA_BITS.search(_enunciado_normalizado(b)):
+                return "misma_plantilla_bits_cuantos"
+    if "BYTEUNIT" in tags_a and "BYTEUNIT" in tags_b and "NQ" in tags_a and "NQ" in tags_b:
+        return "misma_plantilla_conversion_bytes"
+    return None
+
+
 def _motivo_familia_plantilla(a: dict, b: dict) -> str | None:
     fa, fb = clave_familia_plantilla(a), clave_familia_plantilla(b)
     if fa and fa == fb:
@@ -291,17 +304,7 @@ def _motivo_familia_plantilla(a: dict, b: dict) -> str | None:
         return "misma_plantilla_colapsada"
 
     if ca and cb and "#" in esqueleto_numerico(enunciado_de(a)):
-        # BITUNIT + NQ + ENUM presentes en ambas → variante «cuántos X con N bits»
-        tags_a = set(ca.split())
-        tags_b = set(cb.split())
-        nucleo = {"BITUNIT", "NQ", "ENUM"}
-        if nucleo <= tags_a and nucleo <= tags_b:
-            if not _EXCLUIR_FAMILIA_BITS.search(_enunciado_normalizado(a)):
-                if not _EXCLUIR_FAMILIA_BITS.search(_enunciado_normalizado(b)):
-                    return "misma_plantilla_bits_cuantos"
-
-        if "BYTEUNIT" in tags_a and "BYTEUNIT" in tags_b and "NQ" in tags_a and "NQ" in tags_b:
-            return "misma_plantilla_conversion_bytes"
+        return _motivo_familia_bits_cuantos(ca, cb, a, b)
 
     return None
 
@@ -371,6 +374,44 @@ def clave_respuesta_sustantiva(fila: dict) -> str | None:
     return rc if respuesta_es_sustantiva(rc) else None
 
 
+def _motivo_definicion_equivalente(
+    ca: set[str], cb: set[str], jq_c: float
+) -> str | None:
+    def _es_definicional(tokens_enunciado: set[str]) -> bool:
+        return bool(
+            tokens_enunciado
+            & {"definicion", _TOKEN_DEFINICION, "definicio", "defineix", "define"}
+        ) or "es" in tokens_enunciado or "és" in tokens_enunciado
+
+    if jq_c < 0.32 or not (_es_definicional(ca) or _es_definicional(cb)):
+        return None
+    nucleo_a = ca - {
+        "definicion",
+        _TOKEN_DEFINICION,
+        "definicio",
+        "defineix",
+        "define",
+        "es",
+        "és",
+        "que",
+        "què",
+    }
+    nucleo_b = cb - {
+        "definicion",
+        _TOKEN_DEFINICION,
+        "definicio",
+        "defineix",
+        "define",
+        "es",
+        "és",
+        "que",
+        "què",
+    }
+    if jaccard(nucleo_a, nucleo_b) >= 0.50:
+        return "definicion_equivalente_misma_respuesta"
+    return None
+
+
 def _motivo_equivalencia_semantica(
     a: dict, b: dict, qa: str, qb: str, ta: set[str], tb: set[str], oa: set[str], ob: set[str]
 ) -> str | None:
@@ -396,38 +437,22 @@ def _motivo_equivalencia_semantica(
     if jo >= 0.70 and jq_c >= 0.38:
         return "misma_respuesta_opciones_equivalentes"
 
-    def _es_definicional(tokens_enunciado: set[str]) -> bool:
-        return bool(
-            tokens_enunciado
-            & {"definicion", _TOKEN_DEFINICION, "definicio", "defineix", "define"}
-        ) or "es" in tokens_enunciado or "és" in tokens_enunciado
+    return _motivo_definicion_equivalente(ca, cb, jq_c)
 
-    if jq_c >= 0.32 and (_es_definicional(ca) or _es_definicional(cb)):
-        nucleo_a = ca - {
-            "definicion",
-            _TOKEN_DEFINICION,
-            "definicio",
-            "defineix",
-            "define",
-            "es",
-            "és",
-            "que",
-            "què",
-        }
-        nucleo_b = cb - {
-            "definicion",
-            _TOKEN_DEFINICION,
-            "definicio",
-            "defineix",
-            "define",
-            "es",
-            "és",
-            "que",
-            "què",
-        }
-        if jaccard(nucleo_a, nucleo_b) >= 0.50:
-            return "definicion_equivalente_misma_respuesta"
 
+def _motivo_similitud_superficial(
+    seq: float, jq: float, jo: float
+) -> str | None:
+    if seq >= 0.93 and jq >= 0.75:
+        return "enunciado_muy_similar"
+    if seq >= 0.95 and jq >= 0.82:
+        return "enunciado_casi_identico"
+    if jq >= 0.88 and jo >= 0.75:
+        return "misma_idea_y_opciones_parecidas"
+    if jo >= 0.85 and seq >= 0.92 and jq >= 0.78:
+        return "opciones_iguales_enunciado_parecido"
+    if math.isclose(jo, 1.0) and seq >= 0.85:
+        return "mismas_opciones_enunciado_parecido"
     return None
 
 
@@ -449,16 +474,9 @@ def motivo_duplicado(a: dict, b: dict) -> str | None:
     jq = jaccard(ta, tb)
     jo = jaccard(oa, ob)
 
-    if seq >= 0.93 and jq >= 0.75:
-        return "enunciado_muy_similar"
-    if seq >= 0.95 and jq >= 0.82:
-        return "enunciado_casi_identico"
-    if jq >= 0.88 and jo >= 0.75:
-        return "misma_idea_y_opciones_parecidas"
-    if jo >= 0.85 and seq >= 0.92 and jq >= 0.78:
-        return "opciones_iguales_enunciado_parecido"
-    if math.isclose(jo, 1.0) and seq >= 0.85:
-        return "mismas_opciones_enunciado_parecido"
+    superficial = _motivo_similitud_superficial(seq, jq, jo)
+    if superficial:
+        return superficial
 
     num = _motivo_variante_numerica(a, b, qa, qb)
     if num:
@@ -468,11 +486,7 @@ def motivo_duplicado(a: dict, b: dict) -> str | None:
     if fam:
         return fam
 
-    sem = _motivo_equivalencia_semantica(a, b, qa, qb, ta, tb, oa, ob)
-    if sem:
-        return sem
-
-    return None
+    return _motivo_equivalencia_semantica(a, b, qa, qb, ta, tb, oa, ob)
 
 
 def es_duplicado(a: dict, b: dict) -> bool:
@@ -491,6 +505,35 @@ def _bucket_key_plantilla(fila: dict) -> str:
     if len(toks) >= 3:
         return " ".join(toks[:3])
     return clave_enunciado(fila)[:40]
+
+
+def _decidir_conservar_plantilla(
+    t: dict,
+    *,
+    solo_exactas: bool,
+    seen_exact: set[tuple],
+    seen_enunciado: set[str],
+    kept_by_bucket: dict[str, list[dict]],
+) -> tuple[bool, str]:
+    """Devuelve (conservar, motivo_descarte) con motivo '' si se conserva."""
+    k = clave_plantilla_exacta(t)
+    if k in seen_exact:
+        return False, "exact"
+    if solo_exactas:
+        seen_exact.add(k)
+        return True, ""
+    comp = {"Pregunta": t.get("pregunta", ""), **t}
+    eq = clave_enunciado(comp)
+    if eq and eq in seen_enunciado:
+        return False, "similar"
+    bucket = _bucket_key_plantilla(comp)
+    if es_duplicado_de_alguna(comp, kept_by_bucket[bucket]):
+        return False, "similar"
+    kept_by_bucket[bucket].append(comp)
+    if eq:
+        seen_enunciado.add(eq)
+    seen_exact.add(k)
+    return True, ""
 
 
 def deduplicar_plantillas_dict(
@@ -532,29 +575,38 @@ def deduplicar_plantillas_dict(
     cleaned: dict = {tema: [] for tema in plantillas}
 
     for tema, t in flat:
-        k = clave_plantilla_exacta(t)
-        if k in seen_exact:
-            exact_removed += 1
+        ok, motivo = _decidir_conservar_plantilla(
+            t,
+            solo_exactas=solo_exactas,
+            seen_exact=seen_exact,
+            seen_enunciado=seen_enunciado,
+            kept_by_bucket=kept_by_bucket,
+        )
+        if not ok:
+            if motivo == "exact":
+                exact_removed += 1
+            else:
+                similar_removed += 1
             continue
-
-        comp = {"Pregunta": t.get("pregunta", ""), **t}
-        if not solo_exactas:
-            eq = clave_enunciado(comp)
-            if eq and eq in seen_enunciado:
-                similar_removed += 1
-                continue
-            bucket = _bucket_key_plantilla(comp)
-            if es_duplicado_de_alguna(comp, kept_by_bucket[bucket]):
-                similar_removed += 1
-                continue
-            kept_by_bucket[bucket].append(comp)
-            if eq:
-                seen_enunciado.add(eq)
-
-        seen_exact.add(k)
         cleaned[tema].append(t)
 
     return cleaned, exact_removed, similar_removed
+
+
+def _plantilla_duplica_dataset(
+    t: dict,
+    tema: str,
+    ds_por_bucket: dict[str, list[dict]],
+    enunciado_por_materia: dict[str, set[str]],
+) -> bool:
+    if es_uso_copia_dataset(str(t.get("uso", ""))):
+        return False
+    comp = {"Pregunta": t.get("pregunta", ""), **t}
+    eq = clave_enunciado(comp)
+    if eq and eq in enunciado_por_materia.get(tema, set()):
+        return True
+    candidatos = ds_por_bucket.get(_bucket_key_plantilla(comp), [])
+    return bool(candidatos and es_duplicado_de_alguna(comp, candidatos))
 
 
 def quitar_plantillas_presentes_en_dataset(
@@ -579,16 +631,9 @@ def quitar_plantillas_presentes_en_dataset(
     for tema, items in plantillas.items():
         kept = []
         for t in items:
-            if es_uso_copia_dataset(str(t.get("uso", ""))):
-                kept.append(t)
-                continue
-            comp = {"Pregunta": t.get("pregunta", ""), **t}
-            eq = clave_enunciado(comp)
-            if eq and eq in enunciado_por_materia.get(tema, set()):
-                removed += 1
-                continue
-            candidatos = ds_por_bucket.get(_bucket_key_plantilla(comp), [])
-            if candidatos and es_duplicado_de_alguna(comp, candidatos):
+            if _plantilla_duplica_dataset(
+                t, tema, ds_por_bucket, enunciado_por_materia
+            ):
                 removed += 1
             else:
                 kept.append(t)

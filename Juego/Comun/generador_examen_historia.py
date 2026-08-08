@@ -148,6 +148,27 @@ def indices_dificultad_ambito(
     return {m: (brutos[m] - lo) / escala for m in candidatas}
 
 
+def _peso_materia_segun_perfil(
+    perfil: PerfilPedagogico,
+    indice: float,
+    *,
+    usar_analisis_historico: bool,
+) -> float:
+    if not usar_analisis_historico:
+        return 1.0
+    if perfil == PerfilPedagogico.BALANCEADO:
+        return 0.75 + 0.50 * indice
+    if perfil == PerfilPedagogico.REFUERZO:
+        return 0.35 + indice
+    if perfil == PerfilPedagogico.DESAFIO:
+        return 0.35 + (1.0 - indice)
+    if perfil == PerfilPedagogico.POR_CURSO:
+        return 0.35 + indice
+    if perfil == PerfilPedagogico.SIMULACRO:
+        return 1.0
+    return 1.0
+
+
 def calcular_pesos_materia(
     materias: list[str],
     stats: dict[str, EstadisticaMateria],
@@ -164,19 +185,9 @@ def calcular_pesos_materia(
         else:
             st = stats.get(m)
             indice = st.indice_dificultad if st else 0.5
-        if not usar_analisis_historico:
-            w = 1.0
-        elif perfil == PerfilPedagogico.BALANCEADO:
-            # Preferencia suave: la práctica inclina sin bloquear otras materias.
-            w = 0.75 + 0.50 * indice
-        elif perfil == PerfilPedagogico.REFUERZO:
-            w = 0.35 + indice
-        elif perfil == PerfilPedagogico.DESAFIO:
-            w = 0.35 + (1.0 - indice)
-        elif perfil in (PerfilPedagogico.POR_CURSO, PerfilPedagogico.SIMULACRO):
-            w = 0.35 + indice if perfil == PerfilPedagogico.POR_CURSO else 1.0
-        else:
-            w = 1.0
+        w = _peso_materia_segun_perfil(
+            perfil, indice, usar_analisis_historico=usar_analisis_historico
+        )
         pesos[m] = max(0.05, w)
     return pesos
 
@@ -1249,17 +1260,12 @@ def generar_examen(
     """
     perfil = opciones.perfil
     stats = opciones.stats
-    n_materias = opciones.n_materias
-    preguntas_por_materia = opciones.preguntas_por_materia
     tipos_permitidos = opciones.tipos_permitidos
     curso_filtro = opciones.curso_filtro
     semestre_filtro = opciones.semestre_filtro
     grupo_filtro = opciones.grupo_filtro
     materia_fija = opciones.materia_fija
-    usar_todas_materias_ambito = opciones.usar_todas_materias_ambito
-    seleccion_determinista = opciones.seleccion_determinista
     orden_preguntas = opciones.orden_preguntas
-    exigir_balance_completo = opciones.exigir_balance_completo
     usar_analisis_historico = opciones.usar_analisis_historico
     usar_plantillas_materia = opciones.usar_plantillas_materia
     plantillas_materia = opciones.plantillas_materia
@@ -1268,9 +1274,7 @@ def generar_examen(
     semilla = opciones.semilla
     semilla_contenido = opciones.semilla_contenido
     pregunta_key = opciones.pregunta_key
-    pesos_materia_sesion = opciones.pesos_materia_sesion
     preguntas_excluir = opciones.preguntas_excluir
-    perfiles_fallo = opciones.perfiles_fallo
     registros_dirigido = opciones.registros_dirigido
 
     if pregunta_key is None:

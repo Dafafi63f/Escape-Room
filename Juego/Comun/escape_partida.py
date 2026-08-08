@@ -147,6 +147,27 @@ class BonificacionCompletarEscape:
             or bool(self.powerups)
         )
 
+    def _linea_vidas_recompensa(self) -> str:
+        txt = self._texto_vidas()
+        if self.en_descanso:
+            return f"❤️ Botín: +{txt}."
+        if self.etiqueta:
+            return f"❤️ {self.etiqueta}: recuperas {txt}."
+        return f"❤️ Puerta superada: recuperas {txt}."
+
+    def _lineas_powerups_recompensa(self) -> list[str]:
+        from Comun.emojis_escape import EMOJI_BOTIN_ESCAPE
+        from Comun.resistencia_motor import etiqueta_powerup
+
+        partes: list[str] = []
+        for pid, cant in self.powerups:
+            nom = etiqueta_powerup(pid)
+            if cant == 1:
+                partes.append(f"{EMOJI_BOTIN_ESCAPE} Objeto: {nom}.")
+            else:
+                partes.append(f"{EMOJI_BOTIN_ESCAPE} Objetos: {cant}× {nom}.")
+        return partes
+
     @property
     def mensaje(self) -> str:
         if not self.tiene_recompensa:
@@ -157,23 +178,9 @@ class BonificacionCompletarEscape:
             txt = "1 al máximo" if n == 1 else f"{n} al máximo"
             partes.append(f"💖 Corazón máximo: +{txt} de vidas.")
         if self.delta_vidas > 0:
-            txt = self._texto_vidas()
-            if self.en_descanso:
-                partes.append(f"❤️ Botín: +{txt}.")
-            elif self.etiqueta:
-                partes.append(f"❤️ {self.etiqueta}: recuperas {txt}.")
-            else:
-                partes.append(f"❤️ Puerta superada: recuperas {txt}.")
+            partes.append(self._linea_vidas_recompensa())
         if self.powerups:
-            from Comun.emojis_escape import EMOJI_BOTIN_ESCAPE
-            from Comun.resistencia_motor import etiqueta_powerup
-
-            for pid, cant in self.powerups:
-                nom = etiqueta_powerup(pid)
-                if cant == 1:
-                    partes.append(f"{EMOJI_BOTIN_ESCAPE} Objeto: {nom}.")
-                else:
-                    partes.append(f"{EMOJI_BOTIN_ESCAPE} Objetos: {cant}× {nom}.")
+            partes.extend(self._lineas_powerups_recompensa())
         return " ".join(partes)
 
     def _texto_vidas(self) -> str:
@@ -1090,15 +1097,11 @@ def _modificadores_jefe_escape(
     return mods
 
 
-def _eventos_foco_bloque(
-    evento: EventoContenidoInstanciado,
+def _focos_ambito_bloque(
+    plantilla,
+    ambito: str,
     pools_bloque: dict[str, tuple],
-) -> tuple[EventoContenidoInstanciado, ...]:
-    from Comun.eventos_partida import OpcionesContenidoEscape
-
-    plantilla = evento.definicion
-    opts = plantilla.contenido_escape or OpcionesContenidoEscape()
-    ambito = opts.ambito_efectivo
+) -> list[EventoContenidoInstanciado]:
     focos: list[EventoContenidoInstanciado] = []
     if ambito == "grupo":
         for grupo in pools_bloque.get("grupos_pool", ()):
@@ -1116,6 +1119,18 @@ def _eventos_foco_bloque(
                     definicion=plantilla, curso=curso, semestre=semestre
                 )
             )
+    return focos
+
+
+def _eventos_foco_bloque(
+    evento: EventoContenidoInstanciado,
+    pools_bloque: dict[str, tuple],
+) -> tuple[EventoContenidoInstanciado, ...]:
+    from Comun.eventos_partida import OpcionesContenidoEscape
+
+    plantilla = evento.definicion
+    opts = plantilla.contenido_escape or OpcionesContenidoEscape()
+    focos = _focos_ambito_bloque(plantilla, opts.ambito_efectivo, pools_bloque)
     if not focos:
         return (evento,)
     vistos: set[tuple] = set()

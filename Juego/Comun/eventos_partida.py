@@ -1627,6 +1627,42 @@ def _elegir_desafios_puerta(
     return elegidos
 
 
+def _elegir_rasgos_y_botin_puerta(
+    *,
+    numero_sala: int,
+    rng: random.Random,
+    pity: PityPuertasEspecialesEscape | None,
+    recompensas: list,
+    desafios: list,
+) -> list:
+    min_rasgos = 0
+    prob_rasgo = 0.42 + min(0.45, (numero_sala - 1) * 0.012)
+    if numero_sala < SALA_MIN_MALDICION_ESCAPE:
+        prob_rasgo *= 0.72
+    if rng.random() < prob_rasgo:
+        min_rasgos = 1
+    if numero_sala >= 12 and rng.random() < 0.28:
+        min_rasgos = max(min_rasgos, 2)
+
+    max_rasgos = min(_MAX_RASGOS_PUERTA_COMBINADOS, len(desafios))
+    if max_rasgos <= 0 and not recompensas:
+        return []
+    n_extra = rng.randint(min(min_rasgos, max_rasgos), max_rasgos) if max_rasgos else 0
+    elegidos = _elegir_desafios_puerta(desafios, n_extra, rng, pity=pity)
+    elegidos = _intentar_inyectar_maldicion_escape(
+        elegidos,
+        desafios,
+        numero_sala=numero_sala,
+        rng=rng,
+        pity=pity,
+    )
+    if recompensas and rng.random() < _PROB_BOTIN_BASE + min(0.03, (numero_sala - 1) * 0.001):
+        botin = elegir_botin_para_sala(numero_sala, rng)
+        if botin is not None:
+            elegidos.append(botin)
+    return elegidos
+
+
 def generar_modificadores_puerta(
     *,
     numero_sala: int,
@@ -1662,31 +1698,13 @@ def generar_modificadores_puerta(
             or e.id not in RASGOS_MALDICION_ESCAPE
         )
     ]
-    min_rasgos = 0
-    prob_rasgo = 0.42 + min(0.45, (numero_sala - 1) * 0.012)
-    if numero_sala < SALA_MIN_MALDICION_ESCAPE:
-        prob_rasgo *= 0.72
-    if rng.random() < prob_rasgo:
-        min_rasgos = 1
-    if numero_sala >= 12 and rng.random() < 0.28:
-        min_rasgos = max(min_rasgos, 2)
-
-    max_rasgos = min(_MAX_RASGOS_PUERTA_COMBINADOS, len(desafios))
-    if max_rasgos <= 0 and not recompensas:
-        return combinar_modificadores_puerta((), numero_sala=numero_sala)
-    n_extra = rng.randint(min(min_rasgos, max_rasgos), max_rasgos) if max_rasgos else 0
-    elegidos = _elegir_desafios_puerta(desafios, n_extra, rng, pity=pity)
-    elegidos = _intentar_inyectar_maldicion_escape(
-        elegidos,
-        desafios,
+    elegidos = _elegir_rasgos_y_botin_puerta(
         numero_sala=numero_sala,
         rng=rng,
         pity=pity,
+        recompensas=recompensas,
+        desafios=desafios,
     )
-    if recompensas and rng.random() < _PROB_BOTIN_BASE + min(0.03, (numero_sala - 1) * 0.001):
-        botin = elegir_botin_para_sala(numero_sala, rng)
-        if botin is not None:
-            elegidos.append(botin)
     return combinar_modificadores_puerta(tuple(elegidos), numero_sala=numero_sala)
 
 
@@ -1732,6 +1750,38 @@ def tipo_filtro_evento(evento: EventoContenidoInstanciado):
     )
 
 
+def _resolver_ambito_contenido(
+    ambito: str,
+    *,
+    materias_pool: tuple[str, ...],
+    grupos_pool: tuple[str, ...],
+    cursos_pool: tuple[str, ...],
+    semestres_pool: tuple[str, ...],
+    periodos_pool: tuple[tuple[str, str], ...],
+    rng: random.Random,
+    indice_puerta: int,
+    materia_preferida: str | None,
+) -> tuple[str | None, str | None, str | None, str | None]:
+    materia: str | None = None
+    grupo: str | None = None
+    curso: str | None = None
+    semestre: str | None = None
+    if ambito == "grupo" and grupos_pool:
+        grupo = rng.choice(grupos_pool)
+    elif ambito == "materia" and materias_pool:
+        if materia_preferida and materia_preferida in materias_pool:
+            materia = materia_preferida
+        else:
+            materia = materias_pool[indice_puerta % len(materias_pool)]
+    elif ambito == "curso" and cursos_pool:
+        curso = rng.choice(cursos_pool)
+    elif ambito == "semestre" and semestres_pool:
+        semestre = rng.choice(semestres_pool)
+    elif ambito == "periodo" and periodos_pool:
+        curso, semestre = rng.choice(periodos_pool)
+    return materia, grupo, curso, semestre
+
+
 def instanciar_evento_contenido(
     plantilla: DefinicionEvento,
     *,
@@ -1748,25 +1798,17 @@ def instanciar_evento_contenido(
     if plantilla.rol_escape != RolEscape.CONTENIDO:
         raise ValueError(f"El evento {plantilla.id!r} no es de contenido escape.")
     opts = plantilla.contenido_escape or OpcionesContenidoEscape()
-    ambito = opts.ambito_efectivo
-    materia: str | None = None
-    grupo: str | None = None
-    curso: str | None = None
-    semestre: str | None = None
-
-    if ambito == "grupo" and grupos_pool:
-        grupo = rng.choice(grupos_pool)
-    elif ambito == "materia" and materias_pool:
-        if materia_preferida and materia_preferida in materias_pool:
-            materia = materia_preferida
-        else:
-            materia = materias_pool[indice_puerta % len(materias_pool)]
-    elif ambito == "curso" and cursos_pool:
-        curso = rng.choice(cursos_pool)
-    elif ambito == "semestre" and semestres_pool:
-        semestre = rng.choice(semestres_pool)
-    elif ambito == "periodo" and periodos_pool:
-        curso, semestre = rng.choice(periodos_pool)
+    materia, grupo, curso, semestre = _resolver_ambito_contenido(
+        opts.ambito_efectivo,
+        materias_pool=materias_pool,
+        grupos_pool=grupos_pool,
+        cursos_pool=cursos_pool,
+        semestres_pool=semestres_pool,
+        periodos_pool=periodos_pool,
+        rng=rng,
+        indice_puerta=indice_puerta,
+        materia_preferida=materia_preferida,
+    )
 
     if not plantilla_lleva_perfil_materia(plantilla):
         perfil_id = None
@@ -2914,6 +2956,33 @@ def _aplicar_sorpresa_resistencia(
     er.agregar_powerup(pid, 1)
 
 
+def _motivo_rechazo_evento_compra(
+    evento: EventoSiNo, estado: EstadoPartida, er: EstadoResistencia
+) -> str | None:
+    if not evento.articulo_id:
+        return "Evento no válido."
+    objetos = _objetos()
+    if (
+        objetos.es_bonificacion(evento.articulo_id)
+        and not objetos.bonificacion_aplicable(
+            evento.articulo_id, estado, vidas_max=er.vidas_max
+        )
+    ):
+        return "Esta bonificación no aplica ahora."
+    return None
+
+
+def _motivo_rechazo_evento_vida(
+    estado: EstadoPartida, er: EstadoResistencia
+) -> str | None:
+    vidas = estado.vidas_restantes
+    if vidas is None:
+        return "No aplica en esta partida."
+    if vidas >= er.vidas_max:
+        return "Ya tienes el tope de vidas."
+    return None
+
+
 def puede_aceptar_evento_si_no(
     evento: EventoSiNo,
     estado: EstadoPartida,
@@ -2928,25 +2997,10 @@ def puede_aceptar_evento_si_no(
         return None
 
     if evento.tipo == "compra":
-        if not evento.articulo_id:
-            return "Evento no válido."
-        objetos = _objetos()
-        if (
-            objetos.es_bonificacion(evento.articulo_id)
-            and not objetos.bonificacion_aplicable(
-                evento.articulo_id, estado, vidas_max=er.vidas_max
-            )
-        ):
-            return "Esta bonificación no aplica ahora."
-        return None
+        return _motivo_rechazo_evento_compra(evento, estado, er)
 
     if evento.tipo == "vida":
-        vidas = estado.vidas_restantes
-        if vidas is None:
-            return "No aplica en esta partida."
-        if vidas >= er.vidas_max:
-            return "Ya tienes el tope de vidas."
-        return None
+        return _motivo_rechazo_evento_vida(estado, er)
 
     if evento.tipo == "amuleto":
         return None

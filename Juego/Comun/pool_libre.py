@@ -150,6 +150,46 @@ def peso_pregunta_libre_desde_estrategia(
     return lambda p: peso_pregunta_para_seleccion(p, stats, perfil_ped)
 
 
+def _indices_permitidos(
+    pool: list[Pregunta],
+    *,
+    usadas: set[int],
+    bloqueadas: set[int],
+    permitida: Callable[[Pregunta], bool],
+) -> list[int]:
+    return [
+        idx
+        for idx, p in enumerate(pool)
+        if idx not in usadas and idx not in bloqueadas and permitida(p)
+    ]
+
+
+def _candidatas_pool(
+    pool: list[Pregunta],
+    estado: EstadoSeleccionPool,
+    *,
+    bloqueadas: set[int],
+    permitida: Callable[[Pregunta], bool],
+    modo_infinito: bool,
+    filtrar: bool,
+) -> list[int] | None:
+    candidatas = _indices_permitidos(
+        pool, usadas=estado.usadas, bloqueadas=bloqueadas, permitida=permitida
+    )
+    if candidatas:
+        return candidatas
+    if modo_infinito:
+        estado.usadas.clear()
+        candidatas = _indices_permitidos(
+            pool, usadas=set(), bloqueadas=bloqueadas, permitida=permitida
+        )
+        return candidatas or None
+    if filtrar:
+        return None
+    candidatas = [idx for idx in range(len(pool)) if idx not in estado.usadas]
+    return candidatas or None
+
+
 def elegir_indice_siguiente(
     pool: list[Pregunta],
     estado: EstadoSeleccionPool,
@@ -182,30 +222,16 @@ def elegir_indice_siguiente(
         )
 
     bloqueadas = set(estado.historial_reciente)
-    candidatas = [
-        idx
-        for idx, p in enumerate(pool)
-        if idx not in estado.usadas
-        and idx not in bloqueadas
-        and _permitida(p)
-    ]
+    candidatas = _candidatas_pool(
+        pool,
+        estado,
+        bloqueadas=bloqueadas,
+        permitida=_permitida,
+        modo_infinito=modo_infinito,
+        filtrar=filtrar,
+    )
     if not candidatas:
-        if modo_infinito:
-            estado.usadas.clear()
-            candidatas = [
-                idx
-                for idx, p in enumerate(pool)
-                if idx not in bloqueadas
-                and _permitida(p)
-            ]
-            if not candidatas:
-                return None
-        elif filtrar:
-            return None
-        else:
-            candidatas = [idx for idx in range(len(pool)) if idx not in estado.usadas]
-            if not candidatas:
-                return None
+        return None
     elegidor = rng or random
     if peso_pregunta is not None:
         pesos = [max(0.05, peso_pregunta(pool[i])) for i in candidatas]

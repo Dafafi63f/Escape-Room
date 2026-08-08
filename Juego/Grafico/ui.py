@@ -1087,18 +1087,7 @@ class CampoEntero:
         self.activo = False
         self.habilitado = True
 
-    def manejar_evento(self, evento: pygame.event.Event) -> bool:
-        if not self.habilitado:
-            if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
-                self.activo = self.rect.collidepoint(evento.pos)
-                if self.activo:
-                    self.activo = False
-            return False
-        if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
-            self.activo = self.rect.collidepoint(evento.pos)
-            return self.activo
-        if not self.activo or evento.type != pygame.KEYDOWN:
-            return False
+    def _manejar_tecla_campo_entero(self, evento: pygame.event.Event) -> bool:
         if evento.key == pygame.K_BACKSPACE:
             self.texto = self.texto[:-1]
             return True
@@ -1112,6 +1101,23 @@ class CampoEntero:
             self.texto += char
             return True
         return False
+
+    def _manejar_clic_deshabilitado(self, evento: pygame.event.Event) -> None:
+        if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+            self.activo = self.rect.collidepoint(evento.pos)
+            if self.activo:
+                self.activo = False
+
+    def manejar_evento(self, evento: pygame.event.Event) -> bool:
+        if not self.habilitado:
+            self._manejar_clic_deshabilitado(evento)
+            return False
+        if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+            self.activo = self.rect.collidepoint(evento.pos)
+            return self.activo
+        if not self.activo or evento.type != pygame.KEYDOWN:
+            return False
+        return self._manejar_tecla_campo_entero(evento)
 
     def valor_entero(self, defecto: int = 10) -> int | None:
         limpio = self.texto.strip()

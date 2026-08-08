@@ -1986,41 +1986,44 @@ class PartidaEscapeRoom(Pantalla):
         self.inicio_feedback = marcar_inicio_feedback()
         return True
 
-    def _continuar_tras_feedback(self) -> None:
-        if self.fase != "feedback":
-            return
+    def _limpiar_feedback_escape(self) -> None:
+        self.feedback_mensaje = ""
+        self.feedback_solucion = None
+        self.feedback_ok = False
+
+    def _continuar_feedback_retorno(self) -> bool:
         if self._retorno_feedback == "puerta":
             self._retorno_feedback = None
             self.fase = "preparacion_puerta"
-            self.feedback_mensaje = ""
-            self.feedback_solucion = None
-            self.feedback_ok = False
+            self._limpiar_feedback_escape()
             self._reconstruir_inventario_botones()
             self._reconstruir_boton_empezar_puerta()
-            return
+            return True
         if self._retorno_feedback == "sala":
             self._retorno_feedback = None
             self.fase = "puertas"
-            self.feedback_mensaje = ""
-            self.feedback_solucion = None
-            self.feedback_ok = False
+            self._limpiar_feedback_escape()
             self._reconstruir_inventario_botones()
-            return
+            return True
         self._retorno_feedback = None
-        if self.reintentar_pregunta:
-            self.reintentar_pregunta = False
-            self.fase = "pregunta"
-            self.inicio_pregunta = time.monotonic()
-            self._tiempo_agotado_marcado = False
-            self.feedback_mensaje = ""
-            self.feedback_solucion = None
-            self.feedback_ok = False
-            for boton in self.botones_opcion:
-                boton.activo = True
-                boton.marcar_correcta = False
-                boton.marcar_incorrecta = False
-            self._reconstruir_inventario_botones()
-            return
+        return False
+
+    def _continuar_feedback_reintento(self) -> bool:
+        if not self.reintentar_pregunta:
+            return False
+        self.reintentar_pregunta = False
+        self.fase = "pregunta"
+        self.inicio_pregunta = time.monotonic()
+        self._tiempo_agotado_marcado = False
+        self._limpiar_feedback_escape()
+        for boton in self.botones_opcion:
+            boton.activo = True
+            boton.marcar_correcta = False
+            boton.marcar_incorrecta = False
+        self._reconstruir_inventario_botones()
+        return True
+
+    def _continuar_feedback_siguiente_o_fin(self) -> None:
         if self.desafio_fallo:
             self._finalizar_desafio()
             return
@@ -2032,29 +2035,31 @@ class PartidaEscapeRoom(Pantalla):
                 return
             self._finalizar_desafio()
             return
-        if (
-            not self.desafio_fallo
-            and self.pregunta_idx < len(self.preguntas_desafio) - 1
-        ):
+        if self.pregunta_idx < len(self.preguntas_desafio) - 1:
             self.pregunta_idx += 1
             self.fase = "pregunta"
             self.inicio_pregunta = time.monotonic()
             self._tiempo_agotado_marcado = False
             self.inventario_escape.reset_pregunta()
-            self.feedback_mensaje = ""
-            self.feedback_solucion = None
-            self.feedback_ok = False
+            self._limpiar_feedback_escape()
             self._reconstruir_opciones()
             self._reconstruir_inventario_botones()
             return
         if (
-            not self.desafio_fallo
-            and self.pregunta_idx >= len(self.preguntas_desafio) - 1
-            and not self._bonus_completar_mostrado
+            not self._bonus_completar_mostrado
             and self._intentar_feedback_bonus_completar()
         ):
             return
         self._finalizar_desafio()
+
+    def _continuar_tras_feedback(self) -> None:
+        if self.fase != "feedback":
+            return
+        if self._continuar_feedback_retorno():
+            return
+        if self._continuar_feedback_reintento():
+            return
+        self._continuar_feedback_siguiente_o_fin()
 
     def actualizar(self) -> Pantalla | None:
         if self.fase == "pregunta" and not self._tiempo_agotado_marcado:
@@ -2165,6 +2170,28 @@ class PartidaEscapeRoom(Pantalla):
         tip = self._iconos_puerta[i][j].tooltip
         dibujar_tooltip(superficie, self.fuentes["pequena"], rects[j], tip)
 
+    def _dibujar_tooltip_icono_tienda(self, superficie: pygame.Surface) -> None:
+        if self._hover_icono_tienda is None:
+            return
+        i = self._hover_icono_tienda
+        oferta = self._oferta_por_indice(i)
+        if oferta is None or i >= len(self.botones_tienda):
+            return
+        boton = self.botones_tienda[i]
+        if not boton.activo:
+            return
+        inner = boton.rect.inflate(-20, -20)
+        rects = self._rects_iconos_carta(
+            inner, self._iconos_carta_tienda(oferta.articulo)
+        )
+        if rects:
+            dibujar_tooltip(
+                superficie,
+                self.fuentes["pequena"],
+                rects[0],
+                oferta.articulo.descripcion,
+            )
+
     def _dibujar_tienda(self, superficie: pygame.Surface) -> None:
         superficie.fill(COLOR_FONDO)
         self._dibujar_barra_superior(superficie)
@@ -2196,26 +2223,7 @@ class PartidaEscapeRoom(Pantalla):
                     hover=boton.hover,
                     indice=i,
                 )
-        if self._hover_icono_tienda is not None:
-            i = self._hover_icono_tienda
-            oferta = self._oferta_por_indice(i)
-            if (
-                oferta is not None
-                and i < len(self.botones_tienda)
-            ):
-                boton = self.botones_tienda[i]
-                if boton.activo:
-                    inner = self.botones_tienda[i].rect.inflate(-20, -20)
-                    rects = self._rects_iconos_carta(
-                        inner, self._iconos_carta_tienda(oferta.articulo)
-                    )
-                    if rects:
-                        dibujar_tooltip(
-                            superficie,
-                            self.fuentes["pequena"],
-                            rects[0],
-                            oferta.articulo.descripcion,
-                        )
+        self._dibujar_tooltip_icono_tienda(superficie)
         if self.boton_salir_tienda:
             self.boton_salir_tienda.dibujar(superficie, self.fuentes["menu"])
         if self.mensaje_tienda:
@@ -2324,27 +2332,39 @@ class PartidaEscapeRoom(Pantalla):
         for boton in self._botones_ui():
             boton.actualizar_hover(pos)
         if self.fase == "puertas":
-            for boton in self.botones_puerta:
-                boton.actualizar_hover(pos)
-            for boton in self.botones_inventario:
-                boton.actualizar_hover(pos)
-            self._actualizar_hover_iconos(pos)
+            self._hover_fase_puertas(pos)
         elif self.fase == "tienda":
-            for boton in self.botones_tienda:
-                boton.actualizar_hover(pos)
-            self._actualizar_hover_icono_tienda(pos)
-            if self.boton_salir_tienda:
-                self.boton_salir_tienda.actualizar_hover(pos)
+            self._hover_fase_tienda(pos)
         elif self.fase == "preparacion_puerta":
-            for boton in self.botones_inventario:
-                boton.actualizar_hover(pos)
-            if self.boton_empezar_puerta:
-                self.boton_empezar_puerta.actualizar_hover(pos)
+            self._hover_fase_preparacion(pos)
         elif self.fase == "pregunta":
-            for boton in self.botones_opcion:
-                boton.actualizar_hover(pos)
-            for boton in self.botones_inventario:
-                boton.actualizar_hover(pos)
+            self._hover_fase_pregunta(pos)
+
+    def _hover_fase_puertas(self, pos: tuple[int, int]) -> None:
+        for boton in self.botones_puerta:
+            boton.actualizar_hover(pos)
+        for boton in self.botones_inventario:
+            boton.actualizar_hover(pos)
+        self._actualizar_hover_iconos(pos)
+
+    def _hover_fase_tienda(self, pos: tuple[int, int]) -> None:
+        for boton in self.botones_tienda:
+            boton.actualizar_hover(pos)
+        self._actualizar_hover_icono_tienda(pos)
+        if self.boton_salir_tienda:
+            self.boton_salir_tienda.actualizar_hover(pos)
+
+    def _hover_fase_preparacion(self, pos: tuple[int, int]) -> None:
+        for boton in self.botones_inventario:
+            boton.actualizar_hover(pos)
+        if self.boton_empezar_puerta:
+            self.boton_empezar_puerta.actualizar_hover(pos)
+
+    def _hover_fase_pregunta(self, pos: tuple[int, int]) -> None:
+        for boton_opcion in self.botones_opcion:
+            boton_opcion.actualizar_hover(pos)
+        for boton_inv in self.botones_inventario:
+            boton_inv.actualizar_hover(pos)
 
     def _manejar_clic_puertas(self, pos: tuple[int, int], button: int) -> None:
         for boton_inv in self.botones_inventario:

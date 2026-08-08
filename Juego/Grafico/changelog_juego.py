@@ -158,6 +158,32 @@ def _es_nota_footer_desarrollo(limpia: str) -> bool:
     return limpia.casefold().startswith("al añadir algo")
 
 
+def _procesar_linea_changelog(
+    bruta: str,
+    limpia: str,
+    salida: list[str],
+    *,
+    en_bloque_codigo: bool,
+) -> bool:
+    """Devuelve el nuevo estado de en_bloque_codigo; None implícito vía return bool."""
+    if limpia.startswith("```"):
+        return not en_bloque_codigo
+    if en_bloque_codigo:
+        return en_bloque_codigo
+    if not limpia:
+        _anadir_parrafo_vacio(salida)
+        return en_bloque_codigo
+    if limpia.startswith("|"):
+        return en_bloque_codigo
+    if re.fullmatch(r"[-─—]{3,}", limpia):
+        return en_bloque_codigo
+    if limpia.startswith("#"):
+        _procesar_titulo_md(bruta, salida)
+        return en_bloque_codigo
+    _procesar_linea_texto(bruta, salida)
+    return en_bloque_codigo
+
+
 def simplificar_changelog_para_ui(texto: str) -> str:
     """Quita tablas y marcado pesado; conserva títulos y párrafos legibles."""
     salida: list[str] = []
@@ -167,22 +193,9 @@ def simplificar_changelog_para_ui(texto: str) -> str:
         limpia = bruta.strip()
         if _es_nota_footer_desarrollo(limpia):
             break
-        if limpia.startswith("```"):
-            en_bloque_codigo = not en_bloque_codigo
-            continue
-        if en_bloque_codigo:
-            continue
-        if not limpia:
-            _anadir_parrafo_vacio(salida)
-            continue
-        if limpia.startswith("|"):
-            continue
-        if re.fullmatch(r"[-─—]{3,}", limpia):
-            continue
-        if limpia.startswith("#"):
-            _procesar_titulo_md(bruta, salida)
-            continue
-        _procesar_linea_texto(bruta, salida)
+        en_bloque_codigo = _procesar_linea_changelog(
+            bruta, limpia, salida, en_bloque_codigo=en_bloque_codigo
+        )
     while salida and salida[-1] == "":
         salida.pop()
     return "\n".join(salida).strip()

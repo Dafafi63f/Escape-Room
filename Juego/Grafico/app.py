@@ -316,6 +316,22 @@ class AplicacionGrafica:
             return self.datos.perfil.modos_diarios_disponibles
         return True
 
+    def _tooltip_barra_no_permitido(self, tipo: str, *, en_partida: bool) -> str | None:
+        if self._menu_opciones_abierto and tipo not in ("pausa", "opciones"):
+            return TOOLTIP_BARRA_DURANTE_OPCIONES
+        if self._menu_pausa_abierto and tipo not in ("pausa", "feedback"):
+            return TOOLTIP_BARRA_DURANTE_PAUSA
+        if isinstance(self.actual, PantallaBienvenida):
+            return TOOLTIP_BARRA_BIENVENIDA
+        if en_partida and tipo != "pausa":
+            return TOOLTIP_BARRA_DURANTE_PARTIDA
+        if tipo == "diarios":
+            return (
+                self.datos.perfil.motivo_modo_no_disponible("diarios")
+                or self._tooltips_barra_originales.get(tipo, "")
+            )
+        return None
+
     def _actualizar_estado_barra_fija(self) -> None:
         en_partida = pantalla_en_partida_activa(self.actual)
         for boton, tipo in self._botones_fijos:
@@ -328,19 +344,10 @@ class AplicacionGrafica:
                     boton.tooltip = tooltip_barra_diarios(self.datos.perfil)
                 else:
                     boton.tooltip = self._tooltips_barra_originales.get(tipo, boton.tooltip)
-            elif self._menu_opciones_abierto and tipo not in ("pausa", "opciones"):
-                boton.tooltip = TOOLTIP_BARRA_DURANTE_OPCIONES
-            elif self._menu_pausa_abierto and tipo not in ("pausa", "feedback"):
-                boton.tooltip = TOOLTIP_BARRA_DURANTE_PAUSA
-            elif isinstance(self.actual, PantallaBienvenida):
-                boton.tooltip = TOOLTIP_BARRA_BIENVENIDA
-            elif en_partida and tipo != "pausa":
-                boton.tooltip = TOOLTIP_BARRA_DURANTE_PARTIDA
-            elif tipo == "diarios":
-                boton.tooltip = (
-                    self.datos.perfil.motivo_modo_no_disponible("diarios")
-                    or self._tooltips_barra_originales.get(tipo, "")
-                )
+            else:
+                tip = self._tooltip_barra_no_permitido(tipo, en_partida=en_partida)
+                if tip is not None:
+                    boton.tooltip = tip
 
     def _crear_botones_fijos(self) -> list[tuple[Boton, str]]:
         return crear_botones_iconos_fijos(

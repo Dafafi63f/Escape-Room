@@ -426,25 +426,49 @@ class PantallaInfoHub(Pantalla):
         self.boton_volver.dibujar(superficie, self.fuentes["menu"])
         dibujar_tooltips_botones(superficie, self.fuentes["pequena"], self._botones_ui())
 
+    def _blit_si_visible(
+        self,
+        superficie: pygame.Surface,
+        render,
+        y: int,
+        x: int,
+    ) -> None:
+        if y + render.get_height() >= self._rect_viewport.y and y <= self._rect_viewport.bottom:
+            superficie.blit(render, (x, y))
+
+    def _dibujar_lineas_bloque_info(
+        self,
+        superficie: pygame.Surface,
+        fuente,
+        lineas: list[str],
+        y: int,
+        x: int,
+        alto_linea: int,
+    ) -> int:
+        for linea in lineas:
+            if y + alto_linea >= self._rect_viewport.y and y <= self._rect_viewport.bottom:
+                if linea:
+                    txt = fuente.render(linea, True, _COLOR_TEXTO_INFO)
+                    superficie.blit(txt, (x, y))
+            y += alto_linea
+        return y
+
     def _dibujar_bloques_info(self, superficie: pygame.Surface) -> None:
         dibujar_panel(superficie, self._rect_viewport, color=(255, 255, 255))
         fuente = self.fuentes["pequena"]
         fuente_titulo = self.fuentes["menu"]
         alto_linea = fuente.get_linesize() + 4
         y = self._rect_viewport.y + 12 - self.scroll
+        x = self._rect_viewport.x + _PAD_CONTACTO
         for indice, (titulo, lineas) in enumerate(self._bloques_info):
             if indice > 0:
                 y += 12
             tit_render = fuente_titulo.render(titulo, True, _COLOR_TEXTO_INFO)
-            if y + tit_render.get_height() >= self._rect_viewport.y and y <= self._rect_viewport.bottom:
-                superficie.blit(tit_render, (self._rect_viewport.x + _PAD_CONTACTO, y))
+            self._blit_si_visible(superficie, tit_render, y, x)
             y += tit_render.get_height() + 8
-            for linea in lineas:
-                if y + alto_linea >= self._rect_viewport.y and y <= self._rect_viewport.bottom:
-                    if linea:
-                        txt = fuente.render(linea, True, _COLOR_TEXTO_INFO)
-                        superficie.blit(txt, (self._rect_viewport.x + _PAD_CONTACTO, y))
-                y += alto_linea
+            y = self._dibujar_lineas_bloque_info(
+                superficie, fuente, lineas, y, x, alto_linea
+            )
 
 # --- Feedback ---
 

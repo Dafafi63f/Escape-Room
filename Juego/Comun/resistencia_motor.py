@@ -1057,6 +1057,15 @@ def texto_progreso_resistencia(er: EstadoResistencia, numero_pregunta: int) -> s
     return f"{numero_pregunta}  Racha {er.racha}"
 
 
+def _cumple_dificultad_jefe(p: Pregunta, bloque: BloqueFiltroActivo) -> bool:
+    if not bloque.dificultad_jefe:
+        return True
+    from Comun.jefe_partida import dificultades_permitidas_jefe
+
+    permitidas = dificultades_permitidas_jefe(bloque.dificultad_jefe)
+    return permitidas is None or p.dificultad in permitidas
+
+
 def _pregunta_cumple_bloque(p: Pregunta, bloque: BloqueFiltroActivo) -> bool:
     if bloque.materia and p.materia != bloque.materia:
         return False
@@ -1070,13 +1079,7 @@ def _pregunta_cumple_bloque(p: Pregunta, bloque: BloqueFiltroActivo) -> bool:
         return False
     if bloque.semestre and p.semestre != bloque.semestre:
         return False
-    if bloque.dificultad_jefe:
-        from Comun.jefe_partida import dificultades_permitidas_jefe
-
-        permitidas = dificultades_permitidas_jefe(bloque.dificultad_jefe)
-        if permitidas is not None and p.dificultad not in permitidas:
-            return False
-    return True
+    return _cumple_dificultad_jefe(p, bloque)
 
 
 def _contar_preguntas_bloque(pool: list[Pregunta], bloque: BloqueFiltroActivo) -> int:
@@ -1459,6 +1462,50 @@ def aplicar_efectos_maldicion(
         er.objetos_bloqueados = True
 
 
+def _tick_maldicion_post_turno(
+    er: EstadoResistencia, *, acierto: bool
+) -> list[str]:
+    avisos: list[str] = []
+    if not er.maldicion:
+        return avisos
+    from Comun.maldiciones_partida import (
+        limpiar_efectos_maldicion_resistencia,
+        maldicion_usa_duracion_preguntas,
+    )
+
+    if maldicion_tiene_desafio_tiempo(er.maldicion):
+        avisos_desafio = tick_maldicion_desafio_tras_acierto(
+            er.maldicion, acierto=acierto
+        )
+        if avisos_desafio:
+            er.maldicion = None
+            limpiar_efectos_maldicion_resistencia(er)
+        avisos.extend(avisos_desafio)
+    elif maldicion_usa_duracion_preguntas(er.maldicion):
+        er.maldicion.preguntas_restantes -= 1
+        if er.maldicion.preguntas_restantes <= 0:
+            er.maldicion = None
+            limpiar_efectos_maldicion_resistencia(er)
+    return avisos
+
+
+def _activar_maldicion_si_fallo(
+    er: EstadoResistencia, *, acierto: bool, numero_pregunta: int
+) -> MaldicionActiva | None:
+    if acierto:
+        return None
+    nueva = _activar_maldicion(er, numero_pregunta)
+    if not nueva:
+        return None
+    er.maldicion = nueva
+    from Comun.maldiciones_partida import reaplicar_efectos_maldicion_persistente
+    from Comun.pity_variedad_resistencia import registrar_variedad_resistencia
+
+    reaplicar_efectos_maldicion_persistente(er)
+    registrar_variedad_resistencia(er, "maldicion")
+    return nueva
+
+
 def procesar_post_turno_resistencia(
     er: EstadoResistencia,
     *,
@@ -1471,37 +1518,12 @@ def procesar_post_turno_resistencia(
     if len(er.ventana_resultados) > 3:
         er.ventana_resultados.pop(0)
 
-    if er.maldicion:
-        from Comun.maldiciones_partida import (
-            limpiar_efectos_maldicion_resistencia,
-            maldicion_usa_duracion_preguntas,
-        )
-
-        if maldicion_tiene_desafio_tiempo(er.maldicion):
-            avisos_desafio = tick_maldicion_desafio_tras_acierto(
-                er.maldicion, acierto=acierto
-            )
-            if avisos_desafio:
-                er.maldicion = None
-                limpiar_efectos_maldicion_resistencia(er)
-            avisos.extend(avisos_desafio)
-        elif maldicion_usa_duracion_preguntas(er.maldicion):
-            er.maldicion.preguntas_restantes -= 1
-            if er.maldicion.preguntas_restantes <= 0:
-                er.maldicion = None
-                limpiar_efectos_maldicion_resistencia(er)
-
-    nueva: MaldicionActiva | None = None
-    if not acierto:
-        nueva = _activar_maldicion(er, numero_pregunta)
-        if nueva:
-            er.maldicion = nueva
-            avisos.append(formatear_aviso_maldicion(nueva.etiqueta))
-            from Comun.maldiciones_partida import reaplicar_efectos_maldicion_persistente
-            from Comun.pity_variedad_resistencia import registrar_variedad_resistencia
-
-            reaplicar_efectos_maldicion_persistente(er)
-            registrar_variedad_resistencia(er, "maldicion")
+    avisos.extend(_tick_maldicion_post_turno(er, acierto=acierto))
+    nueva = _activar_maldicion_si_fallo(
+        er, acierto=acierto, numero_pregunta=numero_pregunta
+    )
+    if nueva:
+        avisos.append(formatear_aviso_maldicion(nueva.etiqueta))
 
     from Comun.maldiciones_partida import actualizar_pity_maldiciones_resistencia
 
@@ -1794,6 +1816,23 @@ def _aplicar_recompensa_apuesta_exito(
     return avisos
 
 
+def _avisos_penalizacion_objetos_apuesta(
+    er: EstadoResistencia, coste
+) -> list[str]:
+    avisos: list[str] = []
+    if coste.pierde_todos_objetos and er.inventario:
+        er.inventario.clear()
+        avisos.append("Apuesta: pierdes todos los objetos")
+    elif coste.pierde_powerup_aleatorio and er.inventario:
+        rng = rng_partida(er)
+        candidatos = [pid for pid, n in er.inventario.items() if n > 0]
+        if candidatos:
+            pid = rng.choice(candidatos)
+            er.consumir_powerup(pid)
+            avisos.append(f"Apuesta: pierdes {etiqueta_powerup(pid)}")
+    return avisos
+
+
 def _aplicar_penalizacion_apuesta(
     estado: EstadoPartida,
     er: EstadoResistencia,
@@ -1823,16 +1862,7 @@ def _aplicar_penalizacion_apuesta(
         )
         if aplicado < 0:
             avisos.append(f"Apuesta: {aplicado} puntos")
-    if coste.pierde_todos_objetos and er.inventario:
-        er.inventario.clear()
-        avisos.append("Apuesta: pierdes todos los objetos")
-    elif coste.pierde_powerup_aleatorio and er.inventario:
-        rng = rng_partida(er)
-        candidatos = [pid for pid, n in er.inventario.items() if n > 0]
-        if candidatos:
-            pid = rng.choice(candidatos)
-            er.consumir_powerup(pid)
-            avisos.append(f"Apuesta: pierdes {etiqueta_powerup(pid)}")
+    avisos.extend(_avisos_penalizacion_objetos_apuesta(er, coste))
     return False, avisos
 
 

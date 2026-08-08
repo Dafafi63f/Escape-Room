@@ -112,6 +112,22 @@ def _pares_mismo_enunciado(
     return out
 
 
+def _intentar_par_motivo_grupo(
+    grupo,
+    i: int,
+    j: int,
+    out: list[tuple[str, str, str]],
+    vistos: set[tuple[str, str]],
+) -> None:
+    par = tuple(sorted((grupo[i][0], grupo[j][0])))
+    if par in vistos:
+        return
+    m = motivo_duplicado(grupo[i][1], grupo[j][1])
+    if m:
+        out.append((grupo[i][0], grupo[j][0], m))
+        vistos.add(par)
+
+
 def _anadir_pares_motivo_grupos(
     grupos,
     out: list[tuple[str, str, str]],
@@ -122,13 +138,7 @@ def _anadir_pares_motivo_grupos(
             continue
         for i in range(len(grupo)):
             for j in range(i + 1, len(grupo)):
-                par = tuple(sorted((grupo[i][0], grupo[j][0])))
-                if par in vistos:
-                    continue
-                m = motivo_duplicado(grupo[i][1], grupo[j][1])
-                if m:
-                    out.append((grupo[i][0], grupo[j][0], m))
-                    vistos.add(par)
+                _intentar_par_motivo_grupo(grupo, i, j, out, vistos)
 
 
 def pares_duplicados(items: list[tuple[str, dict]]) -> list[tuple[str, str, str]]:
@@ -235,12 +245,9 @@ def _pares_cruce_temas_en_grupo(grupo: list[tuple[str, dict]]) -> list:
     return pares
 
 
-def revisar_cruce() -> list[tuple[str, str, str]]:
-    with PATH_PREGUNTAS.open("r", encoding="utf-8", newline="") as f:
-        filas = list(csv.DictReader(f, delimiter=";"))
-    with PATH_PLANTILLAS.open("r", encoding="utf-8") as f:
-        plantillas = json.load(f)
-
+def _indexar_buckets_cruce(
+    filas: list[dict], plantillas: dict
+) -> dict[str, list[tuple[str, dict]]]:
     por_bucket: dict[str, list[tuple[str, dict]]] = defaultdict(list)
     for f in filas:
         por_bucket[_bucket_key(f)].append((f"Id {f.get('Id', '?')}", f))
@@ -248,18 +255,33 @@ def revisar_cruce() -> list[tuple[str, str, str]]:
         for i, t in enumerate(lst):
             fila = {"Pregunta": t.get("pregunta", ""), **t}
             por_bucket[_bucket_key(fila)].append((f"{tema}#{i}", fila))
+    return por_bucket
 
-    cruce = []
+
+def _pares_cruce_en_bucket(grupo: list[tuple[str, dict]]) -> list[tuple[str, str, str]]:
+    ds = [(k, d) for k, d in grupo if k.startswith("Id ")]
+    pl = [(k, d) for k, d in grupo if not k.startswith("Id ")]
+    if not ds or not pl:
+        return []
+    cruce: list[tuple[str, str, str]] = []
+    for did, d in ds:
+        for pid, p in pl:
+            m = motivo_duplicado(d, p)
+            if m:
+                cruce.append((did, pid, m))
+    return cruce
+
+
+def revisar_cruce() -> list[tuple[str, str, str]]:
+    with PATH_PREGUNTAS.open("r", encoding="utf-8", newline="") as f:
+        filas = list(csv.DictReader(f, delimiter=";"))
+    with PATH_PLANTILLAS.open("r", encoding="utf-8") as f:
+        plantillas = json.load(f)
+
+    por_bucket = _indexar_buckets_cruce(filas, plantillas)
+    cruce: list[tuple[str, str, str]] = []
     for grupo in por_bucket.values():
-        ds = [(k, d) for k, d in grupo if k.startswith("Id ")]
-        pl = [(k, d) for k, d in grupo if not k.startswith("Id ")]
-        if not ds or not pl:
-            continue
-        for did, d in ds:
-            for pid, p in pl:
-                m = motivo_duplicado(d, p)
-                if m:
-                    cruce.append((did, pid, m))
+        cruce.extend(_pares_cruce_en_bucket(grupo))
     return cruce
 
 
@@ -356,52 +378,52 @@ def deduplicar_dataset(
 
 
 
-def ejecutar_todo(inplace: bool = False, dry_run: bool = False, seed: int = 42) -> int:
-    if not inplace and not dry_run:
-        print("Indica inplace=True o dry_run=True")
-        return 2
-
-    rng = random.Random(seed)
-
-    with PATH_PLANTILLAS.open("r", encoding="utf-8") as f:
-        plantillas = json.load(f)
-
-    total_pl_before = sum(len(v) for v in plantillas.values())
+def _dedup_plantillas_todo(plantillas: dict, dry_run: bool) -> tuple[dict, int, int]:
     if dry_run:
         # En dry-run solo duplicados exactos (la dedup semántica es costosa).
-        plantillas_limpias, ex_pl, sim_pl = deduplicar_plantillas_dict(
-            plantillas, solo_exactas=True
-        )
-    else:
-        plantillas_limpias, ex_pl, sim_pl = deduplicar_plantillas_dict(plantillas)
-    total_pl_after = sum(len(v) for v in plantillas_limpias.values())
+        return deduplicar_plantillas_dict(plantillas, solo_exactas=True)
+    return deduplicar_plantillas_dict(plantillas)
 
-    with PATH_PREGUNTAS.open("r", encoding="utf-8", newline="") as f:
-        reader = csv.DictReader(f, delimiter=";")
-        fieldnames = list(reader.fieldnames or [])
-        filas = list(reader)
 
-    filas_work = [dict(f) for f in filas]
-    dup_antes = len(indices_duplicados_dataset(filas_work))
+def _dedup_dataset_todo(
+    filas_work: list[dict],
+    plantillas_limpias: dict,
+    rng: random.Random,
+    dry_run: bool,
+    dup_antes: int,
+) -> tuple[list[dict], int, int, int]:
     if dry_run:
-        filas_nuevas = filas_work
-        reempl, sin_rep = 0, 0
-        dup_despues = dup_antes
-    else:
-        filas_nuevas, reempl, sin_rep = deduplicar_dataset(
-            filas_work, plantillas_limpias, rng
-        )
-        dup_despues = len(indices_duplicados_dataset(filas_nuevas))
+        return filas_work, 0, 0, dup_antes
+    filas_nuevas, reempl, sin_rep = deduplicar_dataset(
+        filas_work, plantillas_limpias, rng
+    )
+    dup_despues = len(indices_duplicados_dataset(filas_nuevas))
+    return filas_nuevas, reempl, sin_rep, dup_despues
 
+
+def _cruce_plantillas_todo(
+    plantillas_limpias: dict, filas_nuevas: list[dict], dry_run: bool
+) -> tuple[dict, int]:
     if dry_run:
-        plantillas_sin_cruce = plantillas_limpias
-        cruce_removed = 0
-    else:
-        plantillas_sin_cruce, cruce_removed = quitar_plantillas_presentes_en_dataset(
-            plantillas_limpias, filas_nuevas
-        )
-    total_pl_final = sum(len(v) for v in plantillas_sin_cruce.values())
+        return plantillas_limpias, 0
+    return quitar_plantillas_presentes_en_dataset(plantillas_limpias, filas_nuevas)
 
+
+def _imprimir_informe_todo(
+    *,
+    dry_run: bool,
+    total_pl_before: int,
+    total_pl_after: int,
+    ex_pl: int,
+    sim_pl: int,
+    cruce_removed: int,
+    total_pl_final: int,
+    dup_antes: int,
+    reempl: int,
+    sin_rep: int,
+    dup_despues: int,
+    filas_nuevas: list[dict],
+) -> None:
     print("=== Plantillas ===")
     print(f"  Antes: {total_pl_before} | Tras dedup interna: {total_pl_after}")
     print(f"  Eliminadas exactas: {ex_pl} | muy similares: {sim_pl}")
@@ -423,13 +445,15 @@ def ejecutar_todo(inplace: bool = False, dry_run: bool = False, seed: int = 42) 
             f = filas_nuevas[idx]
             print(f"    Id {f.get('Id')} Materia={materia_de_fila(f)}")
 
-    if dry_run:
-        return 0
 
+def _persistir_todo(
+    plantillas_sin_cruce: dict,
+    fieldnames: list[str],
+    filas_nuevas: list[dict],
+    dup_despues: int,
+) -> int:
     guardar_plantillas_json(plantillas_sin_cruce)
-
     guardar_filas_csv(fieldnames, filas_nuevas, PATH_PREGUNTAS)
-
     try:
         ejecutar_reordenar(solo_metadatos=True)
     except ValueError as e:
@@ -438,6 +462,59 @@ def ejecutar_todo(inplace: bool = False, dry_run: bool = False, seed: int = 42) 
     if rc_val != 0:
         return rc_val
     return 1 if dup_despues else 0
+
+
+def ejecutar_todo(inplace: bool = False, dry_run: bool = False, seed: int = 42) -> int:
+    if not inplace and not dry_run:
+        print("Indica inplace=True o dry_run=True")
+        return 2
+
+    rng = random.Random(seed)
+
+    with PATH_PLANTILLAS.open("r", encoding="utf-8") as f:
+        plantillas = json.load(f)
+
+    total_pl_before = sum(len(v) for v in plantillas.values())
+    plantillas_limpias, ex_pl, sim_pl = _dedup_plantillas_todo(plantillas, dry_run)
+    total_pl_after = sum(len(v) for v in plantillas_limpias.values())
+
+    with PATH_PREGUNTAS.open("r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f, delimiter=";")
+        fieldnames = list(reader.fieldnames or [])
+        filas = list(reader)
+
+    filas_work = [dict(f) for f in filas]
+    dup_antes = len(indices_duplicados_dataset(filas_work))
+    filas_nuevas, reempl, sin_rep, dup_despues = _dedup_dataset_todo(
+        filas_work, plantillas_limpias, rng, dry_run, dup_antes
+    )
+
+    plantillas_sin_cruce, cruce_removed = _cruce_plantillas_todo(
+        plantillas_limpias, filas_nuevas, dry_run
+    )
+    total_pl_final = sum(len(v) for v in plantillas_sin_cruce.values())
+
+    _imprimir_informe_todo(
+        dry_run=dry_run,
+        total_pl_before=total_pl_before,
+        total_pl_after=total_pl_after,
+        ex_pl=ex_pl,
+        sim_pl=sim_pl,
+        cruce_removed=cruce_removed,
+        total_pl_final=total_pl_final,
+        dup_antes=dup_antes,
+        reempl=reempl,
+        sin_rep=sin_rep,
+        dup_despues=dup_despues,
+        filas_nuevas=filas_nuevas,
+    )
+
+    if dry_run:
+        return 0
+
+    return _persistir_todo(
+        plantillas_sin_cruce, fieldnames, filas_nuevas, dup_despues
+    )
 
 
 
@@ -464,6 +541,67 @@ def _cargar_plantillas_exacto() -> dict:
 
 
 
+def _clave_bloque_fila(fila: dict) -> tuple:
+    return (fila["Pregunta"], fila["A"], fila["B"], fila["C"], fila["D"])
+
+
+def _indices_duplicados_exactos(filas: list[dict]) -> list[int]:
+    clave_a_indices: dict = {}
+    for idx, fila in enumerate(filas):
+        clave_a_indices.setdefault(_clave_bloque_fila(fila), []).append(idx)
+    indices_a_reemplazar: list[int] = []
+    for indices in clave_a_indices.values():
+        if len(indices) > 1:
+            indices_a_reemplazar.extend(indices[1:])
+    return indices_a_reemplazar
+
+
+def _aplicar_reemplazo_exacto(
+    filas: list[dict],
+    indices_a_reemplazar: list[int],
+    plantillas: dict,
+) -> tuple[int, int]:
+    indices_set = set(indices_a_reemplazar)
+    claves_existentes = {
+        _clave_bloque_fila(fila)
+        for idx, fila in enumerate(filas)
+        if idx not in indices_set
+    }
+    reemplazadas = 0
+    eliminadas = 0
+    for idx in sorted(indices_a_reemplazar):
+        fila = filas[idx]
+        materia = (fila.get("Materia") or fila.get("Tema") or "").strip()
+        reemplazo = _generar_reemplazo_exacto(materia, plantillas, claves_existentes)
+        if not reemplazo:
+            filas[idx] = None
+            eliminadas += 1
+            continue
+        filas[idx] = fila_pregunta(
+            id_=fila["Id"],
+            materia=materia,
+            dificultad=reemplazo["Dificultad"],
+            tipo=reemplazo["Tipo"],
+            pregunta=reemplazo["Pregunta"],
+            a=reemplazo["A"],
+            b=reemplazo["B"],
+            c=reemplazo["C"],
+            d=reemplazo["D"],
+            correcta=reemplazo["Correcta"],
+        )
+        claves_existentes.add(
+            (
+                reemplazo["Pregunta"],
+                reemplazo["A"],
+                reemplazo["B"],
+                reemplazo["C"],
+                reemplazo["D"],
+            )
+        )
+        reemplazadas += 1
+    return reemplazadas, eliminadas
+
+
 def ejecutar_exacto() -> None:
     plantillas = _cargar_plantillas_exacto()
 
@@ -472,58 +610,14 @@ def ejecutar_exacto() -> None:
         fieldnames = list(reader.fieldnames or [])
         filas = list(reader)
 
-    clave_a_indices = {}
-    for idx, fila in enumerate(filas):
-        clave = (fila["Pregunta"], fila["A"], fila["B"], fila["C"], fila["D"])
-        clave_a_indices.setdefault(clave, []).append(idx)
-
-    indices_a_reemplazar = []
-    for clave, indices in clave_a_indices.items():
-        if len(indices) > 1:
-            indices_a_reemplazar.extend(indices[1:])
-
+    indices_a_reemplazar = _indices_duplicados_exactos(filas)
     if not indices_a_reemplazar:
         print("No hay preguntas duplicadas.")
         return
 
-    claves_existentes = set()
-    for idx, fila in enumerate(filas):
-        if idx not in indices_a_reemplazar:
-            clave = (fila["Pregunta"], fila["A"], fila["B"], fila["C"], fila["D"])
-            claves_existentes.add(clave)
-
-    reemplazadas = 0
-    eliminadas = 0
-
-    for idx in sorted(indices_a_reemplazar):
-        fila = filas[idx]
-        materia = (fila.get("Materia") or fila.get("Tema") or "").strip()
-        reemplazo = _generar_reemplazo_exacto(materia, plantillas, claves_existentes)
-        if reemplazo:
-            filas[idx] = fila_pregunta(
-                id_=fila["Id"],
-                materia=materia,
-                dificultad=reemplazo["Dificultad"],
-                tipo=reemplazo["Tipo"],
-                pregunta=reemplazo["Pregunta"],
-                a=reemplazo["A"],
-                b=reemplazo["B"],
-                c=reemplazo["C"],
-                d=reemplazo["D"],
-                correcta=reemplazo["Correcta"],
-            )
-            clave_nueva = (
-                reemplazo["Pregunta"],
-                reemplazo["A"],
-                reemplazo["B"],
-                reemplazo["C"],
-                reemplazo["D"],
-            )
-            claves_existentes.add(clave_nueva)
-            reemplazadas += 1
-        else:
-            filas[idx] = None
-            eliminadas += 1
+    reemplazadas, eliminadas = _aplicar_reemplazo_exacto(
+        filas, indices_a_reemplazar, plantillas
+    )
 
     filas = [f for f in filas if f is not None]
     filas = ordenar_filas_por_tema_y_id(filas)
@@ -555,6 +649,84 @@ def normalizar_enunciado(texto: str) -> str:
     return normalizar_basico(texto)
 
 
+def _indices_duplicados_enunciado(filas: list[dict]) -> list[int]:
+    enunciado_a_indices: dict[str, list[int]] = defaultdict(list)
+    for idx, fila in enumerate(filas):
+        enunciado_a_indices[normalizar_enunciado(fila.get("Pregunta", ""))].append(idx)
+    indices_a_reemplazar: list[int] = []
+    for indices in enunciado_a_indices.values():
+        if len(indices) > 1:
+            indices_a_reemplazar.extend(indices[1:])
+    return indices_a_reemplazar
+
+
+def _sets_existentes_enunciado(
+    filas: list[dict], indices_a_reemplazar: list[int]
+) -> tuple[set[str], set[tuple[str, str, str, str, str]]]:
+    indices_set = set(indices_a_reemplazar)
+    enunciados_existentes: set[str] = set()
+    bloques_existentes: set[tuple[str, str, str, str, str]] = set()
+    for idx, fila in enumerate(filas):
+        if idx in indices_set:
+            continue
+        enunciados_existentes.add(normalizar_enunciado(fila.get("Pregunta", "")))
+        bloques_existentes.add(
+            (
+                (fila.get("Pregunta") or "").strip(),
+                (fila.get("A") or "").strip(),
+                (fila.get("B") or "").strip(),
+                (fila.get("C") or "").strip(),
+                (fila.get("D") or "").strip(),
+            )
+        )
+    return enunciados_existentes, bloques_existentes
+
+
+def _aplicar_reemplazo_enunciado(
+    filas: list[dict],
+    indices_a_reemplazar: list[int],
+    plantillas: dict,
+    enunciados_existentes: set[str],
+    bloques_existentes: set[tuple[str, str, str, str, str]],
+) -> tuple[int, int]:
+    reemplazadas = 0
+    eliminadas = 0
+    for idx in sorted(indices_a_reemplazar):
+        fila = filas[idx]
+        materia = (fila.get("Materia") or fila.get("Tema") or "").strip()
+        reemplazo = generar_reemplazo_enunciado(
+            materia, plantillas, enunciados_existentes, bloques_existentes
+        )
+        if not reemplazo:
+            filas[idx] = None
+            eliminadas += 1
+            continue
+        filas[idx] = fila_pregunta(
+            id_=fila.get("Id", ""),
+            materia=materia,
+            dificultad=reemplazo["Dificultad"],
+            tipo=reemplazo["Tipo"],
+            pregunta=reemplazo["Pregunta"],
+            a=reemplazo["A"],
+            b=reemplazo["B"],
+            c=reemplazo["C"],
+            d=reemplazo["D"],
+            correcta=reemplazo["Correcta"],
+        )
+        enunciados_existentes.add(normalizar_enunciado(reemplazo["Pregunta"]))
+        bloques_existentes.add(
+            (
+                reemplazo["Pregunta"].strip(),
+                reemplazo["A"].strip(),
+                reemplazo["B"].strip(),
+                reemplazo["C"].strip(),
+                reemplazo["D"].strip(),
+            )
+        )
+        reemplazadas += 1
+    return reemplazadas, eliminadas
+
+
 def ejecutar_enunciado(inplace: bool = False, output: str | None = None, seed: int = 42) -> None:
     random.seed(seed)
     plantillas = _cargar_plantillas_enunciado()
@@ -567,71 +739,21 @@ def ejecutar_enunciado(inplace: bool = False, output: str | None = None, seed: i
     if not fieldnames:
         raise ValueError("No se encontraron columnas en Data/Preguntas.csv")
 
-    enunciado_a_indices: dict[str, list[int]] = defaultdict(list)
-    for idx, fila in enumerate(filas):
-        enunciado_a_indices[normalizar_enunciado(fila.get("Pregunta", ""))].append(idx)
-
-    indices_a_reemplazar = []
-    for indices in enunciado_a_indices.values():
-        if len(indices) > 1:
-            indices_a_reemplazar.extend(indices[1:])
-
+    indices_a_reemplazar = _indices_duplicados_enunciado(filas)
     if not indices_a_reemplazar:
         print("No hay duplicados por enunciado.")
         return
 
-    enunciados_existentes = set()
-    bloques_existentes = set()
-    for idx, fila in enumerate(filas):
-        if idx in indices_a_reemplazar:
-            continue
-        enunciados_existentes.add(normalizar_enunciado(fila.get("Pregunta", "")))
-        bloques_existentes.add(
-            (
-                (fila.get("Pregunta") or "").strip(),
-                (fila.get("A") or "").strip(),
-                (fila.get("B") or "").strip(),
-                (fila.get("C") or "").strip(),
-                (fila.get("D") or "").strip(),
-            )
-        )
-
-    reemplazadas = 0
-    eliminadas = 0
-
-    for idx in sorted(indices_a_reemplazar):
-        fila = filas[idx]
-        materia = (fila.get("Materia") or fila.get("Tema") or "").strip()
-        reemplazo = generar_reemplazo_enunciado(
-            materia, plantillas, enunciados_existentes, bloques_existentes
-        )
-        if reemplazo:
-            filas[idx] = fila_pregunta(
-                id_=fila.get("Id", ""),
-                materia=materia,
-                dificultad=reemplazo["Dificultad"],
-                tipo=reemplazo["Tipo"],
-                pregunta=reemplazo["Pregunta"],
-                a=reemplazo["A"],
-                b=reemplazo["B"],
-                c=reemplazo["C"],
-                d=reemplazo["D"],
-                correcta=reemplazo["Correcta"],
-            )
-            enunciados_existentes.add(normalizar_enunciado(reemplazo["Pregunta"]))
-            bloques_existentes.add(
-                (
-                    reemplazo["Pregunta"].strip(),
-                    reemplazo["A"].strip(),
-                    reemplazo["B"].strip(),
-                    reemplazo["C"].strip(),
-                    reemplazo["D"].strip(),
-                )
-            )
-            reemplazadas += 1
-        else:
-            filas[idx] = None
-            eliminadas += 1
+    enunciados_existentes, bloques_existentes = _sets_existentes_enunciado(
+        filas, indices_a_reemplazar
+    )
+    reemplazadas, eliminadas = _aplicar_reemplazo_enunciado(
+        filas,
+        indices_a_reemplazar,
+        plantillas,
+        enunciados_existentes,
+        bloques_existentes,
+    )
 
     filas = [f for f in filas if f is not None]
     filas = ordenar_filas_por_tema_y_id(filas)

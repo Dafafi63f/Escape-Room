@@ -291,6 +291,26 @@ class EntradaMetadatosInferidos:
     grupo: str
 
 
+def _tipo_desde_observaciones(
+    bucket: dict[str, Any], intentos: int, tipo_heur: str
+) -> tuple[str, str]:
+    tipo = tipo_heur
+    tipo_fuente = "heuristica"
+    tipos_obs = bucket.get("tipos_observados") or {}
+    if not isinstance(tipos_obs, dict) or intentos < _MIN_INTENTOS_TIPO:
+        return tipo, tipo_fuente
+    mejor_tipo = ""
+    mejor_n = 0
+    for etiqueta, n in tipos_obs.items():
+        n_int = int(n)
+        if n_int > mejor_n:
+            mejor_tipo = str(etiqueta)
+            mejor_n = n_int
+    if mejor_tipo in {"Teoria", "Calculo"} and mejor_n >= _MIN_INTENTOS_TIPO:
+        return mejor_tipo, "estadisticas"
+    return tipo, tipo_fuente
+
+
 def _entrada_desde_bucket(
     huella: str,
     bucket: dict[str, Any],
@@ -312,21 +332,9 @@ def _entrada_desde_bucket(
         dificultad = inferir_dificultad_desde_tasa(aciertos, intentos)
         dificultad_fuente = "estadisticas_parcial"
 
-    tipo_heur = inferir_tipo_desde_enunciado(texto)
-    tipo = tipo_heur
-    tipo_fuente = "heuristica"
-    tipos_obs = bucket.get("tipos_observados") or {}
-    if isinstance(tipos_obs, dict) and intentos >= _MIN_INTENTOS_TIPO:
-        mejor_tipo = ""
-        mejor_n = 0
-        for etiqueta, n in tipos_obs.items():
-            n_int = int(n)
-            if n_int > mejor_n:
-                mejor_tipo = str(etiqueta)
-                mejor_n = n_int
-        if mejor_tipo in {"Teoria", "Calculo"} and mejor_n >= _MIN_INTENTOS_TIPO:
-            tipo = mejor_tipo
-            tipo_fuente = "estadisticas"
+    tipo, tipo_fuente = _tipo_desde_observaciones(
+        bucket, intentos, inferir_tipo_desde_enunciado(texto)
+    )
 
     tematica = inferir_tematica_desde_enunciado(texto)
     tematica_fuente = "heuristica" if tematica else ""
@@ -481,6 +489,27 @@ def _aplicar_entrada_inferida(
         pregunta.grupo = grupo
 
 
+def _acumular_cobertura_entrada(
+    entrada: EntradaMetadatosInferidos,
+    *,
+    con_dificultad: int,
+    con_tipo_stats: int,
+    con_tematica: int,
+    tipos: set[str],
+    dificultades: set[str],
+) -> tuple[int, int, int]:
+    if entrada.dificultad and entrada.dificultad_fuente in _FUENTES_DIFICULTAD_VALIDAS:
+        con_dificultad += 1
+        dificultades.add(entrada.dificultad)
+    if entrada.tipo:
+        tipos.add(entrada.tipo)
+        if entrada.tipo_fuente == "estadisticas":
+            con_tipo_stats += 1
+    if entrada.tematica:
+        con_tematica += 1
+    return con_dificultad, con_tipo_stats, con_tematica
+
+
 def cobertura_metadatos_inferidos(
     preguntas: list[Pregunta],
 ) -> dict[str, Any]:
@@ -496,15 +525,14 @@ def cobertura_metadatos_inferidos(
         entrada = _entrada_para_pregunta(pregunta, datos)
         if entrada is None:
             continue
-        if entrada.dificultad and entrada.dificultad_fuente in _FUENTES_DIFICULTAD_VALIDAS:
-            con_dificultad += 1
-            dificultades.add(entrada.dificultad)
-        if entrada.tipo:
-            tipos.add(entrada.tipo)
-            if entrada.tipo_fuente == "estadisticas":
-                con_tipo_stats += 1
-        if entrada.tematica:
-            con_tematica += 1
+        con_dificultad, con_tipo_stats, con_tematica = _acumular_cobertura_entrada(
+            entrada,
+            con_dificultad=con_dificultad,
+            con_tipo_stats=con_tipo_stats,
+            con_tematica=con_tematica,
+            tipos=tipos,
+            dificultades=dificultades,
+        )
     umbral = max(_MIN_PREGUNTAS_COBERTURA, int(total * _FRACCION_COBERTURA_DATASET))
     materias_meta, _ = reconstruir_catalogo_artificial(preguntas)
     n_materias = len(materias_meta)

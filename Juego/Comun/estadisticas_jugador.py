@@ -864,29 +864,48 @@ def _bucket_a_estadistica_materia(clave: str, bucket: dict[str, Any]):
     )
 
 
+def _debe_usar_conceptos_stats(datos: dict, perfil) -> bool:
+    usar_conceptos = bool(perfil and perfil.csv_minimal)
+    if usar_conceptos:
+        return True
+    por_materia = datos.get("por_materia") or {}
+    claves_utiles = [k for k in por_materia if k and k != "—"]
+    return not claves_utiles and bool(datos.get("por_concepto"))
+
+
+def _incluir_bucket_stats(
+    clave: str,
+    bucket: dict,
+    *,
+    usar_conceptos: bool,
+    materias_meta: dict | None,
+) -> object | None:
+    if not clave or clave == "—":
+        return None
+    if materias_meta is not None and not usar_conceptos and clave not in materias_meta:
+        return None
+    return _bucket_a_estadistica_materia(clave, bucket)
+
+
 def cargar_estadisticas_locales(
     perfil=None,
     materias_meta: dict | None = None,
 ) -> dict:
     """Convierte ``estadisticas_jugador.json`` en stats del generador de exámenes."""
     datos = _cargar_raw()
-    usar_conceptos = bool(perfil and perfil.csv_minimal)
-    if not usar_conceptos:
-        por_materia = datos.get("por_materia") or {}
-        claves_utiles = [k for k in por_materia if k and k != "—"]
-        if not claves_utiles and datos.get("por_concepto"):
-            usar_conceptos = True
+    usar_conceptos = _debe_usar_conceptos_stats(datos, perfil)
 
     fuente = (
         datos.get("por_concepto") if usar_conceptos else datos.get("por_materia")
     ) or {}
     stats: dict = {}
     for clave, bucket in fuente.items():
-        if not clave or clave == "—":
-            continue
-        if materias_meta is not None and not usar_conceptos and clave not in materias_meta:
-            continue
-        est = _bucket_a_estadistica_materia(clave, bucket)
+        est = _incluir_bucket_stats(
+            clave,
+            bucket,
+            usar_conceptos=usar_conceptos,
+            materias_meta=materias_meta,
+        )
         if est is not None:
             stats[clave] = est
     return stats

@@ -780,58 +780,49 @@ def _construir_una_puerta_sala(
     sala_idx: int,
     numero_sala: int,
     tamanos: tuple[int, ...],
-    materias_base: tuple[str, ...],
-    materias_pool: tuple[str, ...],
-    materias_puerta: tuple[str, ...],
-    grupos_base: tuple[str, ...],
-    grupos_pool: tuple[str, ...],
-    pool_preguntas: list[Pregunta],
-    n_salas: int,
-    rng: random.Random,
-    pity: PityPuertasEspecialesEscape | None,
-    estado,
-    vidas_max: int | None,
+    ctx: _CtxPuertasSala,
     pausas_usadas: set[str],
+    pity: PityPuertasEspecialesEscape | None = None,
 ) -> PuertaEscape:
     mods = generar_modificadores_puerta(
         numero_sala=numero_sala,
-        rng=rng,
+        rng=ctx.rng,
         pausas_usadas=frozenset(pausas_usadas),
         pity=pity,
-        estado=estado,
-        vidas_max=vidas_max,
+        estado=ctx.estado,
+        vidas_max=ctx.vidas_max,
     )
     _registrar_pausas_usadas(mods, pausas_usadas)
     n_preg = 0 if mods.sin_pregunta else tamanos[i]
     if mods.sin_pregunta:
         evento = _evento_pausa_materia(
-            materias_base=materias_base,
-            rng=rng,
+            materias_base=ctx.materias_base,
+            rng=ctx.rng,
             indice_puerta=sala_idx * 10 + i,
             indice_materia=i,
         )
     else:
-        materia_pref = materias_puerta[i] if i < len(materias_puerta) else None
+        materia_pref = ctx.materias_puerta[i] if i < len(ctx.materias_puerta) else None
         evento = _evento_contenido_puerta(
             plantilla,
             perfil_id=perfil_id,
-            materias_base=materias_base,
-            materias_pool=materias_pool,
+            materias_base=ctx.materias_base,
+            materias_pool=ctx.materias_pool,
             materia_pref=materia_pref,
-            grupos_base=grupos_base,
-            grupos_pool=grupos_pool,
-            pool_preguntas=pool_preguntas,
-            rng=rng,
+            grupos_base=ctx.grupos_base,
+            grupos_pool=ctx.grupos_pool,
+            pool_preguntas=ctx.pool_preguntas,
+            rng=ctx.rng,
             indice_puerta=sala_idx * 10 + i,
         )
     puerta = PuertaEscape(indice=i, n_preguntas=n_preg, modificadores=mods, evento=evento)
     return asegurar_puerta_viable(
-        pool_preguntas,
+        ctx.pool_preguntas,
         puerta,
         numero_sala=numero_sala,
-        n_salas=n_salas,
-        materias_pool=materias_base,
-        grupos_pool=grupos_base,
+        n_salas=ctx.n_salas,
+        materias_pool=ctx.materias_base,
+        grupos_pool=ctx.grupos_base,
     )
 
 
@@ -883,6 +874,19 @@ def _construir_puertas_sala(
 
     puertas: list[PuertaEscape] = []
     pausas_usadas: set[str] = set()
+    ctx = _CtxPuertasSala(
+        materias_base=materias_base,
+        materias_pool=materias_pool,
+        materias_puerta=materias_puerta,
+        grupos_base=grupos_base,
+        grupos_pool=grupos_pool,
+        pool_preguntas=pool_preguntas,
+        n_salas=n_salas,
+        rng=rng,
+        pity=pity or PityPuertasEspecialesEscape(),
+        estado=estado,
+        vidas_max=vidas_max,
+    )
     for i, (plantilla, perfil_id) in enumerate(plantillas):
         puertas.append(
             _construir_una_puerta_sala(
@@ -892,18 +896,9 @@ def _construir_puertas_sala(
                 sala_idx=sala_idx,
                 numero_sala=numero_sala,
                 tamanos=tamanos,
-                materias_base=materias_base,
-                materias_pool=materias_pool,
-                materias_puerta=materias_puerta,
-                grupos_base=grupos_base,
-                grupos_pool=grupos_pool,
-                pool_preguntas=pool_preguntas,
-                n_salas=n_salas,
-                rng=rng,
-                pity=pity,
-                estado=estado,
-                vidas_max=vidas_max,
+                ctx=ctx,
                 pausas_usadas=pausas_usadas,
+                pity=pity,
             )
         )
     _aplicar_hard_pity_puertas_especiales(
@@ -920,19 +915,7 @@ def _construir_puertas_sala(
         puertas,
         numero_sala=numero_sala,
         sala_idx=sala_idx,
-        ctx=_CtxPuertasSala(
-            materias_base=materias_base,
-            materias_pool=materias_pool,
-            materias_puerta=materias_puerta,
-            grupos_base=grupos_base,
-            grupos_pool=grupos_pool,
-            pool_preguntas=pool_preguntas,
-            n_salas=n_salas,
-            rng=rng,
-            pity=pity or PityPuertasEspecialesEscape(),
-            estado=estado,
-            vidas_max=vidas_max,
-        ),
+        ctx=ctx,
         plantillas=plantillas,
         tamanos=tamanos,
     )

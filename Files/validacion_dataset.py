@@ -61,14 +61,7 @@ def imprimir_estadisticas(df: pd.DataFrame, orden_materias: list[str]) -> None:
     print("\n" + "=" * 60)
 
 
-def revision_completa(df: pd.DataFrame, orden_materias: list[str]) -> None:
-    print("=" * 60)
-    print("REVISION FINAL - Data/Preguntas.csv")
-    print("=" * 60)
-
-    print("\n1. ESTRUCTURA")
-    print(f"   Filas: {len(df)}, Columnas: {list(df.columns)}")
-
+def _revision_nulos_y_categoricas(df: pd.DataFrame) -> object:
     print("\n2. VALORES NULOS")
     nulos = df.isnull().sum()
     for col in df.columns:
@@ -81,7 +74,10 @@ def revision_completa(df: pd.DataFrame, orden_materias: list[str]) -> None:
     print("   Dificultad:", df["Dificultad"].unique().tolist())
     print("   Tipo:", df["Tipo"].unique().tolist())
     print("   Correcta:", sorted(df["Correcta"].unique().tolist()))
+    return nulos
 
+
+def _revision_consistencia_correcta(df: pd.DataFrame) -> tuple:
     print("\n4. CONSISTENCIA Correcta")
     invalidas = df[~df["Correcta"].isin(["A", "B", "C", "D"])]
     print(f"   Correcta invalida (no A/B/C/D): {len(invalidas)}")
@@ -93,7 +89,10 @@ def revision_completa(df: pd.DataFrame, orden_materias: list[str]) -> None:
 
     problemas = df[df.apply(check_correcta, axis=1)]
     print(f"   Correcta apunta a valor vacio: {len(problemas)}")
+    return invalidas, problemas
 
+
+def _revision_opciones_y_duplicados(df: pd.DataFrame) -> object:
     print("\n5. OPCIONES VACIAS (A,B,C,D)")
     for col in ["A", "B", "C", "D"]:
         vacias = df[df[col].isna() | (df[col].astype(str).str.strip() == "")]
@@ -104,11 +103,12 @@ def revision_completa(df: pd.DataFrame, orden_materias: list[str]) -> None:
     print(f"   Preguntas con texto duplicado: {len(dup_preg)}")
     dup_ids = df[df.duplicated(subset=["Id"])]
     print(f"   Ids duplicados: {len(dup_ids)}")
+    return dup_ids
 
-    print("\n7. IDs")
-    print(f"   Unicos: {df['Id'].nunique()}, Total filas: {len(df)}")
-    print(f"   Rango: {df['Id'].min()} - {df['Id'].max()}")
 
+def _revision_distribucion_y_orden(
+    df: pd.DataFrame, orden_materias: list[str]
+) -> list[str]:
     print("\n8. DISTRIBUCIONES (balance esperado: 40 materias, 12 preguntas c/u)")
     n_temas = df["Materia"].nunique()
     target_por_tema = len(df) // n_temas if n_temas > 0 else 0
@@ -128,7 +128,10 @@ def revision_completa(df: pd.DataFrame, orden_materias: list[str]) -> None:
             print(f"   - {msg}")
     else:
         print("   OK")
+    return errores_orden
 
+
+def _revision_calidad_texto(df: pd.DataFrame, orden_materias: list[str]) -> object:
     print("\n10. CALIDAD DE TEXTO")
     preg_vacias = df[df["Pregunta"].str.strip() == ""]
     print(f"   Preguntas vacias: {len(preg_vacias)}")
@@ -138,7 +141,12 @@ def revision_completa(df: pd.DataFrame, orden_materias: list[str]) -> None:
     print("\n11. OPCIONES IDENTICAS EN UNA PREGUNTA")
 
     def opciones_identicas(row):
-        vals = [str(row["A"]).strip(), str(row["B"]).strip(), str(row["C"]).strip(), str(row["D"]).strip()]
+        vals = [
+            str(row["A"]).strip(),
+            str(row["B"]).strip(),
+            str(row["C"]).strip(),
+            str(row["D"]).strip(),
+        ]
         return len(set(vals)) < 4
 
     identicas = df[df.apply(opciones_identicas, axis=1)]
@@ -148,6 +156,27 @@ def revision_completa(df: pd.DataFrame, orden_materias: list[str]) -> None:
     tabla = df.groupby(["Materia", "Dificultad"]).size().unstack(fill_value=0)
     tabla = tabla.reindex([t for t in orden_materias if t in tabla.index])
     print(tabla.to_string())
+    return raros
+
+
+def revision_completa(df: pd.DataFrame, orden_materias: list[str]) -> None:
+    print("=" * 60)
+    print("REVISION FINAL - Data/Preguntas.csv")
+    print("=" * 60)
+
+    print("\n1. ESTRUCTURA")
+    print(f"   Filas: {len(df)}, Columnas: {list(df.columns)}")
+
+    nulos = _revision_nulos_y_categoricas(df)
+    invalidas, problemas = _revision_consistencia_correcta(df)
+    dup_ids = _revision_opciones_y_duplicados(df)
+
+    print("\n7. IDs")
+    print(f"   Unicos: {df['Id'].nunique()}, Total filas: {len(df)}")
+    print(f"   Rango: {df['Id'].min()} - {df['Id'].max()}")
+
+    errores_orden = _revision_distribucion_y_orden(df, orden_materias)
+    raros = _revision_calidad_texto(df, orden_materias)
 
     print("\n" + "=" * 60)
     problemas_totales = (
@@ -218,14 +247,9 @@ def _imprimir_checks_basicos(df: pd.DataFrame) -> None:
         print("Campos obligatorios: OK")
 
 
-def validacion_extendida(df: pd.DataFrame, *, con_variedad: bool) -> int:
-    print("=" * 60)
-    print("VALIDACIÓN EXTENDIDA DEL CSV")
-    print("=" * 60)
-
-    _imprimir_checks_basicos(df)
-
-    desconocidas, incoherentes = _revisar_complejidad_global(df)
+def _imprimir_checks_complejidad(
+    desconocidas: list, incoherentes: list
+) -> None:
     if desconocidas:
         print(f"Materias sin listado: {len(desconocidas)} (muestra {desconocidas[:6]})")
     if incoherentes:
@@ -233,6 +257,8 @@ def validacion_extendida(df: pd.DataFrame, *, con_variedad: bool) -> int:
     elif not desconocidas:
         print("Complejidad derivada / listado: OK")
 
+
+def _imprimir_checks_diff_tipo_hash(df: pd.DataFrame) -> list[int]:
     diff_inv = df[~df["Dificultad"].isin(["Facil", "Media", "Dificil"])]
     tipo_inv = df[~df["Tipo"].isin(["Teoria", "Calculo"])]
     if len(diff_inv) or len(tipo_inv):
@@ -245,6 +271,20 @@ def validacion_extendida(df: pd.DataFrame, *, con_variedad: bool) -> int:
         print(f"«hash» fuera de {MATERIA_CRIPTO}: {hash_fuera[:12]}")
     else:
         print(f"«hash» solo en {MATERIA_CRIPTO}: OK")
+    return hash_fuera
+
+
+def validacion_extendida(df: pd.DataFrame, *, con_variedad: bool) -> int:
+    print("=" * 60)
+    print("VALIDACIÓN EXTENDIDA DEL CSV")
+    print("=" * 60)
+
+    _imprimir_checks_basicos(df)
+
+    desconocidas, incoherentes = _revisar_complejidad_global(df)
+    _imprimir_checks_complejidad(desconocidas, incoherentes)
+
+    hash_fuera = _imprimir_checks_diff_tipo_hash(df)
 
     errores_orden = comprobar_orden_canonico_df(df)
     if errores_orden:

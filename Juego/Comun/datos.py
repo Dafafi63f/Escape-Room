@@ -271,26 +271,36 @@ def _campo_csv_o_meta(row: dict, mm: dict[str, str], csv_key: str, meta_key: str
     return v if v else mm.get(meta_key, "")
 
 
-def _pregunta_desde_fila_csv(
-    row: dict,
-    materias_meta: dict[str, dict[str, str]],
-    *,
-    csv_minimal: bool,
-) -> Pregunta | None:
+def _defaults_campos_csv(
+    row: dict, *, csv_minimal: bool
+) -> tuple[str, str, str] | None:
     correcta = (row.get("Correcta") or "").strip().upper()
     if correcta not in {"A", "B", "C", "D"}:
         return None
     materia_raw = (row.get("Materia") or row.get("Tema") or "").strip()
     if not materia_raw and not csv_minimal:
         materia_raw = "Sin materia"
-    mm = materias_meta.get(materia_raw, {})
-
     dificultad_raw = (row.get("Dificultad") or "").strip()
     if not dificultad_raw and not csv_minimal:
         dificultad_raw = "Desconocida"
     tipo_raw = (row.get("Tipo") or "").strip()
     if not tipo_raw and not csv_minimal:
         tipo_raw = "General"
+    return materia_raw, dificultad_raw, tipo_raw
+
+
+def _pregunta_desde_fila_csv(
+    row: dict,
+    materias_meta: dict[str, dict[str, str]],
+    *,
+    csv_minimal: bool,
+) -> Pregunta | None:
+    defaults = _defaults_campos_csv(row, csv_minimal=csv_minimal)
+    if defaults is None:
+        return None
+    materia_raw, dificultad_raw, tipo_raw = defaults
+    mm = materias_meta.get(materia_raw, {})
+    correcta = (row.get("Correcta") or "").strip().upper()
 
     pregunta = Pregunta(
         texto=(row.get("Pregunta") or "").strip(),
