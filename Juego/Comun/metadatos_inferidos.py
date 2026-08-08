@@ -442,24 +442,43 @@ def enriquecer_preguntas_minimal(
     _persistir_catalogo(materias_meta, asignaciones)
     datos = _cargar_raw()
     for pregunta in preguntas:
-        entrada = _entrada_para_pregunta(pregunta, datos)
-        if entrada is None:
-            continue
-        if entrada.dificultad:
-            pregunta.dificultad = entrada.dificultad
-        if entrada.tipo:
-            pregunta.tipo = entrada.tipo
-        if entrada.tematica:
-            pregunta.tematica = entrada.tematica
-        if aplicar_catalogo:
-            huella = huella_pregunta(pregunta)
-            materia = asignaciones.get(huella, "")
-            if materia:
-                pregunta.materia = materia
-                grupo = str(materias_meta.get(materia, {}).get("grupo") or "")
-                if grupo:
-                    pregunta.grupo = grupo
+        _aplicar_entrada_inferida(
+            pregunta,
+            datos,
+            materias_meta=materias_meta,
+            asignaciones=asignaciones,
+            aplicar_catalogo=aplicar_catalogo,
+        )
     return preguntas
+
+
+def _aplicar_entrada_inferida(
+    pregunta: Pregunta,
+    datos,
+    *,
+    materias_meta: dict,
+    asignaciones: dict,
+    aplicar_catalogo: bool,
+) -> None:
+    entrada = _entrada_para_pregunta(pregunta, datos)
+    if entrada is None:
+        return
+    if entrada.dificultad:
+        pregunta.dificultad = entrada.dificultad
+    if entrada.tipo:
+        pregunta.tipo = entrada.tipo
+    if entrada.tematica:
+        pregunta.tematica = entrada.tematica
+    if not aplicar_catalogo:
+        return
+    huella = huella_pregunta(pregunta)
+    materia = asignaciones.get(huella, "")
+    if not materia:
+        return
+    pregunta.materia = materia
+    grupo = str(materias_meta.get(materia, {}).get("grupo") or "")
+    if grupo:
+        pregunta.grupo = grupo
 
 
 def cobertura_metadatos_inferidos(

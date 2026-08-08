@@ -681,6 +681,94 @@ def formatear_tarjeta_sigue_por_aqui(perfil=None) -> list[str]:
     return lineas
 
 
+def _lineas_resumen_global_estadisticas(
+    *,
+    partidas: int,
+    salas_escape: int,
+    preguntas: int,
+    aciertos: int,
+    pct_global: float,
+    segundos_jugados: int,
+    dias: list[str],
+) -> list[str]:
+    resumen = [f"  Partidas jugadas: {partidas}"]
+    if salas_escape > 0:
+        resumen.append(f"  Salas superadas (escape): {salas_escape}")
+    resumen.extend(
+        [
+            f"  Preguntas respondidas: {preguntas}",
+            f"  Aciertos: {aciertos}/{preguntas} ({pct_global:.1f}%)",
+            f"  Tiempo en partida: {formatear_duracion_seg(segundos_jugados)}",
+            f"  Dias con actividad: {len(dias)} (racha maxima: {_racha_dias(dias)} dias)",
+        ]
+    )
+    return resumen
+
+
+def _lineas_records_estadisticas(records: dict, perfil) -> list[str]:
+    lineas = [
+        "--- RECORDS ---",
+        (
+            f"  Resistencia - max preguntas: {int(records.get('resistencia_preguntas', 0))} | "
+            f"max puntos: {int(records.get('resistencia_puntos', 0))}"
+        ),
+    ]
+    if _mostrar_records_escape(perfil):
+        lineas.append(
+            f"  Escape - max salas: {int(records.get('escape_salas', 0))} | "
+            f"max puntos: {int(records.get('escape_puntos_arcade', 0))}"
+        )
+    lineas.append(
+        f"  Mejor sesion (% acierto): {float(records.get('mejor_porcentaje_sesion', 0)):.1f}%"
+    )
+    return lineas
+
+
+def _lineas_analisis_contenido_estadisticas(
+    por_tipo: dict,
+    por_materia: dict,
+) -> list[str]:
+    lineas = [
+        "",
+        "--- ANALISIS POR CONTENIDO ---",
+        "  Teoria vs calculo:",
+    ]
+    for tipo in _TIPOS_ORDEN:
+        bucket = por_tipo.get(tipo, {})
+        intentos = int(bucket.get("intentos", 0))
+        aciertos_tipo = int(bucket.get("aciertos", 0))
+        etiqueta = "Teoria" if tipo == "Teoria" else "Calculo"
+        lineas.append(
+            f"    - {etiqueta}: {aciertos_tipo}/{intentos} aciertos "
+            f"({_pct(aciertos_tipo, intentos):.0f}%)"
+        )
+
+    lineas.append("  Materias a reforzar:")
+    peores = _lineas_materias(por_materia, peores=True)
+    lineas.extend(peores if peores else [_PLACEHOLDER_MATERIAS])
+
+    lineas.append("  Materias fuertes:")
+    mejores = _lineas_materias(por_materia, peores=False)
+    lineas.extend(mejores if mejores else [_PLACEHOLDER_MATERIAS])
+    return lineas
+
+
+def _lineas_analisis_conceptos_estadisticas(por_concepto: dict) -> list[str]:
+    lineas = [
+        "",
+        "--- ANALISIS POR CONCEPTOS ---",
+        "  Palabras clave inferidas del enunciado (segun tu banco de preguntas):",
+        "  Conceptos a reforzar:",
+    ]
+    peores = _lineas_conceptos(por_concepto, peores=True)
+    lineas.extend(peores if peores else [_PLACEHOLDER_CONCEPTOS])
+
+    lineas.append("  Conceptos fuertes:")
+    mejores = _lineas_conceptos(por_concepto, peores=False)
+    lineas.extend(mejores if mejores else [_PLACEHOLDER_CONCEPTOS])
+    return lineas
+
+
 def formatear_panel_estadisticas(perfil=None) -> str:
     """Texto multilínea para la pantalla «Mis estadísticas»."""
     datos = _cargar_raw()
@@ -705,18 +793,14 @@ def formatear_panel_estadisticas(perfil=None) -> str:
     p_act, a_act, p_prev, a_prev, delta_pp = _evolucion_semanal(sesiones)
     signo_delta = "+" if delta_pp >= 0 else ""
 
-    resumen_global = [
-        f"  Partidas jugadas: {partidas}",
-    ]
-    if salas_escape > 0:
-        resumen_global.append(f"  Salas superadas (escape): {salas_escape}")
-    resumen_global.extend(
-        [
-            f"  Preguntas respondidas: {preguntas}",
-            f"  Aciertos: {aciertos}/{preguntas} ({pct_global:.1f}%)",
-            f"  Tiempo en partida: {formatear_duracion_seg(segundos_jugados)}",
-            f"  Dias con actividad: {len(dias)} (racha maxima: {_racha_dias(dias)} dias)",
-        ]
+    resumen_global = _lineas_resumen_global_estadisticas(
+        partidas=partidas,
+        salas_escape=salas_escape,
+        preguntas=preguntas,
+        aciertos=aciertos,
+        pct_global=pct_global,
+        segundos_jugados=segundos_jugados,
+        dias=dias,
     )
 
     lineas: list[str] = [
@@ -747,64 +831,17 @@ def formatear_panel_estadisticas(perfil=None) -> str:
         )
 
     lineas.append("")
-    lineas.append("--- RECORDS ---")
-    lineas.append(
-        f"  Resistencia - max preguntas: {int(records.get('resistencia_preguntas', 0))} | "
-        f"max puntos: {int(records.get('resistencia_puntos', 0))}"
-    )
-    if _mostrar_records_escape(perfil):
-        lineas.append(
-            f"  Escape - max salas: {int(records.get('escape_salas', 0))} | "
-            f"max puntos: {int(records.get('escape_puntos_arcade', 0))}"
-        )
-    lineas.append(
-        f"  Mejor sesion (% acierto): {float(records.get('mejor_porcentaje_sesion', 0)):.1f}%"
-    )
+    lineas.extend(_lineas_records_estadisticas(records, perfil))
 
     if _mostrar_analisis_contenido(perfil):
         lineas.extend(
-            [
-                "",
-                "--- ANALISIS POR CONTENIDO ---",
-                "  Teoria vs calculo:",
-            ]
+            _lineas_analisis_contenido_estadisticas(por_tipo, por_materia)
         )
-        for tipo in _TIPOS_ORDEN:
-            bucket = por_tipo.get(tipo, {})
-            intentos = int(bucket.get("intentos", 0))
-            aciertos_tipo = int(bucket.get("aciertos", 0))
-            etiqueta = "Teoria" if tipo == "Teoria" else "Calculo"
-            lineas.append(
-                f"    - {etiqueta}: {aciertos_tipo}/{intentos} aciertos "
-                f"({_pct(aciertos_tipo, intentos):.0f}%)"
-            )
-
-        lineas.append("  Materias a reforzar:")
-        peores = _lineas_materias(por_materia, peores=True)
-        lineas.extend(peores if peores else [_PLACEHOLDER_MATERIAS])
-
-        lineas.append("  Materias fuertes:")
-        mejores = _lineas_materias(por_materia, peores=False)
-        lineas.extend(mejores if mejores else [_PLACEHOLDER_MATERIAS])
 
     if _mostrar_analisis_conceptos(perfil):
-        lineas.extend(
-            [
-                "",
-                "--- ANALISIS POR CONCEPTOS ---",
-                "  Palabras clave inferidas del enunciado (segun tu banco de preguntas):",
-                "  Conceptos a reforzar:",
-            ]
-        )
-        peores = _lineas_conceptos(por_concepto, peores=True)
-        lineas.extend(peores if peores else [_PLACEHOLDER_CONCEPTOS])
-
-        lineas.append("  Conceptos fuertes:")
-        mejores = _lineas_conceptos(por_concepto, peores=False)
-        lineas.extend(mejores if mejores else [_PLACEHOLDER_CONCEPTOS])
+        lineas.extend(_lineas_analisis_conceptos_estadisticas(por_concepto))
 
     return "\n".join(lineas)
-
 
 def _bucket_a_estadistica_materia(clave: str, bucket: dict[str, Any]):
     from Comun.generador_examen_historia import EstadisticaMateria

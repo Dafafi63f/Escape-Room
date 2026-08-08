@@ -241,14 +241,36 @@ def _buscar_archivo(
     zona: _ZonaDatos = "banco",
 ) -> Path:
     del preferidas  # reserva de API; la búsqueda usa candidatos bajo Data/.
+    clave = _clave_cache_archivo(nombre, zona=zona, bajo_data=bajo_data)
+    if clave in _archivos_no_encontrados:
+        raise FileNotFoundError(f"No se encontró '{nombre}' en rutas accesibles.")
+
+    encontrados = _buscar_en_candidatos(nombre, bajo_data=bajo_data, zona=zona)
+    if encontrados is not None:
+        return encontrados
+
+    elegida = _buscar_rglob_acotado(nombre)
+    if elegida is not None:
+        return elegida
+
+    _archivos_no_encontrados.add(clave)
+    raise FileNotFoundError(f"No se encontró '{nombre}' en rutas accesibles.")
+
+
+def _clave_cache_archivo(
+    nombre: str,
+    *,
+    zona: _ZonaDatos,
+    bajo_data: bool,
+) -> tuple:
     try:
         paquete_key = str(_raiz_paquete().resolve())
     except OSError:
         paquete_key = str(_raiz_paquete())
-    clave = (paquete_key, nombre, zona, bajo_data)
-    if clave in _archivos_no_encontrados:
-        raise FileNotFoundError(f"No se encontró '{nombre}' en rutas accesibles.")
+    return (paquete_key, nombre, zona, bajo_data)
 
+
+def _raices_unicas_busqueda() -> list[Path]:
     candidatos_raiz: list[Path] = []
     vistos: set[Path] = set()
     for raiz in _roots_busqueda():
@@ -256,37 +278,45 @@ def _buscar_archivo(
             continue
         vistos.add(raiz)
         candidatos_raiz.append(raiz)
+    return candidatos_raiz
 
+
+def _buscar_en_candidatos(
+    nombre: str,
+    *,
+    bajo_data: bool,
+    zona: _ZonaDatos,
+) -> Path | None:
+    candidatos_raiz = _raices_unicas_busqueda()
     if bajo_data:
         for raiz in candidatos_raiz:
             for p in _candidatos_bajo_data(raiz, nombre, zona=zona):
                 if p.exists():
                     return p
-
     for raiz in candidatos_raiz:
         p = raiz / nombre
         if p.exists():
             return p
+    return None
 
+
+def _buscar_rglob_acotado(nombre: str) -> Path | None:
     coincidencias: list[Path] = []
     for base in _bases_rglob_acotado(_raiz_paquete()):
         try:
             coincidencias.extend(base.rglob(nombre))
         except OSError:
             continue
-    if coincidencias:
-        elegida = min(
-            coincidencias,
-            key=lambda p: (
-                0 if p.parent.name.lower() in {"data", "banco", "juego", "csv", "json"} else 1,
-                len(p.parts),
-                str(p),
-            ),
-        )
-        return elegida
-
-    _archivos_no_encontrados.add(clave)
-    raise FileNotFoundError(f"No se encontró '{nombre}' en rutas accesibles.")
+    if not coincidencias:
+        return None
+    return min(
+        coincidencias,
+        key=lambda p: (
+            0 if p.parent.name.lower() in {"data", "banco", "juego", "csv", "json"} else 1,
+            len(p.parts),
+            str(p),
+        ),
+    )
 
 
 def _ruta_juego_escritura(nombre: str) -> Path:

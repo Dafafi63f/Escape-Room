@@ -693,23 +693,41 @@ def usar_objeto(
     """Consume un powerup del inventario; devuelve mensaje de error o None."""
     if es_bonificacion(articulo_id):
         return "Las bonificaciones se aplican al obtenerlas."
-    if escape:
-        from Comun.powerups_puerta_escape import puede_usar_powerup_en_pregunta_escape
-
-        err_uso = puede_usar_powerup_en_pregunta_escape(
-            articulo_id, inventario.powerups_usados_en_pregunta
-        )
-        if err_uso:
-            return err_uso
-    else:
-        err_uso = puede_usar_powerup_en_pregunta(
-            articulo_id, inventario.powerups_usados_en_pregunta
-        )
-        if err_uso:
-            return err_uso
+    err_uso = _error_uso_powerup(articulo_id, inventario, escape=escape)
+    if err_uso:
+        return err_uso
     if not inventario.consumir(articulo_id):
         return "No tienes ese objeto."
 
+    err_aplicar = _aplicar_efecto_powerup(articulo_id, inventario, pregunta)
+    if err_aplicar:
+        return err_aplicar
+    _registrar_uso_powerup(articulo_id, inventario, escape=escape)
+    return None
+
+
+def _error_uso_powerup(
+    articulo_id: str,
+    inventario: EstadoInventarioEscape,
+    *,
+    escape: bool,
+) -> str | None:
+    if escape:
+        from Comun.powerups_puerta_escape import puede_usar_powerup_en_pregunta_escape
+
+        return puede_usar_powerup_en_pregunta_escape(
+            articulo_id, inventario.powerups_usados_en_pregunta
+        )
+    return puede_usar_powerup_en_pregunta(
+        articulo_id, inventario.powerups_usados_en_pregunta
+    )
+
+
+def _aplicar_efecto_powerup(
+    articulo_id: str,
+    inventario: EstadoInventarioEscape,
+    pregunta: Pregunta,
+) -> str | None:
     if articulo_id == "fifty_fifty":
         inventario.letras_ocultas_powerup = letras_ocultas_fifty_fifty(pregunta)
     elif articulo_id == "bomba":
@@ -738,10 +756,18 @@ def usar_objeto(
         inventario.skip_sin_cortar_racha += 1
     elif articulo_id not in {"skip", "cambio"}:
         return f"Objeto desconocido: {articulo_id}"
+    return None
+
+
+def _registrar_uso_powerup(
+    articulo_id: str,
+    inventario: EstadoInventarioEscape,
+    *,
+    escape: bool,
+) -> None:
     if escape:
         from Comun.powerups_puerta_escape import registrar_uso_powerup_escape
 
         registrar_uso_powerup_escape(inventario, articulo_id)
     elif articulo_id not in POWERUPS_MULTI_USO_PREGUNTA:
         inventario.powerups_usados_en_pregunta.add(articulo_id)
-    return None

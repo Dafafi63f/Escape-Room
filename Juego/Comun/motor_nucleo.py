@@ -239,31 +239,63 @@ def evaluar_respuesta(
     reglas = estado.reglas
 
     if reglas.correccion_al_final:
-        if resultado.tiempo_agotado or not resultado.acierto:
-            estado.fallos_por_materia[p.materia] = estado.fallos_por_materia.get(p.materia, 0) + 1
-        else:
-            estado.aciertos += 1
-        return FeedbackRespuesta(mensaje="Respuesta registrada.")
+        return _feedback_correccion_diferida(p, estado, resultado)
 
     if resultado.tiempo_agotado:
-        if reglas.tiene_vidas():
-            estado.vidas_restantes = (estado.vidas_restantes or 0) - 1
-        estado.fallos_por_materia[p.materia] = estado.fallos_por_materia.get(p.materia, 0) + 1
-        solucion = texto_solucion(p) if reglas.mostrar_solucion_tras_fallo else None
-        return FeedbackRespuesta(
-            mensaje="Tiempo agotado — cuenta como fallo",
-            solucion=solucion,
-            sin_vidas=reglas.tiene_vidas() and (estado.vidas_restantes or 0) <= 0,
-        )
+        return _feedback_tiempo_agotado(p, estado, reglas)
 
     if resultado.acierto:
-        estado.aciertos += 1
-        if reglas.sistema_puntuacion == SistemaPuntuacion.ARCADE:
-            delta = calcular_puntos_arcade(p.dificultad, True)
-            estado.puntos_arcade, delta = sumar_puntos_arcade(estado.puntos_arcade, delta)
-            return FeedbackRespuesta(mensaje=f"Correcto (+{delta} puntos)")
-        return FeedbackRespuesta(mensaje="Correcto")
+        return _feedback_acierto(p, estado, reglas)
 
+    return _feedback_fallo(p, estado, reglas)
+
+
+def _feedback_correccion_diferida(
+    p: Pregunta,
+    estado: EstadoPartida,
+    resultado: ResultadoRespuesta,
+) -> FeedbackRespuesta:
+    if resultado.tiempo_agotado or not resultado.acierto:
+        estado.fallos_por_materia[p.materia] = estado.fallos_por_materia.get(p.materia, 0) + 1
+    else:
+        estado.aciertos += 1
+    return FeedbackRespuesta(mensaje="Respuesta registrada.")
+
+
+def _feedback_tiempo_agotado(
+    p: Pregunta,
+    estado: EstadoPartida,
+    reglas,
+) -> FeedbackRespuesta:
+    if reglas.tiene_vidas():
+        estado.vidas_restantes = (estado.vidas_restantes or 0) - 1
+    estado.fallos_por_materia[p.materia] = estado.fallos_por_materia.get(p.materia, 0) + 1
+    solucion = texto_solucion(p) if reglas.mostrar_solucion_tras_fallo else None
+    return FeedbackRespuesta(
+        mensaje="Tiempo agotado — cuenta como fallo",
+        solucion=solucion,
+        sin_vidas=reglas.tiene_vidas() and (estado.vidas_restantes or 0) <= 0,
+    )
+
+
+def _feedback_acierto(
+    p: Pregunta,
+    estado: EstadoPartida,
+    reglas,
+) -> FeedbackRespuesta:
+    estado.aciertos += 1
+    if reglas.sistema_puntuacion == SistemaPuntuacion.ARCADE:
+        delta = calcular_puntos_arcade(p.dificultad, True)
+        estado.puntos_arcade, delta = sumar_puntos_arcade(estado.puntos_arcade, delta)
+        return FeedbackRespuesta(mensaje=f"Correcto (+{delta} puntos)")
+    return FeedbackRespuesta(mensaje="Correcto")
+
+
+def _feedback_fallo(
+    p: Pregunta,
+    estado: EstadoPartida,
+    reglas,
+) -> FeedbackRespuesta:
     if reglas.tiene_vidas():
         estado.vidas_restantes = (estado.vidas_restantes or 0) - 1
     estado.fallos_por_materia[p.materia] = estado.fallos_por_materia.get(p.materia, 0) + 1

@@ -585,6 +585,78 @@ def _ajustes_generador_examen_fijo_csv_minimo(
     return True, PREGUNTAS_EXAMEN_BALANCEADO, False, orden
 
 
+def _n_materias_desde_preset_cfg(
+    preset: PresetHistoria,
+    cfg: ConfigPresetHistoria,
+) -> int | None:
+    n_materias = preset.n_materias
+    if any(o.id == "n_materias" for o in preset.opciones):
+        for op in preset.opciones:
+            if op.id == "n_materias":
+                return cfg.get_int("n_materias", int(op.defecto or MATERIAS_POR_SEMESTRE))
+    return n_materias
+
+
+def _n_preguntas_desde_preset_cfg(
+    preset: PresetHistoria,
+    cfg: ConfigPresetHistoria,
+) -> int | None:
+    for op in preset.opciones:
+        if op.id == "n_preguntas":
+            return cfg.get_int("n_preguntas", int(op.defecto or 12))
+    return None
+
+
+def _usar_todas_y_n_materias(
+    preset: PresetHistoria,
+    materia: str | None,
+    n_materias: int | None,
+) -> tuple[bool, int | None]:
+    usar_todas = (
+        preset.n_materias is None
+        and "n_materias" not in {o.id for o in preset.opciones}
+    )
+    if materia:
+        return False, 1
+    return usar_todas, n_materias
+
+
+def _perfil_seleccion_argumentos(
+    preset: PresetHistoria,
+    cfg: ConfigPresetHistoria,
+    *,
+    usar_todas: bool,
+    perfil_datos,
+):
+    if usar_todas:
+        estrategia = estrategia_efectiva_desde_config(cfg, perfil=perfil_datos)
+        if estrategia in _ESTRATEGIA_MATERIAS:
+            perfil, _ = _ESTRATEGIA_MATERIAS[estrategia]
+        else:
+            perfil = PerfilPedagogico.POR_CURSO
+        return perfil, True
+    return _resolver_perfil_y_seleccion(preset, cfg, perfil_datos=perfil_datos)
+
+
+def _acotar_n_materias_ambito(
+    n_materias: int | None,
+    *,
+    usar_todas: bool,
+    materias_meta: dict[str, dict[str, str]] | None,
+    curso,
+    semestre,
+    grupo,
+) -> int | None:
+    if usar_todas or n_materias is None or materias_meta is None:
+        return n_materias
+    tope = max_materias_ambito(
+        materias_meta, curso=curso, semestre=semestre, grupo=grupo
+    )
+    if tope > 0:
+        return min(n_materias, tope)
+    return n_materias
+
+
 def argumentos_generador(
     preset: PresetHistoria,
     config: ConfigPresetHistoria | None = None,
@@ -600,47 +672,21 @@ def argumentos_generador(
     grupo = cfg.get_str("grupo") or preset.grupo_filtro
     materia = cfg.get_str("materia")
 
-    n_materias = preset.n_materias
-    if any(o.id == "n_materias" for o in preset.opciones):
-        for op in preset.opciones:
-            if op.id == "n_materias":
-                n_materias = cfg.get_int("n_materias", int(op.defecto or MATERIAS_POR_SEMESTRE))
-                break
-
+    n_materias = _n_materias_desde_preset_cfg(preset, cfg)
     tipos_permitidos = tipos_desde_enfoque(cfg.get_str("enfoque"))
-
-    usar_todas = (
-        preset.n_materias is None
-        and "n_materias" not in {o.id for o in preset.opciones}
+    usar_todas, n_materias = _usar_todas_y_n_materias(preset, materia, n_materias)
+    perfil, seleccion_det = _perfil_seleccion_argumentos(
+        preset, cfg, usar_todas=usar_todas, perfil_datos=perfil_datos
     )
-    if materia:
-        usar_todas = False
-        n_materias = 1
-
-    if usar_todas:
-        estrategia = estrategia_efectiva_desde_config(cfg, perfil=perfil_datos)
-        if estrategia in _ESTRATEGIA_MATERIAS:
-            perfil, _ = _ESTRATEGIA_MATERIAS[estrategia]
-        else:
-            perfil = PerfilPedagogico.POR_CURSO
-        seleccion_det = True
-    else:
-        perfil, seleccion_det = _resolver_perfil_y_seleccion(
-            preset, cfg, perfil_datos=perfil_datos
-        )
-
-    if not usar_todas and n_materias is not None and materias_meta is not None:
-        tope = max_materias_ambito(
-            materias_meta, curso=curso, semestre=semestre, grupo=grupo
-        )
-        if tope > 0:
-            n_materias = min(n_materias, tope)
-
-    n_preguntas = None
-    for op in preset.opciones:
-        if op.id == "n_preguntas":
-            n_preguntas = cfg.get_int("n_preguntas", int(op.defecto or 12))
-            break
+    n_materias = _acotar_n_materias_ambito(
+        n_materias,
+        usar_todas=usar_todas,
+        materias_meta=materias_meta,
+        curso=curso,
+        semestre=semestre,
+        grupo=grupo,
+    )
+    n_preguntas = _n_preguntas_desde_preset_cfg(preset, cfg)
 
     opciones = OpcionesGeneracionExamen(
         perfil=perfil,

@@ -921,18 +921,7 @@ class PartidaEscapeRoom(Pantalla):
 
     def _lineas_carta_puerta(self, puerta: PuertaEscape) -> tuple[str, str, list[str]]:
         if puerta.modificadores.sin_pregunta:
-            if puerta_es_tienda(puerta):
-                ev = evento_por_id("tienda")
-                return ev.nombre, ev.descripcion, []
-            ev = evento_sin_pregunta_escape(puerta.modificadores) or evento_por_id("descanso")
-            lineas_detalle = list(
-                lineas_botin_puerta(
-                    puerta.modificadores,
-                    vidas_max_tope=self.vidas_max,
-                    vidas_max_absoluto=VIDAS_MAX_ABSOLUTO_ESCAPE,
-                )
-            )
-            return ev.nombre, ev.descripcion, lineas_detalle
+            return self._lineas_carta_sin_pregunta(puerta)
 
         evento = puerta.evento
         titulo = evento.nombre
@@ -947,19 +936,41 @@ class PartidaEscapeRoom(Pantalla):
                 vidas_max_absoluto=VIDAS_MAX_ABSOLUTO_ESCAPE,
             )
         )
+        self._anadir_detalle_foco_carta(detalle, evento)
+        self._anadir_detalle_jefe_y_mult(detalle, puerta)
+        return titulo, descripcion, detalle
+
+    def _lineas_carta_sin_pregunta(self, puerta: PuertaEscape) -> tuple[str, str, list[str]]:
+        if puerta_es_tienda(puerta):
+            ev = evento_por_id("tienda")
+            return ev.nombre, ev.descripcion, []
+        ev = evento_sin_pregunta_escape(puerta.modificadores) or evento_por_id("descanso")
+        lineas_detalle = list(
+            lineas_botin_puerta(
+                puerta.modificadores,
+                vidas_max_tope=self.vidas_max,
+                vidas_max_absoluto=VIDAS_MAX_ABSOLUTO_ESCAPE,
+            )
+        )
+        return ev.nombre, ev.descripcion, lineas_detalle
+
+    def _anadir_detalle_foco_carta(self, detalle: list[str], evento) -> None:
         if evento.materia:
             detalle.append(evento.materia)
-        else:
-            foco = linea_foco_contenido_puerta(evento)
-            if foco:
-                if evento.grupo:
-                    mats = materias_del_grupo(self.pool, evento.grupo)
-                    if mats:
-                        detalle.append(f"{foco}  {len(mats)} materias")
-                    else:
-                        detalle.append(foco)
-                else:
-                    detalle.append(foco)
+            return
+        foco = linea_foco_contenido_puerta(evento)
+        if not foco:
+            return
+        if evento.grupo:
+            mats = materias_del_grupo(self.pool, evento.grupo)
+            if mats:
+                detalle.append(f"{foco}  {len(mats)} materias")
+            else:
+                detalle.append(foco)
+            return
+        detalle.append(foco)
+
+    def _anadir_detalle_jefe_y_mult(self, detalle: list[str], puerta: PuertaEscape) -> None:
         if puerta_es_jefe(puerta):
             bonus = bonificacion_completar_escape(puerta)
             if bonus.delta_vidas > 0:
@@ -969,7 +980,6 @@ class PartidaEscapeRoom(Pantalla):
         mult = puerta.modificadores.multiplicador_puntos
         if mult > 1:
             detalle.append(linea_recompensa_pie_carta(f"puntos ×{mult} en toda la puerta"))
-        return titulo, descripcion, detalle
 
     def _dibujar_carta_puerta(
         self,
@@ -1446,6 +1456,89 @@ class PartidaEscapeRoom(Pantalla):
             return
         self._finalizar_desafio()
 
+    def _feedback_error_escape(self, mensaje: str, *, retorno: str | None = None) -> None:
+        if retorno is not None:
+            self._retorno_feedback = retorno
+        self.feedback_mensaje = mensaje
+        self.feedback_ok = False
+        self.feedback_solucion = None
+        self.fase = "feedback"
+        self.inicio_feedback = marcar_inicio_feedback()
+
+    def _usar_objeto_en_sala(self, articulo_id: str) -> None:
+        if not self.inventario_escape.consumir(articulo_id):
+            self._feedback_error_escape("No tienes ese objeto.", retorno="sala")
+            return
+        sala = self._sala_actual()
+        if sala is None:
+            return
+        if articulo_id == "reroll_puertas":
+            self.puertas_actuales = regenerar_puertas_sala_escape(
+                sala,
+                self.sala_idx,
+                materias_pool=self.materias_pool,
+                pool_preguntas=self.pool,
+                rng=self.rng,
+                puertas_por_sala=self.config.puertas_por_sala,
+                n_salas=self.config.n_salas,
+                pity=self._pity_puertas,
+                estado=self.estado,
+                vidas_max=self.vidas_max,
+            )
+            self._refrescar_ui_puertas()
+        elif articulo_id == "limpieza_maldiciones":
+            self.puertas_actuales = quitar_maldicion_puertas_sala(
+                self.puertas_actuales,
+                numero_sala=self.sala_idx + 1,
+            )
+            self._refrescar_ui_puertas()
+        elif articulo_id == "salto_sala":
+            self._avanzar_sala()
+
+    def _usar_skip_o_cambio_escape(self, articulo_id: str, p) -> None:
+        err = usar_objeto(articulo_id, self.inventario_escape, p, escape=True)
+        if err:
+            self._feedback_error_escape(err)
+            return
+        if articulo_id == "skip":
+            self.pregunta_idx += 1
+            if self.pregunta_idx >= len(self.preguntas_desafio):
+                if self._intentar_feedback_bonus_completar():
+                    return
+                self._finalizar_desafio()
+                return
+            self.inventario_escape.reset_pregunta()
+            self.inicio_pregunta = time.monotonic()
+            self._tiempo_agotado_marcado = False
+            self.fase = "pregunta"
+            self._reconstruir_opciones()
+            self._reconstruir_inventario_botones()
+            return
+        indice = self._indice_pool_pregunta(p)
+        reemplazo = reemplazar_pregunta_cambio_escape(
+            self.pool,
+            self.puerta_actual,
+            indice_actual=indice,
+            numero_sala=self.sala_idx + 1,
+            n_salas=self.config.n_salas,
+            rng=self.rng,
+            usadas=self._usadas_pool,
+        )
+        if reemplazo is None:
+            revocar_powerup_usado(
+                self.inventario_escape.powerups_usados_en_pregunta, "cambio"
+            )
+            self.inventario_escape.agregar("cambio")
+            self._feedback_error_escape("No hay otra pregunta compatible.")
+            return
+        self.preguntas_desafio[self.pregunta_idx] = reemplazo
+        self.inventario_escape.reiniciar_slot_pregunta()
+        self.inicio_pregunta = time.monotonic()
+        self._tiempo_agotado_marcado = False
+        self.fase = "pregunta"
+        self._reconstruir_opciones()
+        self._reconstruir_inventario_botones()
+
     def _usar_objeto_escape(self, articulo_id: str) -> None:
         modo = self._modo_inventario_actual()
         if modo is None:
@@ -1460,100 +1553,14 @@ class PartidaEscapeRoom(Pantalla):
             puertas_sala=puertas_sala,
         )
         if err_ctx:
-            self._retorno_feedback = modo
-            self.feedback_mensaje = err_ctx
-            self.feedback_ok = False
-            self.feedback_solucion = None
-            self.fase = "feedback"
-            self.inicio_feedback = marcar_inicio_feedback()
+            self._feedback_error_escape(err_ctx, retorno=modo)
             return
         if modo == "sala":
-            if not self.inventario_escape.consumir(articulo_id):
-                self._retorno_feedback = "sala"
-                self.feedback_mensaje = "No tienes ese objeto."
-                self.feedback_ok = False
-                self.feedback_solucion = None
-                self.fase = "feedback"
-                self.inicio_feedback = marcar_inicio_feedback()
-                return
-            sala = self._sala_actual()
-            if sala is None:
-                return
-            if articulo_id == "reroll_puertas":
-                self.puertas_actuales = regenerar_puertas_sala_escape(
-                    sala,
-                    self.sala_idx,
-                    materias_pool=self.materias_pool,
-                    pool_preguntas=self.pool,
-                    rng=self.rng,
-                    puertas_por_sala=self.config.puertas_por_sala,
-                    n_salas=self.config.n_salas,
-                    pity=self._pity_puertas,
-                    estado=self.estado,
-                    vidas_max=self.vidas_max,
-                )
-                self._refrescar_ui_puertas()
-            elif articulo_id == "limpieza_maldiciones":
-                self.puertas_actuales = quitar_maldicion_puertas_sala(
-                    self.puertas_actuales,
-                    numero_sala=self.sala_idx + 1,
-                )
-                self._refrescar_ui_puertas()
-            elif articulo_id == "salto_sala":
-                self._avanzar_sala()
+            self._usar_objeto_en_sala(articulo_id)
             return
         p = self._pregunta_actual()
         if articulo_id in {"skip", "cambio"}:
-            err = usar_objeto(articulo_id, self.inventario_escape, p, escape=True)
-            if err:
-                self.feedback_mensaje = err
-                self.feedback_ok = False
-                self.feedback_solucion = None
-                self.fase = "feedback"
-                self.inicio_feedback = marcar_inicio_feedback()
-                return
-            if articulo_id == "skip":
-                self.pregunta_idx += 1
-                if self.pregunta_idx >= len(self.preguntas_desafio):
-                    if self._intentar_feedback_bonus_completar():
-                        return
-                    self._finalizar_desafio()
-                    return
-                self.inventario_escape.reset_pregunta()
-                self.inicio_pregunta = time.monotonic()
-                self._tiempo_agotado_marcado = False
-                self.fase = "pregunta"
-                self._reconstruir_opciones()
-                self._reconstruir_inventario_botones()
-                return
-            indice = self._indice_pool_pregunta(p)
-            reemplazo = reemplazar_pregunta_cambio_escape(
-                self.pool,
-                self.puerta_actual,
-                indice_actual=indice,
-                numero_sala=self.sala_idx + 1,
-                n_salas=self.config.n_salas,
-                rng=self.rng,
-                usadas=self._usadas_pool,
-            )
-            if reemplazo is None:
-                revocar_powerup_usado(
-                    self.inventario_escape.powerups_usados_en_pregunta, "cambio"
-                )
-                self.inventario_escape.agregar("cambio")
-                self.feedback_mensaje = "No hay otra pregunta compatible."
-                self.feedback_ok = False
-                self.feedback_solucion = None
-                self.fase = "feedback"
-                self.inicio_feedback = marcar_inicio_feedback()
-                return
-            self.preguntas_desafio[self.pregunta_idx] = reemplazo
-            self.inventario_escape.reiniciar_slot_pregunta()
-            self.inicio_pregunta = time.monotonic()
-            self._tiempo_agotado_marcado = False
-            self.fase = "pregunta"
-            self._reconstruir_opciones()
-            self._reconstruir_inventario_botones()
+            self._usar_skip_o_cambio_escape(articulo_id, p)
             return
 
         err = usar_objeto(
@@ -1563,11 +1570,7 @@ class PartidaEscapeRoom(Pantalla):
             escape=True,
         )
         if err:
-            self.feedback_mensaje = err
-            self.feedback_ok = False
-            self.feedback_solucion = None
-            self.fase = "feedback"
-            self.inicio_feedback = marcar_inicio_feedback()
+            self._feedback_error_escape(err)
             return
         if articulo_id in {"fifty_fifty", "bomba", "comodin", "descarte_inteligente"}:
             self._reconstruir_opciones()

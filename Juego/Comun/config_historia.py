@@ -493,23 +493,40 @@ def filtro_ambito_bloqueado(
     if preset_id == "examen_fijo" and op_id == "semilla":
         return _origen_semilla_examen_fijo(valores) != "semilla"
     if op_id not in _IDS_FILTRO_AMBITO and op_id not in _IDS_FILTRO_GRUPO:
-        if preset_id == "simulacro" and _simulacro_ambito_curso_completo(valores):
-            if op_id in ("periodo", "semestre"):
-                return True
-        return False
-    if tiene_exclusion_periodo_curso_semestre(opciones) and op_id in _IDS_FILTRO_AMBITO:
-        modo = modo_filtro_ambito(valores)
-        if modo == "periodo" and op_id in ("curso", "semestre"):
-            return True
-        if modo == "curso_semestre" and op_id == "periodo":
-            return True
+        return _filtro_simulacro_curso_completo(op_id, valores, preset_id)
+    if _bloqueado_por_exclusion_periodo(op_id, valores, opciones):
+        return True
     if valores.get("grupo") and op_id in _IDS_FILTRO_AMBITO:
         return True
     if _tiene_filtro_curricular(valores) and op_id == "grupo":
         return True
+    return _filtro_simulacro_curso_completo(op_id, valores, preset_id)
+
+
+def _filtro_simulacro_curso_completo(
+    op_id: str,
+    valores: dict[str, Any],
+    preset_id: str | None,
+) -> bool:
     if preset_id == "simulacro" and _simulacro_ambito_curso_completo(valores):
-        if op_id in ("periodo", "semestre"):
-            return True
+        return op_id in ("periodo", "semestre")
+    return False
+
+
+def _bloqueado_por_exclusion_periodo(
+    op_id: str,
+    valores: dict[str, Any],
+    opciones: tuple[OpcionPreset, ...],
+) -> bool:
+    if not (
+        tiene_exclusion_periodo_curso_semestre(opciones) and op_id in _IDS_FILTRO_AMBITO
+    ):
+        return False
+    modo = modo_filtro_ambito(valores)
+    if modo == "periodo" and op_id in ("curso", "semestre"):
+        return True
+    if modo == "curso_semestre" and op_id == "periodo":
+        return True
     return False
 
 

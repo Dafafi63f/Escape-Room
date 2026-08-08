@@ -298,48 +298,10 @@ def mensaje_feedback_puerta_sin_pregunta(puerta: PuertaEscape) -> str:
 
 def bonificacion_completar_escape(puerta: PuertaEscape) -> BonificacionCompletarEscape:
     """Vidas u objetos extra al superar la puerta sin fallar (botín, corazón máximo o jefe)."""
-
-    def _bonus_botin() -> tuple[int, int]:
-        delta = 0
-        delta_max = 0
-        for eid in puerta.modificadores.eventos_ids:
-            if eid not in RASGOS_RECOMPENSA_VIDAS_ESCAPE:
-                continue
-            ev = evento_por_id(eid)
-            delta += ev.modificadores.delta_vidas_al_completar
-            delta_max += ev.modificadores.delta_vidas_max_al_completar
-        if delta == 0 and delta_max == 0:
-            delta = puerta.modificadores.delta_vidas_al_completar
-            delta_max = puerta.modificadores.delta_vidas_max_al_completar
-        return delta, delta_max
-
-    def _powerups_botin() -> tuple[tuple[str, int], ...]:
-        acum: dict[str, int] = {}
-        for eid in puerta.modificadores.eventos_ids:
-            if eid not in RASGOS_BOTIN_ESCAPE:
-                continue
-            pid = evento_por_id(eid).modificadores.powerup_al_completar
-            if pid:
-                acum[pid] = acum.get(pid, 0) + 1
-        return tuple(sorted(acum.items()))
-
-    powerups = _powerups_botin()
+    powerups = _powerups_botin_puerta(puerta)
 
     if puerta.modificadores.sin_pregunta:
-        tiene_vidas = any(
-            eid in RASGOS_RECOMPENSA_VIDAS_ESCAPE
-            for eid in puerta.modificadores.eventos_ids
-        )
-        if tiene_vidas or powerups:
-            delta, delta_max = _bonus_botin() if tiene_vidas else (0, 0)
-            return BonificacionCompletarEscape(
-                delta_vidas=delta,
-                delta_vidas_max=delta_max,
-                etiqueta="Botín de la puerta",
-                en_descanso=True,
-                powerups=powerups,
-            )
-        return BonificacionCompletarEscape()
+        return _bonus_puerta_sin_pregunta(puerta, powerups)
     if puerta.n_preguntas <= 0:
         return BonificacionCompletarEscape()
     delta = 0
@@ -348,7 +310,7 @@ def bonificacion_completar_escape(puerta: PuertaEscape) -> BonificacionCompletar
     if any(
         eid in RASGOS_RECOMPENSA_VIDAS_ESCAPE for eid in puerta.modificadores.eventos_ids
     ):
-        delta, delta_max = _bonus_botin()
+        delta, delta_max = _bonus_vidas_botin_puerta(puerta)
         etiqueta = "Botín de la puerta"
     if puerta_es_jefe(puerta):
         delta = max(delta, 2)
@@ -357,6 +319,52 @@ def bonificacion_completar_escape(puerta: PuertaEscape) -> BonificacionCompletar
         delta_vidas=delta,
         delta_vidas_max=delta_max,
         etiqueta=etiqueta,
+        powerups=powerups,
+    )
+
+
+def _bonus_vidas_botin_puerta(puerta: PuertaEscape) -> tuple[int, int]:
+    delta = 0
+    delta_max = 0
+    for eid in puerta.modificadores.eventos_ids:
+        if eid not in RASGOS_RECOMPENSA_VIDAS_ESCAPE:
+            continue
+        ev = evento_por_id(eid)
+        delta += ev.modificadores.delta_vidas_al_completar
+        delta_max += ev.modificadores.delta_vidas_max_al_completar
+    if delta == 0 and delta_max == 0:
+        delta = puerta.modificadores.delta_vidas_al_completar
+        delta_max = puerta.modificadores.delta_vidas_max_al_completar
+    return delta, delta_max
+
+
+def _powerups_botin_puerta(puerta: PuertaEscape) -> tuple[tuple[str, int], ...]:
+    acum: dict[str, int] = {}
+    for eid in puerta.modificadores.eventos_ids:
+        if eid not in RASGOS_BOTIN_ESCAPE:
+            continue
+        pid = evento_por_id(eid).modificadores.powerup_al_completar
+        if pid:
+            acum[pid] = acum.get(pid, 0) + 1
+    return tuple(sorted(acum.items()))
+
+
+def _bonus_puerta_sin_pregunta(
+    puerta: PuertaEscape,
+    powerups: tuple[tuple[str, int], ...],
+) -> BonificacionCompletarEscape:
+    tiene_vidas = any(
+        eid in RASGOS_RECOMPENSA_VIDAS_ESCAPE
+        for eid in puerta.modificadores.eventos_ids
+    )
+    if not (tiene_vidas or powerups):
+        return BonificacionCompletarEscape()
+    delta, delta_max = _bonus_vidas_botin_puerta(puerta) if tiene_vidas else (0, 0)
+    return BonificacionCompletarEscape(
+        delta_vidas=delta,
+        delta_vidas_max=delta_max,
+        etiqueta="Botín de la puerta",
+        en_descanso=True,
         powerups=powerups,
     )
 
@@ -1232,6 +1240,41 @@ def _asegurar_puerta_jefe_viable(
         if not ev.exclusivo_puerta_escape and ev.id not in RASGOS_BOTIN_ESCAPE
     ]
 
+    candidata = _iterar_ajustes_puerta_jefe(
+        candidata,
+        pool,
+        focos=focos,
+        desafios_disp=desafios_disp,
+        numero_sala=numero_sala,
+        n_salas=n_salas,
+        rng=rng,
+    )
+    if _puerta_cumple(candidata, pool, numero_sala=numero_sala, n_salas=n_salas):
+        return candidata
+
+    mejor = _mejor_jefe_por_foco(
+        candidata, pool, focos=focos, numero_sala=numero_sala, n_salas=n_salas
+    )
+    if mejor is not None:
+        return mejor
+
+    return _jefe_minimo_por_foco(
+        candidata, pool, focos=focos, numero_sala=numero_sala, n_salas=n_salas, rng=rng
+    )
+
+
+def _iterar_ajustes_puerta_jefe(
+    candidata: PuertaEscape,
+    pool: list[Pregunta],
+    *,
+    focos: list,
+    desafios_disp: list,
+    numero_sala: int,
+    n_salas: int,
+    rng: random.Random,
+) -> PuertaEscape:
+    from Comun.escape_room import PuertaEscape
+
     for intento in range(_MAX_INTENTOS_PUERTA_JEFE):
         if _puerta_cumple(candidata, pool, numero_sala=numero_sala, n_salas=n_salas):
             return candidata
@@ -1263,6 +1306,19 @@ def _asegurar_puerta_jefe_viable(
                     candidata, evento=_evento_balanceado_desde(candidata.evento)
                 ),
             )
+    return candidata
+
+
+def _mejor_jefe_por_foco(
+    candidata: PuertaEscape,
+    pool: list[Pregunta],
+    *,
+    focos: list,
+    numero_sala: int,
+    n_salas: int,
+) -> PuertaEscape | None:
+    from Comun.escape_room import PuertaEscape
+    from Comun.jefe_partida import PREGUNTAS_POR_JEFE
 
     mejor: PuertaEscape | None = None
     mejor_n = 0
@@ -1282,8 +1338,20 @@ def _asegurar_puerta_jefe_viable(
         if disp >= PREGUNTAS_POR_JEFE and disp > mejor_n:
             mejor = prueba
             mejor_n = disp
-    if mejor is not None:
-        return mejor
+    return mejor
+
+
+def _jefe_minimo_por_foco(
+    candidata: PuertaEscape,
+    pool: list[Pregunta],
+    *,
+    focos: list,
+    numero_sala: int,
+    n_salas: int,
+    rng: random.Random,
+) -> PuertaEscape:
+    from Comun.escape_room import PuertaEscape
+    from Comun.jefe_partida import PREGUNTAS_POR_JEFE
 
     mods_min = _modificadores_jefe_escape(
         ModificadoresPuerta(rasgos=(_RASGO_CLASICA,)),
@@ -1303,7 +1371,6 @@ def _asegurar_puerta_jefe_viable(
         )
         if _puerta_cumple(prueba, pool, numero_sala=numero_sala, n_salas=n_salas):
             return prueba
-
     return candidata
 
 

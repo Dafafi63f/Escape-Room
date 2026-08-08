@@ -200,54 +200,84 @@ def clave_familia_plantilla(fila: dict) -> str | None:
     Devuelve un id de familia o None.
     """
     t = _enunciado_normalizado(fila)
+    fam = _familia_bits_enum(t)
+    if fam is not None:
+        return fam
+    fam = _familia_conversion_bytes(t)
+    if fam is not None:
+        return fam
+    fam = _familia_limite(t)
+    if fam is not None:
+        return fam
+    fam = _familia_entropia(t)
+    if fam is not None:
+        return fam
+    fam = _familia_kmeans(t)
+    if fam is not None:
+        return fam
+    return _familia_pixeles(t)
 
-    # «¿Cuántos valores/estados/símbolos con N bits?» y la inversa «¿Cuántos bits para N estados?»
-    if re.search(r"\b(bits?|qubits?)\b", t) and re.search(
-        r"\b(cuantos?|cuantas?|numero de|que numero)\b", t
+
+def _familia_bits_enum(t: str) -> str | None:
+    if not (
+        re.search(r"\b(bits?|qubits?)\b", t)
+        and re.search(r"\b(cuantos?|cuantas?|numero de|que numero)\b", t)
     ):
-        if _EXCLUIR_FAMILIA_BITS.search(t):
-            return None
-        if re.search(
-            r"\b(valores?|estados?|simbolos?|símbolos?|numeros?|representar|"
-            r"codificar|codigo|codigos?|representables?)\b",
-            t,
-        ):
-            return "fam:bits_enum"
-        # «¿Cuántos bits para N …?» sin palabra valores pero con estados/símbolos
-        if re.search(r"\b(bits?|qubits?)\s+(para|per)\b", t) and re.search(
-            r"\b(estados?|simbolos?|valores?)\b", t
-        ):
-            return "fam:bits_enum"
-
-    # Conversión KB/MB/GB
-    if re.search(r"\b(cuantos?|cuantas?)\b", t) and re.search(
-        r"\b(bytes?|kb|mb|gb|kilobytes?)\b", t
+        return None
+    if _EXCLUIR_FAMILIA_BITS.search(t):
+        return None
+    if re.search(
+        r"\b(valores?|estados?|simbolos?|símbolos?|numeros?|representar|"
+        r"codificar|codigo|codigos?|representables?)\b",
+        t,
     ):
-        if re.search(r"\b(entropia|hash|aes|cifr)\b", t):
-            return None
-        return "fam:conversion_bytes"
+        return "fam:bits_enum"
+    if re.search(r"\b(bits?|qubits?)\s+(para|per)\b", t) and re.search(
+        r"\b(estados?|simbolos?|valores?)\b", t
+    ):
+        return "fam:bits_enum"
+    return None
 
-    # Límites tipo lim(x→0) f(x)/g(x)
+
+def _familia_conversion_bytes(t: str) -> str | None:
+    if not (
+        re.search(r"\b(cuantos?|cuantas?)\b", t)
+        and re.search(r"\b(bytes?|kb|mb|gb|kilobytes?)\b", t)
+    ):
+        return None
+    if re.search(r"\b(entropia|hash|aes|cifr)\b", t):
+        return None
+    return "fam:conversion_bytes"
+
+
+def _familia_limite(t: str) -> str | None:
     if re.search(r"\blim(ite)?\b", t) and re.search(r"\b[xt]\b", t):
         if re.search(r"\b(0|infinito|infty)\b", t) or "cuando" in t:
             return "fam:limite_indeterminacion"
+    return None
 
-    # Entropía de fuente con k símbolos equiprobables (no confundir con bits_enum)
-    if re.search(r"\bentropia\b", t) and re.search(
-        r"\b(simbolos?|símbolos?|estados?)\b", t
-    ) and re.search(r"\bequiprobables?\b", t):
+
+def _familia_entropia(t: str) -> str | None:
+    if (
+        re.search(r"\bentropia\b", t)
+        and re.search(r"\b(simbolos?|símbolos?|estados?)\b", t)
+        and re.search(r"\bequiprobables?\b", t)
+    ):
         return "fam:entropia_simbolos"
+    return None
 
-    # K-means «¿cuántos clusters con K=N?»
+
+def _familia_kmeans(t: str) -> str | None:
     if re.search(r"\bclusters?\b", t) and re.search(r"\bk\s*=\s*#|k\s*=\s*\d+", t):
         return "fam:kmeans_k"
+    return None
 
-    # Imagen «¿cuántos píxeles en total?» (ancho×alto)
+
+def _familia_pixeles(t: str) -> str | None:
     if re.search(r"\b(pixeles?|píxeles?|pixels?)\b", t) and re.search(
         r"\b(total|en total|imagen)\b", t
     ):
         return "fam:pixeles_total"
-
     return None
 
 

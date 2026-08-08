@@ -220,34 +220,67 @@ def _elegir_pregunta(
     perfiles_fallo: dict[str, tuple[tuple[str, str], ...]] | None = None,
     prob_perfil_fallo: float = 0.72,
 ) -> object | None:
+    candidatas = _candidatas_materia_pool(
+        pool, materia, tipos_permitidos, usadas_ids, pregunta_key
+    )
+    if not candidatas:
+        return None
+    elegida = _elegir_con_perfiles_fallo(
+        candidatas,
+        materia,
+        rng,
+        perfiles_fallo=perfiles_fallo,
+        prob_perfil_fallo=prob_perfil_fallo,
+    )
+    return elegida if elegida is not None else rng.choice(candidatas)
+
+
+def _candidatas_materia_pool(
+    pool: dict[str, dict[tuple[str, str], list]],
+    materia: str,
+    tipos_permitidos: frozenset[str],
+    usadas_ids: set,
+    pregunta_key: Callable,
+) -> list:
     candidatas: list = []
     for (tipo, _dificultad), lista in pool.get(materia, {}).items():
         if tipo not in tipos_permitidos:
             continue
         candidatas.extend(p for p in lista if pregunta_key(p) not in usadas_ids)
-    if not candidatas:
-        return None
-    if perfiles_fallo:
-        perfiles = perfiles_fallo.get(materia)
-        if perfiles:
-            similares = [
-                p
-                for p in candidatas
-                if (
-                    (getattr(p, "tipo", "") or "").strip(),
-                    (getattr(p, "dificultad", "") or "").strip(),
-                )
-                in perfiles
-            ]
-            otros = [p for p in candidatas if p not in similares]
-            if otros and similares:
-                from Comun.cadena_examen_dirigido import PROB_EXPLORACION_PERFIL_PREGUNTA
+    return candidatas
 
-                if rng.random() < PROB_EXPLORACION_PERFIL_PREGUNTA:
-                    return rng.choice(otros)
-            if similares and rng.random() < prob_perfil_fallo:
-                return rng.choice(similares)
-    return rng.choice(candidatas)
+
+def _elegir_con_perfiles_fallo(
+    candidatas: list,
+    materia: str,
+    rng: random.Random,
+    *,
+    perfiles_fallo: dict[str, tuple[tuple[str, str], ...]] | None,
+    prob_perfil_fallo: float,
+) -> object | None:
+    if not perfiles_fallo:
+        return None
+    perfiles = perfiles_fallo.get(materia)
+    if not perfiles:
+        return None
+    similares = [
+        p
+        for p in candidatas
+        if (
+            (getattr(p, "tipo", "") or "").strip(),
+            (getattr(p, "dificultad", "") or "").strip(),
+        )
+        in perfiles
+    ]
+    otros = [p for p in candidatas if p not in similares]
+    if otros and similares:
+        from Comun.cadena_examen_dirigido import PROB_EXPLORACION_PERFIL_PREGUNTA
+
+        if rng.random() < PROB_EXPLORACION_PERFIL_PREGUNTA:
+            return rng.choice(otros)
+    if similares and rng.random() < prob_perfil_fallo:
+        return rng.choice(similares)
+    return None
 
 
 def _clave_orden_dificultad_pregunta(pregunta: object) -> tuple[int, int, str]:
@@ -490,50 +523,83 @@ def _construir_seleccion_plantillas_materia(
 
     pool_idx = _indice_pool(preguntas)
     seleccion: list = []
-
-    elegibles: list[dict] = []
-    for plantilla in plantillas:
-        tipo = (plantilla.get("tipo") or "Teoria").strip()
-        if tipo not in tipos_permitidos:
-            continue
-        elegibles.append(plantilla)
-
-    if n_preguntas is not None and n_preguntas < len(elegibles):
-        orden = list(elegibles)
-        rng.shuffle(orden)
-        elegibles = orden[:n_preguntas]
+    elegibles = _plantillas_elegibles(plantillas, tipos_permitidos, n_preguntas, rng)
 
     for plantilla in elegibles:
-        candidatas: list = []
-        for inst in expandir_plantilla_instancias(materia, plantilla):
-            if inst["tipo"] not in tipos_permitidos:
-                continue
-            k = clave_contenido(
-                inst["materia"],
-                inst["pregunta"],
-                inst["opciones"],
-                inst["correcta"],
-            )
-            p = por_clave.get(k)
-            if p is not None and pregunta_key(p) not in usadas:
-                candidatas.append(p)
-        if candidatas:
-            p = rng.choice(candidatas)
-        else:
-            p = _elegir_pregunta(
-                pool_idx,
-                materia,
-                tipos_permitidos,
-                usadas,
-                rng,
-                pregunta_key,
-            )
-            if p is None:
-                continue
+        p = _pregunta_desde_plantilla_o_pool(
+            materia,
+            plantilla,
+            por_clave=por_clave,
+            pool_idx=pool_idx,
+            tipos_permitidos=tipos_permitidos,
+            usadas=usadas,
+            rng=rng,
+            pregunta_key=pregunta_key,
+            expandir_plantilla_instancias=expandir_plantilla_instancias,
+            clave_contenido=clave_contenido,
+        )
+        if p is None:
+            continue
         usadas.add(pregunta_key(p))
         seleccion.append(p)
 
     return seleccion
+
+
+def _plantillas_elegibles(
+    plantillas: list[dict],
+    tipos_permitidos: frozenset[str],
+    n_preguntas: int | None,
+    rng: random.Random,
+) -> list[dict]:
+    elegibles = [
+        plantilla
+        for plantilla in plantillas
+        if (plantilla.get("tipo") or "Teoria").strip() in tipos_permitidos
+    ]
+    if n_preguntas is not None and n_preguntas < len(elegibles):
+        orden = list(elegibles)
+        rng.shuffle(orden)
+        return orden[:n_preguntas]
+    return elegibles
+
+
+def _pregunta_desde_plantilla_o_pool(
+    materia: str,
+    plantilla: dict,
+    *,
+    por_clave: dict,
+    pool_idx,
+    tipos_permitidos: frozenset[str],
+    usadas: set,
+    rng: random.Random,
+    pregunta_key: Callable,
+    expandir_plantilla_instancias,
+    clave_contenido,
+) -> object | None:
+    candidatas: list = []
+    for inst in expandir_plantilla_instancias(materia, plantilla):
+        if inst["tipo"] not in tipos_permitidos:
+            continue
+        k = clave_contenido(
+            inst["materia"],
+            inst["pregunta"],
+            inst["opciones"],
+            inst["correcta"],
+        )
+        p = por_clave.get(k)
+        if p is not None and pregunta_key(p) not in usadas:
+            candidatas.append(p)
+    if candidatas:
+        return rng.choice(candidatas)
+    return _elegir_pregunta(
+        pool_idx,
+        materia,
+        tipos_permitidos,
+        usadas,
+        rng,
+        pregunta_key,
+    )
 
 
 def _construir_seleccion_plana(
@@ -1050,24 +1116,26 @@ def _plan_examen_por_materias(
     preguntas: list,
     candidatas: list[str],
     *,
-    perfil: PerfilPedagogico,
-    stats: dict[str, EstadisticaMateria],
     materias_orden: list[str],
-    n_materias: int,
-    preguntas_por_materia: int | None,
+    opciones: OpcionesGeneracionExamen,
+    stats: dict[str, EstadisticaMateria],
     tipos_permitidos: frozenset[str],
-    usar_todas_materias_ambito: bool,
-    seleccion_determinista: bool,
-    orden_preguntas: str,
-    exigir_balance_completo: bool,
-    usar_analisis_historico: bool,
     pregunta_key: Callable,
-    pesos_materia_sesion: dict[str, float] | None,
-    preguntas_excluir: list | None,
-    perfiles_fallo: dict[str, tuple[tuple[str, str], ...]] | None,
-    registros_dirigido: list | None,
     ctx_rng: _CtxRngExamen,
 ) -> PlanExamen:
+    perfil = opciones.perfil
+    n_materias = opciones.n_materias
+    preguntas_por_materia = opciones.preguntas_por_materia
+    usar_todas_materias_ambito = opciones.usar_todas_materias_ambito
+    seleccion_determinista = opciones.seleccion_determinista
+    orden_preguntas = opciones.orden_preguntas
+    exigir_balance_completo = opciones.exigir_balance_completo
+    usar_analisis_historico = opciones.usar_analisis_historico
+    pesos_materia_sesion = opciones.pesos_materia_sesion
+    preguntas_excluir = opciones.preguntas_excluir
+    perfiles_fallo = opciones.perfiles_fallo
+    registros_dirigido = opciones.registros_dirigido
+
     todas_en_ambito = usar_todas_materias_ambito or perfil == PerfilPedagogico.SIMULACRO
     n_efectivo = len(candidatas) if todas_en_ambito else n_materias
 
@@ -1282,22 +1350,11 @@ def generar_examen(
     return _plan_examen_por_materias(
         preguntas,
         candidatas,
-        perfil=perfil,
-        stats=stats,
         materias_orden=materias_orden,
-        n_materias=n_materias,
-        preguntas_por_materia=preguntas_por_materia,
+        opciones=opciones,
+        stats=stats,
         tipos_permitidos=tipos_permitidos,
-        usar_todas_materias_ambito=usar_todas_materias_ambito,
-        seleccion_determinista=seleccion_determinista,
-        orden_preguntas=orden_preguntas,
-        exigir_balance_completo=exigir_balance_completo,
-        usar_analisis_historico=usar_analisis_historico,
         pregunta_key=pregunta_key,
-        pesos_materia_sesion=pesos_materia_sesion,
-        preguntas_excluir=preguntas_excluir,
-        perfiles_fallo=perfiles_fallo,
-        registros_dirigido=registros_dirigido,
         ctx_rng=ctx_rng,
     )
 

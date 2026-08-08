@@ -194,26 +194,7 @@ def revisar_plantillas() -> dict:
         if p:
             pares_por_tema[tema] = p
 
-    # Cruce entre temas: solo buckets con posible solapamiento léxico
-    por_bucket_global: dict[str, list[tuple[str, dict]]] = defaultdict(list)
-    for tema, lst in plantillas.items():
-        for i, t in enumerate(lst):
-            fila = {"Pregunta": t.get("pregunta", ""), **t}
-            por_bucket_global[_bucket_key(fila)].append((f"{tema}#{i}", fila))
-
-    for grupo in por_bucket_global.values():
-        if len(grupo) < 2:
-            continue
-        temas_en_grupo = {k.split("#")[0] for k, _ in grupo}
-        if len(temas_en_grupo) < 2:
-            continue
-        for i in range(len(grupo)):
-            for j in range(i + 1, len(grupo)):
-                if grupo[i][0].split("#")[0] == grupo[j][0].split("#")[0]:
-                    continue
-                m = motivo_duplicado(grupo[i][1], grupo[j][1])
-                if m:
-                    pares_global.append((grupo[i][0], grupo[j][0], m))
+    pares_global = _pares_duplicados_entre_temas(plantillas)
 
     return {
         "total": total,
@@ -222,6 +203,36 @@ def revisar_plantillas() -> dict:
         "pares_global": pares_global,
         "detalle_tema": pares_por_tema,
     }
+
+
+def _pares_duplicados_entre_temas(plantillas: dict) -> list:
+    por_bucket_global: dict[str, list[tuple[str, dict]]] = defaultdict(list)
+    for tema, lst in plantillas.items():
+        for i, t in enumerate(lst):
+            fila = {"Pregunta": t.get("pregunta", ""), **t}
+            por_bucket_global[_bucket_key(fila)].append((f"{tema}#{i}", fila))
+
+    pares_global: list = []
+    for grupo in por_bucket_global.values():
+        pares_global.extend(_pares_cruce_temas_en_grupo(grupo))
+    return pares_global
+
+
+def _pares_cruce_temas_en_grupo(grupo: list[tuple[str, dict]]) -> list:
+    if len(grupo) < 2:
+        return []
+    temas_en_grupo = {k.split("#")[0] for k, _ in grupo}
+    if len(temas_en_grupo) < 2:
+        return []
+    pares: list = []
+    for i in range(len(grupo)):
+        for j in range(i + 1, len(grupo)):
+            if grupo[i][0].split("#")[0] == grupo[j][0].split("#")[0]:
+                continue
+            m = motivo_duplicado(grupo[i][1], grupo[j][1])
+            if m:
+                pares.append((grupo[i][0], grupo[j][0], m))
+    return pares
 
 
 def revisar_cruce() -> list[tuple[str, str, str]]:

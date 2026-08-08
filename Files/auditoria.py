@@ -138,6 +138,13 @@ def _auditar_similitud_y_longitud(
     label: str, vals: dict[str, str], corr: str
 ) -> list[dict]:
     inc: list[dict] = []
+    inc.extend(_incidencias_opciones_parecidas(label, vals))
+    inc.extend(_incidencias_desbalance_longitud(label, vals))
+    inc.extend(_incidencias_correcta_mas_larga(label, vals, corr))
+    return inc
+
+
+def _incidencias_opciones_parecidas(label: str, vals: dict[str, str]) -> list[dict]:
     pares_sim = []
     for i, a in enumerate(LETRAS):
         for b in LETRAS[i + 1 :]:
@@ -147,25 +154,35 @@ def _auditar_similitud_y_longitud(
             if j >= 0.92 and len(_tokens(vals[a])) >= 4:
                 pares_sim.append(f"{a}-{b}({j:.2f})")
     if pares_sim:
-        inc.append(_incidencia(label, "opciones_muy_parecidas", ", ".join(pares_sim)))
+        return [_incidencia(label, "opciones_muy_parecidas", ", ".join(pares_sim))]
+    return []
 
+
+def _incidencias_desbalance_longitud(label: str, vals: dict[str, str]) -> list[dict]:
     lens = [len(vals[L]) for L in LETRAS if vals[L]]
     if len(lens) >= 2 and max(lens) > 4 * min(lens) and max(lens) > 80:
-        inc.append(_incidencia(label, "desbalance_longitud", f"lens={lens}"))
+        return [_incidencia(label, "desbalance_longitud", f"lens={lens}")]
+    return []
 
-    if corr in LETRAS:
-        correct_len = len(vals[corr])
-        otros = [len(vals[L]) for L in LETRAS if L != corr and vals[L]]
-        if otros and correct_len == max([correct_len] + otros) and correct_len > 60:
-            if correct_len > 1.8 * (sum(otros) / len(otros)):
-                inc.append(
-                    _incidencia(
-                        label,
-                        "correcta_mas_larga",
-                        f"len({corr})={correct_len}, media_otros={sum(otros)/len(otros):.0f}",
-                    )
-                )
-    return inc
+
+def _incidencias_correcta_mas_larga(
+    label: str, vals: dict[str, str], corr: str
+) -> list[dict]:
+    if corr not in LETRAS:
+        return []
+    correct_len = len(vals[corr])
+    otros = [len(vals[L]) for L in LETRAS if L != corr and vals[L]]
+    if not otros or correct_len != max([correct_len] + otros) or correct_len <= 60:
+        return []
+    if correct_len > 1.8 * (sum(otros) / len(otros)):
+        return [
+            _incidencia(
+                label,
+                "correcta_mas_larga",
+                f"len({corr})={correct_len}, media_otros={sum(otros)/len(otros):.0f}",
+            )
+        ]
+    return []
 
 
 def _auditar_opcion_igual_enunciado(
@@ -270,21 +287,7 @@ def comprobar_cobertura_plantillas() -> int:
 
     with PATH_PLANTILLAS.open(encoding="utf-8") as f:
         plant = json.load(f)
-    variaciones: list[str] = []
-    for tema, items in plant.items():
-        for i, t in enumerate(items):
-            if isinstance(t, dict) and t.get("variaciones"):
-                variaciones.append(f"{tema}[{i}]")
-    if variaciones:
-        msgs_var = [
-            f"Campo 'variaciones' prohibido ({len(variaciones)} filas); "
-            "materializar en filas sueltas o eliminar."
-        ]
-        for v in variaciones[:5]:
-            msgs_var.append(f"  - {v}")
-        if len(variaciones) > 5:
-            msgs_var.append(f"  ... y {len(variaciones) - 5} más")
-        print("\n".join(msgs_var))
+    if _reportar_variaciones_prohibidas(plant):
         return 1
     rows = list(csv.DictReader(PATH_CSV.open(encoding="utf-8", newline=""), delimiter=";"))
     por_plant = {m: len(plant.get(m, [])) for m in plant}
@@ -292,27 +295,18 @@ def comprobar_cobertura_plantillas() -> int:
     minimo = plantillas_minimas_por_materia()
     temas, _ = cargar_orden_temas()
 
-    msgs: list[str] = []
-    total_plant = sum(por_plant.values())
-    if total_plant != TARGET_TOTAL_PREGUNTAS * 2:
-        msgs.append(
-            f"Total plantillas ({total_plant}) distinto del objetivo "
-            f"({TARGET_TOTAL_PREGUNTAS * 2}: 480 dataset + 480 extra)"
-        )
-    elif total_plant <= TARGET_TOTAL_PREGUNTAS:
-        msgs.append(f"Total plantillas ({total_plant}) no supera el dataset ({TARGET_TOTAL_PREGUNTAS})")
-    for tema in temas:
-        n_plant = por_plant.get(tema, 0)
-        n_ds = por_ds.get(tema, preguntas_por_materia())
-        if n_plant <= n_ds:
-            msgs.append(f"{tema!r}: {n_plant} plantillas <= {n_ds} en dataset")
-        elif n_plant < minimo:
-            msgs.append(
-                f"{tema!r}: {n_plant} < mínimo {minimo} ({MIN_PLANTILLAS_POR_MATERIA_FACTOR}× dataset)"
-            )
+    msgs = _msgs_cobertura_plantillas(
+        por_plant,
+        por_ds,
+        temas,
+        minimo=minimo,
+        factor=MIN_PLANTILLAS_POR_MATERIA_FACTOR,
+        target_total=TARGET_TOTAL_PREGUNTAS,
+        ppm=preguntas_por_materia(),
+    )
 
     print(f"Dataset: {TARGET_TOTAL_PREGUNTAS} preguntas ({preguntas_por_materia()}/materia)")
-    print(f"Plantillas: {total_plant} (mínimo {minimo}/materia, objetivo 24/materia)")
+    print(f"Plantillas: {sum(por_plant.values())} (mínimo {minimo}/materia, objetivo 24/materia)")
     if not msgs:
         print("OK: cobertura de plantillas adecuada.")
         return 0
@@ -320,6 +314,59 @@ def comprobar_cobertura_plantillas() -> int:
     for m in msgs:
         print(f"  - {m}")
     return 1
+
+
+def _reportar_variaciones_prohibidas(plant: dict) -> bool:
+    variaciones: list[str] = []
+    for tema, items in plant.items():
+        for i, t in enumerate(items):
+            if isinstance(t, dict) and t.get("variaciones"):
+                variaciones.append(f"{tema}[{i}]")
+    if not variaciones:
+        return False
+    msgs_var = [
+        f"Campo 'variaciones' prohibido ({len(variaciones)} filas); "
+        "materializar en filas sueltas o eliminar."
+    ]
+    for v in variaciones[:5]:
+        msgs_var.append(f"  - {v}")
+    if len(variaciones) > 5:
+        msgs_var.append(f"  ... y {len(variaciones) - 5} más")
+    print("\n".join(msgs_var))
+    return True
+
+
+def _msgs_cobertura_plantillas(
+    por_plant: dict,
+    por_ds: Counter,
+    temas: list[str],
+    *,
+    minimo: int,
+    factor,
+    target_total: int,
+    ppm: int,
+) -> list[str]:
+    msgs: list[str] = []
+    total_plant = sum(por_plant.values())
+    if total_plant != target_total * 2:
+        msgs.append(
+            f"Total plantillas ({total_plant}) distinto del objetivo "
+            f"({target_total * 2}: 480 dataset + 480 extra)"
+        )
+    elif total_plant <= target_total:
+        msgs.append(
+            f"Total plantillas ({total_plant}) no supera el dataset ({target_total})"
+        )
+    for tema in temas:
+        n_plant = por_plant.get(tema, 0)
+        n_ds = por_ds.get(tema, ppm)
+        if n_plant <= n_ds:
+            msgs.append(f"{tema!r}: {n_plant} plantillas <= {n_ds} en dataset")
+        elif n_plant < minimo:
+            msgs.append(
+                f"{tema!r}: {n_plant} < mínimo {minimo} ({factor}× dataset)"
+            )
+    return msgs
 
 
 _USO_A_SLOT_PLANTILLA = {

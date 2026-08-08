@@ -264,18 +264,21 @@ def inferir_materias_meta(preguntas: list[Pregunta]) -> dict[str, dict[str, str]
             continue
         if materia not in meta:
             meta[materia] = dict(vacio)
-        bucket = meta[materia]
-        if p.grupo and not bucket["grupo"]:
-            bucket["grupo"] = p.grupo.strip()
-        if p.tematica and not bucket["tematica"]:
-            bucket["tematica"] = p.tematica.strip()
-        if p.curso and not bucket["curso"]:
-            bucket["curso"] = p.curso.strip()
-        if p.semestre and not bucket["semestre"]:
-            bucket["semestre"] = p.semestre.strip()
-        if p.nivel and not bucket["nivel"]:
-            bucket["nivel"] = p.nivel.strip()
+        _rellenar_meta_desde_pregunta(meta[materia], p)
     return meta
+
+
+def _rellenar_meta_desde_pregunta(bucket: dict[str, str], p: Pregunta) -> None:
+    if p.grupo and not bucket["grupo"]:
+        bucket["grupo"] = p.grupo.strip()
+    if p.tematica and not bucket["tematica"]:
+        bucket["tematica"] = p.tematica.strip()
+    if p.curso and not bucket["curso"]:
+        bucket["curso"] = p.curso.strip()
+    if p.semestre and not bucket["semestre"]:
+        bucket["semestre"] = p.semestre.strip()
+    if p.nivel and not bucket["nivel"]:
+        bucket["nivel"] = p.nivel.strip()
 
 
 def _inferir_capacidades_datos(

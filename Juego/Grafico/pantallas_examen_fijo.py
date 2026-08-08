@@ -894,16 +894,7 @@ class ConfigOpcionesHistoria(Pantalla):
         return botones
 
     def manejar_evento(self, evento: pygame.event.Event) -> Pantalla | None:
-        if (
-            evento.type == pygame.MOUSEWHEEL
-            and len(self._filas_orden) > self._max_filas_visibles()
-        ):
-            max_scroll = max(0, len(self._filas_orden) - self._max_filas_visibles())
-            self.scroll_filas = max(
-                0,
-                min(max_scroll, self.scroll_filas - int(evento.y)),
-            )
-            self._reconstruir_layout()
+        if self._manejar_scroll_rueda(evento):
             return None
         for campo in self.campos_entero.values():
             if campo.manejar_evento(evento):
@@ -921,6 +912,19 @@ class ConfigOpcionesHistoria(Pantalla):
                 if boton.manejar_clic(evento.pos, evento.button):
                     break
         return None
+
+    def _manejar_scroll_rueda(self, evento: pygame.event.Event) -> bool:
+        if evento.type != pygame.MOUSEWHEEL:
+            return False
+        if len(self._filas_orden) <= self._max_filas_visibles():
+            return False
+        max_scroll = max(0, len(self._filas_orden) - self._max_filas_visibles())
+        self.scroll_filas = max(
+            0,
+            min(max_scroll, self.scroll_filas - int(evento.y)),
+        )
+        self._reconstruir_layout()
+        return True
 
     def _dibujar_fila_opcion(self, superficie: pygame.Surface, op, y: int) -> None:
         bloqueado = self._filtro_ambito_bloqueado(op.id)

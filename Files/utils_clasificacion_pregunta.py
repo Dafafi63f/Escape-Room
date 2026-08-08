@@ -142,18 +142,39 @@ def puntuar_dificultad(
     media = 1.0
     dificil = 0.0
 
+    facil += _bonus_facil_enunciado(p_low)
+    facil, media, dificil = _ajustar_por_longitud(
+        len(pregunta or ""), facil, media, dificil
+    )
+    media, dificil = _ajustar_por_simbolos_y_numeros(texto, p_low, media, dificil)
+    facil, dificil = _ajustar_por_opciones(a, b, c, d, correcta, facil, dificil)
+    return {"Facil": facil, "Media": media, "Dificil": dificil}
+
+
+def _bonus_facil_enunciado(p_low: str) -> float:
+    facil = 0.0
     if re.search(r"¿qué es |¿qué son |definici|concepto de ", p_low):
         facil += 3.0
     if re.search(r"\b(básic|elemental|sencill|introducci)\b", p_low):
         facil += 2.0
-    plen = len(pregunta or "")
+    return facil
+
+
+def _ajustar_por_longitud(
+    plen: int, facil: float, media: float, dificil: float
+) -> tuple[float, float, float]:
     if plen < 45:
         facil += 1.5
     elif plen > 100:
         dificil += 1.5
     elif plen > 70:
         media += 0.5
+    return facil, media, dificil
 
+
+def _ajustar_por_simbolos_y_numeros(
+    texto: str, p_low: str, media: float, dificil: float
+) -> tuple[float, float]:
     nums = len(re.findall(r"\d+", texto))
     syms = len(re.findall(r"[=+\-*/^∫∑∏√πλΣ]", texto))
     if nums >= 2:
@@ -170,7 +191,18 @@ def puntuar_dificultad(
         media += 1.5
         if nums >= 1:
             dificil += 0.5
+    return media, dificil
 
+
+def _ajustar_por_opciones(
+    a: str,
+    b: str,
+    c: str,
+    d: str,
+    correcta: str,
+    facil: float,
+    dificil: float,
+) -> tuple[float, float]:
     opciones = [x for x in (a, b, c, d) if x]
     if opciones:
         lens = [len(x) for x in opciones]
@@ -178,13 +210,11 @@ def puntuar_dificultad(
             dificil += 0.5
         if all(len(x) < 25 for x in opciones):
             facil += 0.5
-
     if correcta and correcta in "ABCD":
         opt = {"A": a, "B": b, "C": c, "D": d}.get(correcta, "")
         if opt and len(opt) > 60:
             dificil += 0.5
-
-    return {"Facil": facil, "Media": media, "Dificil": dificil}
+    return facil, dificil
 
 
 def _mejor_clave(scores: dict[str, float], orden: tuple[str, ...]) -> str:
@@ -270,38 +300,25 @@ def comparar_con_asignacion(
         "Correcta": (fila.get("Correcta") or "A").strip(),
     }
 
-    incoherentes: list[str] = []
     sc_actual = score_fila_para_materia(fila, materia_asig) if materia_asig else 0.0
     sc_mejor = (
         inferido.scores_materia.get(inferido.materia or "", 0.0)
         if inferido.materia
         else 0.0
     )
-
-    if (
-        inferido.materia
-        and materia_asig
-        and inferido.materia != materia_asig
-        and sc_mejor >= min_score_materia
-        and (sc_actual == 0 or sc_mejor >= sc_actual + margen_materia)
-    ):
-        incoherentes.append("Materia")
-
-    if tipo_asig in TIPOS_VALIDOS and inferido.tipo != tipo_asig:
-        if _margen(inferido.scores_tipo, inferido.tipo) >= margen_tipo:
-            incoherentes.append("Tipo")
-
-    if diff_asig in DIFICULTADES_VALIDAS and inferido.dificultad != diff_asig:
-        margen_d = _margen(inferido.scores_dificultad, inferido.dificultad)
-        if estricto:
-            if margen_d >= margen_dificultad:
-                incoherentes.append("Dificultad")
-        else:
-            # Informe: solo contrastes fuertes (Facil vs Dificil); la escalera del bloque puede diferir.
-            orden = {"Facil": 0, "Media": 1, "Dificil": 2}
-            salto = abs(orden.get(diff_asig, 1) - orden.get(inferido.dificultad, 1))
-            if salto >= 2 and margen_d >= margen_dificultad + 1.0:
-                incoherentes.append("Dificultad")
+    incoherentes = _campos_incoherentes_asignacion(
+        inferido,
+        materia_asig=materia_asig,
+        tipo_asig=tipo_asig,
+        diff_asig=diff_asig,
+        sc_actual=sc_actual,
+        sc_mejor=sc_mejor,
+        min_score_materia=min_score_materia,
+        margen_materia=margen_materia,
+        margen_tipo=margen_tipo,
+        margen_dificultad=margen_dificultad,
+        estricto=estricto,
+    )
 
     return ComparacionAsignacion(
         asignado=asignado,
@@ -313,6 +330,81 @@ def comparar_con_asignacion(
             "top_materias": inferido.top_materias(4),
         },
     )
+
+
+def _materia_incoherente(
+    inferido,
+    *,
+    materia_asig: str,
+    sc_actual: float,
+    sc_mejor: float,
+    min_score_materia: float,
+    margen_materia: float,
+) -> bool:
+    return bool(
+        inferido.materia
+        and materia_asig
+        and inferido.materia != materia_asig
+        and sc_mejor >= min_score_materia
+        and (sc_actual == 0 or sc_mejor >= sc_actual + margen_materia)
+    )
+
+
+def _dificultad_incoherente(
+    inferido,
+    *,
+    diff_asig: str,
+    margen_dificultad: float,
+    estricto: bool,
+) -> bool:
+    if diff_asig not in DIFICULTADES_VALIDAS or inferido.dificultad == diff_asig:
+        return False
+    margen_d = _margen(inferido.scores_dificultad, inferido.dificultad)
+    if estricto:
+        return margen_d >= margen_dificultad
+    # Informe: solo contrastes fuertes (Facil vs Dificil); la escalera del bloque puede diferir.
+    orden = {"Facil": 0, "Media": 1, "Dificil": 2}
+    salto = abs(orden.get(diff_asig, 1) - orden.get(inferido.dificultad, 1))
+    return salto >= 2 and margen_d >= margen_dificultad + 1.0
+
+
+def _campos_incoherentes_asignacion(
+    inferido,
+    *,
+    materia_asig: str,
+    tipo_asig: str,
+    diff_asig: str,
+    sc_actual: float,
+    sc_mejor: float,
+    min_score_materia: float,
+    margen_materia: float,
+    margen_tipo: float,
+    margen_dificultad: float,
+    estricto: bool,
+) -> list[str]:
+    incoherentes: list[str] = []
+    if _materia_incoherente(
+        inferido,
+        materia_asig=materia_asig,
+        sc_actual=sc_actual,
+        sc_mejor=sc_mejor,
+        min_score_materia=min_score_materia,
+        margen_materia=margen_materia,
+    ):
+        incoherentes.append("Materia")
+
+    if tipo_asig in TIPOS_VALIDOS and inferido.tipo != tipo_asig:
+        if _margen(inferido.scores_tipo, inferido.tipo) >= margen_tipo:
+            incoherentes.append("Tipo")
+
+    if _dificultad_incoherente(
+        inferido,
+        diff_asig=diff_asig,
+        margen_dificultad=margen_dificultad,
+        estricto=estricto,
+    ):
+        incoherentes.append("Dificultad")
+    return incoherentes
 
 
 def entrada_coherente_con_materia(

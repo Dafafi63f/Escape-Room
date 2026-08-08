@@ -6,7 +6,7 @@ import random
 import re
 import time
 from dataclasses import dataclass, field, replace
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from Comun.config_historia import GRUPOS_TEMATICOS, descripcion_ambito_curso_semestre, etiqueta_grupo_tematico
 
@@ -1991,9 +1991,12 @@ def _enriquecer_mensaje_apuesta_acierto(
         extras_apuesta.append("objeto")
     if not extras_apuesta:
         return feedback
-    return replace(
-        feedback,
-        mensaje=f"{msg} (apuesta: {', '.join(extras_apuesta)})",
+    return cast(
+        FeedbackRespuesta,
+        replace(
+            feedback,
+            mensaje=f"{msg} (apuesta: {', '.join(extras_apuesta)})",
+        ),
     )
 
 
@@ -2008,7 +2011,7 @@ def _marcar_sin_vidas_si_aplica(
         (estado.reglas.tiene_vidas() and (estado.vidas_restantes or 0) <= 0)
         or fin_apuesta
     ):
-        return replace(feedback, sin_vidas=True)
+        return cast(FeedbackRespuesta, replace(feedback, sin_vidas=True))
     return feedback
 
 

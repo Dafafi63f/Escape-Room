@@ -192,40 +192,63 @@ def ejecutar_reordenar(
     for _, r in df.iterrows():
         por_materia[str(r["Materia"]).strip()].append(r.to_dict())
 
+    nuevas = _bloques_reordenados(temas, por_materia)
+    assert len(nuevas) == TARGET_TOTAL_PREGUNTAS
+    _asignar_ids_y_permutar(nuevas, sin_permutar=sin_permutar)
+    _validar_y_guardar_reorden(nuevas, sin_permutar=sin_permutar)
+    print(
+        f"OK: orden canónico, Id 1..{TARGET_TOTAL_PREGUNTAS} "
+        f"({_etiqueta_modo_reorden(solo_metadatos, sin_permutar)})"
+    )
+
+
+def _bloques_reordenados(
+    temas: list[str],
+    por_materia: dict[str, list[dict]],
+) -> list[dict]:
     nuevas: list[dict] = []
     for bi, tema in enumerate(temas):
-        bloque = por_materia[tema]
-        ppm = preguntas_por_materia()
-        if len(bloque) != ppm:
-            raise ValueError(f"{tema!r}: se esperaban {ppm} filas, hay {len(bloque)}")
-        teo = [x for x in bloque if str(x.get("Tipo", "")).strip() == "Teoria"]
-        cal = [x for x in bloque if str(x.get("Tipo", "")).strip() == "Calculo"]
-        if len(teo) != TEORIA_POR_MATERIA or len(cal) != CALCULO_POR_MATERIA:
-            raise ValueError(f"{tema!r}: tipo {len(teo)} Teoria / {len(cal)} Calculo")
-        teo.sort(key=lambda x: (ord_diff(x.get("Dificultad")), int(x["Id"])))
-        cal.sort(key=lambda x: (ord_diff(x.get("Dificultad")), int(x["Id"])))
-        ordenados = teo + cal
-        fmd = target_fmd(bi)
-        nuevas_difs = mejor_asignacion_dificultad(ordenados, fmd)
-        bloque_filas: list[dict] = []
-        for row, nd in zip(ordenados, nuevas_difs, strict=True):
-            r = dict(row)
-            r["Dificultad"] = nd
-            bloque_filas.append(r)
-        bloque_filas.sort(
-            key=lambda r: (
-                0 if str(r.get("Tipo", "")).strip() == "Teoria" else 1,
-                ord_diff(r["Dificultad"]),
-                int(r["Id"]),
-            )
-        )
-        nuevas.extend(bloque_filas)
+        nuevas.extend(_reordenar_bloque_materia(bi, tema, por_materia[tema]))
+    return nuevas
 
-    assert len(nuevas) == TARGET_TOTAL_PREGUNTAS
+
+def _reordenar_bloque_materia(bi: int, tema: str, bloque: list[dict]) -> list[dict]:
+    ppm = preguntas_por_materia()
+    if len(bloque) != ppm:
+        raise ValueError(f"{tema!r}: se esperaban {ppm} filas, hay {len(bloque)}")
+    teo = [x for x in bloque if str(x.get("Tipo", "")).strip() == "Teoria"]
+    cal = [x for x in bloque if str(x.get("Tipo", "")).strip() == "Calculo"]
+    if len(teo) != TEORIA_POR_MATERIA or len(cal) != CALCULO_POR_MATERIA:
+        raise ValueError(f"{tema!r}: tipo {len(teo)} Teoria / {len(cal)} Calculo")
+    teo.sort(key=lambda x: (ord_diff(x.get("Dificultad")), int(x["Id"])))
+    cal.sort(key=lambda x: (ord_diff(x.get("Dificultad")), int(x["Id"])))
+    ordenados = teo + cal
+    fmd = target_fmd(bi)
+    nuevas_difs = mejor_asignacion_dificultad(ordenados, fmd)
+    bloque_filas: list[dict] = []
+    for row, nd in zip(ordenados, nuevas_difs, strict=True):
+        r = dict(row)
+        r["Dificultad"] = nd
+        bloque_filas.append(r)
+    bloque_filas.sort(
+        key=lambda r: (
+            0 if str(r.get("Tipo", "")).strip() == "Teoria" else 1,
+            ord_diff(r["Dificultad"]),
+            int(r["Id"]),
+        )
+    )
+    return bloque_filas
+
+
+def _asignar_ids_y_permutar(nuevas: list[dict], *, sin_permutar: bool) -> None:
     for i, r in enumerate(nuevas, start=1):
         r["Id"] = str(i)
         if not sin_permutar:
             nuevas[i - 1] = permutar_abcd_objetivo(r, LETRAS_ORDEN[(i - 1) % 4])
+
+
+def _validar_y_guardar_reorden(nuevas: list[dict], *, sin_permutar: bool) -> None:
+    import pandas as pd
 
     chk = pd.DataFrame(nuevas)
     errs = comprobar_orden_canonico_df(chk)
@@ -233,15 +256,15 @@ def ejecutar_reordenar(
         errs = [e for e in errs if not e.startswith("Correcta ") and "Ciclo Correcta" not in e]
     if errs:
         raise ValueError("Post-condición orden canónico:\n" + "\n".join(errs))
-
     guardar_filas_csv(list(COLUMNAS_PREGUNTAS), nuevas, PATH_CSV)
+
+
+def _etiqueta_modo_reorden(solo_metadatos: bool, sin_permutar: bool) -> str:
     if solo_metadatos:
-        modo = "solo metadatos"
-    elif sin_permutar:
-        modo = "sin permutar A-D"
-    else:
-        modo = "ABCD cíclico"
-    print(f"OK: orden canónico, Id 1..{TARGET_TOTAL_PREGUNTAS} ({modo})")
+        return "solo metadatos"
+    if sin_permutar:
+        return "sin permutar A-D"
+    return "ABCD cíclico"
 
 
 def ejecutar_ordenar_ladder() -> int:
@@ -322,34 +345,59 @@ def _msgs_conteos_globales(
         msgs.append(f"Total: {n} filas (objetivo {TARGET_TOTAL_PREGUNTAS})")
 
     por_materia = Counter(materia_de_fila(r) for r in rows)
+    msgs.extend(_msgs_materias_conteo(por_materia, temas, tgt_m, detalle=detalle))
+    msgs.extend(_msgs_tipos_conteo(rows, tgt_tipo))
+    msgs.extend(_msgs_dificultad_conteo(rows, tgt_diff))
+    if estricto:
+        msgs.extend(_msgs_correcta_conteo(rows, tgt_corr))
+    return msgs
+
+
+def _msgs_materias_conteo(
+    por_materia: Counter,
+    temas: list[str],
+    tgt_m: int,
+    *,
+    detalle: bool,
+) -> list[str]:
+    msgs: list[str] = []
     for t in temas:
         c = por_materia.get(t, 0)
         if c != tgt_m:
             msgs.append(f"Materia {t!r}: {c} preguntas (objetivo {tgt_m})")
             if detalle and c != tgt_m:
                 msgs.append(f"  → {'déficit' if c < tgt_m else 'exceso'} de {abs(c - tgt_m)}")
-
     faltan_listado = set(por_materia) - set(temas)
     if faltan_listado:
         msgs.append(f"Materias en CSV no presentes en listado: {faltan_listado}")
+    return msgs
 
+
+def _msgs_tipos_conteo(rows: list[dict], tgt_tipo: int) -> list[str]:
     por_tipo = Counter(r["Tipo"] for r in rows)
     if por_tipo.get("Teoria", 0) != tgt_tipo or por_tipo.get("Calculo", 0) != tgt_tipo:
-        msgs.append(
+        return [
             f"Tipos globales: Teoria={por_tipo.get('Teoria', 0)}, "
             f"Calculo={por_tipo.get('Calculo', 0)} (objetivo {tgt_tipo}/{tgt_tipo})"
-        )
+        ]
+    return []
 
+
+def _msgs_dificultad_conteo(rows: list[dict], tgt_diff: dict) -> list[str]:
     por_dificultad = Counter(r["Dificultad"] for r in rows)
+    msgs: list[str] = []
     for d in ("Facil", "Media", "Dificil"):
         if por_dificultad.get(d, 0) != tgt_diff[d]:
             msgs.append(f"Dificultad {d}: {por_dificultad.get(d, 0)} (objetivo {tgt_diff[d]})")
+    return msgs
 
-    if estricto:
-        por_correcta = Counter(r["Correcta"] for r in rows)
-        for letra in ("A", "B", "C", "D"):
-            if por_correcta.get(letra, 0) != tgt_corr[letra]:
-                msgs.append(f"Correcta {letra}: {por_correcta.get(letra, 0)} (objetivo {tgt_corr[letra]})")
+
+def _msgs_correcta_conteo(rows: list[dict], tgt_corr: dict) -> list[str]:
+    por_correcta = Counter(r["Correcta"] for r in rows)
+    msgs: list[str] = []
+    for letra in ("A", "B", "C", "D"):
+        if por_correcta.get(letra, 0) != tgt_corr[letra]:
+            msgs.append(f"Correcta {letra}: {por_correcta.get(letra, 0)} (objetivo {tgt_corr[letra]})")
     return msgs
 
 

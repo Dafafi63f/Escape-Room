@@ -69,6 +69,70 @@ def claves_contenido_dataset(path_csv: Path) -> set[tuple]:
     return claves
 
 
+def _instancia_plantilla_excluida(
+    inst: dict,
+    *,
+    solo_fuera_dataset: bool,
+    claves_ds: set[tuple],
+    usos_permitidos: frozenset[str] | None,
+    claves_contenido_ds: set[tuple] | None,
+    vistos: set[tuple],
+) -> tuple[bool, tuple | None]:
+    """Devuelve (excluida, clave) para una instancia expandida de plantilla."""
+    uso = (inst.get("uso") or "").strip().lower()
+    if usos_permitidos is not None and uso not in usos_permitidos:
+        return True, None
+    k = clave_contenido(
+        inst["materia"],
+        inst["pregunta"],
+        inst["opciones"],
+        inst["correcta"],
+    )
+    if solo_fuera_dataset and k in claves_ds:
+        return True, None
+    if claves_contenido_ds is not None:
+        k_sin = clave_contenido_sin_materia(
+            inst["pregunta"],
+            inst["opciones"],
+            inst["correcta"],
+        )
+        if k_sin in claves_contenido_ds:
+            return True, None
+    if k in vistos:
+        return True, None
+    return False, k
+
+
+def _agregar_instancias_tema_plantillas(
+    tema: str,
+    items,
+    materias_meta: dict[str, dict[str, str]],
+    *,
+    solo_fuera_dataset: bool,
+    claves_ds: set[tuple],
+    usos_permitidos: frozenset[str] | None,
+    claves_contenido_ds: set[tuple] | None,
+    vistos: set[tuple],
+    preguntas: list[Pregunta],
+) -> None:
+    for t in items:
+        for inst in expandir_plantilla_instancias(tema, t):
+            excluida, k = _instancia_plantilla_excluida(
+                inst,
+                solo_fuera_dataset=solo_fuera_dataset,
+                claves_ds=claves_ds,
+                usos_permitidos=usos_permitidos,
+                claves_contenido_ds=claves_contenido_ds,
+                vistos=vistos,
+            )
+            if excluida or k is None:
+                continue
+            p = _plantilla_a_pregunta(inst, materias_meta)
+            if p:
+                vistos.add(k)
+                preguntas.append(p)
+
+
 def cargar_preguntas_plantillas(
     path_json: Path,
     materias_meta: dict[str, dict[str, str]],
@@ -91,35 +155,18 @@ def cargar_preguntas_plantillas(
     for tema, items in data.items():
         if not tema:
             continue
-        for t in items:
-            for inst in expandir_plantilla_instancias(tema, t):
-                uso = (inst.get("uso") or "").strip().lower()
-                if usos_permitidos is not None and uso not in usos_permitidos:
-                    continue
-                k = clave_contenido(
-                    inst["materia"],
-                    inst["pregunta"],
-                    inst["opciones"],
-                    inst["correcta"],
-                )
-                if solo_fuera_dataset and k in claves_ds:
-                    continue
-                if claves_contenido_ds is not None:
-                    k_sin = clave_contenido_sin_materia(
-                        inst["pregunta"],
-                        inst["opciones"],
-                        inst["correcta"],
-                    )
-                    if k_sin in claves_contenido_ds:
-                        continue
-                if k in vistos:
-                    continue
-                p = _plantilla_a_pregunta(inst, materias_meta)
-                if p:
-                    vistos.add(k)
-                    preguntas.append(p)
+        _agregar_instancias_tema_plantillas(
+            tema,
+            items,
+            materias_meta,
+            solo_fuera_dataset=solo_fuera_dataset,
+            claves_ds=claves_ds,
+            usos_permitidos=usos_permitidos,
+            claves_contenido_ds=claves_contenido_ds,
+            vistos=vistos,
+            preguntas=preguntas,
+        )
     return preguntas
-
 
 def cargar_banco_todo(
     path_csv: Path,
@@ -219,6 +266,55 @@ def cargar_plantillas_materia(path_json: Path | None, materia: str) -> list[dict
     return list(items)
 
 
+def _campo_csv_o_meta(row: dict, mm: dict[str, str], csv_key: str, meta_key: str) -> str:
+    v = (row.get(csv_key) or "").strip()
+    return v if v else mm.get(meta_key, "")
+
+
+def _pregunta_desde_fila_csv(
+    row: dict,
+    materias_meta: dict[str, dict[str, str]],
+    *,
+    csv_minimal: bool,
+) -> Pregunta | None:
+    correcta = (row.get("Correcta") or "").strip().upper()
+    if correcta not in {"A", "B", "C", "D"}:
+        return None
+    materia_raw = (row.get("Materia") or row.get("Tema") or "").strip()
+    if not materia_raw and not csv_minimal:
+        materia_raw = "Sin materia"
+    mm = materias_meta.get(materia_raw, {})
+
+    dificultad_raw = (row.get("Dificultad") or "").strip()
+    if not dificultad_raw and not csv_minimal:
+        dificultad_raw = "Desconocida"
+    tipo_raw = (row.get("Tipo") or "").strip()
+    if not tipo_raw and not csv_minimal:
+        tipo_raw = "General"
+
+    pregunta = Pregunta(
+        texto=(row.get("Pregunta") or "").strip(),
+        materia=materia_raw,
+        tematica=_campo_csv_o_meta(row, mm, "Tematica", "tematica"),
+        dificultad=dificultad_raw,
+        tipo=tipo_raw,
+        grupo=_campo_csv_o_meta(row, mm, "Grupo", "grupo"),
+        nivel=_campo_csv_o_meta(row, mm, "Nivel", "nivel"),
+        curso=_campo_csv_o_meta(row, mm, "Curso", "curso"),
+        semestre=_campo_csv_o_meta(row, mm, "Semestre", "semestre"),
+        opciones={
+            "A": (row.get("A") or "").strip(),
+            "B": (row.get("B") or "").strip(),
+            "C": (row.get("C") or "").strip(),
+            "D": (row.get("D") or "").strip(),
+        },
+        correcta=correcta,
+    )
+    if pregunta.texto and all(pregunta.opciones.values()):
+        return pregunta
+    return None
+
+
 def cargar_preguntas(path_csv: Path, materias_meta: dict[str, dict[str, str]]) -> list[Pregunta]:
     if not path_csv.exists():
         raise FileNotFoundError(f"No se encontró el dataset: {path_csv}")
@@ -230,43 +326,9 @@ def cargar_preguntas(path_csv: Path, materias_meta: dict[str, dict[str, str]]) -
     with path_csv.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f, delimiter=";")
         for row in reader:
-            correcta = (row.get("Correcta") or "").strip().upper()
-            if correcta not in {"A", "B", "C", "D"}:
-                continue
-            materia_raw = (row.get("Materia") or row.get("Tema") or "").strip()
-            if not materia_raw and not csv_minimal:
-                materia_raw = "Sin materia"
-            mm = materias_meta.get(materia_raw, {})
-
-            def _campo(csv_key: str, meta_key: str) -> str:
-                v = (row.get(csv_key) or "").strip()
-                return v if v else mm.get(meta_key, "")
-
-            dificultad_raw = (row.get("Dificultad") or "").strip()
-            if not dificultad_raw and not csv_minimal:
-                dificultad_raw = "Desconocida"
-            tipo_raw = (row.get("Tipo") or "").strip()
-            if not tipo_raw and not csv_minimal:
-                tipo_raw = "General"
-
-            pregunta = Pregunta(
-                texto=(row.get("Pregunta") or "").strip(),
-                materia=materia_raw,
-                tematica=_campo("Tematica", "tematica"),
-                dificultad=dificultad_raw,
-                tipo=tipo_raw,
-                grupo=_campo("Grupo", "grupo"),
-                nivel=_campo("Nivel", "nivel"),
-                curso=_campo("Curso", "curso"),
-                semestre=_campo("Semestre", "semestre"),
-                opciones={
-                    "A": (row.get("A") or "").strip(),
-                    "B": (row.get("B") or "").strip(),
-                    "C": (row.get("C") or "").strip(),
-                    "D": (row.get("D") or "").strip(),
-                },
-                correcta=correcta,
+            pregunta = _pregunta_desde_fila_csv(
+                row, materias_meta, csv_minimal=csv_minimal
             )
-            if pregunta.texto and all(pregunta.opciones.values()):
+            if pregunta is not None:
                 preguntas.append(pregunta)
     return preguntas

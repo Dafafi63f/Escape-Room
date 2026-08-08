@@ -129,6 +129,18 @@ def aplicar_reclasificacion(
     for materia, items in plantillas.items():
         claves_por_materia[materia] = {_clave_tpl(t) for t in items}
 
+    a_mover, a_eliminar, stats = _plan_reclasificacion(
+        plantillas, hallazgos, claves_por_materia
+    )
+    nueva = _aplicar_plan_reclasificacion(plantillas, a_mover, a_eliminar)
+    return nueva, stats
+
+
+def _plan_reclasificacion(
+    plantillas: dict,
+    hallazgos: list[dict],
+    claves_por_materia: dict[str, set[tuple]],
+) -> tuple[list, list, dict[str, int]]:
     a_mover: list[tuple[str, dict, str]] = []
     a_eliminar: list[tuple[str, tuple]] = []
     stats = {"movidas": 0, "eliminadas_dup": 0, "sin_cambio": 0}
@@ -137,11 +149,7 @@ def aplicar_reclasificacion(
         origen = h["materia_actual"]
         destino = h["materia_destino"]
         clave = h["clave"]
-        tpl = None
-        for t in plantillas.get(origen, []):
-            if _clave_tpl(t) == clave:
-                tpl = t
-                break
+        tpl = _buscar_tpl_por_clave(plantillas.get(origen, []), clave)
         if tpl is None:
             stats["sin_cambio"] += 1
             continue
@@ -152,7 +160,21 @@ def aplicar_reclasificacion(
             a_mover.append((origen, tpl, destino))
             claves_por_materia.setdefault(destino, set()).add(clave)
             stats["movidas"] += 1
+    return a_mover, a_eliminar, stats
 
+
+def _buscar_tpl_por_clave(items: list, clave) -> dict | None:
+    for t in items:
+        if _clave_tpl(t) == clave:
+            return t
+    return None
+
+
+def _aplicar_plan_reclasificacion(
+    plantillas: dict,
+    a_mover: list,
+    a_eliminar: list,
+) -> dict[str, list]:
     eliminar_set = {(o, c) for o, c in a_eliminar}
     mover_claves_origen = {(o, _clave_tpl(t)) for o, t, _ in a_mover}
 
@@ -170,8 +192,7 @@ def aplicar_reclasificacion(
 
     for origen, tpl, destino in a_mover:
         nueva.setdefault(destino, []).append(dict(tpl))
-
-    return nueva, stats
+    return nueva
 
 
 def main() -> None:

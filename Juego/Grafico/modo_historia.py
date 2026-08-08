@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from Comun.config_historia import ConfigPresetHistoria, validar_config
 from Comun.datos import cargar_orden_materias, cargar_plantillas_materia
@@ -137,13 +137,16 @@ def preparar_examen_dirigido_sesion(
                 datos.preguntas,
                 materias_orden=orden,
                 materias_meta=datos.materias_meta,
-                opciones=replace(
-                    opciones,
-                    stats={},
-                    semilla=semilla_intento,
-                    registros_dirigido=registros_acum,
-                    preguntas_excluir=excluir,
-                    perfiles_fallo=perfiles_intento,
+                opciones=cast(
+                    OpcionesGeneracionExamen,
+                    replace(
+                        opciones,
+                        stats={},
+                        semilla=semilla_intento,
+                        registros_dirigido=registros_acum,
+                        preguntas_excluir=excluir,
+                        perfiles_fallo=perfiles_intento,
+                    ),
                 ),
             )
             break
@@ -227,11 +230,14 @@ def preparar_partida_historia(
         datos.preguntas,
         materias_orden=orden,
         materias_meta=datos.materias_meta,
-        opciones=replace(
-            _opciones_generador_examen(datos, preset, cfg),
-            stats=stats,
-            semilla=semilla_partida,
-            semilla_contenido=semilla_contenido_generador,
+        opciones=cast(
+            OpcionesGeneracionExamen,
+            replace(
+                _opciones_generador_examen(datos, preset, cfg),
+                stats=stats,
+                semilla=semilla_partida,
+                semilla_contenido=semilla_contenido_generador,
+            ),
         ),
     )
     reglas = aplicar_preset(preset, cfg)

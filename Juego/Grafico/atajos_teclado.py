@@ -177,21 +177,32 @@ def manejar_teclado_partida(
     if evento.type != pygame.KEYDOWN:
         return False
     if fase == "pregunta":
-        if tecla_es_avanzar(evento.key):
-            if botones_opcion and botones_opcion[0].activo:
-                on_responder(botones_opcion[0].letra)
-            return True
-        for indice, tecla in enumerate(_TECLAS_OPCION):
-            if evento.key != tecla:
-                continue
-            if indice >= len(botones_opcion):
-                return True
-            if not botones_opcion[indice].activo:
-                return True
-            on_responder(botones_opcion[indice].letra)
-            return True
-        return False
+        return _manejar_teclado_fase_pregunta(
+            evento, botones_opcion=botones_opcion, on_responder=on_responder
+        )
     if fase == "feedback" and evento_tecla_salta_espera(evento):
         on_continuar()
+        return True
+    return False
+
+
+def _manejar_teclado_fase_pregunta(
+    evento: pygame.event.Event,
+    *,
+    botones_opcion: Sequence[BotonOpcion],
+    on_responder: Callable[[str], None],
+) -> bool:
+    if tecla_es_avanzar(evento.key):
+        if botones_opcion and botones_opcion[0].activo:
+            on_responder(botones_opcion[0].letra)
+        return True
+    for indice, tecla in enumerate(_TECLAS_OPCION):
+        if evento.key != tecla:
+            continue
+        if indice >= len(botones_opcion):
+            return True
+        if not botones_opcion[indice].activo:
+            return True
+        on_responder(botones_opcion[indice].letra)
         return True
     return False

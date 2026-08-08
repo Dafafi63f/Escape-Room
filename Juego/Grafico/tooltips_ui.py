@@ -272,11 +272,7 @@ def tooltip_opcion_ciclo_historia(
     perfil=None,
 ) -> str | None:
     """Ayuda en la caja central ◀ valor ▶ del configurador de preset historia."""
-    from Comun.config_historia import (
-        descripcion_campo_estrategia_practica,
-        etiqueta_periodo_academico,
-        etiqueta_periodo_desde_clave,
-    )
+    from Comun.config_historia import descripcion_campo_estrategia_practica
 
     if op_id in {"estrategia_practica", "estrategia_materias"} and tipo == "eleccion":
         if not clave:
@@ -286,6 +282,29 @@ def tooltip_opcion_ciclo_historia(
         return _tooltip_historia_eleccion(
             op_id, clave, etiqueta_opcion, perfil=perfil
         )
+    tip = _tooltip_historia_filtro_ambito(tipo, clave, curso_actual=curso_actual)
+    if tip is not None:
+        return tip
+    if tipo == "grupo" and clave:
+        return _TOOLTIP_OPCION_HISTORIA_ID.get("grupo")
+    if tipo == "materia" and clave:
+        return f"Preguntas centradas en {clave}."
+    if tipo == "entero":
+        return _tooltip_historia_entero(op_id, clave, etiqueta_opcion)
+    return _TOOLTIP_OPCION_HISTORIA_ID.get(op_id) or (etiqueta_opcion or None)
+
+
+def _tooltip_historia_filtro_ambito(
+    tipo: str,
+    clave: str,
+    *,
+    curso_actual: str | None = None,
+) -> str | None:
+    from Comun.config_historia import (
+        etiqueta_periodo_academico,
+        etiqueta_periodo_desde_clave,
+    )
+
     if tipo == "curso":
         if not clave:
             return "Sin filtro de curso: el preset puede abarcar todo el grado."
@@ -300,13 +319,7 @@ def tooltip_opcion_ciclo_historia(
         return f"Limita al {etiqueta_periodo_desde_clave(clave).lower()}."
     if tipo in ("curso", "semestre", "periodo") and not clave:
         return _TOOLTIP_OPCION_HISTORIA_ID.get(tipo)
-    if tipo == "grupo" and clave:
-        return _TOOLTIP_OPCION_HISTORIA_ID.get("grupo")
-    if tipo == "materia" and clave:
-        return f"Preguntas centradas en {clave}."
-    if tipo == "entero":
-        return _tooltip_historia_entero(op_id, clave, etiqueta_opcion)
-    return _TOOLTIP_OPCION_HISTORIA_ID.get(op_id) or (etiqueta_opcion or None)
+    return None
 
 
 def tooltip_opcion_ciclo_libre(

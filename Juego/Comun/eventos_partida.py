@@ -996,30 +996,16 @@ def actualizar_pity_tras_sala(
     hubo_tienda = any("tienda" in _ids(p) for p in puertas)
     hubo_botin = _sala_tiene_botin(puertas)
     hubo_maldicion = _sala_tiene_maldicion(puertas)
-    maldicion_vistos = _ids_maldicion_en_puertas(puertas)
-    maldiciones_sin_por_id = dict(pity.maldiciones_sin_por_id)
-    for mid in RASGOS_MALDICION_ESCAPE:
-        if mid in maldicion_vistos:
-            maldiciones_sin_por_id[mid] = 0
-        else:
-            maldiciones_sin_por_id[mid] = maldiciones_sin_por_id.get(mid, 0) + 1
-    tienda_elegible = numero_sala >= evento_por_id("tienda").nivel_min_sala_escape
-    salas_sin_tienda = pity.salas_sin_tienda
-    if hubo_tienda:
-        salas_sin_tienda = 0
-    elif tienda_elegible:
-        salas_sin_tienda = pity.salas_sin_tienda + 1
-        if estado is not None and numero_sala >= SALAS_HARD_PITY_TIENDA_ESCAPE:
-            from Comun.tienda_escape import puede_visitar_tienda_escape
-
-            if not puede_visitar_tienda_escape(
-                numero_sala, estado, vidas_max=vidas_max
-            ):
-                umbral = SALAS_HARD_PITY_TIENDA_ESCAPE - evento_por_id(
-                    "tienda"
-                ).nivel_min_sala_escape
-                if pity.salas_sin_tienda >= umbral:
-                    salas_sin_tienda = max(salas_sin_tienda, umbral)
+    maldiciones_sin_por_id = _actualizar_maldiciones_sin(
+        pity.maldiciones_sin_por_id, puertas
+    )
+    salas_sin_tienda = _salas_sin_tienda_actualizado(
+        pity,
+        hubo_tienda=hubo_tienda,
+        numero_sala=numero_sala,
+        estado=estado,
+        vidas_max=vidas_max,
+    )
     return PityPuertasEspecialesEscape(
         salas_sin_descanso=0 if hubo_descanso else pity.salas_sin_descanso + 1,
         salas_sin_tienda=salas_sin_tienda,
@@ -1027,6 +1013,46 @@ def actualizar_pity_tras_sala(
         salas_sin_maldicion=0 if hubo_maldicion else pity.salas_sin_maldicion + 1,
         maldiciones_sin_por_id=maldiciones_sin_por_id,
     )
+
+
+def _actualizar_maldiciones_sin(
+    previas: dict,
+    puertas: tuple,
+) -> dict:
+    maldicion_vistos = _ids_maldicion_en_puertas(puertas)
+    maldiciones_sin_por_id = dict(previas)
+    for mid in RASGOS_MALDICION_ESCAPE:
+        if mid in maldicion_vistos:
+            maldiciones_sin_por_id[mid] = 0
+        else:
+            maldiciones_sin_por_id[mid] = maldiciones_sin_por_id.get(mid, 0) + 1
+    return maldiciones_sin_por_id
+
+
+def _salas_sin_tienda_actualizado(
+    pity: PityPuertasEspecialesEscape,
+    *,
+    hubo_tienda: bool,
+    numero_sala: int,
+    estado,
+    vidas_max: int | None,
+) -> int:
+    tienda_elegible = numero_sala >= evento_por_id("tienda").nivel_min_sala_escape
+    if hubo_tienda:
+        return 0
+    if not tienda_elegible:
+        return pity.salas_sin_tienda
+    salas_sin_tienda = pity.salas_sin_tienda + 1
+    if estado is not None and numero_sala >= SALAS_HARD_PITY_TIENDA_ESCAPE:
+        from Comun.tienda_escape import puede_visitar_tienda_escape
+
+        if not puede_visitar_tienda_escape(numero_sala, estado, vidas_max=vidas_max):
+            umbral = SALAS_HARD_PITY_TIENDA_ESCAPE - evento_por_id(
+                "tienda"
+            ).nivel_min_sala_escape
+            if pity.salas_sin_tienda >= umbral:
+                salas_sin_tienda = max(salas_sin_tienda, umbral)
+    return salas_sin_tienda
 
 
 def _rasgos_pausa_generados(
@@ -1226,45 +1252,87 @@ def ajustar_plantillas_milestone_escape(
     pools_bloque = pools_bloque_del_pool(pool) if pool is not None else None
 
     def _bloque_admite_jefe(plantilla: DefinicionEvento) -> bool:
-        if plantilla_lleva_perfil_materia(plantilla):
-            return False
-        if pool is None or pools_bloque is None:
-            return not plantilla_lleva_perfil_materia(plantilla)
-        from Comun.escape_partida import plantilla_bloque_admite_jefe
-
-        return plantilla_bloque_admite_jefe(
-            pool,
+        return _plantilla_admite_jefe_milestone(
             plantilla,
+            pool=pool,
+            pools_bloque=pools_bloque,
             numero_sala=numero_sala,
             n_salas=n_salas,
             min_preguntas=PREGUNTAS_POR_JEFE,
-            **pools_bloque,
         )
 
     n_bloques = sum(1 for p, _ in resultado if _bloque_admite_jefe(p))
     faltan = n_diez - n_bloques
     if ambitos_permitidos is not None and not ambitos_permitidos:
         return tuple(resultado)
-    if ambitos_permitidos is not None:
-        ambitos = list(ambitos_permitidos)
-    else:
-        ambitos = _ambitos_amplio_disponibles(numero_sala) or ["grupo"]
+    ambitos = _ambitos_para_milestone(numero_sala, ambitos_permitidos)
     if faltan > 0 and ambitos:
-        materias_idx = [
-            i for i, (p, _) in enumerate(resultado) if plantilla_lleva_perfil_materia(p)
-        ]
-        rng.shuffle(materias_idx)
-        for idx in materias_idx[:faltan]:
-            ambito = rng.choice(ambitos)
-            resultado[idx] = _plantilla_filtro_amplio(ambito)
+        _sustituir_materias_por_amplio(resultado, faltan, ambitos, rng)
     if pool is not None and ambitos:
-        for i, (plantilla, _) in enumerate(resultado):
-            if plantilla_lleva_perfil_materia(plantilla):
-                continue
-            if _bloque_admite_jefe(plantilla):
-                continue
-            resultado[i] = _plantilla_filtro_amplio(rng.choice(ambitos))
+        _reparar_bloques_no_jefe(resultado, ambitos, rng, _bloque_admite_jefe)
     return tuple(resultado)
+
+
+def _plantilla_admite_jefe_milestone(
+    plantilla: DefinicionEvento,
+    *,
+    pool: list[Pregunta] | None,
+    pools_bloque: dict | None,
+    numero_sala: int,
+    n_salas: int,
+    min_preguntas: int,
+) -> bool:
+    if plantilla_lleva_perfil_materia(plantilla):
+        return False
+    if pool is None or pools_bloque is None:
+        return not plantilla_lleva_perfil_materia(plantilla)
+    from Comun.escape_partida import plantilla_bloque_admite_jefe
+
+    return plantilla_bloque_admite_jefe(
+        pool,
+        plantilla,
+        numero_sala=numero_sala,
+        n_salas=n_salas,
+        min_preguntas=min_preguntas,
+        **pools_bloque,
+    )
+
+
+def _ambitos_para_milestone(
+    numero_sala: int,
+    ambitos_permitidos: tuple[str, ...] | None,
+) -> list[str]:
+    if ambitos_permitidos is not None:
+        return list(ambitos_permitidos)
+    return _ambitos_amplio_disponibles(numero_sala) or ["grupo"]
+
+
+def _sustituir_materias_por_amplio(
+    resultado: list,
+    faltan: int,
+    ambitos: list[str],
+    rng: random.Random,
+) -> None:
+    materias_idx = [
+        i for i, (p, _) in enumerate(resultado) if plantilla_lleva_perfil_materia(p)
+    ]
+    rng.shuffle(materias_idx)
+    for idx in materias_idx[:faltan]:
+        resultado[idx] = _plantilla_filtro_amplio(rng.choice(ambitos))
+
+
+def _reparar_bloques_no_jefe(
+    resultado: list,
+    ambitos: list[str],
+    rng: random.Random,
+    bloque_admite_jefe,
+) -> None:
+    for i, (plantilla, _) in enumerate(resultado):
+        if plantilla_lleva_perfil_materia(plantilla):
+            continue
+        if bloque_admite_jefe(plantilla):
+            continue
+        resultado[i] = _plantilla_filtro_amplio(rng.choice(ambitos))
 
 
 def elegir_eventos_contenido_escape(
@@ -1999,30 +2067,10 @@ def tooltip_efecto_rasgo_puerta(
     """Ayuda breve del icono: solo mecánica de juego, sin nombre ni descripción del catálogo."""
     ev = evento_por_id(evento_id)
     m = ev.modificadores
-    partes: list[str] = []
     if m.sin_pregunta:
-        if evento_id == "tienda":
-            return TOOLTIP_TIENDA
-        partes.append("Sin preguntas en esta puerta.")
-        if m.delta_vidas_al_completar:
-            partes.append(f"Recuperas {m.delta_vidas_al_completar} vida.")
-        return " ".join(partes)
-    if evento_id in RASGOS_TIEMPO_PUERTA_ESCAPE and modificadores is not None:
-        if evento_id in {"cronometro_bloque", "cronometro_doble"} and modificadores.tiempo_puerta_seg:
-            partes.append(f"{modificadores.tiempo_puerta_seg} s para toda la puerta.")
-        if evento_id in {"cronometro_pregunta", "cronometro_doble"} and modificadores.tiempo_pregunta_seg:
-            partes.append(f"{modificadores.tiempo_pregunta_seg} s por pregunta.")
-    else:
-        if m.tiempo_puerta_seg is not None:
-            partes.append(f"{m.tiempo_puerta_seg} s para toda la puerta.")
-        if m.tiempo_pregunta_seg is not None:
-            partes.append(f"{m.tiempo_pregunta_seg} s por pregunta.")
-    if evento_id in RASGOS_NIEBLA and modificadores is not None:
-        if modificadores.opciones_ocultas:
-            partes.append("1 respuesta oculta al azar.")
-    else:
-        if m.opciones_ocultas:
-            partes.append("1 respuesta oculta al azar.")
+        return _tooltip_rasgo_sin_pregunta(evento_id, m)
+    partes = _partes_tooltip_tiempo_rasgo(evento_id, m, modificadores)
+    partes.extend(_partes_tooltip_niebla_rasgo(evento_id, m, modificadores))
     if m.multiplicador_puntos > 1:
         partes.append(
             f"×{m.multiplicador_puntos} puntos en cada acierto de esta puerta."
@@ -2030,6 +2078,48 @@ def tooltip_efecto_rasgo_puerta(
     if evento_id == RASGO_PUERTA_MALDITA or m.fin_partida_si_fallo:
         return TOOLTIP_PUERTA_MALDITA
     return " ".join(partes) if partes else ev.descripcion
+
+
+def _tooltip_rasgo_sin_pregunta(evento_id: str, m: ModificadoresDesafio) -> str:
+    if evento_id == "tienda":
+        return TOOLTIP_TIENDA
+    partes = ["Sin preguntas en esta puerta."]
+    if m.delta_vidas_al_completar:
+        partes.append(f"Recuperas {m.delta_vidas_al_completar} vida.")
+    return " ".join(partes)
+
+
+def _partes_tooltip_tiempo_rasgo(
+    evento_id: str,
+    m: ModificadoresDesafio,
+    modificadores: ModificadoresPuerta | None,
+) -> list[str]:
+    partes: list[str] = []
+    if evento_id in RASGOS_TIEMPO_PUERTA_ESCAPE and modificadores is not None:
+        if evento_id in {"cronometro_bloque", "cronometro_doble"} and modificadores.tiempo_puerta_seg:
+            partes.append(f"{modificadores.tiempo_puerta_seg} s para toda la puerta.")
+        if evento_id in {"cronometro_pregunta", "cronometro_doble"} and modificadores.tiempo_pregunta_seg:
+            partes.append(f"{modificadores.tiempo_pregunta_seg} s por pregunta.")
+        return partes
+    if m.tiempo_puerta_seg is not None:
+        partes.append(f"{m.tiempo_puerta_seg} s para toda la puerta.")
+    if m.tiempo_pregunta_seg is not None:
+        partes.append(f"{m.tiempo_pregunta_seg} s por pregunta.")
+    return partes
+
+
+def _partes_tooltip_niebla_rasgo(
+    evento_id: str,
+    m: ModificadoresDesafio,
+    modificadores: ModificadoresPuerta | None,
+) -> list[str]:
+    if evento_id in RASGOS_NIEBLA and modificadores is not None:
+        if modificadores.opciones_ocultas:
+            return ["1 respuesta oculta al azar."]
+        return []
+    if m.opciones_ocultas:
+        return ["1 respuesta oculta al azar."]
+    return []
 
 
 def linea_bloque_preguntas_puerta(n_preguntas: int) -> str:

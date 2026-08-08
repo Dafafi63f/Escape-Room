@@ -108,28 +108,40 @@ def _normalizar_entrada_progreso(
     if not prog:
         return progreso, None
     if prog.lower().startswith("pregunta "):
-        rest = prog[len("Pregunta ") :].strip()
-        if "/" in rest:
-            actual_txt, total_txt = (p.strip() for p in rest.split("/", 1))
-            try:
-                actual = int(actual_txt)
-            except ValueError:
-                return progreso, None
-            if _es_total_infinito(total_txt):
-                return "", actual
-            try:
-                total = int(total_txt)
-            except ValueError:
-                return progreso, None
-            return texto_progreso_examen_cerrado(actual, total), None
+        return _normalizar_progreso_pregunta_prefijo(progreso, prog)
     if "/" in prog:
-        _actual_txt, total_txt = (p.strip() for p in prog.split("/", 1))
-        if _es_total_infinito(total_txt):
-            try:
-                return "", int(_actual_txt)
-            except ValueError:
-                return progreso, None
+        return _normalizar_progreso_slash(progreso, prog)
     return progreso, None
+
+
+def _normalizar_progreso_pregunta_prefijo(
+    progreso: str, prog: str
+) -> tuple[str, int | None]:
+    rest = prog[len("Pregunta ") :].strip()
+    if "/" not in rest:
+        return progreso, None
+    actual_txt, total_txt = (p.strip() for p in rest.split("/", 1))
+    try:
+        actual = int(actual_txt)
+    except ValueError:
+        return progreso, None
+    if _es_total_infinito(total_txt):
+        return "", actual
+    try:
+        total = int(total_txt)
+    except ValueError:
+        return progreso, None
+    return texto_progreso_examen_cerrado(actual, total), None
+
+
+def _normalizar_progreso_slash(progreso: str, prog: str) -> tuple[str, int | None]:
+    actual_txt, total_txt = (p.strip() for p in prog.split("/", 1))
+    if not _es_total_infinito(total_txt):
+        return progreso, None
+    try:
+        return "", int(actual_txt)
+    except ValueError:
+        return progreso, None
 
 
 def _segmento_tiempo_activo(estado: EstadoPartida) -> SegmentoEstado | None:
@@ -206,7 +218,6 @@ def segmentos_linea_estado(
     Sin tope (resistencia, libre infinito): ❓ + id. Examen cerrado / finito: 📝 + x/y.
     """
     progreso, numero_pregunta = _normalizar_entrada_progreso(progreso, numero_pregunta)
-    segmentos: list[SegmentoEstado]
     if numero_pregunta is not None:
         segmentos = _segmentos_id_pregunta(
             numero_pregunta,
@@ -214,25 +225,57 @@ def segmentos_linea_estado(
             bloque_filtro_texto=bloque_filtro_texto,
         )
     else:
-        segmentos = []
-        if progreso_sala:
-            segmentos.append(
-                SegmentoEstado("sala_escape", EMOJI_SALA_ESCAPE, progreso_sala)
-            )
-        if progreso_puerta:
-            segmentos.append(
-                SegmentoEstado(
-                    "pregunta_puerta",
-                    EMOJI_PROGRESO_PREGUNTA_ESCAPE,
-                    progreso_puerta,
-                )
-            )
-        if progreso:
-            segmentos.append(_segmento_progreso_examen(progreso))
+        segmentos = _segmentos_progreso_cerrado(
+            progreso, progreso_sala=progreso_sala, progreso_puerta=progreso_puerta
+        )
 
     for etiqueta in efectos_puerta:
         segmentos.append(SegmentoEstado("efecto_puerta", "", etiqueta))
 
+    _anadir_segmentos_estado_partida(
+        segmentos,
+        estado,
+        vidas_max=vidas_max,
+        mostrar_tiempo_activo=mostrar_tiempo_activo,
+        segundos_pregunta_restantes=segundos_pregunta_restantes,
+        desafio_bloque_texto=desafio_bloque_texto,
+    )
+    return segmentos
+
+
+def _segmentos_progreso_cerrado(
+    progreso: str,
+    *,
+    progreso_sala: str | None,
+    progreso_puerta: str | None,
+) -> list[SegmentoEstado]:
+    segmentos: list[SegmentoEstado] = []
+    if progreso_sala:
+        segmentos.append(
+            SegmentoEstado("sala_escape", EMOJI_SALA_ESCAPE, progreso_sala)
+        )
+    if progreso_puerta:
+        segmentos.append(
+            SegmentoEstado(
+                "pregunta_puerta",
+                EMOJI_PROGRESO_PREGUNTA_ESCAPE,
+                progreso_puerta,
+            )
+        )
+    if progreso:
+        segmentos.append(_segmento_progreso_examen(progreso))
+    return segmentos
+
+
+def _anadir_segmentos_estado_partida(
+    segmentos: list[SegmentoEstado],
+    estado: EstadoPartida,
+    *,
+    vidas_max: int | None,
+    mostrar_tiempo_activo: bool,
+    segundos_pregunta_restantes: int | None,
+    desafio_bloque_texto: str | None,
+) -> None:
     if estado.reglas.tiene_vidas():
         n = estado.vidas_restantes or 0
         tope = vidas_max if vidas_max is not None else estado.reglas.vidas
@@ -252,10 +295,8 @@ def segmentos_linea_estado(
             SegmentoEstado("desafio_bloque", "⏲️", desafio_bloque_texto)
         )
 
-    sis = estado.reglas.sistema_puntuacion
-    if sis == SistemaPuntuacion.ARCADE:
+    if estado.reglas.sistema_puntuacion == SistemaPuntuacion.ARCADE:
         segmentos.append(SegmentoEstado("puntos", "⭐", f"{estado.puntos_arcade}"))
-    return segmentos
 
 
 def ascii_icono_segmento(seg_id: str) -> str:

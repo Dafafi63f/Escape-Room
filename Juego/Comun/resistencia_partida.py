@@ -306,6 +306,96 @@ def _anadir_malos_aleatorios(
             familias_usadas.add(familia)
 
 
+def _prob_mala_efectiva_resistencia(
+    prob_mala: float,
+    *,
+    pity: PityEventosResistencia | None,
+    pity_variedad: PityVariedadResistencia | None,
+) -> float:
+    prob_mala_eff = prob_mala
+    if pity is not None and prob_mala > 0.0:
+        prob_mala_eff = prob_gate_evento_resistencia_con_pity(
+            prob_base=prob_mala,
+            preguntas_sin_ver=pity.preguntas_sin_malo,
+            incremento_por_pregunta=_PITY_INC_GATE_MALO,
+            max_boost=_PROB_GATE_MAX_BOOST_MALO,
+        )
+    if pity_variedad is not None and prob_mala_eff > 0.0:
+        prob_mala_eff = min(
+            0.98,
+            prob_mala_eff + pity_variedad.boost_prob("escalada_hostil"),
+        )
+    return prob_mala_eff
+
+
+def _prob_buena_efectiva_resistencia(
+    numero_pregunta: int,
+    *,
+    pity: PityEventosResistencia | None,
+    pity_variedad: PityVariedadResistencia | None,
+) -> float:
+    from Comun.resistencia_motor import probabilidad_evento_bueno_escalada
+
+    prob_evento_bueno = probabilidad_evento_bueno_escalada(numero_pregunta)
+    prob_bueno_eff = prob_evento_bueno
+    if pity is not None and prob_evento_bueno > 0.0:
+        prob_bueno_eff = prob_gate_evento_resistencia_con_pity(
+            prob_base=prob_evento_bueno,
+            preguntas_sin_ver=pity.preguntas_sin_bueno,
+            incremento_por_pregunta=_PITY_INC_GATE_BUENO,
+            max_boost=_PROB_GATE_MAX_BOOST_BUENO,
+            prob_tope=0.95,
+        )
+    if pity_variedad is not None and prob_bueno_eff > 0.0:
+        prob_bueno_eff = min(
+            0.95,
+            prob_bueno_eff + pity_variedad.boost_prob("escalada_buena"),
+        )
+    return prob_bueno_eff
+
+
+def _anadir_malos_si_gate(
+    eventos: list,
+    *,
+    kinds,
+    max_malos: int,
+    intensidad: float,
+    numero_pregunta: int,
+    rng: random.Random,
+    familias_usadas: set[str],
+    pity: PityEventosResistencia | None,
+    prob_mala_eff: float,
+) -> None:
+    if not (prob_mala_eff > 0.0 and max_malos > 0 and kinds and rng.random() <= prob_mala_eff):
+        return
+    n_malos = 1
+    if max_malos > 1 and rng.random() < min(0.35, intensidad * 0.4):
+        n_malos = min(2, max_malos, len(kinds))
+    _anadir_malos_aleatorios(
+        eventos,
+        kinds=kinds,
+        cantidad=n_malos,
+        intensidad=intensidad,
+        numero_pregunta=numero_pregunta,
+        rng=rng,
+        familias_usadas=familias_usadas,
+        pity=pity,
+    )
+
+
+def _deduplicar_eventos_resistencia(
+    eventos: list,
+) -> tuple:
+    vistos: set[str] = set()
+    unicos = []
+    for evento in eventos:
+        if evento.etiqueta in vistos:
+            continue
+        vistos.add(evento.etiqueta)
+        unicos.append(evento)
+    return tuple(unicos)
+
+
 def eventos_aleatorios_para_pregunta(
     numero_pregunta: int,
     *,
@@ -341,52 +431,24 @@ def eventos_aleatorios_para_pregunta(
     eventos: list[EventoAleatorioResistencia] = []
     familias_usadas: set[str] = set()
 
-    prob_mala_eff = prob_mala
-    if pity is not None and prob_mala > 0.0:
-        prob_mala_eff = prob_gate_evento_resistencia_con_pity(
-            prob_base=prob_mala,
-            preguntas_sin_ver=pity.preguntas_sin_malo,
-            incremento_por_pregunta=_PITY_INC_GATE_MALO,
-            max_boost=_PROB_GATE_MAX_BOOST_MALO,
-        )
-    if pity_variedad is not None and prob_mala_eff > 0.0:
-        prob_mala_eff = min(
-            0.98,
-            prob_mala_eff + pity_variedad.boost_prob("escalada_hostil"),
-        )
+    prob_mala_eff = _prob_mala_efectiva_resistencia(
+        prob_mala, pity=pity, pity_variedad=pity_variedad
+    )
+    _anadir_malos_si_gate(
+        eventos,
+        kinds=kinds,
+        max_malos=max_malos,
+        intensidad=intensidad,
+        numero_pregunta=numero_pregunta,
+        rng=rng,
+        familias_usadas=familias_usadas,
+        pity=pity,
+        prob_mala_eff=prob_mala_eff,
+    )
 
-    if prob_mala_eff > 0.0 and max_malos > 0 and kinds and rng.random() <= prob_mala_eff:
-        n_malos = 1
-        if max_malos > 1 and rng.random() < min(0.35, intensidad * 0.4):
-            n_malos = min(2, max_malos, len(kinds))
-        _anadir_malos_aleatorios(
-            eventos,
-            kinds=kinds,
-            cantidad=n_malos,
-            intensidad=intensidad,
-            numero_pregunta=numero_pregunta,
-            rng=rng,
-            familias_usadas=familias_usadas,
-            pity=pity,
-        )
-
-    from Comun.resistencia_motor import probabilidad_evento_bueno_escalada
-
-    prob_evento_bueno = probabilidad_evento_bueno_escalada(numero_pregunta)
-    prob_bueno_eff = prob_evento_bueno
-    if pity is not None and prob_evento_bueno > 0.0:
-        prob_bueno_eff = prob_gate_evento_resistencia_con_pity(
-            prob_base=prob_evento_bueno,
-            preguntas_sin_ver=pity.preguntas_sin_bueno,
-            incremento_por_pregunta=_PITY_INC_GATE_BUENO,
-            max_boost=_PROB_GATE_MAX_BOOST_BUENO,
-            prob_tope=0.95,
-        )
-    if pity_variedad is not None and prob_bueno_eff > 0.0:
-        prob_bueno_eff = min(
-            0.95,
-            prob_bueno_eff + pity_variedad.boost_prob("escalada_buena"),
-        )
+    prob_bueno_eff = _prob_buena_efectiva_resistencia(
+        numero_pregunta, pity=pity, pity_variedad=pity_variedad
+    )
     if prob_bueno_eff > 0.0 and max_buenos > 0 and rng.random() <= prob_bueno_eff:
         eventos.append(
             _construir_evento("doble", intensidad, numero_pregunta=numero_pregunta)
@@ -407,14 +469,7 @@ def eventos_aleatorios_para_pregunta(
             pity=pity,
         )
 
-    vistos: set[str] = set()
-    unicos: list[EventoAleatorioResistencia] = []
-    for evento in eventos:
-        if evento.etiqueta in vistos:
-            continue
-        vistos.add(evento.etiqueta)
-        unicos.append(evento)
-    eventos_finales = tuple(unicos)
+    eventos_finales = _deduplicar_eventos_resistencia(eventos)
 
     if pity is not None:
         actualizar_pity_eventos_resistencia(
@@ -427,7 +482,6 @@ def eventos_aleatorios_para_pregunta(
         pity._cache_eventos = eventos_finales
 
     return eventos_finales
-
 
 def _fusionar_evento_en_escalada(
     evento: EventoAleatorioResistencia,
@@ -768,24 +822,56 @@ def _indices_candidatos(
     banco = getattr(er, "banco_resistencia", None) if er is not None else None
     sin_esc = er is not None and getattr(er, "sin_escalada_dificultad", False)
     for idx, p in enumerate(pool):
-        if banco is not None and not banco.indice_habilitado(idx, numero_pregunta):
-            continue
-        if idx in bloqueadas:
-            continue
-        if p.racha_minima_resistencia > progreso:
-            continue
-        if not sin_esc:
-            if p.dificultad not in escalada.dificultades_permitidas:
-                continue
-            if complejidad_pregunta(p) > escalada.max_complejidad:
-                continue
-        if er is not None and not pregunta_compatible_bloque(p, er):
-            continue
-        if solo_no_usadas and idx in estado.usadas:
+        if _indice_candidato_excluido(
+            idx,
+            p,
+            bloqueadas=bloqueadas,
+            progreso=progreso,
+            banco=banco,
+            sin_esc=sin_esc,
+            escalada=escalada,
+            numero_pregunta=numero_pregunta,
+            solo_no_usadas=solo_no_usadas,
+            usadas=estado.usadas,
+            er=er,
+            pregunta_compatible_bloque=pregunta_compatible_bloque,
+        ):
             continue
         candidatas.append(idx)
     return candidatas
 
+
+def _indice_candidato_excluido(
+    idx: int,
+    p: Pregunta,
+    *,
+    bloqueadas: set,
+    progreso: int,
+    banco,
+    sin_esc: bool,
+    escalada: EscaladaResistencia,
+    numero_pregunta: int,
+    solo_no_usadas: bool,
+    usadas,
+    er,
+    pregunta_compatible_bloque,
+) -> bool:
+    if banco is not None and not banco.indice_habilitado(idx, numero_pregunta):
+        return True
+    if idx in bloqueadas:
+        return True
+    if p.racha_minima_resistencia > progreso:
+        return True
+    if not sin_esc:
+        if p.dificultad not in escalada.dificultades_permitidas:
+            return True
+        if complejidad_pregunta(p) > escalada.max_complejidad:
+            return True
+    if er is not None and not pregunta_compatible_bloque(p, er):
+        return True
+    if solo_no_usadas and idx in usadas:
+        return True
+    return False
 
 def _elegir_entre_candidatas(
     pool: list[Pregunta],
