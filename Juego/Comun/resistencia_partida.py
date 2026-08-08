@@ -881,20 +881,20 @@ def _elegir_entre_candidatas(
     er=None,
 ) -> int:
     from Comun.resistencia_motor import rng_partida
+    from Comun.semillas import RngPartida, semilla_partida_aleatoria
 
+    rng = (
+        rng_partida(er)
+        if er is not None
+        else RngPartida.desde_semilla(semilla_partida_aleatoria())
+    )
     exclusivas = [i for i in candidatas if pool[i].exclusiva_resistencia]
     normales = [i for i in candidatas if not pool[i].exclusiva_resistencia]
     if exclusivas and normales:
         prob = probabilidad_pregunta_exclusiva(numero_pregunta)
-        if er is not None:
-            roll = rng_partida(er).random()
-        else:
-            roll = random.random()
-        grupo = exclusivas if roll < prob else normales
+        grupo = exclusivas if rng.random() < prob else normales
         candidatas = grupo
-    if er is not None:
-        return rng_partida(er).choice(candidatas)
-    return random.choice(candidatas)
+    return rng.choice(candidatas)
 
 
 def elegir_indice_resistencia(
