@@ -6,6 +6,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+env:
+  PYTHONPATH: ${{ github.workspace }}/Juego
+  SDL_VIDEODRIVER: dummy
+  SDL_AUDIODRIVER: dummy
+
 jobs:
   sonarcloud:
     name: SonarCloud Code Analysis
@@ -14,6 +19,24 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version-file: .python-version
+
+      - name: Install dependencies
+        run: "pip install --only-binary=:all: pygame-ce==2.5.7 pandas==3.0.3 matplotlib==3.11.0 coverage==7.15.4"
+
+      - name: Install fonts for pygame emoji tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fonts-noto-color-emoji fontconfig
+          fc-cache -f
+
+      - name: Coverage (suite unitaria)
+        run: |
+          coverage run --source=Juego,Files -m unittest discover -s Tests -t . -q
+          coverage xml -o coverage.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@2f77a1ec69fb1d595b06f35ab27e97605bdef703 # v5
